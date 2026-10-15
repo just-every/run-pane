@@ -1,0 +1,37 @@
+name: Fresh clone journey
+on:
+  schedule:
+    - cron: '17 2 * * *'
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  clone:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.20.0
+      - run: npm install --global pnpm@10.12.4 @runeditrun/rer@0.2.22
+      - name: Follow README launch
+        run: |
+          umask 077
+          rer dev > "$RUNNER_TEMP/pane-launch.log" 2>&1
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Use each first-release screen
+        env:
+          PANE_LAUNCH_LOG: ${{ runner.temp }}/pane-launch.log
+        run: node scripts/browser-journey.mjs
+      - if: always()
+        run: rer dev --stop
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: pane-browser
+          path: test-results/browser/

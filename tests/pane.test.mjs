@@ -1,0 +1,98 @@
+import { test, before, after } from 'node:test'
+import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
+import { runtime, origin, settings } from './runtime.mjs'
+import { createOperatorAuth } from '../src/modules/operator-auth/index.mjs'
+import { createPortability, readArchive } from '@runeditrun/rer/modules/portability'
+import { productPolicy } from '../scripts/pane-policy.mjs'
+let f,owner,admin,member,first,second,importJob,contactId,oldArchive,laterArchive
+const fixture=JSON.parse(await readFile('fixtures/static-site.json','utf8'))
+const json=async (path,body,cookie=owner,headers={})=>f.request(path,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',Cookie:cookie??'',...headers},body:JSON.stringify(body),redirect:'manual'})
+const data=async()=> (await f.request('/api/pane',{headers:{Cookie:owner}})).json()
+async function exportData(db){const s=await createPortability({db,policy:productPolicy}),id=await s.exports.create();while((await s.exports.advance(id,{maxParts:100})).phase==='building'){}const records=[];for await(const r of readArchive(await s.exports.download(id)))records.push(r);return {manifest:records[0],parts:records.filter(r=>r.kind==='part'),closing:records.at(-1)}}
+async function restore(db,a,later){const s=await createPortability({db,policy:productPolicy}),id=await s.imports.create(a.manifest);for(const part of a.parts)await s.imports.uploadPart(id,part.index,part);return s.imports.finalize(id,{contentHash:a.closing.contentHash,archiveHash:a.closing.archiveHash,laterJournal:later?.manifest})}
+before(async()=>{f=await runtime()})
+after(async()=>{await f?.mf.dispose()})
+test('native owner sign-in and role sessions protect direct handlers',async()=>{
+ assert.equal((await f.request('/api/pane')).status,401)
+ const r=await json('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Riverbend owner',returnTo:'/app'},'')
+ assert.equal(r.status,303,await r.text());owner=r.headers.get('set-cookie').split(';')[0]
+ assert.equal((await f.request('/auth/session',{headers:{Cookie:owner}})).status,200)
+ const setup=await f.request('/setup',{method:'POST',headers:{Cookie:owner,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes',redirect:'manual'});assert.equal(setup.status,303)
+ let delivered
+ const auth=createOperatorAuth({db:f.db,config:{...settings,origin,local:true},clientIp:()=>'127.0.0.1',mailSender:{send:async m=>{delivered=m;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+ for(const role of ['admin','member']) {
+  await auth.invite(new Request(origin+'/auth/invite',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin,Cookie:owner}}),{email:role+'@example.test',displayName:'Riverbend '+role,role})
+  const token=new URL(delivered.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token')
+  const confirmed=await json('/auth/confirm',{token},'');assert.equal(confirmed.status,303,await confirmed.text())
+  if(role==='admin')admin=confirmed.headers.get('set-cookie').split(';')[0];else member=confirmed.headers.get('set-cookie').split(';')[0]
+  assert.equal((await json('/auth/confirm',{token},'')).status,400)
+ }
+ assert.equal((await json('/api/pane/prepare',{site:fixture},member)).status,403)
+ assert.equal((await json('/api/pane/publish',{revision:'missing'},admin)).status,403)
+ assert.equal((await json('/api/pane/prepare',{site:fixture},owner,{Origin:'https://elsewhere.invalid'})).status,403)
+})
+test('five pages prepare and preview privately, owner publishes with approval',async()=>{
+ const r=await json('/api/pane/prepare',{site:fixture},admin);assert.equal(r.status,200,await r.clone().text());first=await r.json()
+ assert.equal((await f.request('/preview/'+first.id+'/home',{redirect:'manual'})).status,303)
+ assert.equal((await f.request('/preview/'+first.id+'/home',{headers:{Cookie:member}})).status,403)
+ const preview=await f.request('/preview/'+first.id+'/home',{headers:{Cookie:admin}});assert.match(await preview.text(),new RegExp(fixture.name))
+ assert.equal((await json('/api/pane/publish',{revision:first.id})).status,200)
+ for(const page of fixture.pages){const p=await f.request(page.slug==='home'?'/site':'/site/'+page.slug);assert.equal(p.status,200);assert.ok((await p.text()).includes(page.title))}
+ const d=await data();assert.equal(d.live.id,first.id);assert.equal(d.approvals[0].revision,first.id);assert.ok(d.approvals[0].actor)
+})
+test('contact is durable, escaped and idempotent; tracking is aggregate and privacy-aware',async()=>{
+ contactId=crypto.randomUUID()
+ const body=new URLSearchParams({idempotency:contactId,name:'Avery <script>',email:'avery@example.test',message:'Can you cater our opening?',website:''})
+ const send=()=>f.request('/site/contact',{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body,redirect:'manual'})
+ assert.equal((await send()).status,303);assert.equal((await send()).status,303)
+ const d=await data();assert.equal(d.messages.length,1);assert.equal(d.messages[0].message,'Can you cater our opening?')
+ const html=await (await f.request('/app',{headers:{Cookie:owner}})).text();assert.ok(html.includes('Avery &lt;script&gt;'))
+ assert.equal((await json('/site/visit',{path:'home'},'',{DNT:'1'})).status,204)
+ assert.equal((await json('/site/visit',{path:'home'},'')).status,204)
+ assert.equal((await data()).visits.find(v=>v.path==='home').count,1)
+ oldArchive=await exportData(f.db)
+})
+test('later change and rollback restore the exact immutable site with recorded decisions',async()=>{
+ const site=structuredClone(fixture);site.pages[0].body='Open late on Fridays. Freshly updated.'
+ second=await (await json('/api/pane/prepare',{site})).json()
+ assert.equal((await json('/api/pane/publish',{revision:second.id})).status,200)
+ assert.ok((await (await f.request('/site')).text()).includes('Open late on Fridays.'))
+ assert.equal((await json('/api/pane/rollback',{revision:first.id})).status,200)
+ assert.ok(!(await (await f.request('/site')).text()).includes('Open late on Fridays.'))
+ assert.equal((await data()).approvals.filter(a=>a.action==='rollback').length,1)
+})
+test('move-in dry run requires reviewed fingerprint, applies inert draft and journals undo',async()=>{
+ const source=JSON.stringify({...fixture,name:'Riverbend imported'})
+ const plan=await json('/api/pane/import/dry-run',{source},admin);assert.equal(plan.status,200,await plan.clone().text());const p=await plan.json()
+ assert.equal((await json('/api/pane/import/apply',{source,fingerprint:'wrong'},admin)).status,400)
+ const applied=await json('/api/pane/import/apply',{source,fingerprint:p.fingerprint},admin);assert.equal(applied.status,200,await applied.clone().text());importJob=await applied.json();assert.equal(importJob.state,'completed')
+ assert.equal((await data()).live.id,first.id)
+ assert.equal((await json('/api/pane/import/undo',{job:importJob.id},member)).status,403)
+ const undone=await json('/api/pane/import/undo',{job:importJob.id},admin);assert.equal(undone.status,200,await undone.clone().text());assert.equal((await undone.json()).state,'undone')
+ assert.ok((await data()).imports.some(j=>j.id===importJob.id&&j.state==='undone'))
+})
+test('owner erasure removes personal data and prevents submission replay',async()=>{
+ assert.equal((await json('/api/pane/messages/erase',{id:contactId},admin)).status,403)
+ assert.equal((await json('/api/pane/messages/erase',{id:contactId})).status,200)
+ assert.equal((await data()).messages.length,0)
+ await f.request('/site/contact',{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({idempotency:contactId,name:'Avery',email:'avery@example.test',message:'Replay'})})
+ assert.equal((await data()).messages.length,0)
+ laterArchive=await exportData(f.db)
+})
+test('archive transport restores data into empty D1 and rejects an erased older backup',async()=>{
+ const destination=await runtime()
+ try {
+  const status=await restore(destination.db,laterArchive);assert.equal(status.phase,'complete')
+  const live=await destination.db.prepare('SELECT r.site FROM pane_revisions r JOIN pane_state s ON s.live=r.id').first();assert.equal(JSON.parse(live.site).name,fixture.name)
+  assert.equal((await destination.db.prepare('SELECT COUNT(*) AS n FROM pane_messages').first()).n,0)
+  assert.ok((await destination.db.prepare('SELECT COUNT(*) AS n FROM ik_jobs').first()).n>0)
+ }finally{await destination.mf.dispose()}
+ const empty=await runtime()
+ try{await assert.rejects(restore(empty.db,oldArchive,laterArchive),/erased_row|erasure_epoch/)}finally{await empty.mf.dispose()}
+})
+test('deactivated credentials lose access to direct product commands',async()=>{
+ const operators=await (await f.request('/auth/operators',{headers:{Cookie:owner}})).json();const user=operators.find(o=>o.role==='admin')
+ assert.equal((await json('/auth/operator/status',{operatorId:user.id,status:'inactive'})).status,200)
+ assert.equal((await json('/api/pane/prepare',{site:fixture},admin)).status,401)
+})
