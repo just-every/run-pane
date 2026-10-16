@@ -1,7 +1,7 @@
 {
   "name": "Pane",
   "repository": "https://github.com/just-every/run-pane",
-  "clone": "git clone https://github.com/just-every/run-pane.git",
+  "clone": "npx -y @runeditrun/rer dev just-every/run-pane",
   "folder": "run-pane",
   "requirements": "Uses Node 22.20.0 and pnpm 10.12.4, on macOS, Linux or Windows with WSL2. rer selects the pinned versions.",
   "licence": "MIT",

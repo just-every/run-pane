@@ -6,14 +6,13 @@ your workspace is at the address your terminal prints.
 
 ## Start Pane
 
-Install rer once if you do not already have it, then clone and run Pane:
+One line installs rer if you do not already have it, clones Pane and runs it:
 
 ```sh
-npx -y @runeditrun/rer cli install
-git clone https://github.com/just-every/run-pane.git
-cd run-pane
-rer dev
+npx -y @runeditrun/rer dev just-every/run-pane
 ```
+
+To start it again later, run `cd run-pane && rer dev`.
 
 Pane pins Node 22.20.0 and pnpm 10.12.4. rer selects those versions without
 changing your global Node installation. Supported computers are macOS, Linux

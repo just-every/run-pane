@@ -15,14 +15,13 @@ the MIT licence. Your installation stores the site and inbox in Cloudflare D1.
 
 ## Run from a clone
 
-Use Node **22.20.0** and pnpm **10.12.4**. Install rer once if it is not on PATH:
+Use Node **22.20.0** and pnpm **10.12.4**. One line installs rer if it is not on PATH, clones Pane and starts it:
 
 ```sh
-npx -y @runeditrun/rer cli install
-git clone https://github.com/just-every/run-pane.git
-cd run-pane
-rer dev
+npx -y @runeditrun/rer dev just-every/run-pane
 ```
+
+To start it again later, run `cd run-pane && rer dev`.
 
 `rer dev` installs the pinned dependencies, sets up a fresh local installation and
 prints progress. Allow ten minutes on a fresh computer. A repeated invocation
