@@ -114,11 +114,12 @@ mail setting with your verified sender before deploying. Commit reviewed source
 before a real deploy. `rer signin` supplies the hosted owner's one-time sign-in
 link if mail is not ready. The deployed Worker's `/site` is the business website.
 Business-site custom domains are outside the current release. The separate public
-run site includes the landing page, `/run` and these docs. `run-pane.com` is its
-configured placeholder domain and has not been registered. Until it is ready,
-use the local `/run` page on the `RER_SITE` address printed by `rer dev`.
-The run-site deployment workflow stays disabled unless `RUN_SITE_DEPLOY` is
-explicitly enabled after the domain and deployment are ready.
+run site includes the landing page, `/run` and these docs. It is published at
+[https://run-pane.com](https://run-pane.com), and its run page is
+[https://run-pane.com/run](https://run-pane.com/run). To see the same page from
+a local checkout, use the local `/run` page on the `RER_SITE` address printed by
+`rer dev`. The run-site deployment workflow stays disabled unless
+`RUN_SITE_DEPLOY` is explicitly enabled.
 
 ## Development
 
