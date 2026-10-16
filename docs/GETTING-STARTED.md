@@ -1,0 +1,81 @@
+# Getting started
+
+Run Pane on your own computer, confirm its owner, then prepare your first
+five-page website. The public run site and your installed workspace are separate:
+your workspace is at the address your terminal prints.
+
+## Start Pane
+
+Install rer once if you do not already have it, then clone and run Pane:
+
+```sh
+npx -y @runeditrun/rer cli install
+git clone https://github.com/just-every/run-pane.git
+cd run-pane
+rer dev
+```
+
+Pane pins Node 22.20.0 and pnpm 10.12.4. rer selects those versions without
+changing your global Node installation. Supported computers are macOS, Linux
+and Windows with WSL2. A first launch installs and sets up the checkout; allow
+ten minutes. If interrupted, repeat `rer dev` to resume.
+
+The terminal prints `RER_READY` with the app address and a private `RER_OPEN`
+link. Open the latter on the same computer to sign in as the local owner.
+Review the owner name and email, confirm the checkbox and choose **Finish setup**.
+Development sends no external email. Treat `RER_OPEN` as a credential.
+
+For a local installation with your real mailbox, use `rer install`, then
+`rer setup` and enter it at the prompt, then `rer dev`.
+
+## Add the five pages
+
+In your workspace, choose **Pages** and open **Edit site content**. Enter your
+**Site name** and **Description**. **Pages JSON** must contain exactly one page
+for each slug: `home`, `about`, `services`, `hours`, `contact`.
+
+Here is the array the editor accepts. Replace the titles and bodies with your content:
+
+```json
+[
+  { "slug": "home", "title": "Home", "body": "Welcome to our business." },
+  { "slug": "about", "title": "About", "body": "Our story." },
+  { "slug": "services", "title": "Services", "body": "What we do." },
+  { "slug": "hours", "title": "Hours", "body": "Saturday: 9 am to 1 pm" },
+  { "slug": "contact", "title": "Contact", "body": "Send us a message below." }
+]
+```
+
+Bodies are plain text. Use `\n\n` inside a JSON string to separate paragraphs.
+HTML is displayed as text. A name or title may have up to 120 characters, the
+description up to 500 and each page body up to 20,000. Every title and body must
+contain text. You can also use the pages array in the
+[complete example export](../fixtures/static-site.json).
+
+Choose **Prepare draft revision**. This saves a whole-site snapshot while the
+live website stays unchanged. Follow **Preview draft** and inspect all five
+pages. When ready, the owner chooses **Approve & publish**.
+
+## Open the live website
+
+Choose **Open live site** or **View website**. Your public website is served at
+`/site` on your installation; the other pages use `/site/about`, `/site/services`,
+`/site/hours` and `/site/contact`. These paths belong to your app, not the public
+Pane documentation site.
+
+Before the first publish, the public website says it is getting ready. The
+Contact page accepts messages only on the live website; the preview form is
+disabled. Messages appear in **Contact inbox** in your workspace.
+
+## Stop and return later
+
+```sh
+rer dev --stop
+```
+
+Run `rer dev` again from the same checkout when you return. Your saved local
+site and inbox remain. A compatible repeated invocation reuses the running app.
+Stop preview with `rer preview --stop` if you used it, before building,
+verifying or transferring data.
+
+Next: [Preview, publish and restore](PUBLISHING.md).

@@ -3,6 +3,32 @@
 The move-in importer accepts one UTF-8 JSON object in the `static-site-json-v1`
 format. See [the complete fixture](../fixtures/static-site.json).
 
+## Move in through the workspace
+
+1. Sign in as an owner or admin. Choose **Imports**, then **Paste an export**.
+2. Paste the whole export into **Source JSON**, including `schemaVersion`, the
+   site name, description and all five pages. This differs from the editor's
+   **Pages JSON**, which takes only the pages array.
+3. Choose **Check import**. This check creates no draft or import job.
+4. On **Review your move-in**, read every page. **Import identity** shows the
+   exact source fingerprint. Choose **Approve import** to apply that reviewed
+   source, or **Cancel** to return without applying it.
+5. Follow **Preview draft** in the workspace. The owner chooses
+   **Approve & publish** only after checking the preview.
+
+An import creates an unpublished draft; it never changes the live website by
+itself. To remove that imported draft, the operator who applied it can choose
+**Undo import** in Imports. A published revision cannot be undone: publish or
+restore another revision first. An import that has changed since application
+is protected by a conflict refusal. Undo retains its source and journal.
+
+The importer accepts this JSON format, not a website address, HTML folder or
+a provider-specific archive. Convert your existing site to the format below
+before checking it. For another route, your agent can use
+[the authenticated helper](AGENT.md).
+
+## Export format
+
 ```json
 {
   "schemaVersion": 1,

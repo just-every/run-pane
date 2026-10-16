@@ -1,8 +1,17 @@
 # Pane
 
-Own a small business website: prepare five pages, preview them, approve publishing,
-receive contact messages and roll back a change. Pane stores the site and inbox in
-Cloudflare D1. It starts from Base's theme; a visual design pass comes later.
+Your website, open for business. Five pages and a contact inbox. Preview every
+change, publish, and roll back in one step. Pane is free and open source, under
+the MIT licence. Your installation stores the site and inbox in Cloudflare D1.
+
+## Guides
+
+- [Getting started](docs/GETTING-STARTED.md): launch Pane and prepare your first pages.
+- [Preview, publish and restore](docs/PUBLISHING.md): change your website with a preview first.
+- [Inbox and visits](docs/INBOX-AND-VISITS.md): read messages and understand page counts.
+- [Move in a site](docs/MOVE-IN.md): review a site export and import it as a draft.
+- [Back up and restore](docs/BACKUP-RESTORE.md): keep a private copy of your site and inbox.
+- [Work with your agent](docs/AGENT.md): prepare drafts through the authenticated helper.
 
 ## Run from a clone
 
@@ -28,24 +37,24 @@ and enter it at the prompt, then `rer dev`.
 
 ## Do the first jobs
 
-1. Open **Your website** at `/app`. Start with your own five pages or copy the
+1. Open your workspace at `/app`. Start with your own five pages or copy the
    documented example from [fixtures/static-site.json](fixtures/static-site.json).
    The five route slugs are `home`, `about`, `services`, `hours`, `contact`.
-   The editor's Pages field accepts the fixture's **pages array**, while the
+   The editor's **Pages JSON** field accepts the fixture's **pages array**, while the
    move-in form accepts the **whole fixture**. Page bodies are plain text;
    HTML is escaped.
 2. Prepare a draft, follow its preview link, and inspect all five pages. The
-   owner chooses **Publish**. Open `/site` to see the live version. Admins may
+   owner chooses **Approve & publish**. Open `/site` to see the live version. Admins may
    prepare and preview; members may read the workspace. Only owners publish,
    roll back or erase inbox messages. `/auth/operators` manages invitations.
 3. Send a message from the live Contact page. Return to the inbox at `/app`.
    Messages stay in D1; there is no email forwarding. The visit totals count
    page views without cookies or visitor IDs, respect DNT/GPC, and are approximate
    (reloads count; bots can count). No IP address, user agent or referrer is stored.
-4. Prepare a changed draft and preview it. Publish it, then choose **Roll back**
+4. Prepare a changed draft and preview it. Publish it, then choose **Restore live**
    on the earlier revision. Publishing and rollback records show the approving
    operator's ID, exact revision and time.
-5. Use **Move in** to dry-run a whole static-site JSON export, review the plan,
+5. Use **Imports** → **Paste an export** → **Check import** to review a whole static-site JSON export,
    and approve its fingerprint. It creates an unpublished draft. Undo it before
    publishing. See [MOVE-IN.md](docs/MOVE-IN.md) for validation and conflict rules.
 
@@ -104,7 +113,12 @@ verified mail sender. Replace the explicit `auth@example.invalid` deployment
 mail setting with your verified sender before deploying. Commit reviewed source
 before a real deploy. `rer signin` supplies the hosted owner's one-time sign-in
 link if mail is not ready. The deployed Worker's `/site` is the business website.
-A custom domain and the separate run site are outside this round.
+Business-site custom domains are outside the current release. The separate public
+run site includes the landing page, `/run` and these docs. `run-pane.com` is its
+configured placeholder domain and has not been registered. Until it is ready,
+use the local `/run` page on the `RER_SITE` address printed by `rer dev`.
+The run-site deployment workflow stays disabled unless `RUN_SITE_DEPLOY` is
+explicitly enabled after the domain and deployment are ready.
 
 ## Development
 

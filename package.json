@@ -16,7 +16,7 @@
     "deploy": "rer deploy",
     "onboard": "node scripts/install.mjs",
     "build:app": "rer queue build:app -- sh -c \"vite build\"",
-    "verify:app": "rer queue verify:app -- sh -c \"pnpm run build && pnpm run typecheck && pnpm test\"",
+    "verify:app": "rer queue verify:app -- sh -c \"pnpm run build && rer build --site && pnpm run typecheck && pnpm test\"",
     "reset": "rer reset",
     "export": "rer export",
     "import": "rer import",
@@ -26,7 +26,7 @@
     "check": "rer check",
     "deps": "rer install",
     "rer": "rer",
-    "test": "rer queue test:pane -- node --test --test-concurrency=1 tests/pane.test.mjs"
+    "test": "rer queue test:pane -- node --test --test-concurrency=1 tests/pane.test.mjs tests/site.test.mjs"
   },
   "dependencies": {
     "@tanstack/react-router": "1.170.33",
@@ -39,11 +39,12 @@
     "@cloudflare/vite-plugin": "1.54.5",
     "@cloudflare/workers-types": "5.20260908.1",
     "@playwright/test": "1.63.0",
-    "@runeditrun/rer": "0.2.22",
+    "@runeditrun/rer": "0.2.25",
     "@types/node": "22.20.5",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",
     "@vitejs/plugin-react": "6.1.1",
+    "marked": "16.4.0",
     "typescript": "5.9.3",
     "vite": "8.2.2",
     "wrangler": "4.129.1"

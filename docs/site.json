@@ -1,0 +1,22 @@
+{
+  "sections": [
+    { "title": "Start here", "pages": [
+      { "slug": "", "source": "README.md", "label": "Pane overview" },
+      { "slug": "getting-started", "source": "docs/GETTING-STARTED.md", "label": "Getting started" }
+    ] },
+    { "title": "Your website", "pages": [
+      { "slug": "publishing", "source": "docs/PUBLISHING.md", "label": "Preview, publish and restore" },
+      { "slug": "inbox-and-visits", "source": "docs/INBOX-AND-VISITS.md", "label": "Inbox and visits" },
+      { "slug": "move-in", "source": "docs/MOVE-IN.md", "label": "Move in a site" },
+      { "slug": "agent", "source": "docs/AGENT.md", "label": "Work with your agent" }
+    ] },
+    { "title": "Keep it safe", "pages": [
+      { "slug": "backup-restore", "source": "docs/BACKUP-RESTORE.md", "label": "Back up and restore" }
+    ] }
+  ],
+  "githubOnly": [
+    { "source": "docs/PROVENANCE.md", "reason": "Maintainer record of shared-source origins." },
+    { "source": "RUN-LOCALLY.md", "reason": "Full command and operations reference for maintainers." },
+    { "source": "ACCEPTANCE.md", "reason": "Release acceptance evidence for maintainers." }
+  ]
+}

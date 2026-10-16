@@ -40,7 +40,7 @@ try {
  await page.getByLabel('Message',{exact:true}).fill('Could you cater our studio opening for 24 people next Friday?')
  await Promise.all([page.waitForURL('**/site/contact?sent=1'),page.getByRole('button',{name:'Send message'}).click()]);await capture('contact-sent')
  await page.goto(origin+'/app');await capture('inbox-and-visits')
- await page.getByText('Edit site content',{exact:true}).click()
+ if (!await page.getByLabel('Pages JSON',{exact:true}).isVisible()) await page.getByText('Edit site content',{exact:true}).click()
  const changed=structuredClone(fixture.pages);changed[0].body+='\n\nFriday dinner service now runs until 8 pm.'
  await page.getByLabel('Pages JSON',{exact:true}).fill(JSON.stringify(changed,null,2));await submit(page.getByRole('button',{name:'Prepare draft revision'}))
  const nextPreview=await page.getByRole('link',{name:'Preview draft'}).getAttribute('href');await page.goto(origin+nextPreview);await capture('change-preview')
