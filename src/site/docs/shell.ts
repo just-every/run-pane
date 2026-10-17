@@ -19,7 +19,7 @@ export function docsDocument(page: RenderedDoc, sections: DocsSection[], previou
     + `<title>${escape(page.title)} · Pane docs</title><meta name="description" content="${escape(page.description)}">`
     + `<link rel="icon" href="/brand/mark.svg"><link rel="stylesheet" href="/fonts/fonts.css"><link rel="stylesheet" href="/rer-theme.css"><style>${css}</style></head>`
     + `<body class="pane-docs"><a class="docs-skip" href="#main">Skip to content</a><div class="docs-wrap">`
-    + `<header class="docs-header"><a class="docs-brand" href="/">${mark}<span>Pane</span></a><nav aria-label="Site"><a href="/docs" aria-current="true">Docs</a><a href="${escape(run.repository)}">Source</a></nav></header>`
+    + `<header class="docs-header"><a class="docs-brand" href="/">${mark}<span>Pane</span></a><nav aria-label="Site"><a href="/docs" aria-current="true">Docs</a><a href="/contract">Contract</a><a href="${escape(run.repository)}">Source</a></nav></header>`
     + `<details class="docs-mobile-menu"><summary>Documentation · ${escape(page.label)}</summary><nav aria-label="Documentation">${nav}</nav></details>`
     + `<div class="docs-layout"><aside class="docs-sidebar"><nav aria-label="Documentation">${nav}</nav></aside>`
     + `<main id="main" class="docs-article"><div class="docs-eyebrow">Pane documentation</div><article>${page.html}</article>`

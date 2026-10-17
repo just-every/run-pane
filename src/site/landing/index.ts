@@ -30,7 +30,7 @@ export function landingHtml(): string {
   return `<div class="lp-page">
     <header class="lp-header lp-container">
       <a class="lp-brand" href="/" aria-label="Pane home"><img src="/brand/mark.svg" width="28" height="28" alt="">Pane</a>
-      <nav aria-label="Main navigation"><a href="/docs">Docs</a><a href="${source}">Source</a></nav>
+      <nav aria-label="Main navigation"><a href="/docs">Docs</a><a href="/contract">Contract</a><a href="${source}">Source</a></nav>
     </header>
     <main class="lp-container">
       <section class="lp-hero" aria-labelledby="lp-title">
