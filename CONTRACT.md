@@ -21,8 +21,8 @@ A buyer replacing an incumbent needs the whole job, so the target is the whole j
 - **Build visually.** Unlimited pages with folders, clean URLs and an editable not-found page, a section and block editor with grid placement, column ratios, section backgrounds (image, color, video), spacing and image cropping, a separate phone layout, galleries with lightbox, menus with social icons, reusable components, pop-ups, autosave, page status and review, custom code, a coming-soon gate and accessible output (`PAGE-001` to `PAGE-013`), on responsive templates with site-wide brand styles that survive a template switch (`STYLE-001` to `STYLE-004`), with a media library that optimizes images and embeds video and maps (`MEDIA-001` to `MEDIA-004`).
 - **Publish content.** CMS collections for services, team, projects, testimonials, locations, FAQs and menus with template pages, lists, a blog with moderated comments, an events calendar, scheduling, RSS and podcast feeds, CSV import and site search (`CMS-001` to `CMS-010`), always through immutable revisions, preview, approval and one-action rollback (`PUBLISH-001` to `PUBLISH-004`).
 - **Be found.** A custom domain at apex and `www`, plus alias domains, with managed HTTPS that keeps the business's email working, mailboxes and registrar email forwarding alike, fast edge hosting that survives an admin outage, updates without plugin upkeep and a visible USD running cost (`DOMAIN-001` to `DOMAIN-005`, `HOST-001` to `HOST-004`); titles, descriptions, redirects, sitemap, canonical URLs, local-business structured data, social cards, Search Console, Bing, Google Business Profile and multilingual sites with `hreflang` (`SEO-001` to `SEO-010`).
-- **Turn visitors into business.** Forms with spam protection, email notification and reply, acknowledgements, CRM routing to Orbit or HubSpot, enquiry ownership and follow-up, Google Sheets export and consent capture (`FORM-001` to `FORM-008`); booking, checkout, newsletter and automation connections with a health panel (`LINK-001` to `LINK-005`, `API-001`); traffic, conversion goals, Vane or GA4 and a monthly report (`STATS-001` to `STATS-004`); form-triggered and scheduled automations, social sharing and problem alerts (`AUTO-001` to `AUTO-004`).
-- **Run it as a team, anywhere.** Owner, admin, editor, author, inbox and reporting roles, delegated publishing, designer handover and a full activity log (`ACCESS-*`, `ROLE-001` to `ROLE-003`, `AUDIT-001`); a phone-ready workspace and native iOS and Android owner apps (`MOBILE-001`, `MOBILE-002`).
+- **Turn visitors into business.** Forms with spam protection, email notification and reply, acknowledgements, CRM routing to Orbit or HubSpot, enquiry ownership and follow-up, Google Sheets export and consent capture (`FORM-001` to `FORM-008`); booking, checkout, newsletter and automation connections with a health panel (`LINK-001` to `LINK-005`, `API-001`); traffic, conversion goals, Vane or GA4, Meta Pixel and Google Ads conversions on those goals and a monthly report (`STATS-001` to `STATS-005`); form-triggered and scheduled automations, social sharing and problem alerts (`AUTO-001` to `AUTO-004`).
+- **Run it as a team, anywhere.** Owner, admin, editor, author, inbox and reporting roles, delegated publishing, designer handover, passkeys and two-step sign-in and a full activity log (`ACCESS-*`, `ROLE-001` to `ROLE-004`, `AUDIT-001`); a phone-ready workspace and native iOS and Android owner apps (`MOBILE-001`, `MOBILE-002`).
 - **Move in and out.** Imports from WordPress.com, Squarespace, Wix, Webflow, Framer and Durable with a migration report, URL map, comments, events, enquiry and subscriber history and verified cutover (`MOVEIN-001`, `IMPORT-001` to `IMPORT-007`); open-format exports, backups, person-level privacy requests, US policy starters, security headers and US defaults (`BACKUP-001`, `ERASE-001`, `EXPORT-001`, `PRIV-001` to `PRIV-004`, `LOCALE-001`).
 - **Let AI and agents do the work.** AI drafts a whole site from business facts, assists writing, alt text and translation, suggests search fixes and edits collections in bulk (`AI-001` to `AI-004`); agents interview the owner, keep facts current, prove enquiries reach a person, recover lost search traffic, measure changes against real leads, migrate platforms and follow up enquiries, all under owner control and a USD budget (`AGENT-001` to `AGENT-008`).
 
@@ -37,7 +37,7 @@ Pane is one product: the website. Where the market sells a neighbouring product 
 | Online store, cart and checkout | [Stall](https://github.com/just-every/run-stall) (or Squarespace Commerce, Shopify, Stripe Payment Links, PayPal) | Product blocks and buy buttons that hand off checkout (`LINK-002`) |
 | Paid memberships and subscriptions | [Nectar](https://github.com/just-every/run-nectar) or Stall (or Stripe Billing) | Member-only pages check access (`PAGE-011`); billing stays with the provider |
 | Email marketing and newsletters | [Mango](https://github.com/just-every/run-mango) (or Mailchimp, Kit) | Signup blocks and pop-ups, consent, new-post sends and subscriber import (`LINK-003`, `FORM-008`, `CMS-006`, `PAGE-013`, `IMPORT-007`) |
-| Web analytics | [Vane](https://github.com/just-every/run-vane) (or Google Analytics 4) | Built-in counts and goals plus a connection (`STATS-001` to `STATS-003`) |
+| Web analytics | [Vane](https://github.com/just-every/run-vane) (or Google Analytics 4) | Built-in counts and goals plus a connection (`STATS-001` to `STATS-003`); ad conversions to Meta and Google Ads (`STATS-005`) |
 | Standalone forms and surveys | [Pencil](https://github.com/just-every/run-pencil) (or Typeform, Jotform) | Pane builds site forms (`FORM-001`); multi-step surveys and quizzes embed from Pencil |
 | Help desk and live chat | [HappyToHelp](https://github.com/just-every/run-happytohelp) (or Zendesk, Intercom) | Enquiry follow-up only (`FORM-006`, `AGENT-007`); support queues and chat widgets embed from HappyToHelp |
 | Workflow automation across apps | [Crank](https://github.com/just-every/run-crank) (or Zapier, Make) | Signed webhooks and published triggers (`LINK-004`) |
@@ -183,11 +183,11 @@ Each page and post carries draft, needs review, scheduled or published status. A
 
 #### PAGE-008 — Custom code, embeds and CSS.
 
-An owner adds custom CSS, an HTML embed block and site-wide header code (for example a verification tag). Embeds run sandboxed under a per-site content security policy the owner sees, and nothing they add can reach the workspace or a session.
+An owner adds custom CSS, an HTML embed block, site-wide header and footer code (for example a verification tag) and per-page header code on any page, including a form's or booking's thank-you page (for example a Google Ads conversion snippet). Custom code can subscribe to Pane's goal events (`STATS-002`) through a documented `pane:goal` browser event carrying the goal name and value, so a hand-written tag fires on a lead rather than a page view. Custom header code is marked third-party and waits for consent under `PRIV-001`. Embeds run sandboxed under a per-site content security policy the owner sees, and nothing they add can reach the workspace or a session.
 
-**Acceptance evidence:** Add a custom CSS rule, an embed block and a header verification tag; see them live, see the policy list the embed's host, and see the embed unable to read workspace cookies or call `/api/pane`.
+**Acceptance evidence:** Add a custom CSS rule, an embed block, a site-wide header verification tag and per-page header code on a quote form's thank-you page; see the per-page code only on that page, see a listener on `pane:goal` receive the quote-form goal when the form is submitted, and see custom code not run before consent or under GPC; see them live, see the policy list the embed's host, and see the embed unable to read workspace cookies or call `/api/pane`.
 
-*Status:* missing. No custom code or embed support; the public CSP allows only same-origin scripts.
+*Status:* missing. No custom code, per-page header code, goal event or embed support; the public CSP allows only same-origin scripts.
 
 #### PAGE-009 — Accessible output by default.
 
@@ -235,15 +235,15 @@ The owner shows a promotional pop-up (newsletter signup, offer or announcement) 
 
 A new site starts from a template catalogue for common US small businesses (restaurant, salon and spa, trades and home services, professional services, clinic, studio, retail, nonprofit), each responsive and fully editable.
 
-**Acceptance evidence:** Start a site from each template, publish, and check every page at 1440 and 390 wide with no overflow and a passing accessibility run.
+**Acceptance evidence:** See at least 40 templates in the catalogue, at least four in each of the eight categories; start a site from each template, publish, and check every page at 1440 and 390 wide with no overflow and a passing accessibility run.
 
 *Status:* partial. One fixed responsive layout; no template catalogue.
 
 #### STYLE-002 — Site-wide brand styles.
 
-The owner sets fonts, colors, button shapes, spacing and section backgrounds once for the whole site, with live preview. A change applies everywhere in the next revision.
+The owner sets fonts, colors, button shapes, spacing and section backgrounds once for the whole site, with live preview. Fonts come from a built-in catalogue, from font files the owner uploads (WOFF2, WOFF, TTF or OTF, self-hosted on the site's origin with `font-display: swap`) or from an Adobe Fonts web project the owner connects by project ID. A change applies everywhere in the next revision.
 
-**Acceptance evidence:** Change the heading font, primary color and button style, preview three pages showing the change, publish, and roll back to the earlier styles.
+**Acceptance evidence:** Change the heading font, primary color and button style, preview three pages showing the change, publish, and roll back to the earlier styles. Upload a WOFF2 font and connect a test Adobe Fonts project, set one as the heading and one as the body font, and see both render on the live site, the uploaded one served from the site's own origin.
 
 *Status:* partial. Styles are fixed in source CSS; no owner style controls.
 
@@ -267,7 +267,7 @@ The owner uploads a logo, favicon and social image once and enters the business'
 
 #### MEDIA-001 — Media library with alt text and usage.
 
-Images, PDFs (menus, price lists) and other files upload once into a searchable library with folders, alt text, captions and a list of where each is used. Deleting a file in use is refused with its uses listed.
+Images, video files (MP4 and MOV, transcoded for the web with a poster frame), PDFs (menus, price lists) and other files upload once into a searchable library with folders, alt text, captions and a list of where each is used. Deleting a file in use is refused with its uses listed.
 
 **Acceptance evidence:** Upload 50 images and three PDFs, search and filter them, set alt text, place one image on three pages, and try to delete it (refused, uses listed).
 
@@ -291,11 +291,11 @@ An editor crops, rotates and sets a focal point on an image in the browser; the 
 
 #### MEDIA-004 — Video, map, social embeds and Instagram feed.
 
-Blocks embed YouTube and Vimeo videos, a Google Maps location for each business address, and Instagram or Facebook posts. An Instagram feed block connects the business's Instagram professional account through Instagram's official API and shows its most recent posts (count and grid or carousel layout chosen by the editor) on the live site, refreshed automatically at least hourly, with images re-served through `MEDIA-002` and each tile linking to its post; the access token is an installation secret refreshed before it expires, and a broken connection shows in `LINK-005` while the block keeps the last posts it fetched. Third-party embeds load only after consent where `PRIV-001` requires it.
+A video block plays an uploaded library video (`MEDIA-001`) in an accessible player with controls, captions from an uploaded WebVTT file, a poster frame, and optional autoplay-muted and loop, streamed at sizes matched to the screen; or it embeds YouTube and Vimeo videos. Blocks also embed a Google Maps location for each business address, and Instagram or Facebook posts. An Instagram feed block connects the business's Instagram professional account through Instagram's official API and shows its most recent posts (count and grid or carousel layout chosen by the editor) on the live site, refreshed automatically at least hourly, with images re-served through `MEDIA-002` and each tile linking to its post; the access token is an installation secret refreshed before it expires, and a broken connection shows in `LINK-005` while the block keeps the last posts it fetched. Third-party embeds load only after consent where `PRIV-001` requires it.
 
-**Acceptance evidence:** Add a YouTube video, a Vimeo video, a Google Map, an Instagram post and a Facebook post; see each on the live site, see them wait for consent where required, and see the CSP list only their hosts. Connect a test Instagram professional account, place a nine-post feed block, publish a new Instagram post and see it on the live site within an hour; revoke the token and see the connection fail in `LINK-005` while the block still shows the last nine posts.
+**Acceptance evidence:** Upload a 200 MB MOV and place it in a video block with a WebVTT caption file; see it play with controls and captions by keyboard on the live site at 1440 and 390 wide, start from its poster frame and stream a phone-sized rendition at 390. Add a YouTube video, a Vimeo video, a Google Map, an Instagram post and a Facebook post; see each on the live site, see them wait for consent where required, and see the CSP list only their hosts. Connect a test Instagram professional account, place a nine-post feed block, publish a new Instagram post and see it on the live site within an hour; revoke the token and see the connection fail in `LINK-005` while the block still shows the last nine posts.
 
-*Status:* missing. No embeds or Instagram feed.
+*Status:* missing. No video player, embeds or Instagram feed.
 
 ### Collections and blog
 
@@ -325,9 +325,9 @@ Any page can show a list or grid of collection items, filtered, sorted, limited 
 
 #### CMS-004 — Blog with categories, tags and authors.
 
-A blog with posts, excerpts, featured images, categories, tags, author pages, archives and pagination. Authors write and submit posts within their role (`ROLE-001`).
+One or more blogs (for example News and Recipes), each with its own URL prefix, index, RSS feed (`CMS-006`) and comment settings (`CMS-010`), holding posts with excerpts, featured images, categories, tags, author pages, archives and pagination. Each post can show share buttons for Facebook, X, LinkedIn, Pinterest and email that open the network's share URL with the post's link and social card (`SEO-006`) and load no third-party script. Authors write and submit posts within their role (`ROLE-001`).
 
-**Acceptance evidence:** As an author, write three posts with categories and tags, submit them for review, have the owner publish, and open the blog index, a category, a tag, an author page and each post.
+**Acceptance evidence:** Create two blogs, News and Recipes. As an author, write three posts in each with categories and tags, submit them for review, have the owner publish, and open each blog's index and feed, a category, a tag, an author page and each post; see each feed hold only its own blog's posts. Click each share button and see the network's share URL carry the post's URL, with no request to the network before the click.
 
 *Status:* missing. No blog.
 
@@ -663,7 +663,7 @@ The workspace shows visits by page, day, referrer, device type, country or US st
 
 #### STATS-002 — Conversion goals and click insights.
 
-The owner sets goals (form submissions, bookings, checkouts, signups, phone-number and email clicks, outbound clicks) and sees conversions and conversion rate by page, source and campaign, plus a simple funnel from landing page to goal.
+The owner sets goals (form submissions, bookings, checkouts, signups, phone-number and email clicks, outbound clicks) and sees conversions and conversion rate by page, source and campaign, plus a simple funnel from landing page to goal. Each goal can be mapped to a Meta standard event and a Google Ads conversion action (`STATS-005`) and is raised in the browser as a `pane:goal` event for custom code (`PAGE-008`).
 
 **Acceptance evidence:** Define a quote-form goal and a phone-click goal, complete each from a tagged campaign, and see them counted by page and campaign with a funnel.
 
@@ -671,7 +671,7 @@ The owner sets goals (form submissions, bookings, checkouts, signups, phone-numb
 
 #### STATS-003 — Vane and Google Analytics 4 with consent.
 
-The owner connects Vane (first) or Google Analytics 4. Vane runs cookie-free; GA4 loads only after consent where `PRIV-001` requires it.
+The owner connects Vane (first) or Google Analytics 4 by measurement ID through one Google tag that `STATS-005` reuses for Google Ads. Vane runs cookie-free; GA4 loads only after consent where `PRIV-001` requires it, and never under GPC.
 
 **Acceptance evidence:** Connect Vane and see events arrive; connect GA4 and see it load only after consent and send page views and goals.
 
@@ -684,6 +684,14 @@ On the first business day of each month the owner receives a short report: visit
 **Acceptance evidence:** Advance the clock to a month boundary and see the report accepted by the mail provider with figures that match the dashboard.
 
 *Status:* missing. No reports.
+
+#### STATS-005 — Meta Pixel and Google Ads conversion tracking.
+
+The owner connects the Meta Pixel by pixel ID and the Google tag for Google Ads by its `AW-` conversion ID from native connection panels, with no code. Page views go to both. Each `STATS-002` goal maps to a Meta standard event and to a Google Ads conversion action the owner picks from the connected account (or enters as a conversion label): by default a form submission sends `Lead`, a booking confirmed through `LINK-001` sends `Schedule`, a checkout confirmed through `LINK-002` sends `Purchase` with its USD value, a newsletter signup sends `CompleteRegistration` and a phone or email click sends `Contact`. Browser events fire when the goal completes, with an event ID. Optionally, Pane also sends the same event server-side from the stored submission through the Meta Conversions API and Google Ads enhanced conversions, with the visitor's email and phone normalized and SHA-256 hashed and the same event ID so the platform de-duplicates it. Everything waits for consent and nothing is sent under GPC (`PRIV-001`); the access tokens are installation secrets with their health in `LINK-005`.
+
+**Acceptance evidence:** Connect a test Meta pixel and a test Google Ads account. From a visit tagged with `fbclid` and `gclid`, accept consent, then submit a quote form, complete a Dial booking and click a phone number. See `Lead`, `Schedule` and `Contact` in Meta Events Manager's Test Events with those names, see each mapped Google Ads conversion recorded through Tag Assistant, and with server-side sending on see the Conversions API events de-duplicated against the browser events by event ID and the enhanced conversion carrying only hashed identifiers. Repeat without consent and with GPC and see no request to Meta or Google, browser or server-side.
+
+*Status:* missing. No Meta Pixel, Google Ads connection, goal-to-event mapping or server-side conversions.
 
 ### Team, roles and activity
 
@@ -711,6 +719,14 @@ A designer or agency builds a site, transfers ownership to the business owner, a
 
 *Status:* missing. Ownership cannot be transferred in the product.
 
+#### ROLE-004 — Two-step sign-in and passkeys for workspace users.
+
+Every workspace person signs in through Base's native operator sign-in: an email sign-in link, or an identity provider (Auth, Google, Microsoft Entra ID or Okta) over OIDC. On top of that, each person can register passkeys (WebAuthn) and an authenticator-app one-time code (TOTP) with single-use recovery codes, and the owner can require two-step sign-in for every role or for owner and admin only; a person without it is sent to enrol before reaching the workspace. Signing in through an identity provider that reports multi-factor authentication satisfies the requirement. Losing a second factor is recovered by the owner, never by email alone, and every enrolment, removal and recovery is in the activity log (`AUDIT-001`).
+
+**Acceptance evidence:** Require two-step sign-in for all roles; sign in as an editor with an email link and see the enrolment step before `/app`; register a passkey and sign in with it; register TOTP and see a wrong or reused code refused; use a recovery code once and see it refused the second time; sign in through an OIDC provider that reports MFA and reach `/app` without a second prompt; and read each event in the activity log.
+
+*Status:* partial. Email-link and OIDC sign-in exist; no passkeys, TOTP, recovery codes or owner-required two-step sign-in.
+
 #### AUDIT-001 — Activity log of every change.
 
 One log records every edit, publication, rollback, setting change, connection change, import, erasure, role change and agent action (`AGENT-008`) with actor, time and subject. It is readable by the owner, exportable and survives erasure of the subject with the actor anonymized where required.
@@ -725,15 +741,15 @@ One log records every edit, publication, rollback, setting change, connection ch
 
 Pane imports a WordPress export (WXR XML) from WordPress.com or self-hosted WordPress: pages, posts, categories, tags, authors, featured images and media files fetched from their references, menus where present, comments (approved, pending and spam, with author name, email, URL, date and reply threading) into `CMS-010`, and every old URL mapped for redirects. Shortcodes and plugin blocks it cannot render are listed, not dropped silently.
 
-**Acceptance evidence:** Import a real WordPress.com export with 100 posts, media and at least 50 comments including threaded replies and pending ones, review the plan and its exceptions (including the comment counts by state), apply as an unpublished draft, see every comment on its post with the same threading and state, and open every old URL on the new site through its redirect.
+**Acceptance evidence:** Import a real WordPress.com export with 100 posts, media and at least 50 comments including threaded replies and pending ones, review the plan and its exceptions (including the comment counts by state), apply as an unpublished draft, see every comment on its post with the same threading and state, and open every old URL on the new site through its redirect. The import passes only when: every source page, post, collection item, event and gallery image is present on the new site or listed in the `IMPORT-005` report with a reason; each page's visible text matches the source page's after whitespace normalization; every source image is fetched and served through `MEDIA-002` or listed as unfetchable; every old URL from the source sitemap and crawl answers 301 to a new URL that answers 200; and the applied counts per content type equal the report's counts.
 
 *Status:* missing. Only the documented static-site JSON imports (`MOVEIN-001`).
 
 #### IMPORT-002 — Squarespace import.
 
-Pane imports a Squarespace site from its WordPress-format export plus a crawl of the published site for what the export omits, keeping the URL map. Blog posts arrive with their comments (`CMS-010`). Calendar (events) pages are imported into the events collection (`CMS-009`) with each event's title, description, image, start and end time in the site's time zone, location and its register or buy link, read from the calendar page's published event data, and old event URLs redirect to the new event pages. Gallery pages and gallery sections are rebuilt as gallery blocks (`PAGE-012`) with their images and captions, and other page layouts are rebuilt as sections from the crawl. Products are written to a Stall product import file (or listed with their Stripe or PayPal replacements) because checkout belongs to Stall (`LINK-002`), and scheduling blocks keep their Acuity link (`LINK-001`). Whatever still cannot map is listed in the report (`IMPORT-005`), never left as an unexplained to-do.
+Pane imports a Squarespace site from its WordPress-format export plus a crawl of the published site for what the export omits, keeping the URL map. Each Squarespace blog page becomes its own blog (`CMS-004`) with its posts, feed URL and comments (`CMS-010`). Restaurant menu blocks become items in a menu-items collection (`CMS-001`) with section, name, description and USD price, shown through a collection list (`CMS-003`). Calendar (events) pages are imported into the events collection (`CMS-009`) with each event's title, description, image, start and end time in the site's time zone, location and its register or buy link, read from the calendar page's published event data, and old event URLs redirect to the new event pages. Gallery pages and gallery sections are rebuilt as gallery blocks (`PAGE-012`) with their images and captions, and other page layouts are rebuilt as sections from the crawl. Products are written to a Stall product import file (or listed with their Stripe or PayPal replacements) because checkout belongs to Stall (`LINK-002`), and scheduling blocks keep their Acuity link (`LINK-001`). Whatever still cannot map is listed in the report (`IMPORT-005`), never left as an unexplained to-do.
 
-**Acceptance evidence:** Import a test Squarespace site with a blog with comments, a calendar page of 12 events (past and upcoming, one with a product block), a gallery page and a scheduling block; review the report, apply, and check pages, blog posts and their comments, images, galleries, every event in the events collection with correct local times and its old URL redirecting to it, the upcoming split, the scheduling block's Acuity link and the product handed to a Stall import file.
+**Acceptance evidence:** Import a test Squarespace site with two blog pages with comments, a calendar page of 12 events (past and upcoming, one with a product block), a gallery page, a menu block of 20 items and a scheduling block; review the report and apply. The import passes only when: every source page, post, collection item, event and gallery image is present on the new site or listed in the `IMPORT-005` report with a reason; each page's visible text matches the source page's after whitespace normalization; every source image is fetched and served through `MEDIA-002` or listed as unfetchable; every old URL from the source sitemap and crawl answers 301 to a new URL that answers 200; and the applied counts per content type equal the report's counts. In addition: each blog page is its own blog with its own feed and every comment on its post with threading and state; every event is in the events collection with correct local times, its old URL redirecting to it and the upcoming split right; the 20 menu items are in the menu-items collection with their prices; the scheduling block keeps its Acuity link; and the product is in a Stall import file.
 
 *Status:* missing. No Squarespace import.
 
@@ -741,7 +757,7 @@ Pane imports a Squarespace site from its WordPress-format export plus a crawl of
 
 Because Wix offers no full site export, Pane imports a Wix site by crawling its published pages and blog (and the blog's RSS) with the owner's proof of domain control, rebuilding pages from the content and keeping the URL map.
 
-**Acceptance evidence:** Import a published Wix test site by crawl, review the mapping, apply, and compare page text, images, blog posts and redirects with the source.
+**Acceptance evidence:** Import a published Wix test site with a blog by crawl, review the mapping and apply. The import passes only when: every source page, post, collection item, event and gallery image is present on the new site or listed in the `IMPORT-005` report with a reason; each page's visible text matches the source page's after whitespace normalization; every source image is fetched and served through `MEDIA-002` or listed as unfetchable; every old URL from the source sitemap and crawl answers 301 to a new URL that answers 200; and the applied counts per content type equal the report's counts. The source's page and post list is its published sitemap plus the crawl, and blog posts are checked against the blog's RSS.
 
 *Status:* missing. No Wix import.
 
@@ -749,13 +765,13 @@ Because Wix offers no full site export, Pane imports a Wix site by crawling its 
 
 Pane imports Webflow and Framer CMS CSV exports (`CMS-007`) and their published pages by crawl, and Durable sites by crawl, with the same review, exceptions and URL map.
 
-**Acceptance evidence:** Import a Webflow site with two collections, a Framer site with one collection and a published Durable site by crawl, review exceptions for each, apply, and check items, pages and redirects for all three.
+**Acceptance evidence:** Import a Webflow site with two collections, a Framer site with one collection and a published Durable site by crawl, review exceptions for each and apply. The import passes only when: every source page, post, collection item, event and gallery image is present on the new site or listed in the `IMPORT-005` report with a reason; each page's visible text matches the source page's after whitespace normalization; every source image is fetched and served through `MEDIA-002` or listed as unfetchable; every old URL from the source sitemap and crawl answers 301 to a new URL that answers 200; and the applied counts per content type equal the report's counts. The rule is applied to each of the three sites separately, and every CSV row of each Webflow and Framer collection is an item with each field's value equal to the CSV's.
 
 *Status:* missing. No Webflow, Framer or Durable import.
 
 #### IMPORT-005 — Migration report and URL map.
 
-Every import shows, before anything is written, a report of what will map where, what will not (with reasons), counts per content type (pages, posts, comments by state, collection items, events, galleries, media, products handed to Stall), every old URL and its new target, media that could not be fetched, and each form's old destination. Apply needs the report's fingerprint; undo works while the draft is unpublished (`MOVEIN-001`).
+Every import shows, before anything is written, a report of what will map where, what will not (with reasons), counts per content type (pages, posts, comments by state, collection items, events, galleries, media, products handed to Stall), every old URL and its new target, media that could not be fetched, and each form's old destination. Apply needs the report's fingerprint; undo works while the draft is unpublished (`MOVEIN-001`). After apply, the report is re-checked against the new site with the import pass rule every incumbent import (`IMPORT-001` to `IMPORT-004`) states, and any item that fails it is added to the report with its reason.
 
 **Acceptance evidence:** Run an import with unsupported content, comments and a broken image link; read the report with its per-type counts, apply with its fingerprint, see the applied counts equal the report's, and undo.
 
@@ -789,9 +805,9 @@ Besides the installation archive (`BACKUP-001`), the owner exports content in op
 
 #### PRIV-001 — Consent for analytics and third-party embeds.
 
-Pane's own counting needs no consent. When the owner adds GA4, a pixel or a third-party embed, a consent banner appears with US-appropriate choices, Global Privacy Control is honored as an opt-out of sale and sharing, and nothing third-party loads before the choice.
+Pane's own counting needs no consent. When the owner adds GA4, the Meta Pixel, the Google tag for Google Ads (`STATS-005`), custom header code (`PAGE-008`) or a third-party embed, a consent banner appears with US-appropriate choices, Global Privacy Control is honored as an opt-out of sale and sharing, and nothing third-party loads before the choice. Under GPC no advertising pixel or tag loads at all and no server-side conversion (`STATS-005`) is sent for that visit.
 
-**Acceptance evidence:** Add GA4 and a YouTube embed, visit with and without GPC, and see no third-party request before consent and none at all under GPC for GA4.
+**Acceptance evidence:** Add GA4, the Meta Pixel, a Google Ads tag and a YouTube embed, visit with and without GPC, and see no third-party request before consent, and none at all under GPC for GA4, the Meta Pixel or the Google tag; submit a form under GPC and see no Conversions API or enhanced-conversion request sent.
 
 *Status:* partial. DNT and GPC are honored for Pane's own counts; there is no consent banner because there are no third-party embeds yet.
 
@@ -1043,7 +1059,7 @@ How the owner-approved scope for Pane (16 October 2026) maps to clauses:
 | Custom domain connection with apex routing, SSL and clear DNS status, plus fast global hosting | `DOMAIN-001` to `DOMAIN-005`, `HOST-001` to `HOST-004` |
 | CMS collections and a blog (services, team, articles, testimonials, projects) with scheduling and RSS | `CMS-001` to `CMS-010` |
 | SEO toolkit: titles, descriptions, clean URLs, sitemap, redirects, canonical and structured data, social cards and Search Console | `SEO-001` to `SEO-010`, `PAGE-001` |
-| Forms with spam protection that route leads to Orbit/HubSpot and email, plus Dial booking, Stall checkout and Mango signup embeds; analytics via Vane | `FORM-001` to `FORM-008`, `LINK-001` to `LINK-005`, `STATS-001` to `STATS-004` |
+| Forms with spam protection that route leads to Orbit/HubSpot and email, plus Dial booking, Stall checkout and Mango signup embeds; analytics via Vane | `FORM-001` to `FORM-008`, `LINK-001` to `LINK-005`, `STATS-001` to `STATS-005` |
 | Media library with image optimization, and an AI site builder that drafts the site from business facts | `MEDIA-001` to `MEDIA-004`, `AI-001` to `AI-004` |
 | Push further: an agent interviews the owner and builds the site from verified facts, then watches for outdated services, broken forms, lost search traffic and unanswered enquiries, proposing changes through preview and approval and measuring the leads and bookings they produce | `AGENT-001` to `AGENT-008` |
 
@@ -1060,8 +1076,8 @@ Judged from the code and tests at commit `80f6943012240b0240eafd9e5763b992bb3275
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 11 | 5 | 0 | 16 |
-| Target and push further | 0 | 23 | 80 | 103 |
-| All | 11 | 28 | 80 | 119 |
+| Target and push further | 0 | 24 | 81 | 105 |
+| All | 11 | 29 | 81 | 121 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -1088,7 +1104,7 @@ Judged from the code and tests at commit `80f6943012240b0240eafd9e5763b992bb3275
 | `PAGE-005` | Device previews and a separate mobile layout | target | partial | `src/pane/handler.ts`; `src/pane/public-view.ts` | One responsive preview; no width switcher, separate phone layout or per-device settings. |
 | `PAGE-006` | Autosave, undo and safe concurrent editing | target | missing |  | Drafts are created only by an explicit whole-site prepare; no autosave, undo or conflict detection. |
 | `PAGE-007` | Page status and review requests | target | partial | `src/pane/content.ts`; `src/pane/handler.ts` | Whole-site drafts and owner approval only; no per-page status or review request. |
-| `PAGE-008` | Custom code, embeds and CSS | target | missing |  | No custom code or embed support; the public CSP allows only same-origin scripts. |
+| `PAGE-008` | Custom code, embeds and CSS | target | missing |  | No custom code, per-page header code, goal event or embed support; the public CSP allows only same-origin scripts. |
 | `PAGE-009` | Accessible output by default | target | partial | `src/pane/views.ts`; `src/pane/public-view.ts`; `scripts/browser-journey.mjs` | Skip link and labelled contact fields exist; no alt-text, heading or contrast checks and no automated accessibility test. |
 | `PAGE-010` | Duplicate pages and starter layouts | target | missing |  | No page creation. |
 | `PAGE-011` | Password-protected and member-only pages and site | target | missing |  | Every live page is public; no site-wide gate or coming-soon page. |
@@ -1101,7 +1117,7 @@ Judged from the code and tests at commit `80f6943012240b0240eafd9e5763b992bb3275
 | `MEDIA-001` | Media library with alt text and usage | target | missing |  | No uploads or media storage. |
 | `MEDIA-002` | Responsive image optimization | target | missing |  | No images. |
 | `MEDIA-003` | Basic image editing | target | missing |  | No images. |
-| `MEDIA-004` | Video, map, social embeds and Instagram feed | target | missing |  | No embeds or Instagram feed. |
+| `MEDIA-004` | Video, map, social embeds and Instagram feed | target | missing |  | No video player, embeds or Instagram feed. |
 | `CMS-001` | Structured collections with typed fields | target | missing |  | No collections. |
 | `CMS-002` | Collection template pages with item URLs | target | missing |  | No collections. |
 | `CMS-003` | Collection lists and filters on any page | target | missing |  | No collections. |
@@ -1149,9 +1165,11 @@ Judged from the code and tests at commit `80f6943012240b0240eafd9e5763b992bb3275
 | `STATS-002` | Conversion goals and click insights | target | missing |  | No goals. |
 | `STATS-003` | Vane and Google Analytics 4 with consent | target | missing |  | No analytics connections. |
 | `STATS-004` | Monthly owner report | target | missing |  | No reports. |
+| `STATS-005` | Meta Pixel and Google Ads conversion tracking | target | missing |  | No Meta Pixel, Google Ads connection, goal-to-event mapping or server-side conversions. |
 | `ROLE-001` | Roles for editors, authors, moderators and reporting | target | partial | `src/pane/handler.ts`; `tests/pane.test.mjs` | Owner, admin and member only; no editor, author, comment moderator, inbox or reporting role. |
 | `ROLE-002` | Review requests and publish delegation | target | missing |  | Only the owner can publish. |
 | `ROLE-003` | Designer-to-client handover | target | missing |  | Ownership cannot be transferred in the product. |
+| `ROLE-004` | Two-step sign-in and passkeys for workspace users | target | partial | `src/modules/operator-auth/identity/email-link/index.mjs`; `src/modules/operator-auth/identity/oidc/index.mjs` | Email-link and OIDC sign-in exist; no passkeys, TOTP, recovery codes or owner-required two-step sign-in. |
 | `AUDIT-001` | Activity log of every change | target | partial | `src/pane/data.ts`; `src/pane/content.ts` | Only publication and rollback approvals are recorded. |
 | `IMPORT-001` | WordPress.com and WordPress import | target | missing |  | Only the documented static-site JSON imports (`MOVEIN-001`). |
 | `IMPORT-002` | Squarespace import | target | missing |  | No Squarespace import. |
