@@ -22,7 +22,7 @@ const included = [
 ] as const
 
 function actions(): string {
-  return '<div class="lp-actions"><a class="lp-run" href="/run">Run Pane <span aria-hidden="true">→</span></a><a class="lp-docs" href="/docs">Read the docs</a></div>'
+  return '<div class="lp-actions"><a class="lp-run" href="/run">Run Pane <span aria-hidden="true">→</span></a><a class="lp-run" href="https://demo.run-pane.com/">Try the demo</a><a class="lp-docs" href="/docs">Read the docs</a></div>'
 }
 
 /** Body fragment for the public run site. Load /design-assets/landing.css. */
