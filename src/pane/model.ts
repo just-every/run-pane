@@ -5,5 +5,5 @@ export type Dashboard = {
  name: string; role: string; draft: Revision | null; live: Revision | null;
  revisions: Revision[]; messages: {id:string;name:string;email:string;message:string;created_at:string}[];
  visits: {path:string;count:number}[]; approvals: {id:string;action:string;revision:string;actor:string;created_at:string}[];
- imports: {id:string;state:string;created_at:string}[]; notice?:string
+ imports: {id:string;state:string;created_at:string}[]; people: Record<string,string>; notice?:string
 }

@@ -1,7 +1,7 @@
-import { readFileSource } from './src/readers/file.ts'
-import { sha256 } from './src/provenance/identity.ts'
-import type { ImportMapping, SourceBundle } from './src/types.ts'
-import { contentHash, normalizeSite } from '../../pane/content'
+import { readFileSource } from '../modules/import-kit/src/readers/file.ts'
+import { sha256 } from '../modules/import-kit/src/provenance/identity.ts'
+import type { ImportMapping, SourceBundle } from '../modules/import-kit/src/types.ts'
+import { contentHash, normalizeSite } from './content'
 
 export const destination = 'pane-site'
 export const namespace = 'static-site-json-v1'

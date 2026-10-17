@@ -1,7 +1,7 @@
 import type { D1Database } from '../modules/import-kit/src/d1/types.ts'
 import { planD1Import, createD1ImportJob, applyD1ImportBatches, undoD1Import } from '../modules/import-kit/src/d1/index.ts'
-import { moveInSource } from '../modules/import-kit/pane-source'
-import { moveInContext, type ImportActor } from '../modules/import-kit/pane-authority'
+import { moveInSource } from './import-source'
+import { moveInContext, type ImportActor } from './import-authority'
 
 /** SELECT-only dry run. The complete Base plan carries the reviewed fingerprint. */
 export async function planMoveIn(db: D1Database, actor: ImportActor, source: string) {

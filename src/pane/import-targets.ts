@@ -1,6 +1,6 @@
-import type { D1Sql, D1TargetAdapter } from './src/d1/types.ts'
-import type { TargetRow } from './src/types.ts'
-import { destination as siteDestination, targetKind } from './pane-source'
+import type { D1Sql, D1TargetAdapter } from '../modules/import-kit/src/d1/types.ts'
+import type { TargetRow } from '../modules/import-kit/src/types.ts'
+import { destination as siteDestination, targetKind } from './import-source'
 
 type NativeRevision = { id: string; site: string; hash: string; actor: string; created_at: string; kit_revision: string | null; imported_at: string | null }
 type ObservedTarget = TargetRow & { nativeCreatedAt?: string }

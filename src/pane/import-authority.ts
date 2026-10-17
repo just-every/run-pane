@@ -1,6 +1,6 @@
-import type { D1Database, D1ImportContext } from './src/d1/types.ts'
-import { destination, mappingVersion, namespace } from './pane-source'
-import { revisionTargets } from './pane-targets'
+import type { D1Database, D1ImportContext } from '../modules/import-kit/src/d1/types.ts'
+import { destination, mappingVersion, namespace } from './import-source'
+import { revisionTargets } from './import-targets'
 
 export type ImportActor = { id: string; role: string }
 

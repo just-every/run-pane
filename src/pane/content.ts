@@ -17,17 +17,29 @@ export async function contentHash(site: Site): Promise<string> {
  return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('')
 }
 export function revision(row: any): Revision { return { ...row, site: JSON.parse(row.site) } }
+// One revision row and one recorded approval: the statements prepare and publish
+// write, and the demo's history (src/demo.ts) writes with fixed ids and times.
+export function revisionStatement(db: D1Database, row: Revision): D1PreparedStatement {
+ return db.prepare('INSERT INTO pane_revisions(id,site,hash,actor,created_at) VALUES(?,?,?,?,?) ON CONFLICT(id) DO NOTHING').bind(row.id,JSON.stringify(row.site),row.hash,row.actor,row.created_at)
+}
+export function approvalStatements(db: D1Database, approval: { id: string; action: 'publish'|'rollback'; revision: string; actor: string; created_at: string }): D1PreparedStatement[] {
+ return [
+  db.prepare('INSERT INTO pane_state(id,live) VALUES(1,?) ON CONFLICT(id) DO UPDATE SET live=excluded.live').bind(approval.revision),
+  db.prepare('INSERT INTO pane_approvals(id,action,revision,actor,created_at) VALUES(?,?,?,?,?) ON CONFLICT(id) DO NOTHING').bind(approval.id,approval.action,approval.revision,approval.actor,approval.created_at),
+ ]
+}
+export async function draftRevision(id: string, actor: string, value: unknown, created_at: string): Promise<Revision> {
+ const site = normalizeSite(value)
+ return { id, site, hash: await contentHash(site), actor, created_at }
+}
 export async function prepare(db: D1Database, actor: string, value: unknown): Promise<Revision> {
- const site = normalizeSite(value), row = { id:crypto.randomUUID(),site,hash:await contentHash(site),actor,created_at:new Date().toISOString() }
- await db.prepare('INSERT INTO pane_revisions(id,site,hash,actor,created_at) VALUES(?,?,?,?,?)').bind(row.id,JSON.stringify(site),row.hash,actor,row.created_at).run()
+ const row = await draftRevision(crypto.randomUUID(), actor, value, new Date().toISOString())
+ await revisionStatement(db, row).run()
  return row
 }
 export async function publish(db:D1Database,actor:string,id:string,action:'publish'|'rollback') {
  const row = await db.prepare('SELECT * FROM pane_revisions WHERE id=?').bind(id).first()
  if (!row) throw new Error('Revision not found.')
- await db.batch([
-  db.prepare('INSERT INTO pane_state(id,live) VALUES(1,?) ON CONFLICT(id) DO UPDATE SET live=excluded.live').bind(id),
-  db.prepare('INSERT INTO pane_approvals(id,action,revision,actor,created_at) VALUES(?,?,?,?,?)').bind(crypto.randomUUID(),action,id,actor,new Date().toISOString())
- ])
+ await db.batch(approvalStatements(db, { id: crypto.randomUUID(), action, revision: id, actor, created_at: new Date().toISOString() }))
  return revision(row)
 }

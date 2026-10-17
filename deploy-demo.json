@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "domain": "run-pane.com",
+  "name": "Pane",
+  "ownerEmail": "maya@cedarstreetstudio.example",
+  "settings": {
+    "MAIL_FROM": "hello@cedarstreetstudio.example"
+  }
+}

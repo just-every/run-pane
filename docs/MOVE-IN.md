@@ -108,16 +108,11 @@ removed. Exact native snapshots guard every field, including timestamps.
 
 ## Source provenance
 
-The full `modules/import-kit/src` tree was copied from the evidence checkout of
-`runeditrun/base` at `a06bd065124c2b45fa879e62736fb5e1987efdaa` into
-`src/modules/import-kit/src`. The canonical README and CONTRACT are retained
-beside it. The shared `modules/d1-transport/index.mjs` and `index.d.mts` were
-copied into `src/modules/import-kit/d1-transport` to keep the integration inside
-its assigned directory. Apart from trimming terminal blank lines in `preparation-step-control.ts` and
-`preparation-steps.ts`, only the three transport import paths in Base's
-`d1/transport.ts`, `d1/budget.ts` and `d1/erasure-values.ts` were relocated;
-the engine, guards and schema mechanisms are unchanged.
+`src/modules/import-kit` and `src/modules/d1-transport` are Base copies, recorded
+with the Base commit they come from in `base-copies.json` and moved together by
+`refresh-base`; `verify-base` checks their bytes. The engine, guards and schema
+mechanisms are Base's, unchanged.
 
-`src/modules/import-kit/pane-source.ts`, `pane-authority.ts`, `pane-targets.ts`
+`src/pane/import-source.ts`, `import-authority.ts`, `import-targets.ts`
 and `src/pane/imports.ts` are Pane's product integration. Native writes return
 inert D1 SQL to Base; they do not run a parallel journal or custom undo engine.

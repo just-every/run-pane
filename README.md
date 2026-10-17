@@ -4,6 +4,13 @@ Your website, open for business. Five pages and a contact inbox. Preview every
 change, publish, and roll back in one step. Pane is free and open source, under
 the MIT licence. Your installation stores the site and inbox in Cloudflare D1.
 
+## Try the demo
+
+[demo.run-pane.com](https://demo.run-pane.com/) opens your own throwaway copy of Pane,
+signed in as the owner of Cedar Street Studio, a sample furniture workshop with
+four months of versions, a draft waiting for approval and a contact inbox. It ends
+after an hour and sends nothing to anyone. `rer demo` runs the same copy on your computer.
+
 ## Guides
 
 - [Getting started](docs/GETTING-STARTED.md): launch Pane and prepare your first pages.
