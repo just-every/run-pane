@@ -24,8 +24,8 @@ link. Open the latter on the same computer to sign in as the local owner.
 Review the owner name and email, confirm the checkbox and choose **Finish setup**.
 Development sends no external email. Treat `RER_OPEN` as a credential.
 
-For a local installation with your real mailbox, use `rer install`, then
-`rer setup` and enter it at the prompt, then `rer dev`.
+For a local installation with your real mailbox, run `npx -y @runeditrun/rer setup just-every/run-pane`
+in place of the one line and enter it at the prompt, then `cd run-pane && rer dev`.
 
 ## Add the five pages
 

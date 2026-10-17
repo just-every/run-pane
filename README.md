@@ -31,8 +31,8 @@ Development sends no external mail. Stop with `rer dev --stop` before building,
 verification or export. `rer dev --as admin` and `rer dev --as member` provide local
 role journeys; they do not grant access on a hosted install.
 
-For an installation with your real mailbox, run `rer install`, then `rer setup`
-and enter it at the prompt, then `rer dev`.
+For an installation with your real mailbox, run `npx -y @runeditrun/rer setup just-every/run-pane`
+in place of the one line and enter it at the prompt, then `cd run-pane && rer dev`.
 
 ## Do the first jobs
 
