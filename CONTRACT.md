@@ -18,12 +18,12 @@ This documentation round changes no homepage, interface or runtime behavior. Mis
 
 A buyer replacing an incumbent needs the whole job, so the target is the whole job:
 
-- **Build visually.** Unlimited pages with folders and clean URLs, a section and block editor, menus, reusable components, device previews, autosave, page status and review, custom code and accessible output (`PAGE-001` to `PAGE-011`), on responsive templates with site-wide brand styles that survive a template switch (`STYLE-001` to `STYLE-004`), with a media library that optimizes images and embeds video and maps (`MEDIA-001` to `MEDIA-004`).
-- **Publish content.** CMS collections for services, team, projects, testimonials, locations, FAQs and menus with template pages, lists, a blog, scheduling, RSS, CSV import and site search (`CMS-001` to `CMS-008`), always through immutable revisions, preview, approval and one-action rollback (`PUBLISH-001` to `PUBLISH-004`).
-- **Be found.** A custom domain at apex and `www` with managed HTTPS that keeps the business's email working, fast edge hosting that survives an admin outage, updates without plugin upkeep and a visible USD running cost (`DOMAIN-001` to `DOMAIN-004`, `HOST-001` to `HOST-004`); titles, descriptions, redirects, sitemap, canonical URLs, local-business structured data, social cards, Search Console, Bing and Google Business Profile (`SEO-001` to `SEO-009`).
+- **Build visually.** Unlimited pages with folders, clean URLs and an editable not-found page, a section and block editor with grid placement, column ratios, section backgrounds (image, color, video), spacing and image cropping, a separate phone layout, galleries with lightbox, menus with social icons, reusable components, pop-ups, autosave, page status and review, custom code, a coming-soon gate and accessible output (`PAGE-001` to `PAGE-013`), on responsive templates with site-wide brand styles that survive a template switch (`STYLE-001` to `STYLE-004`), with a media library that optimizes images and embeds video and maps (`MEDIA-001` to `MEDIA-004`).
+- **Publish content.** CMS collections for services, team, projects, testimonials, locations, FAQs and menus with template pages, lists, a blog with moderated comments, an events calendar, scheduling, RSS and podcast feeds, CSV import and site search (`CMS-001` to `CMS-010`), always through immutable revisions, preview, approval and one-action rollback (`PUBLISH-001` to `PUBLISH-004`).
+- **Be found.** A custom domain at apex and `www`, plus alias domains, with managed HTTPS that keeps the business's email working, mailboxes and registrar email forwarding alike, fast edge hosting that survives an admin outage, updates without plugin upkeep and a visible USD running cost (`DOMAIN-001` to `DOMAIN-005`, `HOST-001` to `HOST-004`); titles, descriptions, redirects, sitemap, canonical URLs, local-business structured data, social cards, Search Console, Bing, Google Business Profile and multilingual sites with `hreflang` (`SEO-001` to `SEO-010`).
 - **Turn visitors into business.** Forms with spam protection, email notification and reply, acknowledgements, CRM routing to Orbit or HubSpot, enquiry ownership and follow-up, Google Sheets export and consent capture (`FORM-001` to `FORM-008`); booking, checkout, newsletter and automation connections with a health panel (`LINK-001` to `LINK-005`, `API-001`); traffic, conversion goals, Vane or GA4 and a monthly report (`STATS-001` to `STATS-004`); form-triggered and scheduled automations, social sharing and problem alerts (`AUTO-001` to `AUTO-004`).
 - **Run it as a team, anywhere.** Owner, admin, editor, author, inbox and reporting roles, delegated publishing, designer handover and a full activity log (`ACCESS-*`, `ROLE-001` to `ROLE-003`, `AUDIT-001`); a phone-ready workspace and native iOS and Android owner apps (`MOBILE-001`, `MOBILE-002`).
-- **Move in and out.** Imports from WordPress.com, Squarespace, Wix, Webflow, Framer and Durable with a migration report, URL map and verified cutover (`MOVEIN-001`, `IMPORT-001` to `IMPORT-006`); open-format exports, backups, person-level privacy requests, US policy starters, security headers and US defaults (`BACKUP-001`, `ERASE-001`, `EXPORT-001`, `PRIV-001` to `PRIV-004`, `LOCALE-001`).
+- **Move in and out.** Imports from WordPress.com, Squarespace, Wix, Webflow, Framer and Durable with a migration report, URL map, comments, events, enquiry and subscriber history and verified cutover (`MOVEIN-001`, `IMPORT-001` to `IMPORT-007`); open-format exports, backups, person-level privacy requests, US policy starters, security headers and US defaults (`BACKUP-001`, `ERASE-001`, `EXPORT-001`, `PRIV-001` to `PRIV-004`, `LOCALE-001`).
 - **Let AI and agents do the work.** AI drafts a whole site from business facts, assists writing, alt text and translation, suggests search fixes and edits collections in bulk (`AI-001` to `AI-004`); agents interview the owner, keep facts current, prove enquiries reach a person, recover lost search traffic, measure changes against real leads, migrate platforms and follow up enquiries, all under owner control and a USD budget (`AGENT-001` to `AGENT-008`).
 
 ### Neighbouring products stay separate
@@ -36,7 +36,7 @@ Pane is one product: the website. Where the market sells a neighbouring product 
 | Appointment booking | [Dial](https://github.com/just-every/run-dial) (or Calendly, Acuity Scheduling) | Booking blocks and booking conversions (`LINK-001`) |
 | Online store, cart and checkout | [Stall](https://github.com/just-every/run-stall) (or Squarespace Commerce, Shopify, Stripe Payment Links, PayPal) | Product blocks and buy buttons that hand off checkout (`LINK-002`) |
 | Paid memberships and subscriptions | [Nectar](https://github.com/just-every/run-nectar) or Stall (or Stripe Billing) | Member-only pages check access (`PAGE-011`); billing stays with the provider |
-| Email marketing and newsletters | [Mango](https://github.com/just-every/run-mango) (or Mailchimp, Kit) | Signup blocks, consent and new-post sends (`LINK-003`, `FORM-008`, `CMS-006`) |
+| Email marketing and newsletters | [Mango](https://github.com/just-every/run-mango) (or Mailchimp, Kit) | Signup blocks and pop-ups, consent, new-post sends and subscriber import (`LINK-003`, `FORM-008`, `CMS-006`, `PAGE-013`, `IMPORT-007`) |
 | Web analytics | [Vane](https://github.com/just-every/run-vane) (or Google Analytics 4) | Built-in counts and goals plus a connection (`STATS-001` to `STATS-003`) |
 | Standalone forms and surveys | [Pencil](https://github.com/just-every/run-pencil) (or Typeform, Jotform) | Pane builds site forms (`FORM-001`); multi-step surveys and quizzes embed from Pencil |
 | Help desk and live chat | [HappyToHelp](https://github.com/just-every/run-happytohelp) (or Zendesk, Intercom) | Enquiry follow-up only (`FORM-006`, `AGENT-007`); support queues and chat widgets embed from HappyToHelp |
@@ -127,27 +127,27 @@ The whole job a Squarespace, Wix or WordPress.com buyer needs on the day they sw
 
 #### PAGE-001 — Unlimited pages, folders and clean URLs.
 
-An editor adds, renames, reorders, hides and deletes any number of pages, groups them in folders, and sets each page's clean URL slug. The home page is chosen, not fixed. Deleting or renaming a published page offers a redirect (`SEO-002`). The five-page ceiling is removed; the five starter pages become a template (`STYLE-001`).
+An editor adds, renames, reorders, hides and deletes any number of pages, groups them in folders, and sets each page's clean URL slug. The home page is chosen, not fixed. Deleting or renaming a published page offers a redirect (`SEO-002`). The five-page ceiling is removed; the five starter pages become a template (`STYLE-001`). The not-found page is an ordinary editable page (heading, text, search box, links, any section) that the live site serves for every unknown URL with HTTP status 404.
 
-**Acceptance evidence:** Create 40 pages in three folders through the editor, rename two slugs, delete one, publish, and open every URL; renamed and deleted pages answer 301 to the chosen targets, and the revision snapshot holds all 40.
+**Acceptance evidence:** Create 40 pages in three folders through the editor, rename two slugs, delete one, publish, and open every URL; renamed and deleted pages answer 301 to the chosen targets, and the revision snapshot holds all 40. Edit the not-found page, publish, request an unknown URL and see the edited page with status 404.
 
-*Status:* partial. Exactly five fixed slugs (home, about, services, hours, contact); no page creation, folders or slug editing.
+*Status:* partial. Exactly five fixed slugs (home, about, services, hours, contact); no page creation, folders, slug editing or editable not-found page.
 
-#### PAGE-002 — Visual section and block editor.
+#### PAGE-002 — Visual section and block editor with layout controls.
 
-Pages are built visually from sections (hero, text, image, gallery, columns, list, testimonials, pricing, FAQ, contact, map, call-to-action) and blocks inside them. An editor adds, moves by drag or keyboard, duplicates and deletes sections and blocks, and edits text in place on the page as it will look. Every layout comes from the site's styles, so pages stay consistent.
+Pages are built visually from sections (hero, text, image, gallery, columns, list, testimonials, pricing, FAQ, contact, map, call-to-action) and blocks inside them. An editor adds, moves by drag or keyboard, duplicates and deletes sections and blocks, and edits text in place on the page as it will look. New sections and blocks start from the site's styles (`STYLE-002`), and the editor then controls the layout of each one: blocks are placed and resized on a 12-column grid (column span, row placement, overlap order) with left, center or right alignment and vertical alignment; a columns section sets its column ratio (for example 1:1, 1:2, 2:1 or 1:1:1) and gap; each section sets its background (a color from the palette or any hex color, an image with a focal point and overlay opacity, or a muted looping background video from the media library or a YouTube or Vimeo link, with a still image shown while it loads, under reduced motion and on data saver), its minimum height (auto, small, medium, large or full screen) and its top and bottom padding; and an image block is cropped to a chosen aspect ratio (original, 1:1, 4:3, 3:2, 16:9 or free) around its focal point (`MEDIA-003`). Every control is reachable by keyboard and every override can be reset to the style default.
 
-**Acceptance evidence:** On a phone and a desktop browser, build a services page by adding, reordering (drag and keyboard), duplicating and deleting sections, edit headings in place, preview, and publish; the live page matches the editor.
+**Acceptance evidence:** Build a services page with a 2:1 columns section, an image block cropped to 4:3, a block spanning columns 2 to 7 and right-aligned, a section with an image background and focal point, a section with a background video and a section with a hex background color and large padding, using drag and keyboard on a phone and a desktop browser; then publish. A browser test reads every block's bounding box in the editor canvas and on the live page at 1440 and 390 wide: each box matches in position and size within 2 CSS pixels, and a screenshot comparison of canvas and live page differs in no more than 0.5% of pixels (editor chrome masked). Under `prefers-reduced-motion` the video section shows its still image.
 
-*Status:* partial. Content is edited as name, description and a pages JSON text field; no visual canvas, sections or blocks.
+*Status:* partial. Content is edited as name, description and a pages JSON text field; no visual canvas, sections, blocks, grid placement, column ratios, section backgrounds, padding or image cropping.
 
 #### PAGE-003 — Navigation menus, header and footer.
 
-The owner edits the main menu (order, labels, dropdown groups, external links, a call-to-action button), a footer with business details and secondary links, and a mobile menu. Hidden pages stay out of menus.
+The owner edits the main menu (order, labels, dropdown groups, external links, a call-to-action button), a footer with business details and secondary links, and a mobile menu. Hidden pages stay out of menus. The header and footer can each show social icons linking to the business's Facebook, Instagram, LinkedIn, X, YouTube, TikTok, Yelp and Google Business Profile pages, entered once in the brand kit (`STYLE-004`), each with an accessible name.
 
-**Acceptance evidence:** Build a menu with two dropdowns, an external link and a Book button, hide one page, publish, and use the menu with a mouse, keyboard and a 390-wide phone.
+**Acceptance evidence:** Build a menu with two dropdowns, an external link and a Book button, hide one page, add Instagram, Facebook and Yelp links to the brand kit with icons in header and footer, publish, and use the menu and icons with a mouse, keyboard and a 390-wide phone; each icon link has an accessible name and opens its profile.
 
-*Status:* partial. Navigation lists the five fixed pages; no menu editing, dropdowns, buttons or footer links.
+*Status:* partial. Navigation lists the five fixed pages; no menu editing, dropdowns, buttons, footer links or social icons.
 
 #### PAGE-004 — Reusable sections and global components.
 
@@ -157,13 +157,13 @@ An editor saves a section as a reusable component (an announcement bar, a contac
 
 *Status:* missing. No components; pages are plain text.
 
-#### PAGE-005 — Device previews and responsive layout control.
+#### PAGE-005 — Device previews and a separate mobile layout.
 
-The editor and preview switch between desktop, tablet and phone widths. An editor can hide a section on phones or reorder columns for small screens without affecting desktop.
+The editor and preview switch between desktop, tablet and phone widths. Pane derives a phone layout automatically by stacking each section's blocks in reading order; the editor can then arrange the phone layout separately (move, resize and reorder blocks on the phone grid, change a section's height and padding, hide a block or section on phones) without changing desktop, and changes on desktop never move an arranged phone block. The editor marks which blocks have phone overrides and can reset them.
 
-**Acceptance evidence:** Preview a draft at 1440, 768 and 390 wide from the editor, hide a section on phones only, and see it absent at 390 and present at 1440 on the live site.
+**Acceptance evidence:** Preview a draft at 1440, 768 and 390 wide from the editor; in the phone view move a block above another, resize a block, reduce a section's padding and hide one section; publish. On the live page the section is absent at 390 and present at 1440, and a browser test reads block bounding boxes in the editor's phone view and on the live page at 390 wide (and the desktop view and live page at 1440) and finds each within 2 CSS pixels in position and size; the desktop layout is unchanged from before the phone edits.
 
-*Status:* partial. One responsive preview; no width switcher or per-device layout settings.
+*Status:* partial. One responsive preview; no width switcher, separate phone layout or per-device settings.
 
 #### PAGE-006 — Autosave, undo and safe concurrent editing.
 
@@ -205,13 +205,29 @@ An editor duplicates a page or starts one from a starter layout (landing page, s
 
 *Status:* missing. No page creation.
 
-#### PAGE-011 — Password-protected and member-only pages.
+#### PAGE-011 — Password-protected and member-only pages and site.
 
-The owner protects a page or folder with a password, or limits it to signed-in site members. Paid membership is sold through Stall or Nectar (`LINK-002`); Pane checks access on every request and never serves the protected content in the public cache.
+The owner protects a page or folder with a password, or limits it to signed-in site members. Paid membership is sold through Stall or Nectar (`LINK-002`); Pane checks access on every request and never serves the protected content in the public cache. Before launch, or during a rebuild, the owner can put the whole site behind a site-wide password or an editable coming-soon page (with an optional signup block, `LINK-003`); the gate answers `noindex`, and the workspace and preview links keep working.
 
-**Acceptance evidence:** Protect a folder with a password and another with member sign-in; signed-out requests see the gate, the right password or member sees the page, and no cached response leaks it.
+**Acceptance evidence:** Protect a folder with a password and another with member sign-in; signed-out requests see the gate, the right password or member sees the page, and no cached response leaks it. Turn on the coming-soon page: every live URL shows it with `noindex`, the site password opens the site, preview still works, and turning it off restores the published site.
 
-*Status:* missing. Every live page is public.
+*Status:* missing. Every live page is public; no site-wide gate or coming-soon page.
+
+#### PAGE-012 — Gallery blocks with grid, slideshow and lightbox.
+
+A gallery block shows images from the media library as a grid (column count and gap set per device), masonry, a slideshow or a carousel, with captions, an optional click-to-enlarge lightbox (keyboard and swipe navigation, focus kept inside, Escape closes) and per-image links. Galleries reuse the image optimization of `MEDIA-002` and lazy-load beyond the first screen.
+
+**Acceptance evidence:** Build one gallery of 24 images in each layout, open the lightbox and move through it by keyboard and swipe, set three columns on desktop and one on phones, and see each layout on the live site at 1440 and 390 wide with no layout shift and a passing accessibility run.
+
+*Status:* missing. No images or galleries.
+
+#### PAGE-013 — Promotional pop-up and announcement bar.
+
+The owner shows a promotional pop-up (newsletter signup, offer or announcement) and an announcement bar. The pop-up opens after a delay, a scroll depth or exit intent on desktop, on chosen pages only, at most once per visitor per chosen number of days (remembered without cookies, in the visitor's browser storage), and never on the first screen of a phone visit in a way that hides content. It is an accessible dialog (focus trapped, Escape and a visible close button), and it can be scheduled (`CMS-005`).
+
+**Acceptance evidence:** Configure a newsletter pop-up after 10 seconds on two pages with a seven-day frequency cap and exit intent on desktop; see it appear on those pages only, not again within seven days, and close by keyboard; on a 390-wide phone see no full-screen interstitial on arrival; schedule an announcement bar and see it appear and expire on time.
+
+*Status:* missing. No pop-ups or announcement bars.
 
 ### Templates and brand styles
 
@@ -241,9 +257,9 @@ Changing template restyles the site and keeps every page, collection item, image
 
 #### STYLE-004 — Logo, favicon and brand kit.
 
-The owner uploads a logo, favicon and social image once; Pane sizes them for the header, browser tab, home-screen icon and social cards (`SEO-006`).
+The owner uploads a logo, favicon and social image once and enters the business's social profile links once; Pane sizes the images for the header, browser tab, home-screen icon and social cards (`SEO-006`), and uses the profile links for social icons (`PAGE-003`) and structured data `sameAs` (`SEO-005`).
 
-**Acceptance evidence:** Upload a logo and favicon and see them in the header, browser tab and a social card preview.
+**Acceptance evidence:** Upload a logo and favicon and see them in the header, browser tab and a social card preview; enter two social profile links and see them in the header icons and the LocalBusiness `sameAs`.
 
 *Status:* missing. The live header shows the business name as text only.
 
@@ -273,13 +289,13 @@ An editor crops, rotates and sets a focal point on an image in the browser; the 
 
 *Status:* missing. No images.
 
-#### MEDIA-004 — Video, map and social embeds.
+#### MEDIA-004 — Video, map, social embeds and Instagram feed.
 
-Blocks embed YouTube and Vimeo videos, a Google Maps location for each business address, and Instagram or Facebook posts. Third-party embeds load only after consent where `PRIV-001` requires it.
+Blocks embed YouTube and Vimeo videos, a Google Maps location for each business address, and Instagram or Facebook posts. An Instagram feed block connects the business's Instagram professional account through Instagram's official API and shows its most recent posts (count and grid or carousel layout chosen by the editor) on the live site, refreshed automatically at least hourly, with images re-served through `MEDIA-002` and each tile linking to its post; the access token is an installation secret refreshed before it expires, and a broken connection shows in `LINK-005` while the block keeps the last posts it fetched. Third-party embeds load only after consent where `PRIV-001` requires it.
 
-**Acceptance evidence:** Add a YouTube video, a Vimeo video, a Google Map and an Instagram post; see each on the live site, see them wait for consent where required, and see the CSP list only their hosts.
+**Acceptance evidence:** Add a YouTube video, a Vimeo video, a Google Map, an Instagram post and a Facebook post; see each on the live site, see them wait for consent where required, and see the CSP list only their hosts. Connect a test Instagram professional account, place a nine-post feed block, publish a new Instagram post and see it on the live site within an hour; revoke the token and see the connection fail in `LINK-005` while the block still shows the last nine posts.
 
-*Status:* missing. No embeds.
+*Status:* missing. No embeds or Instagram feed.
 
 ### Collections and blog
 
@@ -301,9 +317,9 @@ Each collection can have a template page that renders every item at its own clea
 
 #### CMS-003 — Collection lists and filters on any page.
 
-Any page can show a list or grid of collection items, filtered, sorted, limited and optionally featured (for example the three newest projects or testimonials for one service).
+Any page can show a list or grid of collection items, filtered, sorted, limited and optionally featured (for example the three newest projects or testimonials for one service). Date fields support relative filters evaluated at request time in the business's time zone (upcoming only, past only, today, the next N days), so a list of upcoming items stays correct without republishing.
 
-**Acceptance evidence:** Place a filtered, sorted list of three featured projects on the home page and a full filterable list on a projects page; change an item and see both update in the next revision.
+**Acceptance evidence:** Place a filtered, sorted list of three featured projects on the home page and a full filterable list on a projects page; change an item and see both update in the next revision. Place an upcoming-only list of dated items, let the clock pass one item's date in America/Chicago, and see that item leave the list without a new publication.
 
 *Status:* missing. No collections.
 
@@ -323,11 +339,11 @@ Pages, posts, collection items and announcement sections can be scheduled to pub
 
 *Status:* missing. Publication is immediate only.
 
-#### CMS-006 — RSS feed and new-post notifications.
+#### CMS-006 — RSS and podcast feeds and new-post notifications.
 
-The blog and each collection with a template page publish an RSS feed. On publication, subscribers who opted in receive the new post through Mango or Mailchimp (`LINK-003`), and the owner sees the send state.
+The blog and each collection with a template page publish an RSS feed. A blog whose posts carry an audio file can also publish a podcast feed with the Apple Podcasts (iTunes) tags (show title, author, artwork, category, explicit flag, episode duration and enclosure) for Apple Podcasts and Spotify. On publication, subscribers who opted in receive the new post through Mango or Mailchimp (`LINK-003`), whichever the owner connected, and the owner sees the send state.
 
-**Acceptance evidence:** Validate the RSS feed, publish a post and see the Mango or Mailchimp campaign queued with its delivery state in Pane.
+**Acceptance evidence:** Validate the RSS feed and a podcast feed with two audio posts against the W3C feed validator and the Apple Podcasts feed requirements. With Mango connected, publish a post and see the Mango campaign queued with its delivery state in Pane; repeat with a Mailchimp test audience and see the Mailchimp campaign created and sent to the audience with its delivery state in Pane.
 
 *Status:* missing. No feeds or subscribers.
 
@@ -347,15 +363,31 @@ Visitors search the site's pages, posts and collection items; results respect pa
 
 *Status:* missing. No site search.
 
+#### CMS-009 — Events calendar with list and month views.
+
+An events collection holds each event's title, description, image, start and end date and time with its IANA time zone (all-day and multi-day events included), location (address with a map, `MEDIA-004`, or an online link), price in USD, capacity note and a register or buy action. Recurring events (weekly, monthly, custom dates) produce one item per occurrence. An events page shows them as a list or a month calendar (switchable by the visitor, keyboard-navigable), splits upcoming and past automatically at request time in the event's time zone, and each event has its own page (`CMS-002`) with add-to-calendar links (an ICS download and Google Calendar and Outlook links) and Event structured data (`SEO-005`). Calendar and summary blocks (`CMS-003`) put upcoming events on any page. The register or buy action hands off to Dial for a booked session (`LINK-001`), to Stall, a Stripe Payment Link or PayPal for a paid workshop or ticket (`LINK-002`), or to a Pane registration form (`FORM-001`), and a completed registration or purchase counts as a conversion on that event (`STATS-002`).
+
+**Acceptance evidence:** Create a one-off workshop in America/New_York, a weekly class in America/Los_Angeles that crosses a daylight saving change and an all-day event; see the events page in list and month views, each occurrence at the right local time, and an upcoming-events block on the home page. Let one event's end time pass and see it move to past without a new publication. Download the ICS and import it into Google Calendar and Outlook with the right times, pass Google's Rich Results Test for the Event page, and complete a test-mode Stall purchase and a Dial booking from two events, each counted as a conversion on its event.
+
+*Status:* missing. No events or calendar.
+
+#### CMS-010 — Blog comments and moderation.
+
+The owner turns comments on or off for the whole blog, per post and automatically after a chosen number of days. Visitors comment with a name and email (and optionally a website); comments can be threaded one level deep, and posts can show a simple like count kept without cookies. New comments are held for approval by default (or approved automatically for previously approved commenters, as the owner chooses), and a moderation queue lets an owner or comment moderator (`ROLE-001`) approve, mark as spam, delete, edit or reply as the post's author, singly or in bulk. Spam protection reuses the form protection of `FORM-002` (honeypot, rate limits and Turnstile) and holds comments with many links or blocked words. Moderators receive an email and push notification (`MOBILE-002`) for each new comment, or a daily digest. Commenter emails are never shown publicly, comments are included in person-level privacy requests (`PRIV-002`) and in the WXR export (`EXPORT-001`), and imported comments keep their author, date, approval state and threading (`IMPORT-001`, `IMPORT-002`).
+
+**Acceptance evidence:** Enable comments with approval required; post three comments as visitors (one with a filled honeypot, one with six links), see the honeypot comment refused and the link-heavy one held as spam, approve one as a comment moderator from the notification, reply as the post's author and see the threaded reply live; close comments on one post and see the form gone; run a privacy request for a commenter's email and see their comments exported and erased.
+
+*Status:* missing. No comments, moderation queue or moderator notifications.
+
 ### Domains and hosting
 
 #### DOMAIN-001 — Connect a custom domain with apex and www.
 
-The owner connects a domain they own, at the apex and `www`, with one chosen as primary and the other redirecting to it. Pane creates the Cloudflare Workers custom domain in the owner's Cloudflare account, or shows the exact records to add at another DNS host (GoDaddy, Namecheap, Squarespace Domains, Google Cloud DNS, Network Solutions) and checks them.
+The owner connects a domain they own, at the apex and `www`, with one chosen as primary and the other redirecting to it. Pane creates the Cloudflare Workers custom domain in the owner's Cloudflare account, or shows the exact records to add at another DNS host (GoDaddy, Namecheap, Squarespace Domains, Google Cloud DNS, Network Solutions) and checks them. The owner can also connect any number of additional domains (a `.net`, a common misspelling, an old brand) as aliases, each at apex and `www` with HTTPS, that answer 301 to the same path on the primary domain.
 
-**Acceptance evidence:** Connect a test domain held in Cloudflare and one at an external DNS host, see the status move from pending to live, and see `www` redirect to the apex with 301.
+**Acceptance evidence:** Connect a test domain held in Cloudflare and one at an external DNS host, see the status move from pending to live, and see `www` redirect to the apex with 301. Connect two alias domains and see `https://alias/services?x=1` and `http://www.alias/services` each answer 301 to `https://primary/services` with the path and query kept.
 
-*Status:* missing. The business site is served only at `/site` on the Worker origin; no domain connection.
+*Status:* missing. The business site is served only at `/site` on the Worker origin; no domain connection or alias domains.
 
 #### DOMAIN-002 — Managed HTTPS and certificate status.
 
@@ -367,25 +399,33 @@ Every connected domain is served over HTTPS with an automatically issued and ren
 
 #### DOMAIN-003 — DNS status that preserves business email.
 
-Before cutover Pane reads the domain's existing DNS and keeps every record it does not own, especially MX, SPF, DKIM and DMARC for Google Workspace or Microsoft 365, so connecting the website never breaks the business's email. It shows each record as kept, added or needing action.
+Before cutover Pane reads the domain's existing DNS and keeps every record it does not own, especially MX, SPF, DKIM and DMARC for Google Workspace or Microsoft 365, so connecting the website never breaks the business's email. It shows each record as kept, added or needing action. Mail records that point at a registrar's or site builder's email forwarding service are flagged as forwarding, not mailboxes, and handled by `DOMAIN-005` before any nameserver or transfer change.
 
-**Acceptance evidence:** Connect a domain that has Google Workspace MX, SPF and DKIM records; after connection the mail records are unchanged and mail still delivers, and the status screen lists them as kept.
+**Acceptance evidence:** Connect a domain that has Google Workspace MX, SPF and DKIM records; after connection the mail records are unchanged and mail still delivers, and the status screen lists them as kept. Connect a domain whose MX records point at Squarespace email forwarding and see them flagged as forwarding with the `DOMAIN-005` step required.
 
 *Status:* missing. No DNS reading or writing.
 
 #### DOMAIN-004 — Domain registration and transfer guidance.
 
-An owner without a domain is guided to register one in their own Cloudflare Registrar account (at cost, in USD) or keep their current registrar; an owner leaving Squarespace Domains, Wix or WordPress.com gets the transfer or nameserver steps for that registrar. Pane never holds the registration.
+An owner without a domain is guided to register one in their own Cloudflare Registrar account (at cost, in USD) or keep their current registrar; an owner leaving Squarespace Domains, Wix or WordPress.com gets the transfer or nameserver steps for that registrar. Before the owner closes the old account, Pane lists the services billed through it that will stop with it: email forwarding (`DOMAIN-005`), and a Google Workspace subscription bought through Squarespace or Wix, with the steps to move that subscription to direct billing with Google first so mailboxes are not interrupted. Pane never holds the registration.
 
-**Acceptance evidence:** Follow the guided path for a new domain and for a domain at Squarespace Domains, ending with a connected domain in each case.
+**Acceptance evidence:** Follow the guided path for a new domain and for a domain at Squarespace Domains with Squarespace email forwarding and a Google Workspace subscription billed through Squarespace, ending with a connected domain in each case; the Squarespace path shows the forwarding and Workspace billing steps as required before account closure, and marks each done only when the owner confirms it.
 
 *Status:* missing. No domain guidance.
 
+#### DOMAIN-005 — Registrar email forwarding carried over.
+
+Squarespace Domains, Wix, WordPress.com and GoDaddy include free email forwarding (aliases such as `info@` and a catch-all) that stops when the domain's nameservers move or it transfers. Before cutover Pane detects that forwarding from the domain's MX records and the registrar, asks the owner for the alias list and destinations (which the existing records do not reveal), and recreates every alias and the catch-all in Cloudflare Email Routing in the owner's Cloudflare account, including the destination-address verification Cloudflare requires. Pane then sends a test message to each alias and records it as arrived only when its unique token is confirmed at the destination (by the owner's confirmation link or a connected mailbox), and keeps the cutover (`IMPORT-006`) blocked until every alias has passed. After cutover it repeats the test and alerts (`AUTO-004`) if any alias stops delivering.
+
+**Acceptance evidence:** Cut over a test domain using Squarespace email forwarding with a catch-all and two aliases: see the forwarding detected, enter the aliases, see them created in Cloudflare Email Routing with verified destinations, see cutover refused while one alias is unconfirmed, then confirm all three; after cutover, send mail from an outside account to each alias and to an unlisted address and see every message arrive at its destination, and see the post-cutover check pass.
+
+*Status:* missing. No DNS reading, forwarding detection or Email Routing setup.
+
 #### HOST-001 — The business site at the domain root, fast.
 
-The live site is served at the root of its domain (not under `/site`), cached at Cloudflare's edge and purged on publication. Each template meets Core Web Vitals at the 75th percentile on a mid-range phone over 4G: Largest Contentful Paint 2.5 s or less, Interaction to Next Paint 200 ms or less, Cumulative Layout Shift 0.1 or less.
+The live site is served at the root of its domain (not under `/site`), cached at Cloudflare's edge and purged on publication. Each template meets Core Web Vitals at the 75th percentile on a mid-range phone over 4G: Largest Contentful Paint 2.5 s or less, Interaction to Next Paint 200 ms or less, Cumulative Layout Shift 0.1 or less. Before a site has field data, the same budgets are checked in the lab: Lighthouse's default mobile profile (emulated Moto G Power, simulated throttling at 150 ms round trip, 1.6 Mbps down and 4x CPU slowdown) with Largest Contentful Paint 2.5 s or less, Total Blocking Time 200 ms or less and Cumulative Layout Shift 0.1 or less, median of five runs. A publication reaches the edge everywhere within 30 seconds.
 
-**Acceptance evidence:** Publish a populated site on a connected domain, measure with Lighthouse mobile and field data from Vane (`STATS-003`), and see the budgets met; publish a change and see it served within 30 seconds worldwide.
+**Acceptance evidence:** Publish a populated site on a connected domain and run Lighthouse with the stated mobile profile five times on every template's home, collection and blog pages; the medians meet the lab budgets. Where Vane (`STATS-003`) has 28 days of field data, its 75th percentiles meet the field budgets. Publish a change and request the changed page from probes in Virginia, California, Frankfurt, Singapore and Sydney every two seconds: every probe serves the new revision within 30 seconds of the publication.
 
 *Status:* partial. Live pages are served at `/site` with `no-store`, reading D1 on every request; no edge cache or performance budget.
 
@@ -449,7 +489,7 @@ Every page carries a canonical URL on the primary domain; the owner can mark a p
 
 #### SEO-005 — Structured data for local businesses.
 
-Pane emits JSON-LD from the site's business facts and collections: LocalBusiness (name, address, phone, opening hours, service area, price range), Service, Article, FAQPage, BreadcrumbList and Event, validated before publication.
+Pane emits JSON-LD from the site's business facts and collections: LocalBusiness (name, address, phone, opening hours, service area, price range, social profiles as `sameAs`), Service, Article, FAQPage, BreadcrumbList and Event, validated before publication.
 
 **Acceptance evidence:** Publish a site with hours, services, FAQs and posts, and pass Google's Rich Results Test and the Schema.org validator on each page type.
 
@@ -467,7 +507,7 @@ Every page has Open Graph and X card title, description and image, defaulting fr
 
 The owner connects Google Search Console and Bing Webmaster Tools: Pane verifies the domain, submits the sitemap, and shows queries, clicks, impressions and indexing problems per page in the workspace.
 
-**Acceptance evidence:** Connect a test property, see verification succeed and the sitemap submitted, and see per-page clicks and impressions imported for the last 28 days.
+**Acceptance evidence:** Connect a test Google Search Console property and a test Bing Webmaster Tools site for the same domain; for each, see verification succeed and the sitemap submitted, and see per-page clicks and impressions imported for the last 28 days, labelled by search engine.
 
 *Status:* missing. No search console connection.
 
@@ -486,6 +526,14 @@ Before publication the editor lists search problems per page: missing or duplica
 **Acceptance evidence:** Publish a draft with a duplicate title, a broken internal link and a missing alt text, and see each listed with a link to fix it.
 
 *Status:* missing. No search checks.
+
+#### SEO-010 — Multilingual sites with per-language URLs.
+
+The owner adds languages to the site (Spanish first for US businesses). Each page, post, collection item, menu, form label and search title has a version per language, drafted by `AI-002` or written by hand and published only when approved; a missing translation is listed rather than falling back silently. Each language has its own URL prefix (for example `/es/servicios`), pages carry `hreflang` alternates and `x-default`, the sitemap lists every language version, and a language switcher in the header goes to the same page in the other language.
+
+**Acceptance evidence:** Add Spanish to a five-page site, translate three pages and leave two untranslated; see the untranslated pages listed, publish, and open `/es/` pages through the switcher; read reciprocal `hreflang` and `x-default` tags on each translated page, see them in the sitemap, and see a crawl of the live site report no `hreflang` errors (missing return links, invalid language codes or alternates that do not answer 200).
+
+*Status:* missing. No languages or translated pages.
 
 ### Forms and enquiries
 
@@ -509,7 +557,7 @@ Every form is protected by a hidden honeypot, per-form rate limits and Cloudflar
 
 Each form notifies named recipients by email (sent through the installation's mail relay or the business's Google Workspace or Microsoft 365 account) with the sender as Reply-To, so the owner replies from Gmail or Outlook. The workspace shows each notification's provider acceptance separately from the stored enquiry, and an owner can also reply from the inbox.
 
-**Acceptance evidence:** Submit a form and see the notification accepted by the provider edge with Reply-To set; reply from the inbox and see the reply recorded on the enquiry; a failed send is shown as failed, with the enquiry kept.
+**Acceptance evidence:** Submit a form three times, sending its notification once through each of the installation relay, a Google Workspace test account and a Microsoft 365 test account, and see each notification accepted by its provider with Reply-To set; reply from the inbox and see the reply recorded on the enquiry; a failed send is shown as failed, with the enquiry kept.
 
 *Status:* partial. Enquiries appear in the workspace inbox only; no notification email or reply.
 
@@ -549,7 +597,7 @@ Submissions export to CSV per form and date range, and a form can append each su
 
 A form can ask for marketing consent with the owner's wording, record the exact text, time and page, and pass it with the contact to Mango, Mailchimp or Orbit. SMS consent follows TCPA practice: a separate unchecked box naming the business and message frequency. Consent records are kept with the enquiry and travel in exports.
 
-**Acceptance evidence:** Submit a form with email consent ticked and SMS consent unticked; see consent text, time and page recorded and only the email consent reach Mango or Mailchimp.
+**Acceptance evidence:** With Mango connected, submit a form with email consent ticked and SMS consent unticked; see consent text, time and page recorded and only the email consent reach the Mango contact. Repeat with a Mailchimp test audience and see the contact subscribed with marketing permission and the consent text, time and page stored on the Mailchimp member, and the SMS consent absent. Repeat with Orbit and see the consent on the Orbit contact.
 
 *Status:* missing. No consent fields.
 
@@ -557,9 +605,9 @@ A form can ask for marketing consent with the owner's wording, record the exact 
 
 #### LINK-001 — Booking through Dial, Calendly or Acuity.
 
-A booking block embeds Dial (first), Calendly or Acuity Scheduling inline or as a pop-up, passes the page and campaign as booking source, and reports completed bookings back to Pane's conversion goals (`STATS-002`) where the provider sends them.
+A booking block embeds Dial (first), Calendly or Acuity Scheduling (Squarespace Scheduling) inline or as a pop-up, passes the page and campaign as booking source (Calendly UTM parameters, Acuity URL parameters or intake field), and reports completed bookings back to Pane's conversion goals (`STATS-002`): from Dial's booking event, Calendly's `event_scheduled` embed event or webhook, and Acuity's appointment-scheduled webhook. An owner moving from Squarespace pastes their existing Acuity scheduling link or owner ID and keeps their Acuity account, appointment types and calendar.
 
-**Acceptance evidence:** Embed Dial and Calendly on a service page, complete a test booking in each, and see the booking counted as a conversion for that page.
+**Acceptance evidence:** On one service page, embed Dial, Calendly and Acuity Scheduling (a test Acuity account with one appointment type); complete a test booking in each from a UTM-tagged visit, and see each booking counted as a conversion for that page and campaign, with the Acuity booking confirmed by its webhook and carrying the page as its source; cancel the Acuity booking and see the conversion marked cancelled.
 
 *Status:* missing. No booking embeds; the previous contract excluded bookings.
 
@@ -567,15 +615,15 @@ A booking block embeds Dial (first), Calendly or Acuity Scheduling inline or as 
 
 A buy or pay button and a product block hand visitors to Stall (first), a Stripe Payment Link or PayPal. Pane never handles card details; completed payments come back as conversions where the provider reports them. Sales tax is calculated by Stall or Stripe.
 
-**Acceptance evidence:** Add a Stall product block and a Stripe Payment Link button, complete test-mode purchases, and see each counted as a conversion with no card data reaching Pane.
+**Acceptance evidence:** Add a Stall product block, a Stripe Payment Link button and a PayPal button, complete a test-mode (PayPal sandbox) purchase through each, and see each counted as a conversion with no card data reaching Pane.
 
 *Status:* missing. No checkout; the previous contract excluded payments.
 
 #### LINK-003 — Newsletter signup through Mango or Mailchimp.
 
-A signup block adds consenting visitors to an audience in Mango (first) or Mailchimp, with double opt-in when the owner chooses and CAN-SPAM details (business postal address) checked.
+A signup block (inline, in the footer, on the coming-soon page or in a pop-up, `PAGE-011`, `PAGE-013`) adds consenting visitors to an audience in Mango (first) or Mailchimp, with double opt-in when the owner chooses, the signup's consent text, time and page sent with the contact (`FORM-008`), optional tags or groups, and CAN-SPAM details (business postal address) checked. A failed handoff keeps the signup and retries, with its state shown in `LINK-005`.
 
-**Acceptance evidence:** Sign up through the block, confirm the double opt-in email, and see the contact in the Mango or Mailchimp audience with its consent record.
+**Acceptance evidence:** With Mango connected, sign up through the block, confirm the double opt-in email and see the contact in the Mango audience with its consent record. With a Mailchimp test audience connected, sign up with double opt-in on: see the member created as pending, follow Mailchimp's confirmation email, and see the member subscribed with its tag and the consent text, time and page recorded; make the Mailchimp key invalid, sign up again and see the signup kept, retried and shown as failing in the health panel.
 
 *Status:* missing. No newsletter signup.
 
@@ -589,7 +637,7 @@ Form submissions, publications and enquiry status changes are available as signe
 
 #### LINK-005 — Connection health panel.
 
-One panel lists every connected service (domain, mail, CRM, booking, checkout, analytics, search console, Google Business Profile, webhooks) with its state, last success, last failure and how to fix it.
+One panel lists every connected service (domain, mail, email forwarding, CRM, booking, checkout, newsletter, analytics, search consoles, Google Business Profile, Instagram feed, social accounts, webhooks) with its state, last success, last failure and how to fix it.
 
 **Acceptance evidence:** Break a CRM credential and a webhook endpoint and see both shown as failing with their last success and a fix action; repair them and see them recover.
 
@@ -639,13 +687,13 @@ On the first business day of each month the owner receives a short report: visit
 
 ### Team, roles and activity
 
-#### ROLE-001 — Roles for editors, authors and reporting.
+#### ROLE-001 — Roles for editors, authors, moderators and reporting.
 
-Beyond owner, admin and member, the owner assigns editor (edits pages and collections, cannot publish), author (writes and submits own posts only), inbox (reads and replies to enquiries) and reporting (reads analytics) roles. Every role is enforced on the server (`ACCESS-001`).
+Beyond owner, admin and member, the owner assigns editor (edits pages and collections, cannot publish), author (writes and submits own posts only), comment moderator (approves, marks spam, deletes and replies to blog comments and receives comment notifications, `CMS-010`), inbox (reads and replies to enquiries) and reporting (reads analytics) roles. A person can hold several roles. Every role is enforced on the server (`ACCESS-001`).
 
-**Acceptance evidence:** Invite one person per role and exercise every route as each; each sees and does only what its role allows.
+**Acceptance evidence:** Invite one person per role and exercise every route as each; each sees and does only what its role allows, and only the owner, admins and comment moderators can act on the comment queue or receive comment notifications.
 
-*Status:* partial. Owner, admin and member only; no editor, author, inbox or reporting role.
+*Status:* partial. Owner, admin and member only; no editor, author, comment moderator, inbox or reporting role.
 
 #### ROLE-002 — Review requests and publish delegation.
 
@@ -675,17 +723,17 @@ One log records every edit, publication, rollback, setting change, connection ch
 
 #### IMPORT-001 — WordPress.com and WordPress import.
 
-Pane imports a WordPress export (WXR XML) from WordPress.com or self-hosted WordPress: pages, posts, categories, tags, authors, featured images and media files fetched from their references, menus where present, and every old URL mapped for redirects. Shortcodes and plugin blocks it cannot render are listed, not dropped silently.
+Pane imports a WordPress export (WXR XML) from WordPress.com or self-hosted WordPress: pages, posts, categories, tags, authors, featured images and media files fetched from their references, menus where present, comments (approved, pending and spam, with author name, email, URL, date and reply threading) into `CMS-010`, and every old URL mapped for redirects. Shortcodes and plugin blocks it cannot render are listed, not dropped silently.
 
-**Acceptance evidence:** Import a real WordPress.com export with 100 posts and media, review the plan and its exceptions, apply as an unpublished draft, and open every old URL on the new site through its redirect.
+**Acceptance evidence:** Import a real WordPress.com export with 100 posts, media and at least 50 comments including threaded replies and pending ones, review the plan and its exceptions (including the comment counts by state), apply as an unpublished draft, see every comment on its post with the same threading and state, and open every old URL on the new site through its redirect.
 
 *Status:* missing. Only the documented static-site JSON imports (`MOVEIN-001`).
 
 #### IMPORT-002 — Squarespace import.
 
-Pane imports a Squarespace site from its WordPress-format export plus a crawl of the published site for content the export omits (most page layouts, galleries, products and events are listed for review), keeping the URL map.
+Pane imports a Squarespace site from its WordPress-format export plus a crawl of the published site for what the export omits, keeping the URL map. Blog posts arrive with their comments (`CMS-010`). Calendar (events) pages are imported into the events collection (`CMS-009`) with each event's title, description, image, start and end time in the site's time zone, location and its register or buy link, read from the calendar page's published event data, and old event URLs redirect to the new event pages. Gallery pages and gallery sections are rebuilt as gallery blocks (`PAGE-012`) with their images and captions, and other page layouts are rebuilt as sections from the crawl. Products are written to a Stall product import file (or listed with their Stripe or PayPal replacements) because checkout belongs to Stall (`LINK-002`), and scheduling blocks keep their Acuity link (`LINK-001`). Whatever still cannot map is listed in the report (`IMPORT-005`), never left as an unexplained to-do.
 
-**Acceptance evidence:** Import a test Squarespace site's export and crawl, review the listed omissions, apply, and check pages, blog posts, images and redirects.
+**Acceptance evidence:** Import a test Squarespace site with a blog with comments, a calendar page of 12 events (past and upcoming, one with a product block), a gallery page and a scheduling block; review the report, apply, and check pages, blog posts and their comments, images, galleries, every event in the events collection with correct local times and its old URL redirecting to it, the upcoming split, the scheduling block's Acuity link and the product handed to a Stall import file.
 
 *Status:* missing. No Squarespace import.
 
@@ -701,25 +749,33 @@ Because Wix offers no full site export, Pane imports a Wix site by crawling its 
 
 Pane imports Webflow and Framer CMS CSV exports (`CMS-007`) and their published pages by crawl, and Durable sites by crawl, with the same review, exceptions and URL map.
 
-**Acceptance evidence:** Import a Webflow site with two collections and a Framer site, review exceptions, apply, and check items, pages and redirects.
+**Acceptance evidence:** Import a Webflow site with two collections, a Framer site with one collection and a published Durable site by crawl, review exceptions for each, apply, and check items, pages and redirects for all three.
 
 *Status:* missing. No Webflow, Framer or Durable import.
 
 #### IMPORT-005 — Migration report and URL map.
 
-Every import shows, before anything is written, a report of what will map where, what will not (with reasons), every old URL and its new target, media that could not be fetched, and each form's old destination. Apply needs the report's fingerprint; undo works while the draft is unpublished (`MOVEIN-001`).
+Every import shows, before anything is written, a report of what will map where, what will not (with reasons), counts per content type (pages, posts, comments by state, collection items, events, galleries, media, products handed to Stall), every old URL and its new target, media that could not be fetched, and each form's old destination. Apply needs the report's fingerprint; undo works while the draft is unpublished (`MOVEIN-001`).
 
-**Acceptance evidence:** Run an import with unsupported content and a broken image link; read the report, apply with its fingerprint, and undo.
+**Acceptance evidence:** Run an import with unsupported content, comments and a broken image link; read the report with its per-type counts, apply with its fingerprint, see the applied counts equal the report's, and undo.
 
 *Status:* partial. A fingerprinted plan exists for the static JSON only; no URL map, media or form-destination report.
 
 #### IMPORT-006 — Verified cutover with the old site kept.
 
-Cutover is a checked step: Pane confirms the new site's pages, redirects, forms and lead routes work on a preview hostname, then switches the domain (`DOMAIN-001`) while the old site stays reachable until the owner closes it, and rolls the DNS back in one action if needed.
+Cutover is a checked step: Pane confirms the new site's pages, redirects, forms and lead routes work on a preview hostname, that mailbox records are kept (`DOMAIN-003`) and that every registrar email forwarding alias has been recreated and proven (`DOMAIN-005`), then switches the domain (`DOMAIN-001`) while the old site stays reachable until the owner closes it, and rolls the DNS back in one action if needed.
 
-**Acceptance evidence:** Cut a test domain over from an old host, see pre-cutover checks pass, then roll back and forward again with mail unaffected.
+**Acceptance evidence:** Cut a test domain with Google Workspace MX records and Squarespace email forwarding over from an old host: see cutover refused until every forwarding alias is proven, see pre-cutover checks pass, then roll back and forward again with mailbox mail and every forwarded alias still delivering.
 
 *Status:* missing. No cutover.
+
+#### IMPORT-007 — Enquiry and subscriber history import.
+
+An owner moving in brings their history: past form submissions exported from Squarespace (form storage and contacts), Wix (form submissions CSV) or WordPress.com (form responses CSV) import into the inbox with their original dates, form and fields, marked as imported and not re-notified; and the old platform's newsletter subscriber list imports into Mango or Mailchimp (`LINK-003`) with each subscriber's original consent date and source carried and unsubscribed or bounced contacts kept suppressed, never re-subscribed.
+
+**Acceptance evidence:** Import a Squarespace form-submissions CSV of 200 rows and a subscriber list with 20 unsubscribed contacts; see the 200 enquiries in the inbox with original dates and no notifications sent, and see the subscribers in Mango and in a Mailchimp test audience with consent dates and source kept and the 20 unsubscribed contacts suppressed.
+
+*Status:* missing. Only the static-site JSON move-in exists; no submission or subscriber import.
 
 ### Portability, privacy and US norms
 
@@ -741,7 +797,7 @@ Pane's own counting needs no consent. When the owner adds GA4, a pixel or a thir
 
 #### PRIV-002 — Person-level privacy requests.
 
-For a CCPA or similar request, the owner finds everything stored about one email address (enquiries, consents, files, subscriber records and the CRM deliveries Pane made), exports it for the person and erases it in one action, with the erasure fenced against old backups (`ERASE-001`) and the downstream services listed for follow-up.
+For a CCPA or similar request, the owner finds everything stored about one email address (enquiries, consents, files, blog comments, subscriber records and the CRM deliveries Pane made), exports it for the person and erases it in one action, with the erasure fenced against old backups (`ERASE-001`) and the downstream services listed for follow-up.
 
 **Acceptance evidence:** Submit three forms as one person, run a request by email, export their data, erase it, and see every record gone, the fence in place and the CRM deliveries listed.
 
@@ -795,7 +851,7 @@ A native owner app sends push notifications for new enquiries, review requests a
 
 The owner sets rules on form submission: acknowledge the sender, notify people, create a follow-up task, post to Nook, Slack or Microsoft Teams, route to a CRM or tag the enquiry, with conditions on form and field values.
 
-**Acceptance evidence:** Create a rule that posts quote requests over $5,000 to a Nook channel and tags them; submit two forms and see only the large one posted and tagged.
+**Acceptance evidence:** Create a rule that posts quote requests over $5,000 to a Nook channel, a Slack test channel and a Microsoft Teams test channel and tags them; submit two forms and see only the large one posted to all three and tagged.
 
 *Status:* missing. No automations.
 
@@ -811,7 +867,7 @@ Time-based rules run on the owner's schedule in their US time zone: holiday-hour
 
 On publication a post can be shared to the business's connected Facebook Page, Instagram, LinkedIn Page or X account with owner-approved text.
 
-**Acceptance evidence:** Connect a test Facebook Page and LinkedIn Page, publish a post with sharing on, and see each share created with its link.
+**Acceptance evidence:** Connect a test Facebook Page, Instagram professional account, LinkedIn Page and X account, publish a post with sharing on, and see each of the four shares created with its link (the Instagram share with the post's featured image).
 
 *Status:* missing. No social connections.
 
@@ -963,7 +1019,7 @@ Agents run the website for the owner, beyond what Framer, Webflow and Durable sh
 
 - **Card processing, money movement and a full store.** Pane hands checkout to Stall, Stripe Payment Links or PayPal (`LINK-002`) and never holds card details or funds. Sales tax, refunds and inventory live there.
 - **Domain registration, certificate authority and the delivery network.** The owner registers domains in their own Cloudflare Registrar account or keeps their registrar; Cloudflare issues certificates and serves traffic in the owner's account (`DOMAIN-001` to `DOMAIN-004`). Pane operates them for the owner and never holds a registration.
-- **Business email hosting.** Mailboxes stay with Google Workspace or Microsoft 365; Pane preserves their DNS records (`DOMAIN-003`) and sends form mail through the installation relay or the owner's account.
+- **Business email hosting.** Mailboxes stay with Google Workspace or Microsoft 365; Pane preserves their DNS records (`DOMAIN-003`), recreates registrar email forwarding in the owner's Cloudflare Email Routing (`DOMAIN-005`) and sends form mail through the installation relay or the owner's account.
 - **Rebuilding neighbouring products.** CRM, booking, store, memberships billing, email marketing, help desk, surveys, chat and monitoring stay with the sibling or incumbent named in [Neighbouring products stay separate](#neighbouring-products-stay-separate), each with its connection status visible.
 - **WordPress plugins and lossless import of every site.** Pane does not run WordPress plugins or themes. Imports bring content, media and URLs with every exception listed (`IMPORT-005`); a site that depends on a specialist plugin keeps that service through an embed, a connection or WordPress hosting.
 - **Rankings, legal compliance and invented claims.** Pane provides search controls and agents that report evidence, not guaranteed rankings. Policy starters and accessibility checks support, but do not replace, the owner's own legal review. Pane never publishes invented reviews, credentials, staff or prices.
@@ -983,10 +1039,10 @@ How the owner-approved scope for Pane (16 October 2026) maps to clauses:
 
 | Scope item | Clauses |
 | --- | --- |
-| Remove the five-page ceiling: a visual section/block editor with unlimited pages, navigation, responsive templates and site-wide brand styles | `PAGE-001` to `PAGE-011`, `STYLE-001` to `STYLE-004` |
-| Custom domain connection with apex routing, SSL and clear DNS status, plus fast global hosting | `DOMAIN-001` to `DOMAIN-004`, `HOST-001` to `HOST-004` |
-| CMS collections and a blog (services, team, articles, testimonials, projects) with scheduling and RSS | `CMS-001` to `CMS-008` |
-| SEO toolkit: titles, descriptions, clean URLs, sitemap, redirects, canonical and structured data, social cards and Search Console | `SEO-001` to `SEO-009`, `PAGE-001` |
+| Remove the five-page ceiling: a visual section/block editor with unlimited pages, navigation, responsive templates and site-wide brand styles | `PAGE-001` to `PAGE-013`, `STYLE-001` to `STYLE-004` |
+| Custom domain connection with apex routing, SSL and clear DNS status, plus fast global hosting | `DOMAIN-001` to `DOMAIN-005`, `HOST-001` to `HOST-004` |
+| CMS collections and a blog (services, team, articles, testimonials, projects) with scheduling and RSS | `CMS-001` to `CMS-010` |
+| SEO toolkit: titles, descriptions, clean URLs, sitemap, redirects, canonical and structured data, social cards and Search Console | `SEO-001` to `SEO-010`, `PAGE-001` |
 | Forms with spam protection that route leads to Orbit/HubSpot and email, plus Dial booking, Stall checkout and Mango signup embeds; analytics via Vane | `FORM-001` to `FORM-008`, `LINK-001` to `LINK-005`, `STATS-001` to `STATS-004` |
 | Media library with image optimization, and an AI site builder that drafts the site from business facts | `MEDIA-001` to `MEDIA-004`, `AI-001` to `AI-004` |
 | Push further: an agent interviews the owner and builds the site from verified facts, then watches for outdated services, broken forms, lost search traffic and unanswered enquiries, proposing changes through preview and approval and measuring the leads and bookings they produce | `AGENT-001` to `AGENT-008` |
@@ -1004,8 +1060,8 @@ Judged from the code and tests at commit `80f6943012240b0240eafd9e5763b992bb3275
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 11 | 5 | 0 | 16 |
-| Target and push further | 0 | 23 | 73 | 96 |
-| All | 11 | 28 | 73 | 112 |
+| Target and push further | 0 | 23 | 80 | 103 |
+| All | 11 | 28 | 80 | 119 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -1025,17 +1081,19 @@ Judged from the code and tests at commit `80f6943012240b0240eafd9e5763b992bb3275
 | `RUNSITE-001` | Public run site and documentation | published | done | `tests/site.test.mjs`; `docs/site.json` |  |
 | `LOBBY-001` | Shared Lobby, workspace and theme | published | partial | `src/server.ts`; `src/pane/views.ts`; `scripts/browser-journey.mjs` | The browser journey covers sign-in, setup and `/app` but no Pane test opens the installed `/` Lobby. |
 | `PRESENT-001` | Labelled previews and unbranded live pages | published | partial | `src/pane/public-view.ts`; `src/pane/views.ts` | Live pages append the Pane name to the document title. |
-| `PAGE-001` | Unlimited pages, folders and clean URLs | target | partial | `src/pane/content.ts` | Exactly five fixed slugs (home, about, services, hours, contact); no page creation, folders or slug editing. |
-| `PAGE-002` | Visual section and block editor | target | partial | `src/pane/views.ts`; `src/pane/handler.ts` | Content is edited as name, description and a pages JSON text field; no visual canvas, sections or blocks. |
-| `PAGE-003` | Navigation menus, header and footer | target | partial | `src/pane/public-view.ts` | Navigation lists the five fixed pages; no menu editing, dropdowns, buttons or footer links. |
+| `PAGE-001` | Unlimited pages, folders and clean URLs | target | partial | `src/pane/content.ts` | Exactly five fixed slugs (home, about, services, hours, contact); no page creation, folders, slug editing or editable not-found page. |
+| `PAGE-002` | Visual section and block editor with layout controls | target | partial | `src/pane/views.ts`; `src/pane/handler.ts` | Content is edited as name, description and a pages JSON text field; no visual canvas, sections, blocks, grid placement, column ratios, section backgrounds, padding or image cropping. |
+| `PAGE-003` | Navigation menus, header and footer | target | partial | `src/pane/public-view.ts` | Navigation lists the five fixed pages; no menu editing, dropdowns, buttons, footer links or social icons. |
 | `PAGE-004` | Reusable sections and global components | target | missing |  | No components; pages are plain text. |
-| `PAGE-005` | Device previews and responsive layout control | target | partial | `src/pane/handler.ts`; `src/pane/public-view.ts` | One responsive preview; no width switcher or per-device layout settings. |
+| `PAGE-005` | Device previews and a separate mobile layout | target | partial | `src/pane/handler.ts`; `src/pane/public-view.ts` | One responsive preview; no width switcher, separate phone layout or per-device settings. |
 | `PAGE-006` | Autosave, undo and safe concurrent editing | target | missing |  | Drafts are created only by an explicit whole-site prepare; no autosave, undo or conflict detection. |
 | `PAGE-007` | Page status and review requests | target | partial | `src/pane/content.ts`; `src/pane/handler.ts` | Whole-site drafts and owner approval only; no per-page status or review request. |
 | `PAGE-008` | Custom code, embeds and CSS | target | missing |  | No custom code or embed support; the public CSP allows only same-origin scripts. |
 | `PAGE-009` | Accessible output by default | target | partial | `src/pane/views.ts`; `src/pane/public-view.ts`; `scripts/browser-journey.mjs` | Skip link and labelled contact fields exist; no alt-text, heading or contrast checks and no automated accessibility test. |
 | `PAGE-010` | Duplicate pages and starter layouts | target | missing |  | No page creation. |
-| `PAGE-011` | Password-protected and member-only pages | target | missing |  | Every live page is public. |
+| `PAGE-011` | Password-protected and member-only pages and site | target | missing |  | Every live page is public; no site-wide gate or coming-soon page. |
+| `PAGE-012` | Gallery blocks with grid, slideshow and lightbox | target | missing |  | No images or galleries. |
+| `PAGE-013` | Promotional pop-up and announcement bar | target | missing |  | No pop-ups or announcement bars. |
 | `STYLE-001` | Responsive templates for US local businesses | target | partial | `public/pane.css`; `src/pane/public-view.ts` | One fixed responsive layout; no template catalogue. |
 | `STYLE-002` | Site-wide brand styles | target | partial | `public/pane.css` | Styles are fixed in source CSS; no owner style controls. |
 | `STYLE-003` | Switch templates without rebuilding content | target | missing |  | No templates to switch between. |
@@ -1043,19 +1101,22 @@ Judged from the code and tests at commit `80f6943012240b0240eafd9e5763b992bb3275
 | `MEDIA-001` | Media library with alt text and usage | target | missing |  | No uploads or media storage. |
 | `MEDIA-002` | Responsive image optimization | target | missing |  | No images. |
 | `MEDIA-003` | Basic image editing | target | missing |  | No images. |
-| `MEDIA-004` | Video, map and social embeds | target | missing |  | No embeds. |
+| `MEDIA-004` | Video, map, social embeds and Instagram feed | target | missing |  | No embeds or Instagram feed. |
 | `CMS-001` | Structured collections with typed fields | target | missing |  | No collections. |
 | `CMS-002` | Collection template pages with item URLs | target | missing |  | No collections. |
 | `CMS-003` | Collection lists and filters on any page | target | missing |  | No collections. |
 | `CMS-004` | Blog with categories, tags and authors | target | missing |  | No blog. |
 | `CMS-005` | Scheduled publishing and expiry | target | missing |  | Publication is immediate only. |
-| `CMS-006` | RSS feed and new-post notifications | target | missing |  | No feeds or subscribers. |
+| `CMS-006` | RSS and podcast feeds and new-post notifications | target | missing |  | No feeds or subscribers. |
 | `CMS-007` | Collection CSV import and export | target | missing |  | Only the static-site JSON move-in exists (`MOVEIN-001`). |
 | `CMS-008` | Site search | target | missing |  | No site search. |
-| `DOMAIN-001` | Connect a custom domain with apex and www | target | missing |  | The business site is served only at `/site` on the Worker origin; no domain connection. |
+| `CMS-009` | Events calendar with list and month views | target | missing |  | No events or calendar. |
+| `CMS-010` | Blog comments and moderation | target | missing |  | No comments, moderation queue or moderator notifications. |
+| `DOMAIN-001` | Connect a custom domain with apex and www | target | missing |  | The business site is served only at `/site` on the Worker origin; no domain connection or alias domains. |
 | `DOMAIN-002` | Managed HTTPS and certificate status | target | missing |  | No domain or certificate handling beyond the Worker's default hostname. |
 | `DOMAIN-003` | DNS status that preserves business email | target | missing |  | No DNS reading or writing. |
 | `DOMAIN-004` | Domain registration and transfer guidance | target | missing |  | No domain guidance. |
+| `DOMAIN-005` | Registrar email forwarding carried over | target | missing |  | No DNS reading, forwarding detection or Email Routing setup. |
 | `HOST-001` | The business site at the domain root, fast | target | partial | `src/pane/public.ts` | Live pages are served at `/site` with `no-store`, reading D1 on every request; no edge cache or performance budget. |
 | `HOST-002` | The live site survives an admin outage | target | missing |  | Every public request reads D1. |
 | `HOST-003` | Updates without plugin maintenance | target | missing |  | No in-product update channel. |
@@ -1069,6 +1130,7 @@ Judged from the code and tests at commit `80f6943012240b0240eafd9e5763b992bb3275
 | `SEO-007` | Google Search Console and Bing Webmaster Tools | target | missing |  | No search console connection. |
 | `SEO-008` | Google Business Profile consistency | target | missing |  | No Google Business Profile connection. |
 | `SEO-009` | Per-page search checks | target | missing |  | No search checks. |
+| `SEO-010` | Multilingual sites with per-language URLs | target | missing |  | No languages or translated pages. |
 | `FORM-001` | Form builder with multiple forms | target | partial | `src/pane/public-view.ts`; `src/pane/public.ts` | One fixed contact form (name, email, message); no form builder or file upload. |
 | `FORM-002` | Spam protection | target | partial | `src/pane/public.ts`; `src/pane/public-view.ts` | Honeypot and per-minute limits exist but no Turnstile, no spam review and no test that a filled honeypot or a burst is refused. |
 | `FORM-003` | Enquiry email to named recipients and reply | target | partial | `src/pane/views.ts`; `src/pane/data.ts` | Enquiries appear in the workspace inbox only; no notification email or reply. |
@@ -1087,7 +1149,7 @@ Judged from the code and tests at commit `80f6943012240b0240eafd9e5763b992bb3275
 | `STATS-002` | Conversion goals and click insights | target | missing |  | No goals. |
 | `STATS-003` | Vane and Google Analytics 4 with consent | target | missing |  | No analytics connections. |
 | `STATS-004` | Monthly owner report | target | missing |  | No reports. |
-| `ROLE-001` | Roles for editors, authors and reporting | target | partial | `src/pane/handler.ts`; `tests/pane.test.mjs` | Owner, admin and member only; no editor, author, inbox or reporting role. |
+| `ROLE-001` | Roles for editors, authors, moderators and reporting | target | partial | `src/pane/handler.ts`; `tests/pane.test.mjs` | Owner, admin and member only; no editor, author, comment moderator, inbox or reporting role. |
 | `ROLE-002` | Review requests and publish delegation | target | missing |  | Only the owner can publish. |
 | `ROLE-003` | Designer-to-client handover | target | missing |  | Ownership cannot be transferred in the product. |
 | `AUDIT-001` | Activity log of every change | target | partial | `src/pane/data.ts`; `src/pane/content.ts` | Only publication and rollback approvals are recorded. |
@@ -1097,6 +1159,7 @@ Judged from the code and tests at commit `80f6943012240b0240eafd9e5763b992bb3275
 | `IMPORT-004` | Webflow, Framer and Durable import | target | missing |  | No Webflow, Framer or Durable import. |
 | `IMPORT-005` | Migration report and URL map | target | partial | `src/pane/imports.ts`; `tests/pane.test.mjs` | A fingerprinted plan exists for the static JSON only; no URL map, media or form-destination report. |
 | `IMPORT-006` | Verified cutover with the old site kept | target | missing |  | No cutover. |
+| `IMPORT-007` | Enquiry and subscriber history import | target | missing |  | Only the static-site JSON move-in exists; no submission or subscriber import. |
 | `EXPORT-001` | Open-format site export | target | partial | `scripts/pane-policy.mjs` | Only Pane's own installation archive exports. |
 | `PRIV-001` | Consent for analytics and third-party embeds | target | partial | `src/pane/public.ts`; `tests/pane.test.mjs` | DNT and GPC are honored for Pane's own counts; there is no consent banner because there are no third-party embeds yet. |
 | `PRIV-002` | Person-level privacy requests | target | partial | `src/pane/handler.ts`; `tests/pane.test.mjs` | One message can be erased by ID; no lookup, export or erasure by person. |
