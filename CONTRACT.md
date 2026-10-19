@@ -873,7 +873,7 @@ The workspace and live site default to US English, the business's US time zone w
 
 **Acceptance evidence:** Set the time zone to America/Denver, and see workspace dates, scheduled times and opening hours in local US format with USD prices.
 
-*Status:* missing. Workspace dates are formatted en-AU in UTC; there is no time zone setting.
+*Status:* missing. Workspace dates use en-US in the viewer’s time zone, with UTC before browser formatting; there is no business time zone setting.
 
 ### Owner mobile
 
@@ -1219,7 +1219,7 @@ Judged from the code and tests at commit `80f6943012240b0240eafd9e5763b992bb3275
 | `PRIV-002` | Person-level privacy requests | target | partial | `src/pane/handler.ts`; `tests/pane.test.mjs` | One message can be erased by ID; no lookup, export or erasure by person. |
 | `PRIV-003` | Policy and accessibility statement starters | target | missing |  | No policy pages. |
 | `PRIV-004` | Security headers on every page | target | partial | `src/pane/views.ts` | Headers are set on every document but no test asserts them. |
-| `LOCALE-001` | US defaults | target | missing |  | Workspace dates are formatted en-AU in UTC; there is no time zone setting. |
+| `LOCALE-001` | US defaults | target | missing |  | Workspace dates use en-US in the viewer’s time zone, with UTC before browser formatting; there is no business time zone setting. |
 | `MOBILE-001` | Responsive owner workspace on a phone | target | partial | `scripts/browser-journey.mjs` | The current workspace is checked for overflow at 390 wide; the target editor, inbox replies and approvals on a phone are not built. |
 | `MOBILE-002` | Native iOS and Android owner app | target | missing |  | No native app. |
 | `AUTO-001` | Form-triggered automations | target | missing |  | No automations. |
