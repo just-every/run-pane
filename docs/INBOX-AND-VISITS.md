@@ -31,7 +31,8 @@ See [Back up and restore](BACKUP-RESTORE.md#restore-with-erasure-history).
 
 ## Understand visit totals
 
-**Visits by page** on **Sites** shows recorded views by page. Pane records aggregate counts per page
+**Visits by page** on **Sites** shows recorded views for each page, by its title
+and `/site` path, in the same order as the page bricks. Pane records aggregate counts per page
 and day, without cookies or visitor IDs. It does not store an IP address, user
 agent or referrer with a visit. Requests with Do Not Track or Global Privacy
 Control enabled are excluded. Draft previews are excluded too.

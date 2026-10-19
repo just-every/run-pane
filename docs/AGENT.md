@@ -40,7 +40,7 @@ authorization and recorded approval paths as the app:
 | `import-apply` | `--input FILE --fingerprint HASH` | Owner or admin |
 | `import-undo` | `--job ID` | Owner or admin; the job's original operator |
 | `publish` | `--revision ID` | Owner |
-| `rollback` | `--revision ID` | Owner |
+| `rollback` | `--revision ID` (a revision that was live before) | Owner |
 | `erase` | `--id ID` | Owner |
 
 Use publication commands only with the owner's explicit approval of the exact

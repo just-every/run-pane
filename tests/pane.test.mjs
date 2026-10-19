@@ -61,6 +61,9 @@ test('later change and rollback restore the exact immutable site with recorded d
  assert.equal((await json('/api/pane/rollback',{revision:first.id})).status,200)
  assert.ok(!(await (await f.request('/site')).text()).includes('Open late on Fridays.'))
  assert.equal((await data()).approvals.filter(a=>a.action==='rollback').length,1)
+ const never=await (await json('/api/pane/prepare',{site:{...fixture,name:'Riverbend never live'}})).json()
+ const refused=await json('/api/pane/rollback',{revision:never.id});assert.equal(refused.status,400);assert.match((await refused.json()).error,/Approve and publish/)
+ assert.equal((await data()).live.id,first.id)
 })
 test('the editor prepares one page over the revision it opened, and every screen opens',async()=>{
  const form=(path,body,cookie=admin)=>f.request(path,{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded',Cookie:cookie},body:new URLSearchParams(body),redirect:'manual'})

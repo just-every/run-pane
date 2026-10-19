@@ -48,6 +48,8 @@
 .pane .visit-list .tile { width: 30px; height: 30px; border-radius: 8px; }
 .pane .visit-list .tile svg { width: 18px; height: 18px; }
 .pane .visit-list strong { font-variant-numeric: tabular-nums; }
+.pane .visit-page { display: grid; min-width: 0; line-height: 1.3; }
+.pane .visit-page small { color: var(--pn-muted); font-size: 12px; }
 .pane .visit-total { margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--pn-line); font-weight: 700; }
 
 /* Inquiries: one stream of messages beside a small summary */
@@ -58,6 +60,7 @@
 .pane .message-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; margin-bottom: 6px; }
 .pane .message-head h2 { font-size: 16px; font-weight: 800; }
 .pane .message-meta { color: var(--pn-muted); font-size: 13px; overflow-wrap: anywhere; }
+.pane .message-meta time { white-space: nowrap; }
 .rer-themed .pane .plain-text { color: var(--pn-ink); font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .pane .erase { margin-top: 10px; }
 .pane .erase summary { color: var(--pn-muted); font-size: 13px; font-weight: 600; }

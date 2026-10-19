@@ -40,6 +40,7 @@ export async function prepare(db: D1Database, actor: string, value: unknown): Pr
 export async function publish(db:D1Database,actor:string,id:string,action:'publish'|'rollback') {
  const row = await db.prepare('SELECT * FROM pane_revisions WHERE id=?').bind(id).first()
  if (!row) throw new Error('Revision not found.')
+ if (action === 'rollback' && !await db.prepare('SELECT 1 FROM pane_approvals WHERE revision=? LIMIT 1').bind(id).first()) throw new Error('Only a revision that was live before can be restored. Approve and publish this draft instead.')
  await db.batch(approvalStatements(db, { id: crypto.randomUUID(), action, revision: id, actor, created_at: new Date().toISOString() }))
  return revision(row)
 }

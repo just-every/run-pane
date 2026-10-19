@@ -1,7 +1,8 @@
 /* Pages: the phone-first editor (owner pick A). Measures follow the 12ui
    conversion of the picked image: 60 px top bar, compact page bar, a 360 px phone,
    a 380 px card stack hanging off the selected block, the desktop preview set
-   back below it and the brick dock along the bottom. */
+   back below it and the brick dock along the bottom. From 1240 px wide the editor
+   is one screen (.canvas-fit): the phone runs from the page bar to the dock. */
 .pane .screen-pages { display: flex; flex-direction: column; min-height: calc(100dvh - 60px); }
 .pane .pagebar { display: flex; align-items: center; gap: 16px; min-height: 64px; padding: 10px 24px; border-bottom: 1px solid var(--pn-tint-line); background: var(--pn-white); }
 .pane .pagebar-page { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 14px; min-width: 0; }
@@ -49,7 +50,7 @@
 .pane .block-row.is-removed { border-style: dashed; }
 .pane .block-copy { flex: 1; min-width: 0; color: var(--pn-muted); font-size: 12px; line-height: 1.4; }
 .pane .block-copy strong { color: var(--pn-ink); font-size: 13px; font-weight: 700; }
-.pane .block-copy small { display: block; overflow: hidden; color: var(--pn-muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.pane .block-copy small { display: -webkit-box; overflow: hidden; color: var(--pn-muted); font-size: 12px; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .pane .phone-home { display: block; width: 128px; height: 5px; margin: 18px auto 0; border-radius: 4px; background: var(--pn-plum); }
 .pane .phone-empty { display: grid; justify-items: center; gap: 10px; margin-top: 70px; padding: 0 28px; text-align: center; }
 .pane .phone-empty h2 { font-size: 28px; font-weight: 900; letter-spacing: var(--pn-track); word-spacing: var(--pn-words); }
@@ -59,16 +60,20 @@
 
 .pane .side { display: grid; gap: 14px; min-width: 0; }
 .pane .cardstack { position: relative; display: grid; gap: 14px; width: min(100%, 380px); margin-top: 20px; }
-.rer-themed .pane .cardstack textarea { max-height: 7lh; }
+.rer-themed .pane .cardstack textarea { min-height: calc(3lh + 18px); max-height: 10lh; }
+.rer-themed .pane .cardstack textarea:not(:focus) { max-height: calc(3lh + 18px); }
+.pane .edit-card:not(:focus-within) .in-use { display: none; }
 .pane .site-fields { display: grid; gap: 10px; margin: 0; }
 .pane .site-fields summary { color: var(--pn-fuchsia-deep); font-size: 13px; font-weight: 700; }
 .pane .site-fields[open] summary { margin-bottom: 10px; }
 .pane .site-fields > label + label, .pane .site-fields > textarea { margin-top: 0; }
-.pane .stage:not(.stage-start) .cardstack::before { content: ''; position: absolute; top: 34px; left: -34px; width: 34px; height: 2px; background: var(--pn-action); }
-.pane .stage:not(.stage-start) .cardstack::after { content: ''; position: absolute; top: 30px; left: -38px; width: 10px; height: 10px; border-radius: 50%; background: var(--pn-action); box-shadow: 0 0 0 3px var(--pn-white); }
+/* the fuchsia leader from the selected block to its card stack */
+.pane .block-heading.is-selected::after { content: ''; position: absolute; top: 30px; right: -42px; width: 40px; height: 2px; background: var(--pn-action); }
+.pane .block-heading.is-selected::before { content: ''; position: absolute; top: 26px; right: -7px; width: 10px; height: 10px; border-radius: 50%; background: var(--pn-action); box-shadow: 0 0 0 3px var(--pn-white); }
 .pane .stage-start .cardstack { width: auto; max-width: 560px; margin-top: 0; }
 .pane .card-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
 .pane .card-title h2 { font-size: 15px; font-weight: 800; }
+.pane .card-path { min-width: 0; color: var(--pn-muted); font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
 .pane .in-sync { display: inline-flex; align-items: center; gap: 4px; color: var(--pn-tray); font-size: 12px; font-weight: 600; }
 .pane .in-sync svg { width: 16px; height: 16px; }
 .pane .edit-form { display: grid; gap: 10px; }
@@ -94,7 +99,7 @@
 .pane .desktop-bar i:nth-child(2) { background: var(--pn-brick-map); }
 .pane .desktop-bar i:nth-child(3) { background: var(--pn-brick-contact); }
 .pane .desktop-bar span { margin-left: 8px; color: var(--pn-muted); font-size: 12px; }
-.pane .desktop-viewport { height: 310px; overflow: auto; overscroll-behavior: contain; }
+.pane .desktop-viewport { position: relative; height: 310px; overflow: auto; overscroll-behavior: contain; }
 .pane .desktop-page { width: 100%; min-width: 0; }
 /* Render the actual public page at readable preview sizes instead of shrinking
    a 1280px canvas, which clipped links and reduced text below 11px. */
@@ -110,7 +115,7 @@
 .pane .desktop-page .public-footer { padding-block: 18px; font-size: 12px; }
 .rer-themed .pane .desktop-page .public-main { min-height: 0; padding-bottom: 56px; }
 
-.pane .dock { display: flex; align-items: center; gap: 16px; padding: 12px 16px 10px; border-top: 1px solid var(--pn-tint-line); border-radius: 16px 16px 0 0; background: var(--pn-white); box-shadow: 0 -10px 26px -22px rgb(42 14 34 / .5); }
+.pane .dock { position: sticky; bottom: 0; z-index: 20; display: flex; align-items: center; gap: 16px; padding: 12px 16px 10px; border-top: 1px solid var(--pn-tint-line); border-radius: 16px 16px 0 0; background: var(--pn-white); box-shadow: 0 -10px 26px -22px rgb(42 14 34 / .5); }
 .pane .bricks { display: grid; grid-template-columns: repeat(5, minmax(112px, 1fr)); flex: 1; max-width: 920px; gap: 10px; }
 .pane .brick { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 98px; padding: 8px; border: 1px solid transparent; border-radius: 10px; background: color-mix(in srgb, var(--brick) 30%, var(--pn-white)); color: var(--pn-ink); text-align: center; text-decoration: none; }
 .pane .brick svg { width: 24px; height: 24px; color: color-mix(in srgb, var(--brick) 45%, var(--pn-ink)); }
@@ -134,9 +139,53 @@
 .pane .screen-pages:has(input[value=desktop]:checked) .stage { grid-template-columns: minmax(0, 1fr); }
 .pane .screen-pages:has(input[value=desktop]:checked) .side { grid-template-columns: 380px minmax(0, 1fr); align-items: start; }
 .pane .screen-pages:has(input[value=desktop]:checked) .cardstack { margin-top: 0; }
-.pane .screen-pages:has(input[value=desktop]:checked) .cardstack::before, .pane .screen-pages:has(input[value=desktop]:checked) .cardstack::after { display: none; }
 .pane .screen-pages:has(input[value=desktop]:checked) .desktop-viewport { height: 640px; }
 
+/* One screen from 1240 px wide: the page bar, then the phone filling the height to the
+   dock, the card stack and, beneath it, the desktop preview taking what is left. */
+@media (min-width: 1240px) and (min-height: 600px) {
+  .pane .screen-pages:has(.canvas-fit) { height: calc(100dvh - 60px); min-height: 0; }
+  .pane .notice + .screen-pages:has(.canvas-fit) { height: calc(100dvh - 116px); }
+  .pane .canvas-fit { min-height: 0; padding-block: 16px; }
+  .pane .canvas-fit .mark-note { padding-top: 24px; }
+  .pane .canvas-fit .stage { height: 100%; min-height: 0; align-items: stretch; }
+  .pane .canvas-fit .phone { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+  .pane .canvas-fit .phone-head { display: contents; }
+  .pane .canvas-fit .phone-status, .pane .canvas-fit .phone-site { flex: none; }
+  .pane .canvas-fit .block-heading { flex: 1 0 auto; display: flex; flex-direction: column; justify-content: center; max-height: 300px; }
+  .pane .canvas-fit .phone-blocks { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+  .pane .canvas-fit .phone-blocks { margin-bottom: 12px; }
+  .pane .canvas-fit .phone-home { flex: none; margin-top: auto; }
+  .pane .canvas-fit .side { display: flex; flex-direction: column; gap: 14px; height: 100%; min-height: 0; margin: 0 -8px; padding: 0 8px 8px; overflow-y: auto; }
+  .pane .canvas-fit .cardstack { flex: none; }
+  .pane .canvas-fit .desktop { display: flex; flex: 1 1 0; flex-direction: column; min-height: 120px; }
+  .pane .canvas-fit .desktop-viewport { flex: 1; height: auto; min-height: 0; }
+  .pane .screen-pages:has(input[value=desktop]:checked) .canvas-fit .side { flex-direction: row; align-items: stretch; }
+  .pane .screen-pages:has(input[value=desktop]:checked) .canvas-fit .cardstack { width: 380px; }
+  .pane .screen-pages:has(input[value=desktop]:checked) .canvas-fit .desktop-viewport { height: auto; }
+}
+/* Shorter laptop screens: the two cards sit side by side and the dock is lower. */
+@media (min-width: 1240px) and (min-height: 600px) and (max-height: 920px) {
+  .pane .canvas-fit .cardstack { grid-auto-flow: column; grid-auto-columns: minmax(0, 380px); align-items: start; width: 100%; margin-top: 0; }
+  .pane .screen-pages:has(input[value=desktop]:checked) .canvas-fit .cardstack { grid-auto-flow: row; }
+  .pane .canvas-fit .mark-note { padding-top: 8px; }
+  .pane .canvas-fit .phone { padding-top: 10px; }
+  .pane .canvas-fit .phone-status { height: 28px; }
+  .pane .canvas-fit .phone-site { padding-block: 4px 8px; }
+  .pane .canvas-fit .block-heading { padding: 40px 16px 22px; }
+  .pane .canvas-fit .block-heading h2 { font-size: 29px; }
+  .pane .canvas-fit ~ .dock { padding-block: 8px 6px; }
+  .pane .canvas-fit ~ .dock .brick { min-height: 70px; gap: 2px; padding: 6px; }
+  .pane .canvas-fit ~ .dock .brick svg { width: 20px; height: 20px; }
+}
+/* Laptop screens of 800 px or less: labels sit beside their fields so the preview keeps its room. */
+@media (min-width: 1240px) and (min-height: 600px) and (max-height: 800px) {
+  .pane .canvas-fit .edit-card { padding: 12px 14px; }
+  .pane .canvas-fit .card-title { margin-bottom: 6px; }
+  .pane .canvas-fit .edit-form { gap: 8px; }
+  .rer-themed .pane .canvas-fit .edit-form label:has(> input), .pane .canvas-fit .edit-form .field { grid-template-columns: 76px minmax(0, 1fr); align-items: baseline; column-gap: 8px; }
+  .pane .canvas-fit .edit-form .field .help { grid-column: 2; }
+}
 @media (max-width: 1239px) {
   .pane .canvas { grid-template-columns: minmax(0, 1fr); }
   .pane .mark-note { display: flex; align-items: center; justify-content: flex-start; gap: 14px; padding: 0 0 16px; }
@@ -168,8 +217,8 @@
   .pane .phone-site { padding: 8px 2px 10px; }
   .pane .cardstack { order: 2; width: 100%; margin: 12px 0; }
   .rer-themed .pane .cardstack textarea { max-height: 14lh; }
-  .pane .stage:not(.stage-start) .cardstack::before { top: -12px; left: 28px; width: 2px; height: 12px; }
-  .pane .stage:not(.stage-start) .cardstack::after { display: none; }
+  .pane .block-heading.is-selected::before, .pane .block-heading.is-selected::after { display: none; }
+  .pane .stage:not(.stage-start) .cardstack::before { content: ''; position: absolute; top: -12px; left: 28px; width: 2px; height: 12px; background: var(--pn-action); }
   .pane .phone-blocks { order: 3; margin: 0; }
   .pane .desktop { order: 4; display: none; }
   .pane .phone-empty { margin: 24px 0 8px; padding: 0; }
@@ -177,7 +226,7 @@
   .pane .screen-pages:has(input[value=desktop]:checked) .phone-head, .pane .screen-pages:has(input[value=desktop]:checked) .phone-blocks { display: none; }
   .pane .screen-pages:has(input[value=desktop]:checked) .desktop { display: block; }
   .pane .screen-pages:has(input[value=desktop]:checked) .desktop-viewport { height: 420px; }
-  .pane .dock { flex-direction: column; align-items: stretch; gap: 10px; padding: 12px 0 14px; border-radius: 0; }
+  .pane .dock { position: static; flex-direction: column; align-items: stretch; gap: 10px; padding: 12px 0 14px; border-radius: 0; }
   .pane .bricks { display: flex; gap: 8px; padding: 0 16px 4px; overflow-x: auto; scrollbar-width: none; }
   .pane .brick { flex: 0 0 128px; min-height: 92px; }
   .pane .dock-side { justify-items: stretch; margin: 0 16px; }

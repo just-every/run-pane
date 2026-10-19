@@ -31,7 +31,9 @@ and the operator who prepared it. **Live** marks the current website.
 
 Preview the earlier revision, then have the owner choose **Restore live** beside
 it. That complete snapshot becomes the live site in one action. Restoring does
-not erase later revisions or change your inquiries.
+not erase later revisions or change your inquiries. Only a revision that was
+live before can be restored; the newest draft, if it was never published,
+offers **Approve & publish** in its row instead, recorded as a publication.
 
 The workspace lists the most recent 50 revisions. Saved revisions remain in
 the database; the current history display is limited to those 50 rows.

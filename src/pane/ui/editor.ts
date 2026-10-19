@@ -1,7 +1,7 @@
 // Pages: the phone-first editor (owner pick A). One page bar, the selected page
 // on a phone with its heading block selected, the edit card and the not-live
-// card hanging off that block, the desktop preview set back on the right, the
-// five pages as bricks along the bottom.
+// card hanging off that block, the desktop preview set back beneath them, the
+// five pages as bricks along the bottom: one screen on a laptop or larger.
 import type { Dashboard, Page, Site } from '../model'
 import { slugs } from '../content'
 import { paragraphs, publicPage } from '../public-view'
@@ -24,21 +24,22 @@ function phoneTop(siteName: string): string {
   return `<div class="phone-status"><span>${when(new Date(), 'time')}</span><svg class="phone-icons" viewBox="0 0 66 14" aria-hidden="true" focusable="false"><path fill="currentColor" d="M0 10h3v4H0zM5 7h3v7H5zM10 4h3v10h-3zM15 1h3v13h-3z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M25 6.5a9 9 0 0 1 12 0M28 9.5a4.6 4.6 0 0 1 6 0"/><circle cx="31" cy="12.4" r="1.4" fill="currentColor"/><rect x="43" y="1.5" width="19" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="45.2" y="3.7" width="13" height="6.6" rx="1.4" fill="currentColor"/><path fill="currentColor" d="M63.5 5h1.3a.7.7 0 0 1 .7.7v2.6a.7.7 0 0 1-.7.7h-1.3z"/></svg></div><div class="phone-site"><strong>${escape(siteName)}</strong>${icon('menu')}</div>`
 }
 
-function blockRows(page: Page, change: PageChange): string {
+function blockRows(site: Site, page: Page, change: PageChange): string {
   const rows = paragraphs(page.body).map((text, index) => {
     const lines = text.split('\n').length, words = text.split(/\s+/).length, mark = change.marks[index]
-    return `<li class="block-row${mark === 'same' ? '' : ' is-new'}"><span class="tile tile-blog">${icon('text')}</span><span class="block-copy"><strong>${lines > 1 ? 'List' : 'Text'}</strong> · ${lines > 1 ? `${lines} lines` : `${words} words`}<small>${escape(text.split('\n')[0])}</small></span>${mark === 'same' ? '' : `<span class="pill pill-new">${mark === 'new' ? 'New in draft' : 'Changed'}</span>`}</li>`
+    return `<li class="block-row${mark === 'same' ? '' : ' is-new'}"><span class="tile tile-blog">${icon('text')}</span><span class="block-copy"><strong>${lines > 1 ? 'List' : 'Text'}</strong> · ${lines > 1 ? `${lines} lines` : `${words} words`}<small>${escape(text.replace(/\n/g, ' · '))}</small></span>${mark === 'same' ? '' : `<span class="pill pill-new">${mark === 'new' ? 'New in draft' : 'Changed'}</span>`}</li>`
   })
   if (page.slug === 'contact') rows.push(`<li class="block-row"><span class="tile tile-contact">${icon('form')}</span><span class="block-copy"><strong>Form</strong> · Send a message to Inquiries<small>Your name, email address and message</small></span></li>`)
   if (change.removed) rows.push(`<li class="block-row is-removed"><span class="tile tile-plain">${icon('text')}</span><span class="block-copy"><strong>Removed</strong> · ${change.removed} paragraph${change.removed === 1 ? '' : 's'}<small>On the live page, not in this draft</small></span></li>`)
+  rows.push(`<li class="block-row block-footer"><span class="tile tile-plain">${icon('menu')}</span><span class="block-copy"><strong>Footer</strong> · On every page<small>${escape([site.name, site.description].filter(Boolean).join(' · '))}</small></span></li>`)
   return `<ol class="phone-blocks" aria-label="Blocks on this page">${rows.join('')}</ol>`
 }
 
 function editCard(site: Site, page: Page, base: string, canEdit: boolean, inSync: boolean): string {
   const fields = canEdit
-    ? `<form method="post" action="/app/prepare" class="edit-form">${key()}${hidden('base', base)}${hidden('slug', page.slug)}${page.slug === 'home' ? `<details class="site-fields"><summary>Site name and description</summary><div class="edit-form"><label>Site name<input name="name" value="${escape(site.name)}" required maxlength="120" autocomplete="organization"></label><div class="field"><label for="site-description">Description</label><textarea id="site-description" name="description" rows="2" maxlength="500">${escape(site.description)}</textarea></div></div></details>` : ''}<label>Page title<input name="page.${page.slug}.title" value="${escape(page.title)}" required maxlength="120"></label><div class="field"><span class="field-label" id="url-label">URL</span><span class="field-static" aria-labelledby="url-label">${sitePath(page.slug)}</span></div><div class="field"><label for="page-text">Text</label><textarea id="page-text" name="page.${page.slug}.body" rows="4" required maxlength="20000" aria-describedby="text-help">${escape(page.body)}</textarea><p class="help" id="text-help">A blank line starts a new paragraph.</p></div><div class="form-actions"><button type="submit" class="secondary">Prepare draft revision</button><span class="help">Publishing requires the owner's approval.</span></div></form>`
-    : '<p class="access-note">You have read-only access to site content.</p>'
-  return `<section class="card edit-card" aria-labelledby="edit-title"><div class="card-title"><h2 id="edit-title">Edit this page</h2>${inSync ? `<span class="in-sync">${icon('check')}Live matches this page</span>` : ''}</div>${fields}</section>`
+    ? `<form method="post" action="/app/prepare" class="edit-form">${key()}${hidden('base', base)}${hidden('slug', page.slug)}${page.slug === 'home' ? `<details class="site-fields"><summary>Site name and description</summary><div class="edit-form"><label>Site name<input name="name" value="${escape(site.name)}" required maxlength="120" autocomplete="organization"></label><div class="field"><label for="site-description">Description</label><textarea id="site-description" name="description" rows="2" maxlength="500">${escape(site.description)}</textarea></div></div></details>` : ''}<label>Page title<input name="page.${page.slug}.title" value="${escape(page.title)}" required maxlength="120"></label><div class="field"><label for="page-text">Text</label><textarea id="page-text" name="page.${page.slug}.body" rows="3" required maxlength="20000" aria-describedby="text-help">${escape(page.body)}</textarea><p class="help in-use" id="text-help">A blank line starts a new paragraph.</p></div><div class="form-actions"><button type="submit" class="secondary small">Prepare draft revision</button><span class="help in-use">Publishing requires the owner's approval.</span>${inSync ? `<span class="in-sync">${icon('check')}Live matches this page</span>` : ''}</div></form>`
+    : `<p class="access-note">You have read-only access to site content.</p>${inSync ? `<span class="in-sync">${icon('check')}Live matches this page</span>` : ''}`
+  return `<section class="card edit-card" aria-labelledby="edit-title"><div class="card-title"><h2 id="edit-title">Edit this page</h2><span class="card-path"><span class="visually-hidden">URL </span>${sitePath(page.slug)}</span></div>${fields}</section>`
 }
 
 function alertCard(data: Dashboard, page: Page, change: PageChange, canPreview: boolean): string {
@@ -81,9 +82,9 @@ export function editor(data: Dashboard, requested: string): string {
   const slug = slugs.includes(requested) ? requested : 'home', page = site.pages.find(candidate => candidate.slug === slug)!
   const changes = siteChanges(site, data.live?.site, same), change = changes[slug]
   const changed = Object.values(changes).filter(entry => entry.changed).length
-  const phone = `<div class="phone" role="region" aria-label="Phone preview of ${escape(page.title)}"><div class="phone-head">${phoneTop(site.name)}<div class="block block-heading is-selected"><span class="block-tag">Heading</span>${change.title ? '<span class="pill pill-new">Changed</span>' : ''}<h2>${escape(page.title)}</h2>${slug === 'home' && site.description ? `<p>${escape(site.description)}</p>` : ''}</div></div>${blockRows(page, change)}<span class="phone-home" aria-hidden="true"></span></div>`
+  const phone = `<div class="phone" role="region" aria-label="Phone preview of ${escape(page.title)}"><div class="phone-head">${phoneTop(site.name)}<div class="block block-heading is-selected"><span class="block-tag">Heading</span>${change.title ? '<span class="pill pill-new">Changed</span>' : ''}<h2>${escape(page.title)}</h2>${slug === 'home' && site.description ? `<p>${escape(site.description)}</p>` : ''}</div></div>${blockRows(site, page, change)}<span class="phone-home" aria-hidden="true"></span></div>`
   const desktop = `<section class="desktop" aria-label="Desktop preview of ${escape(page.title)}"><div class="desktop-bar" aria-hidden="true"><i></i><i></i><i></i><span>${sitePath(slug)}</span></div><div class="desktop-viewport"><div class="desktop-page">${publicPage(site, slug, 'frame')}</div></div></section>`
   const by = data.people[draft.actor] ?? 'a former team member'
   const chip = `<a class="chip" href="/app/sites#history"><span class="chip-icon">${icon('history')}</span><span class="chip-copy"><strong>${same ? 'Live' : 'Prepared'} · ${escape(by)}</strong><span>Revision <code>${short(draft.id)}</code> · ${when(draft.created_at, 'short')}</span></span>${icon('arrow')}</a>`
-  return `${pageBar(data, slug, changed, owner, canEdit)}<div class="canvas">${markNote(data, false)}<div class="stage">${phone}<div class="side"><div class="cardstack">${editCard(site, page, draft.id, canEdit, Boolean(data.live) && !change.changed)}${alertCard(data, page, change, canEdit)}</div>${desktop}</div></div></div>${dock(site.pages, slug, entry => changes[entry].changed, chip)}`
+  return `${pageBar(data, slug, changed, owner, canEdit)}<div class="canvas canvas-fit">${markNote(data, false)}<div class="stage">${phone}<div class="side"><div class="cardstack">${editCard(site, page, draft.id, canEdit, Boolean(data.live) && !change.changed)}${alertCard(data, page, change, canEdit)}</div>${desktop}</div></div></div>${dock(site.pages, slug, entry => changes[entry].changed, chip)}`
 }
