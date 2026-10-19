@@ -10,11 +10,14 @@ const rows: [key: string, name: string, trade: string, from: string, pages: stri
   ['hollis', 'Hollis &amp; Pine Florist', `Flowers and weddings · ${nb('Portsmouth, NH')}`, `Squarespace, ${nb('Mon Oct 19')}`, '46', '212 old links kept'],
 ]
 
+// The hand slides the Hollis & Pine row into place: it rides on the row and grips its right edge.
+const hand = picture('02-hand', '', 138, 166, { className: 'pn-dir-hand' })
+
 export function directory(): string {
   const body = rows.map(([key, name, trade, from, pages, october]) => `<div class="pn-dir-row pn-dir-${key}" role="row">`
     + `<div class="pn-dir-biz" role="rowheader">${picture(`thumb-${key}`, '', 158, 100, { className: `pn-thumb pn-bg-${key}` })}<strong>${name}</strong></div>`
     + `<div role="cell"><span class="pn-dir-label">Trade · city</span>${trade}</div><div role="cell"><span class="pn-dir-label">Came from</span>${from}</div>`
-    + `<div role="cell"><span class="pn-dir-label">Pages</span>${pages}</div><div role="cell" class="pn-dir-oct"><span class="pn-dir-label">October</span><span>${october}</span><span class="pn-dir-go" aria-hidden="true">→</span></div></div>`).join('')
+    + `<div role="cell"><span class="pn-dir-label">Pages</span>${pages}</div><div role="cell" class="pn-dir-oct"><span class="pn-dir-label">October</span><span>${october}</span><span class="pn-dir-go" aria-hidden="true">→</span></div>${key === 'hollis' ? hand : ''}</div>`).join('')
   return `<section class="pn-sec pn-dir" aria-labelledby="pn-dir-title">
   <div class="pn-wrap pn-center">
     ${eyebrow('lemon', ['Five businesses', 'October 2026'])}
@@ -25,7 +28,6 @@ export function directory(): string {
     <div class="pn-dir-board" role="table" aria-label="Five businesses and their October">
       <div class="pn-dir-head" role="row"><span role="columnheader">Business</span><span role="columnheader">Trade · city</span><span role="columnheader">Came from</span><span role="columnheader">Pages</span><span role="columnheader">October</span></div>
       ${body}
-      ${picture('02-hand', '', 138, 166, { className: 'pn-dir-hand' })}
     </div>
   </div>
 </section>`

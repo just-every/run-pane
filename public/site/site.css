@@ -11,8 +11,9 @@ body.pn-body { margin: 0; background: var(--pn-white); color: var(--pn-ink); fon
 .pn-body :focus-visible { outline: 3px solid var(--pn-ink); outline-offset: 3px; border-radius: 6px; }
 .pn-body code { font-family: var(--pn-mono); }
 .pn-nb { white-space: nowrap; }
-/* tight display tracking keeps clear word spaces (at least .25 em) */
-.pn-body :is(h3, h4, .pn-hcard-title, .pn-pin-head, .pn-biz, .pn-ribbon, .pn-brand-word) { word-spacing: .05em; }
+/* tight display tracking and heavy weights keep clear word spaces (at least .25 em) */
+.pn-body :is(h3, h4, strong, b, .pn-hcard-title, .pn-pin-head, .pn-biz, .pn-ribbon, .pn-brand-word, .pn-yoga-name) { word-spacing: .1em; }
+.pn-body :is(time, .pn-run, .pn-brick, .pn-ed-bar p, .pn-push-done, .pn-ed-h, .pn-insp-title, .pn-own-title, .pn-yoga-book, .pn-inq-next, .pn-ring-wrap p, .pn-ed-held span) { word-spacing: .06em; }
 .pn-ok { font-weight: 600; }
 .pn-page { overflow-x: clip; }
 
@@ -56,6 +57,8 @@ body.pn-body { margin: 0; background: var(--pn-white); color: var(--pn-ink); fon
 .pn-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 18px 36px; margin-top: 36px; }
 .pn-run { display: inline-flex; align-items: center; justify-content: center; gap: 12px; min-height: 64px; padding: 0 36px; border-radius: 999px; background: var(--pn-action); color: #fff; font: 800 26px/1 var(--pn-font); text-decoration: none; letter-spacing: -.01em; }
 .pn-run:hover { background: var(--pn-fuchsia-deep); }
+/* white on fuchsia: outranks the page's inherited link colour (the hero's white button sets its own) */
+.pn-body .pn-run { color: #fff; }
 .pn-link { font: 600 22px/1.3 var(--pn-font); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; }
 
 /* brand lockup */
@@ -81,10 +84,10 @@ body.pn-body { margin: 0; background: var(--pn-white); color: var(--pn-ink); fon
 .pn-hero-sub { margin-top: 2.6cqw; max-width: 24.6cqw; font-size: max(15px, 1.58cqw); line-height: 1.26; }
 .pn-hero-alt { margin-top: 1.9cqw; max-width: 25.4cqw; font-size: max(15px, 1.58cqw); line-height: 1.26; }
 .pn-hero-alt strong { font-weight: 800; }
-.pn-actions-field { display: grid; grid-template-columns: auto auto; justify-content: start; gap: 2.5cqw 1.9cqw; margin-top: 2.5cqw; }
+.pn-actions-field { display: grid; grid-template-columns: auto auto; justify-content: start; gap: 1.7cqw 1.5cqw; margin-top: 2.5cqw; }
 .pn-actions-field .pn-run { grid-column: 1 / -1; justify-self: start; min-height: 4.7cqw; padding: 0 2.9cqw; border-radius: .9cqw; background: #fff; color: var(--pn-fuchsia); font-size: 1.85cqw; gap: .9cqw; }
 .pn-actions-field .pn-run:hover { background: #ffe3ef; }
-.pn-actions-field .pn-link { color: #fff; font-size: max(14px, 1.43cqw); font-weight: 500; text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
+.pn-actions-field .pn-link { color: #fff; font-size: max(14px, 1.3cqw); font-weight: 500; text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
 .pn-hcards { position: absolute; inset: 0; pointer-events: none; }
 .pn-hcard { position: absolute; display: flex; gap: .75cqw; align-items: flex-start; padding: 1.05cqw 1cqw 1.05cqw .95cqw; border-radius: .75cqw; background: #fff; box-shadow: 0 1px 2px rgb(42 14 34 / .08), 0 .8cqw 2cqw -1cqw rgb(42 14 34 / .3); border: 1px solid #f1e8ee; pointer-events: auto; }
 .pn-hcard .pn-tick { width: 1.6cqw; height: 1.6cqw; min-width: 20px; min-height: 20px; }
@@ -128,24 +131,40 @@ body.pn-body { margin: 0; background: var(--pn-white); color: var(--pn-ink); fon
   .pn-hcard-kim { border-left-width: 4px; }
 }
 
-/* 11 interlude */
-.pn-interlude { position: relative; background: #f2b260; }
-.pn-interlude-art img { width: 100%; }
-.pn-interlude-phone { display: none; }
-.pn-interlude-card { position: absolute; z-index: 1; right: 2.6%; bottom: 7%; display: flex; align-items: center; gap: 18px; padding: 16px 18px 16px 24px; border-radius: 16px; background: #fff; box-shadow: 0 18px 40px -20px rgb(42 14 34 / .5); font: 600 19px/1.35 var(--pn-font); }
-.pn-interlude-card small { display: block; margin-top: 2px; color: var(--pn-muted); font-size: 15px; font-weight: 500; }
+/* 11 interlude: on wide screens the card lies on the floor below the mats, where the desk plate
+   had its own (interlude-plate has the floor and the plate's card painted out); below 1100 px the
+   card sits under the picture, and phones see the two middle columns of mats, whole */
+.pn-interlude { position: relative; background: #f2b260; container-type: inline-size; }
+.pn-interlude picture img { width: 100%; }
+.pn-interlude-art, .pn-interlude-phone { display: none; }
+.pn-interlude-card { position: absolute; z-index: 1; right: 2.2%; top: 88.4%; min-width: 33.2%; min-height: 9.1%; display: flex; align-items: center; justify-content: space-between; gap: 1em; padding: .6em .9em .6em 1.3em; border-radius: .85em; background: #fff; box-shadow: 0 1.2em 2.4em -1.2em rgb(42 14 34 / .5); font: 600 1.25cqw/1.35 var(--pn-font); }
+.pn-interlude-card small { display: block; margin-top: .1em; color: var(--pn-muted); font-size: .8em; font-weight: 500; }
+.pn-interlude-card .pn-tick { width: 1.5em; height: 1.5em; }
+@media (max-width: 1100px) {
+  .pn-interlude { padding-bottom: 28px; }
+  .pn-interlude-plate { display: none; }
+  .pn-interlude-art { display: block; }
+  .pn-interlude-card { position: relative; right: auto; top: auto; min-width: 0; min-height: 0; width: fit-content; max-width: calc(100% - 32px); margin: 14px 2.2% 0 auto; padding: 14px 16px 14px 22px; border-radius: 16px; font-size: 17px; }
+  .pn-interlude-card small { font-size: 14px; }
+  .pn-interlude-card .pn-tick { width: 28px; height: 28px; }
+}
+@media (max-width: 560px) {
+  .pn-interlude-art { display: none; }
+  .pn-interlude-phone { display: block; }
+  .pn-interlude-card { width: auto; margin: 14px 16px 0; font-size: 16px; }
+}
 
 /* 13 closing */
 .pn-close { padding: 40px 0 24px; }
 .pn-h-close { font-size: clamp(56px, 7vw, 104px); }
 .pn-close-sub { margin-top: 18px; font: 500 clamp(20px, 2vw, 28px)/1.3 var(--pn-font); }
 .pn-close .pn-actions { margin-top: 24px; }
-.pn-map { position: relative; width: min(1160px, calc(100% - 96px)); margin: 20px auto 0; }
+.pn-map { position: relative; width: min(1160px, calc(100% - 96px)); margin: 20px auto 0; container-type: inline-size; --pin: clamp(12px, 2.93cqw, 34px); }
 .pn-map-art { width: 100%; }
 .pn-pin { position: absolute; left: var(--x); top: var(--y); width: 0; height: 0; }
-.pn-pin-dot { position: absolute; left: -17px; top: -46px; width: 34px; height: 46px; background: var(--pn-action); clip-path: path('M17 46C17 46 0 27 0 17A17 17 0 0 1 34 17C34 27 17 46 17 46Z'); }
-.pn-pin-dot::after { content: ''; position: absolute; left: 11px; top: 11px; width: 12px; height: 12px; border-radius: 50%; background: #fff; }
-.pn-pin-card { position: absolute; bottom: 62px; left: 0; transform: translateX(-50%); width: max-content; max-width: 440px; border-radius: 12px; background: #fff; border: 1.5px solid #cbbcc6; box-shadow: 0 12px 24px -16px rgb(42 14 34 / .45); overflow: hidden; font-size: 15px; line-height: 1.35; }
+.pn-pin-dot { position: absolute; left: calc(var(--pin) / -2); top: calc(var(--pin) * -46 / 34); width: var(--pin); height: calc(var(--pin) * 46 / 34); background: var(--pn-action); -webkit-mask: var(--pn-pin-shape) center / 100% 100% no-repeat; mask: var(--pn-pin-shape) center / 100% 100% no-repeat; }
+.pn-pin-dot::after { content: ''; position: absolute; left: 32.35%; top: 23.9%; width: 35.3%; aspect-ratio: 1; border-radius: 50%; background: #fff; }
+.pn-pin-card { position: absolute; bottom: calc(var(--pin) * 46 / 34 + 16px); left: 0; transform: translateX(-50%); width: max-content; max-width: 440px; border-radius: 12px; background: #fff; border: 1.5px solid #cbbcc6; box-shadow: 0 12px 24px -16px rgb(42 14 34 / .45); overflow: hidden; font-size: 15px; line-height: 1.35; }
 .pn-pin-card p { padding: 8px 16px 10px; }
 .pn-pin-card .pn-pin-head { display: flex; align-items: center; gap: 10px; padding: 10px 16px 8px; font-weight: 800; font-size: 18px; }
 .pn-pin-hollis .pn-pin-head { background: var(--pn-lilac); } .pn-pin-kim .pn-pin-head { background: var(--pn-blush); }
@@ -202,11 +221,6 @@ body.pn-body { margin: 0; background: var(--pn-white); color: var(--pn-ink); fon
   .pn-strip { font-size: 16px; padding: 14px 16px; }
   .pn-run { min-height: 58px; font-size: 22px; padding: 0 28px; }
   .pn-link { font-size: 18px; }
-  .pn-interlude-art { display: none; }
-  .pn-interlude-phone { display: block; }
-  .pn-interlude-phone img { width: 100%; }
-  .pn-interlude-card { position: relative; margin: -64px 16px 0; font-size: 16px; padding: 14px 14px 14px 18px; }
-  .pn-interlude { padding-bottom: 32px; }
   .pn-close { padding-top: 64px; }
   .pn-map { width: calc(100% - 32px); }
   .pn-map-mark { width: 16%; right: 0; bottom: -6%; }
