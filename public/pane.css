@@ -17,7 +17,7 @@ html.rer-themed body.pane { margin: 0; padding: 0; background: var(--pane-paper)
 .pane .workspace { display: grid; grid-template-columns: 264px minmax(0,1fr); min-height: calc(100vh - 56px); }
 .pane .sidebar { position: sticky; top: 56px; height: calc(100vh - 56px); display: flex; flex-direction: column; padding: 32px 20px 24px; border-right: 1px solid var(--pane-line); background: var(--pane-paper); }
 .pane .brand { display: flex; align-items: center; gap: 12px; margin: 0 16px 48px; color: var(--pane-ink); text-decoration: none; font: 750 34px/1 var(--pane-font-display); font-stretch: 75%; }
-.pane .brand img { width: 36px; height: 36px; }
+.pane .brand img { width: 49px; height: 36px; }
 .pane .workspace-label { margin: 0 16px 16px; color: var(--pane-subtle); font-size: 15px; }
 .pane .sidebar nav { display: grid; gap: 8px; }
 .pane .sidebar nav a { display: flex; align-items: center; gap: 16px; min-height: 48px; padding: 10px 16px; border-radius: 8px; border-left: 3px solid transparent; color: var(--pane-ink); text-decoration: none; }
@@ -119,7 +119,7 @@ html.rer-themed body.pane { margin: 0; padding: 0; background: var(--pane-paper)
   .pane .workspace { display: block; }
   .pane .sidebar { position: sticky; top: 56px; z-index: 9; height: auto; padding: 24px 16px 0; border-right: 0; border-bottom: 1px solid var(--pane-line); }
   .pane .brand { margin: 0 0 24px; font-size: 30px; }
-  .pane .brand img { width: 30px; height: 30px; }
+  .pane .brand img { width: 41px; height: 30px; }
   .pane .workspace-label, .pane .sidebar-footer, .pane .sidebar nav svg { display: none; }
   .pane .sidebar nav { display: flex; overflow-x: auto; gap: 24px; scrollbar-width: thin; }
   .pane .sidebar nav a { gap: 8px; padding: 8px 0 12px; white-space: nowrap; min-height: 48px; border: 0; border-bottom: 3px solid transparent; border-radius: 0; font-size: 14px; }

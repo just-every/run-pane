@@ -4,12 +4,12 @@ const hour = 3600000, day = 24 * hour
 
 export const messages: { name: string; email: string; hoursAgo: number; message: string }[] = [
   { name: 'Priya Nair', email: 'priya.nair@example.com', hoursAgo: 3, message: 'Could you repair a dining chair? One of our six oak chairs has a cracked back rail and the joints are loose. Happy to bring it in on Saturday morning if that works.' },
-  { name: 'Daniel Okafor', email: 'd.okafor@example.net', hoursAgo: 26, message: 'Hello, I am looking for a small walnut side table, about 50 cm square, to sit beside a reading chair. Do you take commissions that size, and roughly what would it cost?' },
+  { name: 'Daniel Okafor', email: 'd.okafor@example.net', hoursAgo: 26, message: 'Hello, I am looking for a small walnut side table, about 20 inches square, to sit beside a reading chair. Do you take commissions that size, and roughly what would it cost?' },
   { name: 'Helen Marsh', email: 'helen.marsh@example.org', hoursAgo: 49, message: 'Thank you for the rocking chair. It is back in the living room and doesn\'t creak at all. My granddaughter has already claimed it.' },
   { name: 'Sam Whitfield', email: 'sam@whitfieldcafe.example', hoursAgo: 75, message: 'We run the cafe on Beacon Road and need eight bench seats re-oiled before the holidays. Could someone come and look at them, or should we bring one in?' },
   { name: 'Grace Liu', email: 'grace.liu@example.com', hoursAgo: 4 * 24 + 5, message: 'Is there still a place in the Thursday evening joinery class? I have never used a chisel but I would love to learn.' },
   { name: 'Marco Bellini', email: 'marco.bellini@example.net', hoursAgo: 6 * 24 + 2, message: 'Our cane seat has a hole in it after years with the cat. It is a standard bentwood chair. How long does re-caning take?' },
-  { name: 'Aisha Rahman', email: 'aisha.r@example.org', hoursAgo: 8 * 24 + 7, message: 'Do you restore painted furniture too? I have a 1950s kitchen dresser with chipped green paint that I would like to keep the colour of.' },
+  { name: 'Aisha Rahman', email: 'aisha.r@example.org', hoursAgo: 8 * 24 + 7, message: 'Do you restore painted furniture too? I have a 1950s kitchen dresser with chipped green paint that I would like to keep the color of.' },
   { name: 'Peter Lindqvist', email: 'peter.lindqvist@example.com', hoursAgo: 11 * 24 + 4, message: 'I picked up the bookshelf on Friday. It fits the alcove perfectly. Please send the invoice to this address.' },
   { name: 'Nora Fitzgerald', email: 'nora.fitz@example.net', hoursAgo: 15 * 24 + 1, message: 'A drawer in my grandmother\'s desk sticks badly in wet weather. Is that something you could fix in an afternoon, or does the desk need to stay with you?' },
   { name: 'James Carter', email: 'jcarter@example.org', hoursAgo: 19 * 24 + 6, message: 'Could you quote for a step stool for a small kitchen? Two steps, light enough to carry, ideally in ash.' },

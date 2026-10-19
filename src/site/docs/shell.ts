@@ -1,6 +1,11 @@
+import { siteHead } from '../head'
 import run from '../run.json'
 import css from './style.css?raw'
 import { docsHref, escapeHtml as escape, type DocsSection, type RenderedDoc } from './types'
+
+// Code cards get their Copy button only when script runs; without it the command is still there to select.
+const COPY = "document.querySelectorAll('.docs-copy').forEach(b=>{b.hidden=false;b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(b.closest('.docs-code').querySelector('code').textContent);b.textContent='Copied';setTimeout(()=>{b.textContent='Copy'},1600)}catch{}})})"
+const CHIPS = ['lemon', 'sky', 'leaf', 'blush', 'lilac']
 
 function navigation(sections: DocsSection[], current: string): string {
   return sections.map(section => `<section class="docs-nav-group"><h2>${escape(section.title)}</h2><ul>${section.pages.map(page =>
@@ -8,23 +13,33 @@ function navigation(sections: DocsSection[], current: string): string {
   ).join('')}</ul></section>`).join('')
 }
 
-export function docsDocument(page: RenderedDoc, sections: DocsSection[], previous?: RenderedDoc, next?: RenderedDoc): string {
+const lockup = '<a class="docs-brand" href="/"><img src="/brand/mark.svg" width="54" height="40" alt=""><span>Pane</span></a>'
+
+/** The guide index on /docs: one card per guide, in manifest order. */
+function guideCards(sections: DocsSection[], pages: RenderedDoc[]): string {
+  const bySlug = new Map(pages.map(page => [page.slug, page]))
+  return `<div class="docs-cards">${sections.map((section, index) => `<section class="docs-card-group"><h2><span class="docs-chip docs-chip-${CHIPS[index % CHIPS.length]}" aria-hidden="true"></span>${escape(section.title)}</h2><ul>`
+    + section.pages.filter(page => page.slug).map(page => `<li><a href="${docsHref(page.slug)}"><strong>${escape(page.label)}</strong><span>${escape(bySlug.get(page.slug)?.description ?? '')}</span></a></li>`).join('')
+    + '</ul></section>').join('')}</div>`
+}
+
+export function docsDocument(page: RenderedDoc, sections: DocsSection[], pages: RenderedDoc[], previous?: RenderedDoc, next?: RenderedDoc): string {
   const nav = navigation(sections, page.slug)
-  const mark = '<img src="/brand/mark.svg" width="28" height="28" alt="">'
+  const section = sections.find(group => group.pages.some(entry => entry.slug === page.slug))
+  const chip = CHIPS[Math.max(0, sections.indexOf(section!)) % CHIPS.length]
   const toc = page.headings.length ? `<aside class="docs-toc"><nav aria-label="On this page"><h2>On this page</h2><ul>${page.headings.map(heading =>
     `<li class="depth-${heading.depth}"><a href="#${escape(heading.id)}">${escape(heading.title)}</a></li>`
   ).join('')}</ul></nav></aside>` : ''
   const pager = (doc: RenderedDoc | undefined, label: string) => doc ? `<a href="${docsHref(doc.slug)}"><span>${label}</span><strong>${escape(doc.label)}</strong></a>` : '<span></span>'
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">`
-    + `<title>${escape(page.title)} · Pane docs</title><meta name="description" content="${escape(page.description)}">`
-    + `<link rel="icon" href="/brand/mark.svg"><link rel="stylesheet" href="/fonts/fonts.css"><link rel="stylesheet" href="/rer-theme.css"><style>${css}</style></head>`
-    + `<body class="pane-docs"><a class="docs-skip" href="#main">Skip to content</a><div class="docs-wrap">`
-    + `<header class="docs-header"><a class="docs-brand" href="/">${mark}<span>Pane</span></a><nav aria-label="Site"><a href="/docs" aria-current="true">Docs</a><a href="/contract">Contract</a><a href="${escape(run.repository)}">Source</a></nav></header>`
-    + `<details class="docs-mobile-menu"><summary>Documentation · ${escape(page.label)}</summary><nav aria-label="Documentation">${nav}</nav></details>`
+  const index = page.slug === '' ? guideCards(sections, pages) : ''
+  return `<!doctype html><html lang="en"><head>${siteHead(`${page.title} · Pane docs`, page.description, [])}<style>${css}</style></head>`
+    + `<body class="pane-docs"><a class="docs-skip" href="#main">Skip to content</a>`
+    + `<header class="docs-header"><div class="docs-wrap docs-header-row">${lockup}<nav aria-label="Site"><a href="/docs" aria-current="true">Docs</a><a href="/contract">Contract</a><a href="${escape(run.repository)}">Source</a></nav></div></header>`
+    + `<div class="docs-wrap"><details class="docs-mobile-menu"><summary>Documentation · ${escape(page.label)}</summary><nav aria-label="Documentation">${nav}</nav></details>`
     + `<div class="docs-layout"><aside class="docs-sidebar"><nav aria-label="Documentation">${nav}</nav></aside>`
-    + `<main id="main" class="docs-article"><div class="docs-eyebrow">Pane documentation</div><article>${page.html}</article>`
+    + `<main id="main" class="docs-article"><p class="docs-eyebrow"><span class="docs-chip docs-chip-${chip}" aria-hidden="true"></span>${escape(section?.title ?? 'Pane documentation')}</p><article>${page.html}</article>${index}`
     + `<div class="docs-source"><a href="${escape(run.repository)}/blob/main/${escape(page.source)}">View this guide on Source ↗</a></div>`
-    + `<nav class="docs-pager" aria-label="More guides">${pager(previous, 'Previous')}${pager(next, 'Next')}</nav></main>${toc}</div>`
-    + `<footer class="docs-footer"><a href="/" class="docs-footer-brand">${mark}<span>Pane</span></a><span>· MIT licence ·</span><a href="${escape(run.repository)}">Source</a></footer>`
-    + `</div></body></html>`
+    + `<nav class="docs-pager" aria-label="More guides">${pager(previous, 'Previous')}${pager(next, 'Next')}</nav></main>${toc}</div></div>`
+    + `<footer class="docs-footer"><div class="docs-wrap docs-footer-row">${lockup}<p>Free, open source website builder</p><nav aria-label="Footer"><a href="/docs">Docs</a><a href="${escape(run.repository)}">Source</a><a href="${escape(run.repository)}/blob/main/LICENSE">MIT licensed</a></nav></div></footer>`
+    + `<script>${COPY}</script></body></html>`
 }

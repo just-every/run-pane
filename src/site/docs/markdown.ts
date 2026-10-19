@@ -4,6 +4,9 @@ import { docsHref, escapeHtml, type DocsPage, type Heading, type RenderedDoc } f
 
 // Markdown sources stay in the repository. Only manifest-listed documents are
 // published. Raw HTML and embedded images are rejected rather than executed.
+// Commands and paths wrap only at spaces, never inside a token (a hyphen or slash).
+const keepTokens = (html: string) => html.replace(/[^\s]+/g, word => `<span class="docs-token">${word.replace(/,(?!$)/g, ',<wbr>')}</span>`)
+
 export function renderMarkdown(page: DocsPage, source: string, pages: DocsPage[], repository: string): RenderedDoc {
   const published = new Map(pages.map(value => [value.source, docsHref(value.slug)]))
   const headings: Heading[] = []
@@ -40,9 +43,15 @@ export function renderMarkdown(page: DocsPage, source: string, pages: DocsPage[]
       return `<a href="${escapeHtml(link(href))}"${label ? ` title="${escapeHtml(label)}"` : ''}>${this.parser.parseInline(tokens)}</a>`
     },
     html() { throw new Error(`Raw HTML is not allowed in ${page.source}`) },
-    image() { throw new Error(`Images need a declared asset pipeline: ${page.source}`) },
+    // The only images are the published brand files (public/brand), served at /brand.
+    image({ href, text }: Tokens.Image) {
+      const resolved = posix.normalize(posix.join(posix.dirname(page.source), href))
+      if (!/^public\/brand\/[a-z0-9-]+\.svg$/.test(resolved)) throw new Error(`Images need a declared asset pipeline: ${page.source}`)
+      return `<img class="docs-inline-mark" src="/${resolved.slice('public/'.length)}" alt="${escapeHtml(text)}" width="54" height="40">`
+    },
+    codespan({ text }: Tokens.Codespan) { return `<code>${keepTokens(text)}</code>` },
     code({ text, lang }: Tokens.Code) {
-      return `<pre tabindex="0" role="group" aria-label="${escapeHtml(lang ? `${lang} code` : 'Code')}"><code>${escapeHtml(text)}</code></pre>\n`
+      return `<div class="docs-code"><pre tabindex="0" role="group" aria-label="${escapeHtml(lang ? `${lang} code` : 'Code')}"><code>${keepTokens(escapeHtml(text))}</code></pre><button class="docs-copy" type="button" hidden>Copy</button></div>\n`
     },
     table(token: Tokens.Table) {
       const head = token.header.map(cell => `<th scope="col">${this.parser.parseInline(cell.tokens)}</th>`).join('')

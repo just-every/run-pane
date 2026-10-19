@@ -6,7 +6,17 @@ your workspace is at the address your terminal prints.
 
 ## Start Pane
 
-One line installs rer if you do not already have it, clones Pane and runs it:
+Install rer, then start Pane. These are the two lines on the
+[Run page](https://run-pane.com/run):
+
+```sh
+curl -fsSL https://runeditrun.com/install.sh | sh
+rer dev just-every/run-pane
+```
+
+The installer brings its own Node when you have no Node 22 or later. If it ends
+with a line to run, run it before the second line. With Node 22 or later
+already installed, one line does both:
 
 ```sh
 npx -y @runeditrun/rer dev just-every/run-pane
@@ -40,7 +50,7 @@ Here is the array the editor accepts. Replace the titles and bodies with your co
   { "slug": "home", "title": "Home", "body": "Welcome to our business." },
   { "slug": "about", "title": "About", "body": "Our story." },
   { "slug": "services", "title": "Services", "body": "What we do." },
-  { "slug": "hours", "title": "Hours", "body": "Saturday: 9 am to 1 pm" },
+  { "slug": "hours", "title": "Hours", "body": "Saturday: 9 AM to 1 PM" },
   { "slug": "contact", "title": "Contact", "body": "Send us a message below." }
 ]
 ```

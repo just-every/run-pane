@@ -10,6 +10,11 @@ local files; no third-party font request is made at runtime.
 - **Noto Serif:** variable weight, used at 400 and 700 for reading text.
 - **Noto Sans:** variable weight, used at 400, 500 and 600 for UI text.
 - **Noto Sans Mono:** normal 400 for revision metadata and JSON.
+- **Figtree** (run site): variable weight 300–900. Weight 900 with tight
+  tracking is the heavy rounded headline face of the approved run site; 400–700
+  sets its body, cards and docs. `figtree/OFL.txt`.
+- **JetBrains Mono** (run site): normal 400 for commands, paths and DNS values.
+  `jetbrains-mono/OFL.txt`.
 
 The root document links `/fonts/fonts.css` once and preloads the display and UI
 Latin files. Native authentication and setup documents use the same head links.
@@ -58,3 +63,13 @@ maximum), independent of the CSS face descriptors:
 Verified by parsing the WOFF2 table directory, decompressing its font stream with
 the system Brotli CLI, and reading the binary OpenType `fvar` axis records. The
 reading and UI CSS registrations limit selection to the weights used by Pane.
+
+## Run site faces
+
+Downloaded 19 October 2026 from the fontsource npm builds of the upstream OFL
+projects (Latin subset, unchanged):
+
+- `figtree/figtree-latin-wght-normal.woff2`: `@fontsource-variable/figtree@5.2.10`
+  (upstream https://github.com/erikdkennedy/figtree, SIL OFL 1.1).
+- `jetbrains-mono/jetbrains-mono-latin-400-normal.woff2`: `@fontsource/jetbrains-mono@5.2.8`
+  (upstream https://github.com/JetBrains/JetBrainsMono, SIL OFL 1.1).

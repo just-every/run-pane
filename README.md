@@ -1,8 +1,14 @@
 # Pane
 
-Your website, open for business. Five pages and a contact inbox. Preview every
-change, publish, and roll back in one step. Pane is free and open source, under
-the MIT licence. Your installation stores the site and inbox in Cloudflare D1.
+![Pane](public/brand/mark.svg)
+
+Your website, finally yours. Pane is the free, open source website builder a
+small business runs on its own account. Today it runs a five-page website
+(Home, About, Services, Hours and Contact) with a contact inbox: prepare a
+draft, preview every page, publish, and roll back in one step. Pane is free and
+open source under the MIT license. Your installation stores the site and inbox
+in Cloudflare D1. [CONTRACT.md](CONTRACT.md) is the product Pane is being built
+toward, clause by clause, with how close the code is today.
 
 ## Try the demo
 
@@ -20,15 +26,26 @@ after an hour and sends nothing to anyone. `rer demo` runs the same copy on your
 - [Back up and restore](docs/BACKUP-RESTORE.md): keep a private copy of your site and inbox.
 - [Work with your agent](docs/AGENT.md): prepare drafts through the authenticated helper.
 
-## Run from a clone
+## Run Pane on your computer
 
-Use Node **22.20.0** and pnpm **10.12.4**. One line installs rer if it is not on PATH, clones Pane and starts it:
+Install rer, then start Pane. These are the same two lines as the
+[Run page](https://run-pane.com/run):
+
+```sh
+curl -fsSL https://runeditrun.com/install.sh | sh
+rer dev just-every/run-pane
+```
+
+The installer brings its own Node when you have no Node 22 or later. If it ends
+with a line to run, run it before the second line. Already have Node 22 or
+later? One line does both:
 
 ```sh
 npx -y @runeditrun/rer dev just-every/run-pane
 ```
 
-To start it again later, run `cd run-pane && rer dev`.
+To start it again later, run `cd run-pane && rer dev`. Pane pins Node
+**22.20.0** and pnpm **10.12.4**; rer selects them.
 
 `rer dev` installs the pinned dependencies, sets up a fresh local installation and
 prints progress. Allow ten minutes on a fresh computer. A repeated invocation

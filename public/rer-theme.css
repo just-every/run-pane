@@ -47,7 +47,9 @@ html.rer-themed body:not(.pane) main { width: 100%; max-width: 520px; margin: 0 
 html.rer-themed h1 { font-family: var(--pane-font-display); font-stretch: 75%; font-weight: 750; line-height: 1.05; letter-spacing: -.02em; }
 html.rer-themed body:not(.pane) h1 { margin: 0 0 24px; font-size: 56px; text-align: left; text-wrap: pretty; }
 html.rer-themed body:not(.pane) .brand, html.rer-themed .rer-brand { display: flex; align-items: center; justify-content: flex-start; gap: 12px; margin: 0 0 32px; color: var(--pane-ink); font: 750 32px/1 var(--pane-font-display); font-stretch: 75%; }
-html.rer-themed body:not(.pane) .brand::before, html.rer-themed .rer-brand::before { content: ''; width: 32px; height: 32px; background: var(--rer-logo) center/contain no-repeat; }
+html.rer-themed body:not(.pane) .brand::before, html.rer-themed .rer-brand::before { content: ''; width: 44px; height: 32px; background: var(--rer-logo) center/contain no-repeat; }
+/* The mark is 1.36:1 (the winking window): the Lobby lockup keeps its proportions. */
+.lockup .mark { width: 1.58em; object-fit: contain; }
 html.rer-themed p { color: var(--pane-muted); }
 html.rer-themed body:not(.pane) dl { grid-template-columns: 72px minmax(0,1fr); gap: 16px; padding: 20px 0; border-block: 1px solid var(--pane-line); }
 html.rer-themed body:not(.pane) dt, html.rer-themed body:not(.pane) dd { font-size: 16px; }

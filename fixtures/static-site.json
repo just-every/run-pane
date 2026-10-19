@@ -6,7 +6,7 @@
     { "slug": "home", "title": "Made to last", "body": "Welcome to Cedar Street Studio. We repair well-loved furniture and build practical pieces for everyday life." },
     { "slug": "about", "title": "Our studio", "body": "We are a small independent workshop. Every project begins with a conversation about what you need and what is worth preserving." },
     { "slug": "services", "title": "Repairs and commissions", "body": "Furniture repairs\nSmall custom furniture\nFinishing and restoration\nContact us with a description of your project to arrange an estimate." },
-    { "slug": "hours", "title": "Visit the workshop", "body": "Monday to Friday: 9 am to 5 pm\nSaturday: by appointment\nSunday: closed" },
+    { "slug": "hours", "title": "Visit the workshop", "body": "Monday to Friday: 9 AM to 5 PM\nSaturday: by appointment\nSunday: closed" },
     { "slug": "contact", "title": "Start a conversation", "body": "Tell us about your project using the contact form. Include the kind of piece, the work needed, and when you hope to have it ready." }
   ]
 }

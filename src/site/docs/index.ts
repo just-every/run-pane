@@ -30,6 +30,6 @@ export function docsPages(): { path: string; html: string }[] {
   })
   return pages.map((page, index) => ({
     path: page.slug ? `/docs/${page.slug}` : '/docs',
-    html: docsDocument(page, sections, pages[index - 1], pages[index + 1]),
+    html: docsDocument(page, sections, pages, pages[index - 1], pages[index + 1]),
   }))
 }

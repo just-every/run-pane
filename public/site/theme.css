@@ -1,0 +1,84 @@
+/* Pane run site tokens (desk-approved look, 18 Oct 2026): defined once here and
+   read by the homepage, the docs and Base's /run, /contract and not-found pages. */
+:root {
+  --pn-ink: #1f0717;
+  --pn-plum: #2a0e22;
+  --pn-body: #4a3a45;
+  --pn-muted: #6b5a66;
+  --pn-line: #eadde5;
+  --pn-line-strong: #d9c7d2;
+  --pn-white: #ffffff;
+  --pn-tint: #eaf9fa;
+  --pn-tint-line: #cdeff0;
+  --pn-fuchsia: #f5026f;
+  --pn-fuchsia-deep: #d4005f;
+  --pn-action: #e8176e;
+  --pn-pink-soft: #ffd3e7;
+  --pn-aqua: #19c9b0;
+  --pn-teal: #01cecf;
+  --pn-tray: #027483;
+  --pn-night: #2d0719;
+  --pn-night-2: #3c0d25;
+  --pn-green: #02c47c;
+  --pn-green-soft: #d6f7e6;
+  --pn-red: #ff3b5c;
+  --pn-amber: #fdc764;
+  /* the five businesses */
+  --pn-lemon: #fddc6a;
+  --pn-sky: #a8dbfd;
+  --pn-leaf: #a6ecab;
+  --pn-blush: #fdd5db;
+  --pn-lilac: #e2d0fd;
+  /* block bricks */
+  --pn-brick-booking: #a97be5;
+  --pn-brick-contact: #78f3ca;
+  --pn-brick-blog: #c0dbfd;
+  --pn-brick-map: #feda50;
+  --pn-brick-gallery: #fe8ec8;
+  /* type */
+  --pn-font: 'Figtree', 'Helvetica Neue', Arial, sans-serif;
+  --pn-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  --pn-track: -.035em;
+  --pn-words: .06em;
+  --pn-radius: 16px;
+  --pn-shadow: 0 1px 2px rgb(42 14 34 / .06), 0 14px 32px -18px rgb(42 14 34 / .28);
+  /* Base's shared pages */
+  --rer-font-body: var(--pn-font);
+  --rer-font-heading: var(--pn-font);
+  --rer-font-mono: var(--pn-mono);
+  --rer-page: var(--pn-white);
+  --rer-surface: var(--pn-white);
+  --rer-text: var(--pn-ink);
+  --rer-muted: var(--pn-body);
+  --rer-border: var(--pn-line-strong);
+  --rer-focus: var(--pn-ink);
+  --rer-link: var(--pn-fuchsia-deep);
+  --rer-accent: var(--pn-action);
+  --rer-accent-text: var(--pn-white);
+  --rer-code-background: var(--pn-night);
+  --rer-code-text: #fff;
+  --rer-radius: var(--pn-radius);
+  --rer-button-radius: 14px;
+  --rer-logo: url('/brand/mark.svg');
+  --rer-wordmark-weight: 900;
+}
+html { color-scheme: light; }
+
+/* Base's /run, /contract and not-found pages in the site's look */
+body:has(> .bar) { background: var(--pn-white); }
+body:has(> .bar) .brand { font-weight: 900; letter-spacing: var(--pn-track); }
+body:has(> .bar) .brand img { width: 54px; height: 40px; }
+body:has(> .bar) h1 { font-weight: 900; letter-spacing: var(--pn-track); word-spacing: var(--pn-words); }
+body:has(> .bar) .intro h1, body:has(> .bar) .hero h1 { color: var(--pn-ink); }
+body:has(> .bar) .intro .sub { color: var(--pn-body); }
+body:has(> .bar) .step { background: var(--pn-white); border-color: var(--pn-line); box-shadow: var(--pn-shadow); backdrop-filter: none; }
+body:has(> .bar) .step h2 { font-weight: 800; word-spacing: .05em; }
+body:has(> .bar) .num { background: var(--pn-fuchsia); color: #fff; font-weight: 900; }
+body:has(> .bar) .facts a, body:has(> .bar) .go a { color: var(--pn-fuchsia-deep); }
+/* commands wrap only at spaces, never inside a token */
+body:has(> .bar) .code pre { white-space: pre-wrap; overflow-wrap: normal; overflow-x: auto; }
+@container (max-width: 480px) { body:has(> .bar) .code pre { font-size: 12.5px; } }
+@container (max-width: 330px) { body:has(> .bar) .code pre { font-size: 12px; padding-inline: 12px; } }
+@media (max-width: 420px) { body:has(> .bar) .step, body:has(> .bar) .step.option { padding-inline: 12px; } }
+body:has(> .bar) .btn { background: var(--pn-action); box-shadow: none; font-weight: 800; }
+@media (max-width: 760px) { body:has(> .bar) .brand img { width: 43px; height: 32px; } }

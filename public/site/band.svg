@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 300" preserveAspectRatio="xMidYMax slice">
+  <path fill="#eaf9fa" d="M0 196h1440v104H0z"/>
+  <path fill="none" stroke="#2a0e22" stroke-width="2.5" d="M0 196h1440"/>
+  <g stroke="#2a0e22" stroke-width="3" stroke-linejoin="round">
+    <g transform="rotate(-6 268 170)"><rect x="196" y="132" width="146" height="62" rx="12" fill="#c98fb0"/><rect x="196" y="124" width="146" height="58" rx="12" fill="#fe8ec8"/></g>
+    <g transform="rotate(4 452 172)"><rect x="380" y="140" width="146" height="58" rx="12" fill="#5fc9a6"/><rect x="380" y="132" width="146" height="56" rx="12" fill="#78f3ca"/></g>
+    <g><rect x="604" y="134" width="132" height="62" rx="12" fill="#8460b8"/><rect x="604" y="126" width="132" height="58" rx="12" fill="#a97be5"/></g>
+    <g transform="rotate(-3 880 170)"><rect x="812" y="138" width="136" height="60" rx="12" fill="#c9aa30"/><rect x="812" y="130" width="136" height="56" rx="12" fill="#feda50"/></g>
+    <g transform="rotate(7 1086 172)"><rect x="1020" y="140" width="132" height="58" rx="12" fill="#95b2d6"/><rect x="1020" y="132" width="132" height="56" rx="12" fill="#c0dbfd"/></g>
+    <g transform="rotate(-5 1262 176)"><rect x="1200" y="150" width="118" height="48" rx="10" fill="#c9aa30"/><rect x="1200" y="143" width="118" height="46" rx="10" fill="#fddc6a"/></g>
+    <rect x="58" y="150" width="64" height="46" rx="8" fill="#f5026f" transform="rotate(10 90 172)"/>
+  </g>
+</svg>
