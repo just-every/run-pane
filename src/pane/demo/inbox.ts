@@ -1,21 +1,21 @@
 // What the live site has collected: contact messages from the last six weeks
-// (the homepage's Priya Nair is the newest) and daily page visits.
+// (a wedding-tasting request is the newest) and daily page visits.
 const hour = 3600000, day = 24 * hour
 
 export const messages: { name: string; email: string; hoursAgo: number; message: string }[] = [
-  { name: 'Priya Nair', email: 'priya.nair@example.com', hoursAgo: 3, message: 'Could you repair a dining chair? One of our six oak chairs has a cracked back rail and the joints are loose. Happy to bring it in on Saturday morning if that works.' },
-  { name: 'Daniel Okafor', email: 'd.okafor@example.net', hoursAgo: 26, message: 'Hello, I am looking for a small walnut side table, about 20 inches square, to sit beside a reading chair. Do you take commissions that size, and roughly what would it cost?' },
-  { name: 'Helen Marsh', email: 'helen.marsh@example.org', hoursAgo: 49, message: 'Thank you for the rocking chair. It is back in the living room and doesn\'t creak at all. My granddaughter has already claimed it.' },
-  { name: 'Sam Whitfield', email: 'sam@whitfieldcafe.example', hoursAgo: 75, message: 'We run the cafe on Beacon Road and need eight bench seats re-oiled before the holidays. Could someone come and look at them, or should we bring one in?' },
-  { name: 'Grace Liu', email: 'grace.liu@example.com', hoursAgo: 4 * 24 + 5, message: 'Is there still a place in the Thursday evening joinery class? I have never used a chisel but I would love to learn.' },
-  { name: 'Marco Bellini', email: 'marco.bellini@example.net', hoursAgo: 6 * 24 + 2, message: 'Our cane seat has a hole in it after years with the cat. It is a standard bentwood chair. How long does re-caning take?' },
-  { name: 'Aisha Rahman', email: 'aisha.r@example.org', hoursAgo: 8 * 24 + 7, message: 'Do you restore painted furniture too? I have a 1950s kitchen dresser with chipped green paint that I would like to keep the color of.' },
-  { name: 'Peter Lindqvist', email: 'peter.lindqvist@example.com', hoursAgo: 11 * 24 + 4, message: 'I picked up the bookshelf on Friday. It fits the alcove perfectly. Please send the invoice to this address.' },
-  { name: 'Nora Fitzgerald', email: 'nora.fitz@example.net', hoursAgo: 15 * 24 + 1, message: 'A drawer in my grandmother\'s desk sticks badly in wet weather. Is that something you could fix in an afternoon, or does the desk need to stay with you?' },
-  { name: 'James Carter', email: 'jcarter@example.org', hoursAgo: 19 * 24 + 6, message: 'Could you quote for a step stool for a small kitchen? Two steps, light enough to carry, ideally in ash.' },
-  { name: 'Mei Tanaka', email: 'mei.tanaka@example.com', hoursAgo: 24 * 24 + 3, message: 'Are you open on the public holiday Monday? I would like to drop off two chairs.' },
-  { name: 'Oliver Grant', email: 'oliver.grant@example.net', hoursAgo: 31 * 24 + 8, message: 'Our school would like to donate some old desks for your offcut sale. Would you be able to collect them?' },
-  { name: 'Rosa Delgado', email: 'rosa.delgado@example.org', hoursAgo: 38 * 24 + 2, message: 'The table you refinished for us last year has a water ring from a vase. Can that be fixed without stripping the whole top?' },
+  { name: 'Lucia Ramirez', email: 'lucia.ramirez@example.com', hoursAgo: 2, message: 'We are getting married on Saturday, April 17 at the Pearl. About 140 guests. Could we come in for a tasting next week? Tres leches and lemon are our favorites.' },
+  { name: 'Daniel Park', email: 'dpark@example.net', hoursAgo: 21, message: 'Hi! I need two dozen conchas and a coffee tray for a staff meeting on Friday morning at 8 AM, for 30 people. Can I pick up at the side door?' },
+  { name: 'Marisol Vega', email: 'marisol.vega@example.org', hoursAgo: 27, message: 'My daughter\'s quinceañera is Saturday, December 5. We would like a three-tier cake for 120 guests in lavender and white. What would that cost?' },
+  { name: 'Grant Hollister', email: 'grant@hollisterdental.example', hoursAgo: 50, message: 'Could you deliver a sheet cake to our office on Wurzbach Road on October 30 for a retirement party? 40 servings, chocolate, "Happy Retirement, Linda".' },
+  { name: 'Ana Gutierrez', email: 'ana.g@example.com', hoursAgo: 4 * 24 + 3, message: 'Do you make pan de muerto without nuts? My son has a tree nut allergy and we would like a dozen for our ofrenda.' },
+  { name: 'Chris Whitaker', email: 'cwhitaker@example.net', hoursAgo: 5 * 24 + 6, message: 'Is the bakery open on Sunday, November 1? We are hosting family after church and would like to pick up empanadas around noon.' },
+  { name: 'Priya Desai', email: 'priya.desai@example.org', hoursAgo: 8 * 24 + 1, message: 'Thank you for the birthday cake on Saturday. The strawberry filling was perfect and there was not a crumb left.' },
+  { name: 'Robert Nguyen', email: 'robert.nguyen@example.com', hoursAgo: 11 * 24 + 4, message: 'Our church is planning a fall festival on Saturday, October 24. Could you quote 300 cookies and 10 dozen empanadas for pickup that morning?' },
+  { name: 'Jasmine Torres', email: 'jasmine.t@example.net', hoursAgo: 15 * 24 + 2, message: 'Do you offer gluten-free cake? A small one for six people is all we need.' },
+  { name: 'Mike Brennan', email: 'mike.brennan@example.org', hoursAgo: 19 * 24 + 5, message: 'Can I order Thanksgiving pies yet? I would like two pecan and one pumpkin for Wednesday, November 25.' },
+  { name: 'Teresa Lopez', email: 'teresa.lopez@example.com', hoursAgo: 24 * 24 + 7, message: 'Do you still bake the anise cookies my grandmother used to buy from you? Hers were called pan de polvo.' },
+  { name: 'Kevin Shaw', email: 'kevin@shawrealty.example', hoursAgo: 31 * 24 + 3, message: 'We host an open house every month. Could you set up a standing order for three dozen pastries on the first Saturday?' },
+  { name: 'Sofia Martinez', email: 'sofia.m@example.net', hoursAgo: 38 * 24 + 6, message: 'What time does the morning bake come out? I would like the conchas while they are still warm.' },
 ]
 
 const paths = [['home', 26], ['services', 14], ['hours', 11], ['contact', 6], ['about', 5]] as const

@@ -13,8 +13,9 @@ toward, clause by clause, with how close the code is today.
 ## Try the demo
 
 [demo.run-pane.com](https://demo.run-pane.com/) opens your own throwaway copy of Pane,
-signed in as the owner of Cedar Street Studio, a sample furniture workshop with
-four months of versions, a draft waiting for approval and a contact inbox. It ends
+signed in as Elena Ortega, owner of Ortega Bakery in San Antonio, with two
+months of versions, Mateo's wedding-cakes draft waiting for approval and a
+stream of inquiries. It ends
 after an hour and sends nothing to anyone. `rer demo` runs the same copy on your computer.
 
 ## Guides
@@ -63,8 +64,8 @@ in place of the one line and enter it at the prompt, then `cd run-pane && rer de
 1. Open your workspace at `/app`. Start with your own five pages or copy the
    documented example from [fixtures/static-site.json](fixtures/static-site.json).
    The five route slugs are `home`, `about`, `services`, `hours`, `contact`.
-   The editor's **Pages JSON** field accepts the fixture's **pages array**, while the
-   move-in form accepts the **whole fixture**. Page bodies are plain text;
+   **Start your site** takes a title and text for each page, while **Moves**
+   accepts the **whole fixture**. Page bodies are plain text;
    HTML is escaped.
 2. Prepare a draft, follow its preview link, and inspect all five pages. The
    owner chooses **Approve & publish**. Open `/site` to see the live version. Admins may

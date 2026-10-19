@@ -39,27 +39,16 @@ in place of the one line and enter it at the prompt, then `cd run-pane && rer de
 
 ## Add the five pages
 
-In your workspace, choose **Pages** and open **Edit site content**. Enter your
-**Site name** and **Description**. **Pages JSON** must contain exactly one page
-for each slug: `home`, `about`, `services`, `hours`, `contact`.
+Your workspace opens on **Pages**. Until the site has pages it shows **Start
+your site**: enter your **Site name** and **Description**, then a **Page title**
+and **Text** for each of the five pages (`/site`, `/site/about`,
+`/site/services`, `/site/hours` and `/site/contact`).
 
-Here is the array the editor accepts. Replace the titles and bodies with your content:
-
-```json
-[
-  { "slug": "home", "title": "Home", "body": "Welcome to our business." },
-  { "slug": "about", "title": "About", "body": "Our story." },
-  { "slug": "services", "title": "Services", "body": "What we do." },
-  { "slug": "hours", "title": "Hours", "body": "Saturday: 9 AM to 1 PM" },
-  { "slug": "contact", "title": "Contact", "body": "Send us a message below." }
-]
-```
-
-Bodies are plain text. Use `\n\n` inside a JSON string to separate paragraphs.
-HTML is displayed as text. A name or title may have up to 120 characters, the
-description up to 500 and each page body up to 20,000. Every title and body must
-contain text. You can also use the pages array in the
-[complete example export](../fixtures/static-site.json).
+Text is plain. A blank line starts a new paragraph, and HTML is displayed as
+text. A name or title may have up to 120 characters, the description up to 500
+and each page's text up to 20,000. Every title and text must contain something.
+To start from an existing export instead, paste the
+[complete example export](../fixtures/static-site.json) into **Moves**.
 
 Choose **Prepare draft revision**. This saves a whole-site snapshot while the
 live website stays unchanged. Follow **Preview draft** and inspect all five
@@ -67,14 +56,14 @@ pages. When ready, the owner chooses **Approve & publish**.
 
 ## Open the live website
 
-Choose **Open live site** or **View website**. Your public website is served at
+Choose **Open live site** on **Sites** or in the site switcher. Your public website is served at
 `/site` on your installation; the other pages use `/site/about`, `/site/services`,
 `/site/hours` and `/site/contact`. These paths belong to your app, not the public
 Pane documentation site.
 
 Before the first publish, the public website says it is getting ready. The
 Contact page accepts messages only on the live website; the preview form is
-disabled. Messages appear in **Contact inbox** in your workspace.
+disabled. Messages appear in **Inquiries** in your workspace.
 
 ## Stop and return later
 

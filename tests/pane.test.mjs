@@ -47,7 +47,7 @@ test('contact is durable, escaped and idempotent; tracking is aggregate and priv
  const send=()=>f.request('/site/contact',{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body,redirect:'manual'})
  assert.equal((await send()).status,303);assert.equal((await send()).status,303)
  const d=await data();assert.equal(d.messages.length,1);assert.equal(d.messages[0].message,'Can you cater our opening?')
- const html=await (await f.request('/app',{headers:{Cookie:owner}})).text();assert.ok(html.includes('Avery &lt;script&gt;'))
+ const html=await (await f.request('/app/inquiries',{headers:{Cookie:owner}})).text();assert.ok(html.includes('Avery &lt;script&gt;'))
  assert.equal((await json('/site/visit',{path:'home'},'',{DNT:'1'})).status,204)
  assert.equal((await json('/site/visit',{path:'home'},'')).status,204)
  assert.equal((await data()).visits.find(v=>v.path==='home').count,1)
@@ -61,6 +61,18 @@ test('later change and rollback restore the exact immutable site with recorded d
  assert.equal((await json('/api/pane/rollback',{revision:first.id})).status,200)
  assert.ok(!(await (await f.request('/site')).text()).includes('Open late on Fridays.'))
  assert.equal((await data()).approvals.filter(a=>a.action==='rollback').length,1)
+})
+test('the editor prepares one page over the revision it opened, and every screen opens',async()=>{
+ const form=(path,body,cookie=admin)=>f.request(path,{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded',Cookie:cookie},body:new URLSearchParams(body),redirect:'manual'})
+ const base=(await data()).draft
+ const r=await form('/app/prepare',{idempotency:crypto.randomUUID(),base:base.id,slug:'hours','page.hours.title':'Hours and parking','page.hours.body':'Open daily from 7 AM.\r\n\r\nPark behind the building.'})
+ assert.equal(r.status,303);assert.match(r.headers.get('location'),/^\/app\?page=hours&notice=/)
+ const draft=(await data()).draft;assert.notEqual(draft.id,base.id);assert.equal(draft.site.name,base.site.name)
+ assert.deepEqual(draft.site.pages.find(p=>p.slug==='hours'),{slug:'hours',title:'Hours and parking',body:'Open daily from 7 AM.\n\nPark behind the building.'})
+ assert.deepEqual(draft.site.pages.filter(p=>p.slug!=='hours'),base.site.pages.filter(p=>p.slug!=='hours'))
+ assert.equal((await form('/app/prepare',{idempotency:crypto.randomUUID(),base:base.id,slug:'hours','page.hours.title':'Hours','page.hours.body':''})).status,400)
+ for(const path of ['/app','/app?page=hours','/app/sites','/app/inquiries','/app/moves']){const page=await f.request(path,{headers:{Cookie:member}});assert.equal(page.status,200,path);assert.match(await page.text(),/aria-current="page"/)}
+ assert.equal((await f.request('/app/elsewhere',{headers:{Cookie:owner}})).status,404)
 })
 test('move-in dry run requires reviewed fingerprint, applies inert draft and journals undo',async()=>{
  const source=JSON.stringify({...fixture,name:'Riverbend imported'})

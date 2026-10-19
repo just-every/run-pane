@@ -1,40 +1,51 @@
-.pane .preview-banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 24px; padding: 16px 24px; border-bottom: 1px solid var(--pane-line); background: var(--pane-accent-tint); color: var(--pane-accent-ink); font-size: 14px; }
-.pane .preview-banner a { color: var(--pane-accent-ink); }
-.pane .public-shell { max-width: 1296px; margin: 0 auto; padding: 0 40px; }
-.pane .public-header { display: flex; align-items: center; justify-content: space-between; gap: 32px; padding: 32px 0; border-bottom: 1px solid var(--pane-line); }
-.pane .public-brand { color: var(--pane-ink); text-decoration: none; font: 750 32px/1.1 var(--pane-font-display); font-stretch: 75%; letter-spacing: -.02em; }
-.pane .public-header nav { display: flex; flex-wrap: wrap; gap: 24px; }
-.pane .public-header nav a { color: var(--pane-ink); text-decoration: none; font-size: 14px; }
-.pane .public-header nav a[aria-current] { text-decoration: underline; text-decoration-color: var(--pane-accent); text-decoration-thickness: 2px; text-underline-offset: 8px; }
-.rer-themed .pane .public-main { max-width: none; min-height: 60vh; padding: 80px 0 96px; }
-.rer-themed .pane .public-main h1 { font-size: 72px; line-height: 1.05; margin-bottom: 32px; }
-.pane .public-copy { max-width: 680px; }
-.rer-themed .pane .public-description, .pane .public-content { font: 400 20px/1.6 var(--pane-font-reading); }
-.pane .public-content p { white-space: pre-wrap; overflow-wrap: anywhere; }
-.pane .public-footer { display: flex; justify-content: space-between; gap: 32px; padding: 32px 0; border-top: 1px solid var(--pane-line); color: var(--pane-muted); font-size: 14px; }
-.pane .public-footer span:last-child { max-width: 580px; }
-.rer-themed .pane .public-contact { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 80px; align-items: start; }
-.pane .contact-section { padding: 32px; background: var(--pane-surface); border: 1px solid var(--pane-line); border-radius: var(--pane-radius); box-shadow: var(--pane-shadow); }
-.pane .contact-form { margin-top: 24px; }
-.pane fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 20px; min-width: 0; }
-.pane fieldset:disabled { opacity: .7; }
-.pane .honeypot { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); }
-.pane .move-in { max-width: 960px; }
-.pane .move-in article { margin: 24px 0; padding: 24px; background: var(--pane-surface); border: 1px solid var(--pane-line); border-radius: var(--pane-radius); }
-@media(max-width:1000px) {
-  .pane .public-header { align-items: flex-start; flex-direction: column; gap: 24px; }
+/* A business's published site, its draft preview and the editor's desktop frame:
+   a quiet white template in the app's sans, sized by its container, not the window. */
+.pane .preview-banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 18px; padding: 12px 20px; border-bottom: 1px solid color-mix(in srgb, var(--pn-action) 30%, white); background: color-mix(in srgb, var(--pn-action) 7%, white); color: var(--pn-ink); font-size: 14px; }
+.pane .preview-banner img { width: 34px; height: auto; }
+.pane .preview-banner strong { font-weight: 800; }
+.pane .preview-banner a { color: var(--pn-fuchsia-deep); font-weight: 600; }
+.pane .public-site { container-type: inline-size; background: var(--pn-white); }
+.pane .public-shell { max-width: 1200px; margin: 0 auto; padding: 0 40px; }
+.pane .public-header { display: flex; align-items: center; justify-content: space-between; gap: 32px; padding: 28px 0; border-bottom: 1px solid var(--pn-line); }
+.pane .public-brand { color: var(--pn-ink); text-decoration: none; font: 900 30px/1.1 var(--pn-font); letter-spacing: -.02em; word-spacing: .06em; }
+.pane .public-header nav { display: flex; flex-wrap: wrap; gap: 8px 26px; }
+.pane .public-header nav a { color: var(--pn-ink); text-decoration: none; font-size: 15px; }
+.pane .public-header nav a[aria-current] { text-decoration: underline; text-decoration-color: var(--pn-action); text-decoration-thickness: 2px; text-underline-offset: 8px; }
+.rer-themed .pane .public-main { min-height: 50vh; padding: 72px 0 88px; }
+.pane .public-site .eyebrow { margin-bottom: 14px; color: var(--pn-muted); font-size: 14px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.rer-themed .pane .public-main h1 { margin-bottom: 26px; font-size: 64px; font-weight: 900; line-height: 1.02; letter-spacing: var(--pn-track); word-spacing: var(--pn-words); text-wrap: balance; }
+.pane .public-copy { max-width: 700px; }
+.rer-themed .pane .public-description, .pane .public-content { color: var(--pn-body); font-size: 19px; line-height: 1.6; }
+.rer-themed .pane .public-description { margin-bottom: 18px; }
+.rer-themed .pane .public-content p { margin: 0 0 18px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--pn-body); }
+.pane .public-footer { display: flex; justify-content: space-between; gap: 32px; padding: 28px 0 36px; border-top: 1px solid var(--pn-line); color: var(--pn-muted); font-size: 14px; }
+.pane .public-footer span:last-child { max-width: 560px; }
+.rer-themed .pane .public-contact { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 72px; align-items: start; }
+.pane .contact-section { padding: 28px; border: 1px solid var(--pn-line); border-radius: 16px; background: var(--pn-white); box-shadow: var(--pn-shadow); }
+.pane .contact-section h2 { font-size: 24px; font-weight: 800; }
+.pane .contact-section .notice { margin: 14px 0 0; }
+.pane .contact-form { margin-top: 18px; }
+.rer-themed .pane .contact-form label { font-size: 14px; }
+.rer-themed .pane .contact-form input:not([type=hidden]), .rer-themed .pane .contact-form textarea { min-height: 44px; font-size: 16px; }
+.pane .contact-form button { justify-self: start; }
+.pane fieldset { display: grid; gap: 16px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.pane fieldset:disabled { opacity: .65; }
+.pane .honeypot { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
+.pane .public-sent .notice { margin: 20px 0 0; }
+@container (max-width: 1000px) {
+  .pane .public-header { flex-direction: column; align-items: flex-start; gap: 18px; }
   .rer-themed .pane .public-contact { gap: 32px; }
 }
-@media(max-width:700px) {
-  .pane .preview-banner { align-items: flex-start; justify-content: flex-start; gap: 8px; padding: 16px; }
-  .pane .preview-banner span { width: 100%; }
+@container (max-width: 700px) {
   .pane .public-shell { padding: 0 16px; }
-  .pane .public-header { padding: 24px 0; }
+  .pane .public-header { padding: 22px 0; }
   .pane .public-brand { font-size: 26px; }
-  .pane .public-header nav { gap: 12px 20px; }
-  .rer-themed .pane .public-main { padding: 48px 0 64px; }
-  .rer-themed .pane .public-main h1 { font-size: 40px; margin-bottom: 24px; }
+  .pane .public-header nav { gap: 10px 18px; }
+  .rer-themed .pane .public-main { padding: 40px 0 56px; }
+  .rer-themed .pane .public-main h1 { font-size: 40px; margin-bottom: 18px; }
+  .rer-themed .pane .public-description, .pane .public-content { font-size: 17px; }
   .rer-themed .pane .public-contact { display: block; }
-  .pane .contact-section { margin-top: 40px; padding: 24px 20px; }
-  .pane .public-footer { flex-direction: column; gap: 12px; }
+  .pane .contact-section { margin-top: 32px; padding: 22px 18px; }
+  .pane .public-footer { flex-direction: column; gap: 10px; }
 }
+@media (max-width: 700px) { .pane .preview-banner { justify-content: flex-start; padding: 12px 16px; } }

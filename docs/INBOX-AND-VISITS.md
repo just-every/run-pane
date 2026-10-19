@@ -5,8 +5,9 @@ read those messages and the page visit totals in the Pane workspace.
 
 ## Read contact messages
 
-Open **Contact inbox**. Each message shows the sender's name, email address,
-message and receipt time. The workspace displays the latest 100 messages.
+Open **Inquiries**. Each message shows the sender's name, email address,
+message and receipt time, newest first. The workspace displays the latest 100
+messages. **Visits by page** is on **Sites**.
 
 Messages are stored in your installation's database. Pane does not forward
 them by email, send new-message notifications or provide a reply button. If you
@@ -30,7 +31,7 @@ See [Back up and restore](BACKUP-RESTORE.md#restore-with-erasure-history).
 
 ## Understand visit totals
 
-**Visits** shows recorded views by page. Pane records aggregate counts per page
+**Visits by page** on **Sites** shows recorded views by page. Pane records aggregate counts per page
 and day, without cookies or visitor IDs. It does not store an IP address, user
 agent or referrer with a visit. Requests with Do Not Track or Global Privacy
 Control enabled are excluded. Draft previews are excluded too.

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "Cedar Street Studio",
-  "description": "A neighbourhood studio for thoughtful repairs and handmade furniture.",
+  "description": "A neighborhood studio for thoughtful repairs and handmade furniture.",
   "pages": [
     { "slug": "home", "title": "Made to last", "body": "Welcome to Cedar Street Studio. We repair well-loved furniture and build practical pieces for everyday life." },
     { "slug": "about", "title": "Our studio", "body": "We are a small independent workshop. Every project begins with a conversation about what you need and what is worth preserving." },

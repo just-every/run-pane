@@ -43,3 +43,18 @@ export async function publish(db:D1Database,actor:string,id:string,action:'publi
  await db.batch(approvalStatements(db, { id: crypto.randomUUID(), action, revision: id, actor, created_at: new Date().toISOString() }))
  return revision(row)
 }
+/**
+ * The site a form prepares: the editor's one page (`page.<slug>.title` and
+ * `.body`, plus name and description on Home) over the revision it was opened
+ * from (`base`), or all five pages and the name when the site is new.
+ */
+export async function siteFromForm(db: D1Database, input: Record<string, unknown>): Promise<Site> {
+ const row = input.base ? await db.prepare('SELECT * FROM pane_revisions WHERE id=?').bind(String(input.base)).first() : null
+ if (input.base && !row) throw new Error('Revision not found.')
+ const base = row ? revision(row).site : null
+ const field = (name: string, fallback?: string) => typeof input[name] === 'string' ? String(input[name]).replace(/\r\n/g, '\n') : fallback
+ return normalizeSite({
+  name: field('name', base?.name), description: field('description', base?.description ?? ''),
+  pages: slugs.map(slug => { const page = base?.pages.find(p => p.slug === slug); return { slug, title: field(`page.${slug}.title`, page?.title), body: field(`page.${slug}.body`, page?.body) } }),
+ })
+}

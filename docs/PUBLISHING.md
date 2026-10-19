@@ -5,11 +5,14 @@ leaves the live site as it is. Publishing makes the selected revision live.
 
 ## Make a change
 
-1. Choose **Pages**, then **Edit site content** in your workspace.
-2. Update the site name, description or **Pages JSON**. Keep all five pages in
-   the array, even when you only change Saturday's hours.
-3. Choose **Prepare draft revision**.
-4. Follow **Preview draft**. Use the preview navigation to read every page.
+1. Choose **Pages** in your workspace, then the page's brick along the bottom
+   (on Home, **Site name and description** opens those two fields too).
+2. In **Edit this page**, change the **Page title** or **Text**. A blank line
+   starts a new paragraph. The other four pages stay as they are.
+3. Choose **Prepare draft revision**. The phone marks each changed paragraph,
+   the brick says **Changed**, and **Not live yet** says what publishing changes.
+4. Follow **Preview this page** or **Preview draft**. Use the preview navigation
+   to read every page.
 5. Return to the workspace. The owner chooses **Approve & publish** on the
    draft they have reviewed.
 
@@ -28,7 +31,7 @@ and the operator who prepared it. **Live** marks the current website.
 
 Preview the earlier revision, then have the owner choose **Restore live** beside
 it. That complete snapshot becomes the live site in one action. Restoring does
-not erase later revisions or change your contact inbox.
+not erase later revisions or change your inquiries.
 
 The workspace lists the most recent 50 revisions. Saved revisions remain in
 the database; the current history display is limited to those 50 rows.

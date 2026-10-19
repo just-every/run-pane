@@ -5,10 +5,9 @@ format. See [the complete fixture](../fixtures/static-site.json).
 
 ## Move in through the workspace
 
-1. Sign in as an owner or admin. Choose **Imports**, then **Paste an export**.
-2. Paste the whole export into **Source JSON**, including `schemaVersion`, the
-   site name, description and all five pages. This differs from the editor's
-   **Pages JSON**, which takes only the pages array.
+1. Sign in as an owner or admin and choose **Moves**.
+2. Paste the whole export into **Source JSON** under **Import a site**,
+   including `schemaVersion`, the site name, description and all five pages.
 3. Choose **Check import**. This check creates no draft or import job.
 4. On **Review your move-in**, read every page. **Import identity** shows the
    exact source fingerprint. Choose **Approve import** to apply that reviewed

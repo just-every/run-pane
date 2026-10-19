@@ -1,76 +1,39 @@
-/* Pane's palette and type: one source for the site, Lobby, accounts and app. */
+/* Pane's Lobby, sign-in, setup, dev sign-in and app: the run site's tokens
+   (public/site/theme.css) are the one source; this file only applies them. */
 @import url('/fonts/fonts.css');
-:root {
-  --pane-paper: #FAF8F3;
-  --pane-surface: #FFFFFF;
-  --pane-ink: #15181D;
-  --pane-muted: #4A505A;
-  --pane-subtle: #6B7079;
-  --pane-line: #E4E0D7;
-  --pane-notice-border: #C9DFF8;
-  --pane-accent: #1E6FD9;
-  --pane-accent-ink: #1A5FBD;
-  --pane-accent-tint: #E3F0FD;
-  --pane-live: #2F8A3E;
-  --pane-draft-dot: #9AA0A8;
-  --pane-danger: #B3261E;
-  --pane-steel: #1C2126;
-  --pane-steel-highlight: #3A424A;
-  --pane-font-display: 'Noto Serif Display', serif;
-  --pane-font-reading: 'Noto Serif', serif;
-  --pane-font-ui: 'Noto Sans', sans-serif;
-  --pane-font-mono: 'Noto Sans Mono', monospace;
-  --pane-radius: 12px;
-  --pane-shadow: 0 1px 2px rgb(21 24 29 / .06), 0 10px 28px rgb(21 24 29 / .07);
-  --pane-focus: var(--pane-ink);
-  --rer-font-body: var(--pane-font-ui);
-  --rer-font-heading: var(--pane-font-display);
-  --rer-font-mono: var(--pane-font-mono);
-  --rer-page: var(--pane-paper);
-  --rer-surface: var(--pane-surface);
-  --rer-text: var(--pane-ink);
-  --rer-muted: var(--pane-muted);
-  --rer-border: var(--pane-line);
-  --rer-focus: var(--pane-focus);
-  --rer-link: var(--pane-accent);
-  --rer-accent: var(--pane-ink);
-  --rer-accent-text: var(--pane-surface);
-  --rer-radius: var(--pane-radius);
-  --rer-button-radius: 999px;
-  --rer-logo: url('/brand/mark.svg');
-  --rer-wordmark-weight: 750;
-}
+@import url('/site/theme.css');
 html { color-scheme: light; }
-html.rer-themed body:not(.pane) { position: relative; box-sizing: border-box; margin: 0; min-height: 100vh; padding: 144px 16px 88px; background: var(--pane-paper); color: var(--pane-ink); font: 400 16px/1.5 var(--pane-font-ui); display: grid; align-content: center; justify-items: center; }
-html.rer-themed body:not(.pane)::before, .pane .window-band { content: ''; display: block; position: absolute; inset: 0 0 auto; height: 56px; background: url('/brand/band.svg') center/100% 100% no-repeat; }
-html.rer-themed body:not(.pane) main { width: 100%; max-width: 520px; margin: 0 auto; padding: 40px; border: 1px solid var(--pane-line); border-radius: var(--pane-radius); background: var(--pane-surface); box-shadow: var(--pane-shadow); }
-html.rer-themed h1 { font-family: var(--pane-font-display); font-stretch: 75%; font-weight: 750; line-height: 1.05; letter-spacing: -.02em; }
-html.rer-themed body:not(.pane) h1 { margin: 0 0 24px; font-size: 56px; text-align: left; text-wrap: pretty; }
-html.rer-themed body:not(.pane) .brand, html.rer-themed .rer-brand { display: flex; align-items: center; justify-content: flex-start; gap: 12px; margin: 0 0 32px; color: var(--pane-ink); font: 750 32px/1 var(--pane-font-display); font-stretch: 75%; }
-html.rer-themed body:not(.pane) .brand::before, html.rer-themed .rer-brand::before { content: ''; width: 44px; height: 32px; background: var(--rer-logo) center/contain no-repeat; }
+
+/* Base's no-JavaScript pages (sign-in, setup, confirm, settings): a white card on the pale aqua worktable, bricks along the floor. */
+html.rer-themed body:not(.pane), body:has(> main > .brand + h1) { position: relative; box-sizing: border-box; margin: 0; min-height: 100vh; padding: 72px 16px 168px; background: var(--pn-tint); color: var(--pn-ink); font: 400 16px/1.5 var(--pn-font); display: grid; align-content: start; justify-items: center; -webkit-font-smoothing: antialiased; }
+html.rer-themed body:not(.pane)::after, body:has(> main > .brand + h1)::after { content: ''; position: absolute; inset: auto 0 0; height: 132px; background: url('/brand/band.svg') center bottom / auto 100% repeat-x; pointer-events: none; }
+html.rer-themed body:not(.pane) main, body:has(> main > .brand + h1) > main { position: relative; z-index: 1; box-sizing: border-box; width: 100%; max-width: 520px; margin: 0 auto; padding: 40px; border: 1px solid var(--pn-line); border-radius: 20px; background: var(--pn-white); box-shadow: var(--pn-shadow); }
+html.rer-themed h1, body:has(> main > .brand + h1) h1 { font-family: var(--pn-font); font-weight: 900; letter-spacing: var(--pn-track); word-spacing: var(--pn-words); line-height: 1.02; color: var(--pn-ink); }
+html.rer-themed body:not(.pane) h1, body:has(> main > .brand + h1) h1 { margin: 0 0 20px; font-size: 44px; text-align: left; text-wrap: balance; }
+html.rer-themed body:not(.pane) .brand, html.rer-themed .rer-brand, body:has(> main > .brand + h1) .brand { display: flex; align-items: center; justify-content: flex-start; gap: 10px; margin: 0 0 28px; color: var(--pn-ink); font: 900 28px/1 var(--pn-font); letter-spacing: var(--pn-track); }
+html.rer-themed body:not(.pane) .brand::before, html.rer-themed .rer-brand::before { content: ''; width: 41px; height: 30px; background: var(--rer-logo) center/contain no-repeat; }
+body:has(> main > .brand + h1) .brand img { width: 41px; height: 30px; }
 /* The mark is 1.36:1 (the winking window): the Lobby lockup keeps its proportions. */
 .lockup .mark { width: 1.58em; object-fit: contain; }
-html.rer-themed p { color: var(--pane-muted); }
-html.rer-themed body:not(.pane) dl { grid-template-columns: 72px minmax(0,1fr); gap: 16px; padding: 20px 0; border-block: 1px solid var(--pane-line); }
-html.rer-themed body:not(.pane) dt, html.rer-themed body:not(.pane) dd { font-size: 16px; }
-html.rer-themed label { color: var(--pane-ink); font-size: 14px; font-weight: 600; }
-html.rer-themed input:not([type=checkbox]):not([type=hidden]), html.rer-themed textarea { box-sizing: border-box; border: 1px solid var(--pane-line); border-radius: 10px; background: var(--pane-surface); color: var(--pane-ink); min-height: 48px; padding: 12px 14px; font: 400 16px/1.5 var(--pane-font-ui); }
-html.rer-themed input[type=checkbox] { accent-color: var(--pane-ink); }
-html.rer-themed button, html.rer-themed .action { min-height: 48px; border-radius: 999px; background: var(--pane-ink); color: var(--pane-surface); font: 600 16px/1.5 var(--pane-font-ui); }
-html.rer-themed button.secondary { border: 1px solid var(--pane-ink); background: var(--pane-surface); color: var(--pane-ink); }
-html.rer-themed .notice { border: 1px solid var(--pane-notice-border); border-radius: 10px; padding: 16px; background: var(--pane-accent-tint); color: var(--pane-accent-ink); }
-html.rer-themed .secondary-link a { color: var(--pane-accent); }
-html.rer-themed :focus-visible { outline: 3px solid var(--pane-focus); outline-offset: 3px; }
-@media(max-width:600px) {
-  html.rer-themed body:not(.pane) { padding: 112px 16px 48px; align-content: start; }
-  html.rer-themed body:not(.pane) main { padding: 28px 24px; }
-  html.rer-themed body:not(.pane) h1 { font-size: 34px; }
-  html.rer-themed body:not(.pane) .brand, html.rer-themed .rer-brand { font-size: 28px; margin-bottom: 28px; }
+html.rer-themed p { color: var(--pn-body); }
+html.rer-themed body:not(.pane) dl { grid-template-columns: 72px minmax(0,1fr); gap: 12px 16px; padding: 18px 0; border-block: 1px solid var(--pn-line); }
+html.rer-themed body:not(.pane) dt, html.rer-themed body:not(.pane) dd { font-size: 15px; }
+html.rer-themed label { color: var(--pn-ink); font-size: 14px; font-weight: 600; }
+html.rer-themed input:not([type=checkbox]):not([type=hidden]):not([type=radio]), html.rer-themed textarea, html.rer-themed select { box-sizing: border-box; border: 1px solid var(--pn-line-strong); border-radius: 10px; background: var(--pn-white); color: var(--pn-ink); min-height: 46px; padding: 11px 14px; font: 400 16px/1.45 var(--pn-font); box-shadow: none; transition: border-color .12s, box-shadow .12s; }
+html.rer-themed input:not([type=checkbox]):not([type=hidden]):not([type=radio]):focus, html.rer-themed textarea:focus, html.rer-themed select:focus { border-color: var(--pn-action); box-shadow: 0 0 0 3px rgb(232 23 110 / .16); outline: none; }
+html.rer-themed input[type=checkbox] { accent-color: var(--pn-action); }
+html.rer-themed button, html.rer-themed .action { min-height: 46px; border: 1px solid var(--pn-action); border-radius: 12px; background: var(--pn-action); color: var(--pn-white); font: 700 16px/1.4 var(--pn-font); }
+html.rer-themed button:hover, html.rer-themed .action:hover { background: var(--pn-fuchsia-deep); border-color: var(--pn-fuchsia-deep); }
+html.rer-themed button.secondary { border: 1px solid var(--pn-line-strong); background: var(--pn-white); color: var(--pn-ink); }
+html.rer-themed .notice { border: 1px solid var(--pn-tint-line); border-radius: 12px; padding: 14px 16px; background: var(--pn-tint); color: var(--pn-ink); }
+html.rer-themed a, html.rer-themed .secondary-link a { color: var(--pn-fuchsia-deep); }
+html.rer-themed :focus-visible, body:has(> main > .brand + h1) :focus-visible { outline: 2px solid var(--pn-action); outline-offset: 3px; }
+html.rer-themed body:not(.pane) main:has(#signin-email) { max-width: 560px; }
+html.rer-themed body:not(.pane) main:has(form[action="/setup"]) { max-width: 640px; }
+@media (max-width: 600px) {
+  html.rer-themed body:not(.pane), body:has(> main > .brand + h1) { padding: 32px 16px 128px; }
+  html.rer-themed body:not(.pane)::after, body:has(> main > .brand + h1)::after { height: 96px; }
+  html.rer-themed body:not(.pane) main, body:has(> main > .brand + h1) > main { padding: 28px 20px; }
+  html.rer-themed body:not(.pane) h1, body:has(> main > .brand + h1) h1 { font-size: 34px; }
+  html.rer-themed body:not(.pane) .brand, html.rer-themed .rer-brand { font-size: 24px; margin-bottom: 22px; }
 }
-
-html.rer-themed body:not(.pane) main:has(#signin-email) { max-width: 640px; }
-html.rer-themed main:has(#signin-email) .brand { justify-content: center; }
-html.rer-themed body:not(.pane) main:has(#signin-email) h1 { text-align: center; }
-html.rer-themed body:not(.pane) main:has(form[action="/setup"]) { max-width: 760px; }
-html.rer-themed body:not(.pane) main:has(form[action="/setup"]) h1 { font-size: 56px; }
-@media(max-width:600px) { html.rer-themed body:not(.pane) main:has(form[action="/setup"]) h1 { font-size: 34px; } }

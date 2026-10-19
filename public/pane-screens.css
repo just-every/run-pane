@@ -1,0 +1,115 @@
+/* Sites, Inquiries and Moves: the same worktable, each with its own composition. */
+.rer-themed .pane .screen-sites, .rer-themed .pane .screen-inquiries, .rer-themed .pane .screen-moves { display: block; max-width: 1240px; margin: 0 auto; padding: 28px 24px 48px; }
+.pane .screen-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
+.pane .screen-head h1 { font-size: 40px; font-weight: 900; line-height: 1; letter-spacing: var(--pn-track); word-spacing: var(--pn-words); }
+.rer-themed .pane .screen-head p { max-width: 620px; margin-top: 8px; font-size: 16px; }
+
+/* Sites: the homepage tile and its two states, then the revision ribbon beside visits */
+.pane .sites-top { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: stretch; }
+.pane .site-tile { display: grid; align-content: start; gap: 14px; overflow: hidden; padding: 0 0 22px; border: 1.5px solid var(--pn-plum); border-radius: 20px; background: var(--pn-white); box-shadow: 0 16px 34px -24px rgb(42 14 34 / .5); }
+.pane .site-tile-top { display: flex; align-items: center; gap: 12px; padding: 22px 24px; border-bottom: 1.5px solid var(--pn-plum); background: var(--pn-lemon); }
+.pane .site-tile-top .site-dot { width: 22px; height: 22px; background: var(--pn-white); }
+.pane .site-tile h1 { font-size: 40px; font-weight: 900; line-height: 1; letter-spacing: var(--pn-track); word-spacing: var(--pn-words); }
+.rer-themed .pane .site-tile-desc { padding: 0 24px; font-size: 16px; }
+.pane .tile-pages { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0 24px; list-style: none; }
+.pane .tile-pages li { padding: 5px 12px; border-radius: 8px; background: color-mix(in srgb, var(--brick) 32%, white); font-size: 13px; font-weight: 600; }
+.rer-themed .pane .site-tile-status { display: flex; align-items: center; gap: 6px; padding: 0 24px; color: var(--pn-ink); font-weight: 700; }
+.pane .site-tile-status svg { width: 20px; height: 20px; color: var(--pn-green); }
+.pane .site-tile .actions { padding: 0 24px; }
+.pane .state-cards { display: grid; gap: 14px; }
+.pane .state-card { display: grid; align-content: start; gap: 6px; }
+.pane .state-label { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 800; }
+.pane .status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--pn-line-strong); }
+.pane .status-dot.live { background: var(--pn-green); box-shadow: 0 0 0 4px var(--pn-green-soft); }
+.pane .status-dot.draft { background: var(--pn-action); box-shadow: 0 0 0 4px var(--pn-pink-soft); }
+.rer-themed .pane .state-card p { font-size: 14px; }
+.pane .state-id code { color: var(--pn-ink); }
+.pane .state-changes a { color: var(--pn-fuchsia-deep); font-weight: 600; }
+.pane .sites-body { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 28px; margin-top: 32px; align-items: start; }
+.pane .history h2 { font-size: 26px; font-weight: 900; letter-spacing: var(--pn-track); word-spacing: var(--pn-words); }
+.pane .history > .help { margin: 6px 0 16px; font-size: 14px; }
+.pane .ribbon { position: relative; display: grid; gap: 12px; margin: 0; padding: 0 0 0 28px; list-style: none; }
+.pane .ribbon::before { content: ''; position: absolute; top: 12px; bottom: 12px; left: 8px; width: 3px; border-radius: 2px; background: color-mix(in srgb, var(--pn-aqua) 45%, white); }
+.pane .revision { position: relative; }
+.pane .revision-dot { position: absolute; top: 18px; left: -26px; width: 15px; height: 15px; border: 2px solid var(--pn-aqua); border-radius: 50%; background: var(--pn-white); }
+.pane .revision.is-live .revision-dot { border-color: var(--pn-green); background: var(--pn-green); box-shadow: 0 0 0 4px var(--pn-green-soft); }
+.pane .revision-card { display: grid; gap: 6px; padding: 12px 16px; border: 1px solid var(--pn-line); border-radius: 12px; background: var(--pn-white); }
+.pane .revision.is-live .revision-card { border-color: color-mix(in srgb, var(--pn-green) 45%, white); }
+.pane .revision-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.pane .revision-head strong { font-size: 15px; }
+.pane .revision-time { margin-left: auto; color: var(--pn-muted); font-size: 13px; }
+.rer-themed .pane .revision-card p { font-size: 13px; }
+.pane .decisions { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.pane .decisions li { padding: 3px 10px; border-radius: 999px; background: var(--pn-tint); color: var(--pn-ink); font-size: 12px; font-weight: 600; }
+.pane .visits-card { position: sticky; top: 76px; }
+.pane .visits-card .help { margin: -6px 0 12px; }
+.pane .visit-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.pane .visit-list li { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 10px; font-size: 14px; }
+.pane .visit-list .tile { width: 30px; height: 30px; border-radius: 8px; }
+.pane .visit-list .tile svg { width: 18px; height: 18px; }
+.pane .visit-list strong { font-variant-numeric: tabular-nums; }
+.pane .visit-total { margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--pn-line); font-weight: 700; }
+
+/* Inquiries: one stream of messages beside a small summary */
+.pane .inquiries-body { display: grid; grid-template-columns: minmax(0, 760px) 260px; gap: 28px; align-items: start; }
+.pane .stream { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.pane .message { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; padding: 16px 18px; }
+.pane .message-avatar { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: color-mix(in srgb, var(--brick) 38%, white); color: var(--pn-ink); font-size: 14px; font-weight: 800; }
+.pane .message-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; margin-bottom: 6px; }
+.pane .message-head h2 { font-size: 16px; font-weight: 800; }
+.pane .message-meta { color: var(--pn-muted); font-size: 13px; overflow-wrap: anywhere; }
+.rer-themed .pane .plain-text { color: var(--pn-ink); font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pane .erase { margin-top: 10px; }
+.pane .erase summary { color: var(--pn-muted); font-size: 13px; font-weight: 600; }
+.pane .erase summary:hover { color: var(--pn-ink); }
+.rer-themed .pane .erase p { margin: 8px 0 10px; font-size: 13px; }
+.pane .summary-card { position: sticky; top: 76px; display: grid; gap: 14px; }
+.pane .summary-card dl { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0; }
+.pane .summary-card dt { color: var(--pn-muted); font-size: 13px; }
+.pane .summary-card dd { margin: 0; font-size: 30px; font-weight: 900; letter-spacing: var(--pn-track); }
+.pane .summary-card .help { display: flex; gap: 8px; font-size: 13px; }
+.pane .summary-card .help svg { width: 18px; height: 18px; color: var(--pn-aqua); }
+.pane .summary-card a { color: var(--pn-fuchsia-deep); font-weight: 600; }
+.pane .empty-inbox { display: grid; justify-items: center; gap: 4px; padding: 40px 20px; }
+.pane .empty-inbox img { margin-bottom: 8px; }
+
+/* Moves: the three steps, then the paste form beside the moves so far */
+.pane .move-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0 0 20px; padding: 0; list-style: none; counter-reset: step; }
+.pane .move-steps li { display: grid; grid-template-columns: 38px minmax(0, 1fr); column-gap: 12px; align-items: center; padding: 14px 16px; border: 1px dashed color-mix(in srgb, var(--pn-aqua) 55%, white); border-radius: 14px; background: color-mix(in srgb, var(--pn-white) 70%, transparent); }
+.pane .move-steps .tile { grid-row: span 2; }
+.pane .move-steps strong { font-size: 15px; }
+.pane .move-steps span:not(.tile) { color: var(--pn-muted); font-size: 13px; }
+.pane .moves-body { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.pane .moves-body .help code { overflow-wrap: anywhere; }
+.pane .job-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.pane .job-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px; border: 1px solid var(--pn-line); border-radius: 12px; }
+.pane .job-copy { display: grid; flex: 1; min-width: 150px; font-size: 13px; color: var(--pn-muted); }
+.pane .job-copy strong { color: var(--pn-ink); font-size: 14px; }
+.pane .pill-job { min-height: 26px; text-transform: capitalize; }
+.pane .pill-completed { border-color: transparent; background: var(--pn-green-soft); color: #00663f; }
+.pane .pill-undone { border-color: transparent; background: color-mix(in srgb, var(--pn-line) 70%, white); color: var(--pn-body); }
+.pane .pill-failed { border-color: transparent; background: #ffe3e8; color: #b0002a; }
+.pane .review-pages { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 14px; }
+.pane .review-pages h2 { margin: 2px 0 8px; font-size: 20px; font-weight: 800; }
+.pane .review-slug { color: var(--pn-muted); font: 400 12px/1.4 var(--pn-mono); }
+.pane .review-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 18px; }
+.pane .review-actions details { flex: 1 1 100%; }
+.pane .review-actions summary { font-size: 14px; font-weight: 700; }
+.pane .review-actions details code { display: block; margin-top: 6px; font-size: 12px; }
+
+@media (max-width: 1039px) {
+  .pane .sites-top, .pane .sites-body, .pane .inquiries-body, .pane .moves-body { grid-template-columns: minmax(0, 1fr); }
+  .pane .visits-card, .pane .summary-card { position: static; }
+  .pane .summary-card { order: -1; }
+}
+@media (max-width: 760px) {
+  .rer-themed .pane .screen-sites, .rer-themed .pane .screen-inquiries, .rer-themed .pane .screen-moves { padding: 20px 16px 36px; }
+  .pane .screen-head h1 { font-size: 32px; }
+  .pane .site-tile-top { padding: 18px; }
+  .pane .site-tile h1 { font-size: 30px; }
+  .rer-themed .pane .site-tile-desc, .pane .tile-pages, .rer-themed .pane .site-tile-status, .pane .site-tile .actions { padding: 0 18px; }
+  .pane .revision-time { margin-left: 0; width: 100%; }
+  .pane .move-steps { grid-template-columns: minmax(0, 1fr); }
+  .pane .message { grid-template-columns: 36px minmax(0, 1fr); gap: 12px; padding: 14px; }
+  .pane .message-avatar { width: 36px; height: 36px; font-size: 13px; }
+}

@@ -1,11 +1,11 @@
-// Demo mode's sample business (Base DEMO.md): Cedar Street Studio with four
+// Demo mode's sample business (Base DEMO.md): Ortega Bakery with two
 // months of published versions, one restore, the admin's pending draft, the
 // contact inbox and page visits, all relative to `now`. It runs once after the
 // owner exists, never fetches, and writes fixed ids that a repeat leaves unchanged.
 import type { Bindings } from './auth.server'
 import type { Page } from './pane/model'
 import { approvalStatements, draftRevision, revisionStatement } from './pane/content'
-import { decisions, owner, site, team, versions } from './pane/demo/studio'
+import { decisions, owner, site, team, versions } from './pane/demo/bakery'
 import { at, daysBefore, messages, visits } from './pane/demo/inbox'
 
 export async function seedDemo(env: Bindings, { ownerEmail, now }: { ownerEmail: string; now: Date }): Promise<void> {
