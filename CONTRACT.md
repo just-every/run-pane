@@ -26,9 +26,9 @@ A buyer replacing an incumbent needs the whole job, so the target is the whole j
 - **Move in and out.** Imports from WordPress.com, Squarespace, Wix, Webflow, Framer and Durable with a migration report, URL map, comments, events, enquiry and subscriber history and verified cutover (`MOVEIN-001`, `IMPORT-001` to `IMPORT-007`); open-format exports, backups, person-level privacy requests, US policy starters, security headers and US defaults (`BACKUP-001`, `ERASE-001`, `EXPORT-001`, `PRIV-001` to `PRIV-004`, `LOCALE-001`).
 - **Let AI and agents do the work.** AI drafts a whole site from business facts, assists writing, alt text and translation, suggests search fixes and edits collections in bulk (`AI-001` to `AI-004`); agents interview the owner, keep facts current, prove enquiries reach a person, recover lost search traffic, measure changes against real leads, migrate platforms and follow up enquiries, all under owner control and a USD budget (`AGENT-001` to `AGENT-008`).
 
-### Neighbouring products stay separate
+### Neighboring products stay separate
 
-Pane is one product: the website. Where the market sells a neighbouring product separately, Pane connects to it and does not rebuild it; when the neighbour is a Run Edit Run sibling, Pane links to that sibling first and to the US incumbent second.
+Pane is one product: the website. Where the market sells a neighboring product separately, Pane connects to it and does not rebuild it; when the neighbor is a Run Edit Run sibling, Pane links to that sibling first and to the US incumbent second.
 
 | Job | Owned by | How Pane meets it |
 | --- | --- | --- |
@@ -1068,7 +1068,7 @@ Agents run the website for the owner, beyond what Framer, Webflow and Durable sh
 - **Card processing, money movement and a full store.** Pane hands checkout to Stall, Stripe Payment Links or PayPal (`LINK-002`) and never holds card details or funds. Sales tax, refunds and inventory live there.
 - **Domain registration, certificate authority and the delivery network.** The owner registers domains in their own Cloudflare Registrar account or keeps their registrar; Cloudflare issues certificates and serves traffic in the owner's account (`DOMAIN-001` to `DOMAIN-004`). Pane operates them for the owner and never holds a registration.
 - **Business email hosting.** Mailboxes stay with Google Workspace or Microsoft 365; Pane preserves their DNS records (`DOMAIN-003`), recreates registrar email forwarding in the owner's Cloudflare Email Routing (`DOMAIN-005`) and sends form mail through the installation relay or the owner's account.
-- **Rebuilding neighbouring products.** CRM, booking, store, memberships billing, email marketing, help desk, surveys, chat and monitoring stay with the sibling or incumbent named in [Neighbouring products stay separate](#neighbouring-products-stay-separate), each with its connection status visible.
+- **Rebuilding neighboring products.** CRM, booking, store, memberships billing, email marketing, help desk, surveys, chat and monitoring stay with the sibling or incumbent named in [Neighboring products stay separate](#neighbouring-products-stay-separate), each with its connection status visible.
 - **WordPress plugins and lossless import of every site.** Pane does not run WordPress plugins or themes. Imports bring content, media and URLs with every exception listed (`IMPORT-005`); a site that depends on a specialist plugin keeps that service through an embed, a connection or WordPress hosting.
 - **Rankings, legal compliance and invented claims.** Pane provides search controls and agents that report evidence, not guaranteed rankings. Policy starters and accessibility checks support, but do not replace, the owner's own legal review. Pane never publishes invented reviews, credentials, staff or prices.
 - **US first.** Defaults are US English, US time zones, USD and US formats (`LOCALE-001`); other locales and currencies are settings, and translated pages are drafts the owner approves (`AI-002`). No HIPAA business associate agreement is offered; a clinic keeps patient intake in its practice system (for example Balm) and links to it.
