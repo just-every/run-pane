@@ -19,8 +19,8 @@ const map: [string, string][] = [
   ['/shop/p/autumn-market-bouquet', 'shop.hollisandpineflorist.com/autumn-market-bouquet'],
   ['/new-page-2', '/weddings'],
 ]
-// Break long paths only after a slash or hyphen.
-const path = (value: string) => `<code>${value.replace(/([/-])/g, '$1<wbr>')}</code>`
+// An address wraps only after a "/" or "." and never inside a name: "wreath-making-workshop" stays whole.
+const path = (value: string) => `<code>${(value.match(/\/?[^/.]+[/.]?|[/.]/g) ?? [value]).map(token => `<span class="pn-nb">${token}</span>`).join('<wbr>')}</code>`
 
 export function movein(): string {
   return `<section class="pn-sec pn-move" aria-labelledby="pn-move-title">

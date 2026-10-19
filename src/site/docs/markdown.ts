@@ -1,11 +1,28 @@
 import { posix } from 'node:path'
 import { Marked, type Tokens } from 'marked'
+import { commandGroups } from '../command'
 import { docsHref, escapeHtml, type DocsPage, type Heading, type RenderedDoc } from './types'
 
 // Markdown sources stay in the repository. Only manifest-listed documents are
 // published. Raw HTML and embedded images are rejected rather than executed.
 // Commands and paths wrap only at spaces, never inside a token (a hyphen or slash).
 const keepTokens = (html: string) => html.replace(/[^\s]+/g, word => `<span class="docs-token">${word.replace(/,(?!$)/g, ',<wbr>')}</span>`)
+// An inline command keeps together and wraps only before its repository or path argument.
+const isCommand = (text: string) => text.includes(' ') && !/[(),]/.test(text)
+
+/** A guide's summary: whole sentences up to about 200 characters, or whole words and an ellipsis. */
+function summarize(text: string, limit = 200): string {
+  const plain = text.replace(/\s+/g, ' ').trim()
+  if (plain.length <= limit) return plain
+  let summary = ''
+  for (const sentence of plain.match(/[^.!?]+[.!?]+(?=\s|$)/g) ?? []) {
+    if ((summary + sentence).length > limit) break
+    summary += sentence
+  }
+  if (summary) return summary.trim()
+  const cut = plain.slice(0, limit + 1)
+  return cut.slice(0, cut.lastIndexOf(' ')).replace(/[\s,;:·–-]+$/, '') + '…'
+}
 
 export function renderMarkdown(page: DocsPage, source: string, pages: DocsPage[], repository: string): RenderedDoc {
   const published = new Map(pages.map(value => [value.source, docsHref(value.slug)]))
@@ -35,8 +52,10 @@ export function renderMarkdown(page: DocsPage, source: string, pages: DocsPage[]
       else if (depth <= 3) headings.push({ id, title: plain, depth })
       return `<h${depth} id="${escapeHtml(id)}">${this.parser.parseInline(tokens)}</h${depth}>\n`
     },
-    paragraph({ tokens, text }: Tokens.Paragraph) {
-      if (!description) description = text.replace(/[`*_]/g, '').replace(/\s+/g, ' ').slice(0, 180)
+    paragraph({ tokens }: Tokens.Paragraph) {
+      // The first paragraph with words describes the page; link labels and code are read as plain text.
+      const plain = tokens.every(token => token.type === 'image' || !token.raw.trim()) ? '' : this.parser.parseInline(tokens, this.parser.textRenderer)
+      if (!description && plain.trim()) description = summarize(plain)
       return `<p>${this.parser.parseInline(tokens)}</p>\n`
     },
     link({ href, title: label, tokens }: Tokens.Link) {
@@ -49,7 +68,10 @@ export function renderMarkdown(page: DocsPage, source: string, pages: DocsPage[]
       if (!/^public\/brand\/[a-z0-9-]+\.svg$/.test(resolved)) throw new Error(`Images need a declared asset pipeline: ${page.source}`)
       return `<img class="docs-inline-mark" src="/${resolved.slice('public/'.length)}" alt="${escapeHtml(text)}" width="54" height="40">`
     },
-    codespan({ text }: Tokens.Codespan) { return `<code>${keepTokens(text)}</code>` },
+    codespan({ text }: Tokens.Codespan) {
+      if (!isCommand(text)) return `<code>${keepTokens(text)}</code>`
+      return `<code>${commandGroups(text.split(' ')).map(group => `<span class="docs-cmd">${keepTokens(group.join(' '))}</span>`).join(' ')}</code>`
+    },
     code({ text, lang }: Tokens.Code) {
       return `<div class="docs-code"><pre tabindex="0" role="group" aria-label="${escapeHtml(lang ? `${lang} code` : 'Code')}"><code>${keepTokens(escapeHtml(text))}</code></pre><button class="docs-copy" type="button" hidden>Copy</button></div>\n`
     },
@@ -61,5 +83,5 @@ export function renderMarkdown(page: DocsPage, source: string, pages: DocsPage[]
   } })
   const html = markdown.parse(source) as string
   if (titleCount !== 1) throw new Error(`${page.source} needs exactly one level-one heading`)
-  return { ...page, title, description, html, headings }
+  return { ...page, title, description: page.summary ?? description, html, headings }
 }

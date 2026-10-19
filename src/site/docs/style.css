@@ -45,7 +45,8 @@ body.pane-docs { margin: 0; background: var(--pn-white); color: var(--pn-ink); f
 .docs-inline-mark { display: block; width: 80px; height: auto; margin-bottom: 18px; }
 .docs-article a { color: var(--pn-fuchsia-deep); }
 .docs-article code { font: 400 .86em/1.6 var(--pn-mono); }
-.docs-token { white-space: nowrap; }
+.docs-token, .docs-cmd { white-space: nowrap; }
+.pane-docs :is(strong, b) { word-spacing: .06em; }
 .docs-article :not(pre) > code { padding: 2px 6px; border-radius: 6px; background: #f6eef3; color: var(--pn-plum); }
 .docs-code { display: flex; align-items: flex-start; gap: 12px; margin: 24px 0; padding-right: 14px; border-radius: 16px; background: var(--pn-night); }
 .docs-code pre { flex: 1; min-width: 0; margin: 0; overflow-x: auto; padding: 22px 0 22px 24px; color: #fff; line-height: 1.7; }
@@ -58,9 +59,11 @@ body.pane-docs { margin: 0; background: var(--pn-white); color: var(--pn-ink); f
 .docs-table td, .docs-table th { padding: 11px 16px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--pn-line); }
 .docs-table th { background: var(--pn-tint); font-weight: 700; }
 .docs-table tr:last-child td { border-bottom: 0; }
-.docs-cards { display: grid; gap: 28px; margin: 40px 0 8px; }
-.docs-card-group h2 { margin: 0 0 14px; font: 700 13px/1.5 var(--pn-font); letter-spacing: .18em; text-transform: uppercase; color: #5b4a55; }
-.docs-card-group ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
+.docs-cards { display: grid; gap: 28px; margin: 36px 0 8px; }
+.docs-readme { margin-top: 56px; padding-top: 32px; border-top: 1px solid var(--pn-line); }
+.docs-readme > h2:first-of-type { margin-top: 0; }
+.docs-article .docs-card-group h2 { margin: 0 0 14px; font: 700 13px/1.5 var(--pn-font); letter-spacing: .18em; text-transform: uppercase; color: #5b4a55; }
+.docs-card-group ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
 .docs-card-group li + li { margin-top: 0; }
 .docs-card-group a { display: grid; gap: 6px; height: 100%; padding: 18px 20px; border: 1px solid var(--pn-line); border-radius: 16px; background: #fff; box-shadow: var(--pn-shadow); color: var(--pn-body); text-decoration: none; font-size: 15px; line-height: 1.5; }
 .docs-card-group a strong { color: var(--pn-ink); font-size: 19px; font-weight: 800; letter-spacing: -.01em; }
@@ -105,10 +108,13 @@ body.pane-docs { margin: 0; background: var(--pn-white); color: var(--pn-ink); f
   .docs-copy { align-self: flex-end; margin: 0 10px 0 0; }
   .docs-code pre { padding: 10px 16px 18px; }
   .docs-code pre code { font-size: 12.5px; }
+  .docs-article :not(pre) > code { font-size: .8em; }
   .docs-pager { gap: 12px; }
   .docs-pager a { padding: 12px; font-size: 14px; }
   .docs-footer-row { flex-wrap: wrap; gap: 8px 20px; padding-block: 24px; }
   .docs-footer-row p { flex-basis: 100%; order: 2; }
   .docs-footer-row nav { order: 3; margin-left: 0; gap: 20px; }
 }
+/* below 380 px a long command may wrap at its spaces, each token still whole */
+@media (max-width: 379px) { .docs-cmd { white-space: normal; } }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

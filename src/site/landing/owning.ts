@@ -4,8 +4,9 @@ import { eyebrow, heading, nb, ok, picture, tick } from './parts'
 
 export function interlude(): string {
   return `<section class="pn-interlude" aria-label="Saturday Community Flow at Brightside Yoga">
-  ${picture('interlude', 'Overhead view of a yoga studio floor: a teacher on a pink mat and sixteen mats in four rows, fourteen with students and two empty.', 1536, 905, { widths: [768, 1152, 1536], sizes: '100vw', className: 'pn-interlude-art' })}
-  ${picture('interlude-phone', '', 936, 905, { widths: [640, 936], sizes: '100vw', className: 'pn-interlude-phone' })}
+  ${picture('interlude-plate', 'Overhead view of a yoga studio floor: a teacher on a pink mat and sixteen mats in four rows, fourteen with students and two empty.', 1536, 1024, { widths: [1152, 1536], sizes: '100vw', className: 'pn-interlude-plate' })}
+  ${picture('interlude', '', 1536, 905, { widths: [768, 1152, 1536], sizes: '100vw', className: 'pn-interlude-art' })}
+  ${picture('interlude-phone', '', 671, 905, { widths: [448, 671], sizes: '100vw', className: 'pn-interlude-phone' })}
   <p class="pn-interlude-card"><span>Saturday Community Flow · ${nb('9:00 AM')} · ${nb('14 of 16')}<small>Brightside Yoga · ${nb('Sat Oct 24')} · its first Saturday live</small></span>${tick()}</p>
 </section>`
 }

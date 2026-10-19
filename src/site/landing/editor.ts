@@ -7,7 +7,7 @@ import { eyebrow, heading, nb, ok, picture, tick } from './parts'
 const block = (label: string, body: string, extra = '') => `<div class="pn-blk${extra ? ' ' + extra : ''}"><span class="pn-blk-tag">${label}</span>${body}</div>`
 const field = (label: string, kind: 'text' | 'date' | 'select' | 'file') => `<span class="pn-field"><span class="pn-field-label">${label}</span>`
   + (kind === 'file' ? '<span class="pn-input pn-input-file">Choose file</span>' : `<span class="pn-input pn-input-${kind}"></span>`) + '</span>'
-const cakes = [1, 2, 3, 4, 5, 6].map(n => picture(`cake-${n}`, '', 101, 74, { className: 'pn-cake' })).join('')
+const cakes = [1, 2, 3, 4, 5, 6].map(n => picture(`cake-${n}`, '', 101, 74, { className: `pn-cake pn-cake-${n}` })).join('')
 
 export function editor(): string {
   const canvas = [
@@ -45,7 +45,7 @@ export function editor(): string {
           <p class="pn-insp-chip">${tick()}<span>Search title: Wedding Cakes in San Antonio&nbsp;| Ortega Bakery</span></p>
         </aside>
       </div>
-      <div class="pn-ed-held" aria-hidden="true">${picture('04-hand', '', 365, 119)}<span>gallery</span></div>
+      <div class="pn-ed-held" aria-hidden="true">${picture('04-hand', '', 1265, 809)}<span>gallery</span></div>
     </div>
     <div class="pn-approve">
       ${picture('04-phone', '', 376, 433, { className: 'pn-approve-art' })}
