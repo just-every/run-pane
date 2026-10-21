@@ -11,7 +11,7 @@ const post=(path,data)=>context.request.post(origin+path,{headers:{Origin:origin
 const dashboard=async()=>(await context.request.get(origin+'/api/pane')).json()
 const saved=()=>page.waitForFunction(()=>document.querySelector('[data-save-status]').textContent==='Draft saved. Not published.',undefined,{timeout:20000})
 const siteText=async()=>(await context.request.get(origin+'/site')).text()
-async function capture(name,width){await page.screenshot({path:resolve(folder,`${name}-${width}.png`)});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,`${name} overflow at ${width}`)}
+async function capture(name,width){await page.screenshot({path:resolve(folder,`${name}-${width}.png`),fullPage:true});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,`${name} overflow at ${width}`)}
 async function tick(iso){await fixture.advance(iso)}
 try {
  await fixture.bootstrap(context);await page.goto(origin+'/setup');await page.getByRole('checkbox').check()
@@ -35,7 +35,8 @@ try {
   await controls.getByLabel('Promotion banner',{exact:true}).fill(promotion)
   await controls.getByLabel('Quarterly review starts',{exact:true}).fill(`${year+1}-01-${thanksgiving}T09:00`)
   await saved()
-  await capture('schedule-controls',width)
+  await controls.getByLabel('Business time zone',{exact:true}).scrollIntoViewIfNeeded();await capture('schedule-controls',width)
+  await controls.getByLabel('Quarterly review starts',{exact:true}).scrollIntoViewIfNeeded();await capture('schedule-review-controls',width)
   // Existing editor guarantees apply to these controls too.
   await controls.getByLabel('Holiday banner',{exact:true}).fill(holiday+' Draft correction');await saved()
   await page.getByRole('button',{name:'Undo',exact:true}).click();await saved()

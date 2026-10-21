@@ -270,3 +270,10 @@
 }
 .pane .bricks[data-many] { display: flex; min-width: 0; overflow-x: auto; }
 .pane .bricks[data-many] .brick { flex: 0 0 128px; }
+/* Schedule fieldsets stay inside the existing edit card on narrow screens. */
+.pane [data-schedule-settings], .pane [data-schedule-settings] :is(.edit-form, fieldset, label) { min-width: 0; }
+.pane [data-schedule-settings] fieldset { display: grid; gap: 10px; margin: 0; padding: 12px; border: 1px solid var(--pn-line); border-radius: 10px; }
+.pane [data-schedule-settings] legend { padding: 0 5px; font-size: 13px; font-weight: 700; }
+.pane [data-schedule-settings] :is(input, select) { min-width: 0; max-width: 100%; }
+.pane [data-schedule-settings] select { width: 100%; }
+.rer-themed .pane [data-schedule-settings] label:has(> input) { grid-template-columns: minmax(0, 1fr); }
