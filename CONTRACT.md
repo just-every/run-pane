@@ -504,7 +504,7 @@ The owner manages 301 and 302 redirects one by one or by CSV import, and Pane of
 
 **Acceptance evidence:** Rename a published slug and accept the offered redirect, import 200 redirects by CSV, and request each old URL to get the right status and target.
 
-*Status:* partial. Published revisions own 301/302 redirect maps, individual edits and reviewed offers for retired URLs after slug changes or deletion; drafts do not alter routes and rollback restores the map. The 200-row CSV import acceptance journey is pending. IMPORT-005 and DOMAIN-001 inherit the URL map when adding imported and custom-domain public doors.
+*Status:* done. Published revisions own exact 301/302 redirect maps, individual addition/retargeting/deletion and explicit offers for retired published URLs after slug changes or deletion. CSV import is an explicit undoable editor action supporting quoted fields and 200-row maps. Every imported source returns its chosen status and target; malformed input never partially saves, drafts do not change live routes, and rollback restores the map. IMPORT-005 and DOMAIN-001 inherit this map when adding imported and custom-domain public doors.
 
 #### SEO-003 — Automatic sitemap and robots.txt.
 
@@ -1117,8 +1117,8 @@ Judged from the code and tests at commit `f6d80f5ee6f918c2c774b11884d8205b44538c
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 16 | 0 | 0 | 16 |
-| Target and push further | 5 | 30 | 74 | 109 |
-| All | 21 | 30 | 74 | 125 |
+| Target and push further | 6 | 29 | 74 | 109 |
+| All | 22 | 29 | 74 | 125 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -1183,7 +1183,7 @@ Judged from the code and tests at commit `f6d80f5ee6f918c2c774b11884d8205b44538c
 | `HOST-004` | Transparent running cost in USD | target | missing |  | No usage or cost view. |
 | `HOST-005` | Install from the browser with no terminal | target | missing |  | Installation runs through `rer deploy` or the `npx @runeditrun/rer` command line only; no browser install path. |
 | `SEO-001` | Page titles and meta descriptions | target | partial | `src/pane/search.ts`; `src/pane/search-settings.ts`; `src/pane/search-view.ts`; `tests/search.test.mjs`; `scripts/search-journey.mjs` | Current pages have editable search titles and descriptions, defaults and a saved search preview. Posts and collection items still depend on CMS-001, CMS-002 and CMS-004. |
-| `SEO-002` | Redirect manager and slug-change redirects | target | partial | `tests/search.test.mjs` — “published URL changes offer explicit redirects and each revision owns its exact status and target map”; `scripts/pages-journey.mjs` — “Forty-page editor journey” (rename/deletion offers and chosen 301 targets) | 200-row CSV import public proof pending. |
+| `SEO-002` | Redirect manager and slug-change redirects | target | done | `tests/search.test.mjs` — “published URL changes offer explicit redirects and each revision owns its exact status and target map” (rename/deletion offers, chosen 301/302 GET/HEAD targets, draft isolation, invalid/cyclic targets, atomic malformed-CSV refusal and rollback); `scripts/redirects-journey.mjs` — “Redirect manager journey” (accepted published-slug offer, individual 301/302 addition/retargeting/deletion, quoted 200-row CSV import with every status/target requested, import undo/redo, publication and rollback at 1440/390; exact candidate heavy-slot run cited in campaign plan) | None. |
 | `SEO-003` | Automatic sitemap and robots.txt | target | partial | `src/pane/search.ts`; `src/pane/search-settings.ts`; `src/pane/search-view.ts`; `tests/search.test.mjs`; `scripts/search-journey.mjs` | Published revisions generate sitemap.xml with last-modified dates and noindex exclusions, and editable robots.txt; drafts never change either and rollback restores them. Hidden/protected pages and post/item URLs await PAGE-001, PAGE-011 and CMS-001 to CMS-004. |
 | `SEO-004` | Canonical URLs and indexing controls | target | partial | `src/pane/search.ts`; `src/pane/search-settings.ts`; `src/pane/search-view.ts`; `tests/search.test.mjs`; `scripts/search-journey.mjs` | Current pages have canonical URLs, custom canonical overrides and noindex controls; draft previews and development-origin pages send noindex. Primary custom-domain routing and www/apex acceptance await DOMAIN-001. |
 | `SEO-005` | Structured data for local businesses | target | missing |  | No structured data. |
