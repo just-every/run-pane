@@ -1,3 +1,5 @@
+import { normalizeAutomations } from './schedules'
+import { schedulesFromForm } from './ui/schedule-form'
 import { normalizePageLinks, pageLinksFromText } from './page-extras'
 import { activePages, cleanSlug, folderName, normalizePageOrganization, pageId, pagePath, redirectOffers, structureFromForm } from './pages'
 import { normalizeRedirects } from './redirects'
@@ -23,7 +25,7 @@ export function normalizeSite(value: unknown): Site {
   return {slug, ...(page.id ? {id: page.id} : {}), ...(page.kind ? {kind: page.kind} : {}), ...(page.folder ? {folder: folderName(page.folder)} : {}), ...(page.hidden ? {hidden: true} : {}), ...(page.deleted ? {deleted: true} : {}), title: page.title.normalize('NFC').trim(), body: page.body.normalize('NFC').trim(), ...(page.search ? {search: normalizeSearch(page.search)} : {}), ...(page.embed ? {embed: normalizeEmbed(page.embed)} : {}), ...(page.acknowledgment !== undefined ? {acknowledgment: normalizeAcknowledgment(page.acknowledgment)} : {}), ...(page.searchBox ? {searchBox: true} : {}), ...(page.links !== undefined ? {links: normalizePageLinks(page.links)} : {})}
  })
  const analyticsCampaigns = normalizeCampaigns(input.analyticsCampaigns)
- const site: Site = {...normalizePageOrganization(input,pages), ...(input.navigation ? {navigation: normalizeNavigation(input.navigation,pages)} : {}), ...(input.socials ? {socials: normalizeSocials(input.socials)} : {}), ...(analyticsCampaigns.length ? {analyticsCampaigns} : {}), name: input.name.normalize('NFC').trim(), description: input.description.normalize('NFC').trim(), pages, ...(input.robots !== undefined ? {robots: normalizeRobots(input.robots)} : {}), ...(input.redirects !== undefined ? {redirects: normalizeRedirects(input.redirects)} : {})}
+ const site: Site = {...normalizePageOrganization(input,pages), ...(input.automations !== undefined ? {automations: normalizeAutomations(input.automations)} : {}), ...(input.navigation ? {navigation: normalizeNavigation(input.navigation,pages)} : {}), ...(input.socials ? {socials: normalizeSocials(input.socials)} : {}), ...(analyticsCampaigns.length ? {analyticsCampaigns} : {}), name: input.name.normalize('NFC').trim(), description: input.description.normalize('NFC').trim(), pages, ...(input.robots !== undefined ? {robots: normalizeRobots(input.robots)} : {}), ...(input.redirects !== undefined ? {redirects: normalizeRedirects(input.redirects)} : {})}
  const routes = new Set(activePages(site).map(page => pagePath(site,page.slug)))
  for (const redirect of site.redirects ?? []) if (routes.has(redirect.from) || ['/site/search','/site/visit'].includes(redirect.from)) throw Error(`Redirect ${redirect.from} would replace an existing page or service.`)
  return site
@@ -87,7 +89,7 @@ export async function siteFromForm(db: D1Database, input: Record<string, unknown
  if (input.base && !row) throw new Error('Revision not found.')
  const base = row ? revision(row).site : null
  const field = (name: string, fallback?: string) => typeof input[name] === 'string' ? String(input[name]).replace(/\r\n/g,'\n') : fallback
- const site: Site = base ? structureFromForm({...base, ...navigationFromForm(input,base), ...redirectsFromForm(input,base)},input.structure) : {name: '',description: '',pages: slugs.map(slug => ({slug,title:'',body:''}))}
+ const site: Site = base ? structureFromForm({...base, ...navigationFromForm(input,base), ...redirectsFromForm(input,base), ...schedulesFromForm(input,base)},input.structure) : {name: '',description: '',pages: slugs.map(slug => ({slug,title:'',body:''}))}
  return normalizeSite({...site, name: field('name',site.name), description: field('description',site.description), analyticsCampaigns: typeof input.analyticsCampaigns === 'string' ? input.analyticsCampaigns.split(/\r?\n/).map(label=>label.trim()).filter(Boolean) : site.analyticsCampaigns,
  pages: site.pages.map(page => {
   const original = base?.pages.find(old => pageId(old) === pageId(page))

@@ -1,3 +1,5 @@
+import { activeBanners } from './schedules'
+import { escape } from './ui/kit'
 import { activePages, homeSlug, pagePath } from './pages'
 import { visitDimensions } from './visit-dimensions'
 import { deliverAcknowledgment } from './acknowledgment'
@@ -51,20 +53,22 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   return new Response(null,{status:303,headers:{location:pagePath(site,slug)+'?sent=1'}})
  }
  if(!['GET','HEAD'].includes(request.method))return json({error:'Method not allowed.'},405)
+ const banners=await activeBanners(env.DB,String(row.id))
+ const announcements=banners.length ? `<div class="public-site"><aside class="public-shell public-announcements" aria-label="Announcements">${banners.map(banner=>`<p class="notice">${escape(banner.text)}</p>`).join('')}</aside></div>` : ''
  if(slug==='search') {
   const query=url.searchParams.get('q')??''
-  const response=await document(`Search · ${site.name}`,siteSearch(site,query),'site')
+  const response=await document(`Search · ${site.name}`,announcements+siteSearch(site,query),'site')
   return query.length > 200 ? new Response(response.body,{status:400,headers:response.headers}) : response
  }
  if(!page) {
   const missing=site.notFound && activePages(site).find(page=>page.slug===site.notFound)
   if(!missing)return notFound()
-  const response=await document(site.name,publicPage(site,missing.slug,'live',request.headers.get('Sec-GPC')==='1'),'site',missing.embed ? embedOrigin(missing.embed) : undefined)
+  const response=await document(site.name,announcements+publicPage(site,missing.slug,'live',request.headers.get('Sec-GPC')==='1'),'site',missing.embed ? embedOrigin(missing.embed) : undefined)
   const headers=new Headers(response.headers);headers.set('x-robots-tag','noindex, nofollow')
   return new Response(request.method==='HEAD'?null:response.body,{status:404,headers})
  }
  const notice=(page.kind==='contact'||slug==='contact')&&url.searchParams.has('sent')?'<div class="public-site public-sent"><div class="public-shell"><p class="notice" role="status">Thank you. Your message is in the business inbox.</p></div></div>':''
  const embed=page.embed
- const response=await document(site.name,notice+publicPage(site,slug,'live',request.headers.get('Sec-GPC')==='1'),'site',embed ? embedOrigin(embed) : undefined)
+ const response=await document(site.name,announcements+notice+publicPage(site,slug,'live',request.headers.get('Sec-GPC')==='1'),'site',embed ? embedOrigin(embed) : undefined)
  return request.method==='HEAD' ? new Response(null,{status:response.status,headers:response.headers}) : response
 }

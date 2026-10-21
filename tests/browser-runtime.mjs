@@ -44,3 +44,6 @@ export async function signIn(page){
  await page.waitForURL(url=>url.pathname==='/app')
 }
 export async function stop(){await new Promise(resolve=>server.close(resolve));await f.mf.dispose()}
+
+// Dispatch the platform scheduled event against the built production Worker.
+export async function advance(iso){const result=await (await f.mf.getWorker()).scheduled({scheduledTime:new Date(iso),cron:"* * * * *"});assert.equal(result.outcome,"ok")}

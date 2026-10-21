@@ -10,7 +10,7 @@ export async function runtime({bindings={},outboundService,cf}={}) {
  const config=JSON.parse(await readFile('dist/server/wrangler.json','utf8'))
  const files=[config.main,...(await readdir('dist/server',{recursive:true})).filter(n=>n.endsWith('.js')&&n!==config.main)]
  const modules=files.map(path=>({type:'ESModule',path:resolve('dist/server',path)}))
- modules.unshift({type:'ESModule',path:resolve('dist/server/__test-entry.mjs'),contents:'import app from "./index.js"; export default { async fetch(request,env,context) { const input=await request.json(); const targetRequest=new Request(input.url,input.init); if(input.cf)Object.defineProperty(targetRequest,"cf",{value:input.cf}); return app.fetch(targetRequest,env,context); } }'})
+ modules.unshift({type:'ESModule',path:resolve('dist/server/__test-entry.mjs'),contents:'import app from "./index.js"; export default { async scheduled(controller,env,context) { return app.scheduled(controller,env,context); }, async fetch(request,env,context) { const input=await request.json(); const targetRequest=new Request(input.url,input.init); if(input.cf)Object.defineProperty(targetRequest,"cf",{value:input.cf}); return app.fetch(targetRequest,env,context); } }'})
  const mf=new Miniflare({...convertV4MiniflareOptions({modules,modulesRoot:resolve('dist/server'),compatibilityDate:'2026-09-08',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'pane-test'},bindings:{...settings,...bindings},...(outboundService?{outboundService}:{})})})
  let db
  try {

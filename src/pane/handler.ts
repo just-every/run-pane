@@ -1,3 +1,4 @@
+import { markReviewed } from './schedules'
 import { activePages, homeSlug } from './pages'
 import { wireDatabase } from '@runeditrun/rer/internal/modules/d1-transport/index.mjs'
 import { erasureStatements, invalidateTransfersStatements } from '@runeditrun/rer/internal/modules/portability/journal.mjs'
@@ -51,6 +52,11 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    result=await publish(env.DB,actor.id,String(input.revision),action)
    notice=action==='publish'?'Published. Your approval is recorded.':'Rolled back. Your approval is recorded.'
    if(action==='rollback')back='/app/sites'
+  } else if(action==='review') {
+   const live = await env.DB.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first()
+   const id=String(input.page??'')
+   if(!live || !activePages(revision(live).site).some(page=>(page.id??page.slug)===id))throw Error('Published page not found.')
+   await markReviewed(env.DB,id,actor.id,Date.now());result={reviewed:id};notice='Page review recorded.';back='/app/sites'
   } else if(action==='import/dry-run') {
    result=await planMoveIn(env.DB,actor,typeof input.source==='string'?input.source:JSON.stringify(input.source))
    if(!api) {

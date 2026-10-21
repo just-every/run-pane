@@ -1,3 +1,4 @@
+import { runSchedules } from './pane/schedules'
 import { documentPermissions } from './pane/document-security'
 import { withDemo } from './modules/demo/index.mjs'
 import { searchResponse, searchMetadata } from './pane/search'
@@ -17,6 +18,9 @@ const api = new Hono<{ Bindings: Bindings }>()
 api.get('/health', (context) => context.json({ status: 'ok', ...deploymentHealth(context.env) }))
 
 export default withDemo<Bindings, ExportedHandler<Bindings>>({
+  async scheduled(controller, env) {
+    await runSchedules(runtimeBindings(env).DB,controller.scheduledTime)
+  },
   async fetch(request, env, execution) {
     const asset = await staticAssetResponse(request, env)
     if (asset) return asset
