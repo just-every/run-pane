@@ -7,7 +7,8 @@ import { execFileSync } from 'node:child_process'
 import { runtime } from '../tests/runtime.mjs'
 
 const environment = process.argv[2]
-assert.match(environment ?? '', /^sx-[a-z0-9-]+$/, 'Use an isolated sx test environment, never production')
+assert.match(environment ?? '', /^[a-z][a-z0-9-]+$/, 'Name the isolated test environment')
+assert.notEqual(environment, 'production', 'Use an isolated test environment, never production')
 const recordPath = `.rer/deploy/${environment}.json`
 const state = JSON.parse(await readFile(recordPath, 'utf8'))
 assert.equal(state.accountId, process.env.CLOUDFLARE_ACCOUNT_ID)

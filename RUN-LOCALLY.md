@@ -215,7 +215,7 @@ transfer is unsupported by the maintained references and fails visibly.
 
 Real deployment uses the owner-account procedure and its private credentials.
 `rer deploy --dry-run` validates and builds locally without a
-provider request. The default environment is `production`; select another with
+provider write; it reads the target's secret bindings with Cloudflare credentials. The default environment is `production`; select another with
 `--environment NAME`. Local validation does not establish provider acceptance,
 hosted health or mail delivery.
 
@@ -290,3 +290,21 @@ addresses). `rer door restart` drains and restarts the door: checkouts that
 were starting finish starting, and open tabs reconnect. After a reboot or logout the door needs `rer door start` (or any
 `rer dev` in a checkout that uses it); `rer door stop` and `rer door disable`
 stop it and opt this computer out.
+
+## Disposable deployment proof
+
+Use an isolated test environment with the documented production inputs, then
+prove its public health response, migration history and guarded removal:
+
+```sh
+rer deploy --environment test-pane --non-interactive
+node scripts/deployment-journey.mjs test-pane
+```
+
+The journey compares both a local Worker and the hosted `/health` with the
+saved deployment record, reads every applied D1 migration and its SHA-256,
+checks an unknown installed path, then runs `rer deploy --remove --yes` and
+requires its absence readback. It removes the test installation and its data.
+It needs the same Cloudflare account and token used for that test deployment.
+`node scripts/health-browser-journey.mjs` checks local health and the installed
+404 at 1440 and 390; set `PANE_HEALTH_ORIGIN` to check a hosted test installation.
