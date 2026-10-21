@@ -57,6 +57,7 @@ try {
   assert.equal(loads, before)
   await page.getByRole('button', {name: 'Allow external content'}).click()
   await page.waitForFunction(() => window.privacyProbe?.parentCookie === 'blocked' && window.privacyProbe?.api === 'blocked')
+  assert.equal((await page.evaluate(() => window.privacyProbe)).api, 'blocked')
   assert.equal((await page.evaluate(() => window.privacyProbe)).origin, 'null', 'Sandbox has an opaque origin')
   await page.waitForFunction(() => document.querySelector('iframe') !== null)
   assert.equal(await page.locator('iframe').getAttribute('sandbox'), 'allow-scripts')
@@ -73,7 +74,5 @@ try {
   await capture('embed-gpc-' + width)
   await context.setExtraHTTPHeaders({})
  }
- // Fetch from the opaque third-party frame never receives the native workspace session.
- assert.equal((await page.evaluate(() => window.privacyProbe)).api, 'blocked')
  console.log('Privacy browser journey passed: owner revision approval, page-only CSP, inert previews, consent, GPC, opaque sandbox and API refusal at 1440 and 390.')
 } finally { await browser.close(); if (ownsFixture) await fixture.stop() }
