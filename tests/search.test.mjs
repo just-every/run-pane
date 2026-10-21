@@ -38,7 +38,7 @@ test('SEO-001 SEO-003 SEO-004: search drafts, index output, page editing and rol
  const signedOut = await f.request(`/preview/${draft.id}/services`)
  assert.match(signedOut.headers.get('x-robots-tag'), /noindex/)
  const settingsHtml = await page('/app/search')
- assert.match(settingsHtml, /aria-label="Search preview for Services"/)
+ assert.ok(settingsHtml.includes(`aria-label="Search preview for ${fixture.pages.find(p => p.slug === 'services').title}"`))
  assert.ok(settingsHtml.includes('Riverbend catering &amp; private events'))
  // Editing body content via the regular page form must retain search settings.
  const edited = await f.request('/app/prepare', {method: 'POST', headers: {Cookie: owner, Origin: origin, 'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({base: draft.id, slug: 'services', 'page.services.body': 'Catering for neighborhood gatherings.'})})
@@ -50,6 +50,9 @@ test('SEO-001 SEO-003 SEO-004: search drafts, index output, page editing and rol
  assert.ok(html.includes('name="description" content="Fresh pastries for &quot;your&quot; studio &amp; team."'))
  assert.ok(html.includes('rel="canonical" href="https://riverbend.example/catering"'))
  assert.match(await page('/site/contact'), /rel="canonical" href="http:\/\/127.0.0.1:8787\/site\/contact"/)
+ const staging = await f.request('http://staging.example/site/services')
+ assert.match(staging.headers.get('x-robots-tag'), /noindex/, 'Staging origins never index the business site')
+ assert.match(await staging.text(), /rel="canonical" href="https:\/\/riverbend.example\/catering"/)
  const excluded = await f.request('/site/hours')
  assert.match(excluded.headers.get('x-robots-tag'), /noindex/)
  assert.match(await excluded.text(), /name="robots" content="noindex/)
