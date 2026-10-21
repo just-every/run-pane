@@ -3,9 +3,7 @@ import { searchResponse, searchMetadata } from './pane/search'
 import { paneResponse } from './pane/handler'
 import { publicResponse } from './pane/public'
 import { rejectedResponse } from './base/rejected-response'
-import start from '@tanstack/react-start/server-entry'
 import { Hono } from 'hono'
-import { dispatch } from './base/dispatch'
 import { staticAssetResponse } from './base/static-assets'
 import { deploymentHealth } from './base/deployment-health'
 import { lobbyResponse } from './base/lobby'
@@ -16,15 +14,6 @@ import { seedDemo } from './demo'
 
 const api = new Hono<{ Bindings: Bindings }>()
 api.get('/health', (context) => context.json({ status: 'ok', ...deploymentHealth(context.env) }))
-
-// Start documents keep their own cache policy and add no-transform, so no proxy
-// rewrites the HTML React hydrates (Cloudflare's email address obfuscation
-// honours it; src/base/hydration/README.md).
-function noTransform(response: Response): Response {
-  const headers = new Headers(response.headers), policy = headers.get('cache-control')
-  headers.set('cache-control', policy ? `${policy}, no-transform` : 'no-transform')
-  return new Response(response.body, { status: response.status, statusText: response.statusText, headers })
-}
 
 export default withDemo<Bindings, ExportedHandler<Bindings>>({
   async fetch(request, env, execution) {
@@ -44,6 +33,8 @@ export default withDemo<Bindings, ExportedHandler<Bindings>>({
     if (state) return state
     const lobby = await lobbyResponse(request, runtimeBindings(env), identity)
     if (lobby) return lobby
-    return rejectedResponse(request, await dispatch(request, () => api.fetch(request, env, execution), async () => noTransform(await start.fetch(request))))
+    // Pane's documents are handled above. Hono owns health and the final 404;
+    // an empty Start route tree otherwise answers unknown documents with 200.
+    return rejectedResponse(request, await api.fetch(request, env, execution))
   },
 } satisfies ExportedHandler<Bindings>, { seed: seedDemo })
