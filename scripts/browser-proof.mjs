@@ -5,4 +5,5 @@ try {
  await import('./browser-journey.mjs')
  await import('./editing-journey.mjs')
  await import('./search-journey.mjs')
+ await import('./privacy-journey.mjs')
 } finally {await fixture.stop()}
