@@ -1,6 +1,6 @@
 # Pane acceptance
 
-Every clause in [CONTRACT.md](CONTRACT.md) is accepted only when the journey below runs through a public door (a route, a command, the built site or a browser journey) and passes. Status is judged from the code and tests at commit `80f6943` (17 October 2026); `done` means the journey is exercised by the cited test, not that a hosted provider accepted it. Counts: 125 clauses: 12 done, 30 partial, 83 missing.
+Every clause in [CONTRACT.md](CONTRACT.md) is accepted only when the journey below runs through a public door (a route, a command, the built site or a browser journey) and passes. Status is judged from the code and tests at commit `80f6943` (17 October 2026); `done` means the journey is exercised by the cited test, not that a hosted provider accepted it. Counts: 125 clauses: 13 done, 29 partial, 83 missing.
 
 ## First release
 
@@ -18,7 +18,7 @@ The first release serves the public business site at `/site`; installing the Wor
 ### Sign-in, roles and authority
 
 - **ACCESS-001 — Server-side role authorization** (done). Sign in as owner, invite and confirm an admin and a member, then call `/api/pane` routes signed out, as each role and after deactivating the admin. Signed-out calls get 401, a member is refused prepare, an admin is refused publish, and the deactivated admin gets 401 with no write. Evidence: `src/pane/handler.ts`; `tests/pane.test.mjs`.
-- **ACCESS-002 — Canonical-origin mutations** (partial). Post a prepare request and a contact message with a foreign `Origin` header and see 403 with no new revision or message. Evidence: `src/pane/handler.ts`; `src/pane/public.ts`; `tests/pane.test.mjs`.
+- **ACCESS-002 — Canonical-origin mutations** (done). Post a prepare request and a contact message with a foreign `Origin` header and see 403 with no new revision or message. Evidence: `src/pane/handler.ts`; `src/pane/public.ts`; `tests/pane.test.mjs`.
 
 ### Revisions and publication
 

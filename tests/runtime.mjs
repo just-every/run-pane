@@ -20,5 +20,8 @@ export async function runtime({bindings={},outboundService}={}) {
    await db.batch(queries.filter(q=>q.trim()).map(q=>db.prepare(q)))
   }
  }catch(e){await mf.dispose();throw e}
- return {mf,db,request:(path,options={})=>mf.dispatchFetch('http://localhost/__test_dispatch',{method:'POST',redirect:'manual',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:origin+path,init:{...options,headers:{Host:new URL(origin).host,'CF-Connecting-IP':'127.0.0.1',...options.headers},...(options.body?{body:String(options.body)}:{})}})})}
+ return {mf,db,request:(path,options={})=>{
+  const target=new URL(path,origin)
+  return mf.dispatchFetch('http://localhost/__test_dispatch',{method:'POST',redirect:'manual',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:target.href,init:{...options,headers:{Host:target.host,'CF-Connecting-IP':'127.0.0.1',...options.headers},...(options.body?{body:String(options.body)}:{})}})})
+ }}
 }

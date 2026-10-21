@@ -12,7 +12,9 @@ const json=(v:unknown,status=200)=>Response.json(v,{status,headers:{'cache-contr
 export async function paneResponse(request:Request,original:Bindings):Promise<Response|null> {
  const url=new URL(request.url),path=url.pathname,api=path.startsWith('/api/pane'),preview=path.startsWith('/preview/')
  if(path!=='/app'&&!path.startsWith('/app/')&&!api&&!preview)return null
- const env=runtimeBindings(original),session=await operatorAuth(env).getSession(request)
+ const env=runtimeBindings(original),canonical=new URL(env.AUTH_ORIGIN).origin
+ if(request.method==='POST'&&(url.origin!==canonical||request.headers.get('Origin')!==canonical))return json({error:'Same-origin request required.'},403)
+ const session=await operatorAuth(env).getSession(request)
  if(!session)return api?json({error:'Sign in required.'},401):new Response(null,{status:303,headers:{location:'/signin?returnTo='+encodeURIComponent(path)}})
  const actor=session.operator,owner=actor.role==='owner',editor=owner||actor.role==='admin'
  if(!['owner','admin','member'].includes(actor.role))return json({error:'Role has no access.'},403)
@@ -32,7 +34,6 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    return document(screens[path][1],workspace(data,path,url.searchParams.get('page')??'home'))
   }
   if(request.method!=='POST')return json({error:'Method not allowed.'},405)
-  if(request.headers.get('Origin')!==url.origin)return json({error:'Same-origin request required.'},403)
   if(Number(request.headers.get('content-length')??0)>1200000)return json({error:'Input exceeds 1.2 MB.'},413)
   const input:Record<string,any>=request.headers.get('content-type')?.includes('application/json')?await request.json():Object.fromEntries(await request.formData())
   const action=api?path.slice('/api/pane/'.length):path.slice('/app/'.length)

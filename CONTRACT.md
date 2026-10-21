@@ -1109,14 +1109,14 @@ Judged from the code and tests at commit `80f6943012240b0240eafd9e5763b992bb3275
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
-| Published | 12 | 4 | 0 | 16 |
+| Published | 13 | 3 | 0 | 16 |
 | Target and push further | 0 | 26 | 83 | 109 |
-| All | 12 | 30 | 83 | 125 |
+| All | 13 | 29 | 83 | 125 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
 | `ACCESS-001` | Server-side role authorization | published | done | `src/pane/handler.ts`; `tests/pane.test.mjs` |  |
-| `ACCESS-002` | Canonical-origin mutations | published | partial | `src/pane/handler.ts`; `src/pane/public.ts`; `tests/pane.test.mjs` | Only a cross-origin private prepare is tested; no test posts a cross-origin contact message or visit. |
+| `ACCESS-002` | Canonical-origin mutations | published | done | `src/pane/handler.ts`; `src/pane/public.ts`; `tests/pane.test.mjs` |  |
 | `PUBLISH-001` | Immutable complete revisions | published | done | `src/pane/content.ts`; `tests/pane.test.mjs` |  |
 | `PUBLISH-002` | Private draft preview | published | done | `src/pane/handler.ts`; `src/pane/public-view.ts`; `tests/pane.test.mjs` |  |
 | `PUBLISH-003` | Owner-approved atomic publication | published | done | `src/pane/content.ts`; `tests/pane.test.mjs`; `scripts/browser-journey.mjs` |  |

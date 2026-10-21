@@ -31,6 +31,10 @@ test('native owner sign-in and role sessions protect direct handlers',async()=>{
  assert.equal((await json('/api/pane/prepare',{site:fixture},member)).status,403)
  assert.equal((await json('/api/pane/publish',{revision:'missing'},admin)).status,403)
  assert.equal((await json('/api/pane/prepare',{site:fixture},owner,{Origin:'https://elsewhere.invalid'})).status,403)
+ assert.equal((await data()).revisions.length,0)
+ for(const path of ['/site/contact','/site/visit']){
+  assert.equal((await f.request(path,{method:'POST',headers:{Origin:'https://elsewhere.invalid'}})).status,403,'ACCESS-002: unpublished forms also refuse foreign origins')
+ }
 })
 test('PRESENT-001: five pages preview with a draft banner and publish without product branding',async()=>{
  const r=await json('/api/pane/prepare',{site:fixture},admin);assert.equal(r.status,200,await r.clone().text());first=await r.json()
@@ -41,7 +45,22 @@ test('PRESENT-001: five pages preview with a draft banner and publish without pr
  for(const page of fixture.pages){const p=await f.request(page.slug==='home'?'/site':'/site/'+page.slug);assert.equal(p.status,200);const html=await p.text();assert.ok(html.includes(page.title));assert.ok(html.includes(`<title>${fixture.name}</title>`));assert.doesNotMatch(html,/\bPane\b|\/brand\/|rel="(?:icon|apple-touch-icon|manifest)"|preview-banner/)}
  const d=await data();assert.equal(d.live.id,first.id);assert.equal(d.approvals[0].revision,first.id);assert.ok(d.approvals[0].actor)
 })
-test('contact is durable, escaped and idempotent; tracking is aggregate and privacy-aware',async()=>{
+test('ACCESS-002: mutations require the canonical origin; accepted contact is durable and visits respect privacy',async()=>{
+ const before=await data(),foreign='https://elsewhere.invalid'
+ for(const originHeader of [{},{Origin:foreign},{Origin:'null'}]){
+  for(const prefix of ['/api/pane/','/app/'])for(const action of ['prepare','publish','rollback','messages/erase','import/dry-run','import/apply','import/undo']){
+   const response=await f.request(prefix+action,{method:'POST',headers:{Cookie:owner,'Content-Type':'application/json',...originHeader},body:JSON.stringify({site:fixture,revision:first.id,id:crypto.randomUUID(),source:JSON.stringify(fixture)})})
+   assert.equal(response.status,403,prefix+action)
+  }
+  assert.equal((await f.request('/site/contact',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',...originHeader},body:new URLSearchParams({idempotency:crypto.randomUUID(),name:'Avery',email:'avery@example.test',message:'A cross-origin enquiry'})})).status,403)
+  assert.equal((await f.request('/site/visit',{method:'POST',headers:{'Content-Type':'application/json',...originHeader},body:JSON.stringify({path:'home'})})).status,403)
+ }
+ // A matching Origin on an alternate hostname must not redefine the installation.
+ for(const headerOrigin of [foreign,origin]){
+  assert.equal((await f.request(foreign+'/site/contact',{method:'POST',headers:{Origin:headerOrigin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({idempotency:crypto.randomUUID(),name:'Avery',email:'avery@example.test',message:'An alternate-host enquiry'})})).status,403)
+  assert.equal((await f.request(foreign+'/site/visit',{method:'POST',headers:{Origin:headerOrigin,'Content-Type':'application/json'},body:JSON.stringify({path:'home'})})).status,403)
+ }
+ assert.deepEqual(await data(),before,'Rejected mutations must not change revisions, approvals, imports, inbox or visits')
  contactId=crypto.randomUUID()
  const body=new URLSearchParams({idempotency:contactId,name:'Avery <script>',email:'avery@example.test',message:'Can you cater our opening?',website:''})
  const send=()=>f.request('/site/contact',{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body,redirect:'manual'})

@@ -1,4 +1,4 @@
-import type { Bindings } from '../auth.server'
+import { runtimeBindings, type Bindings } from '../auth.server'
 import { slugs, revision } from './content'
 import { document } from './views'
 import { publicPage } from './public-view'
@@ -8,14 +8,15 @@ async function limited(db:D1Database,key:string,limit:number) {
  const r=await db.prepare('INSERT INTO pane_rate_limits(bucket,count) VALUES(?,1) ON CONFLICT(bucket) DO UPDATE SET count=count+1 RETURNING count').bind(bucket).first<{count:number}>()
  return (r?.count??limit+1)>limit
 }
-export async function publicResponse(request:Request,env:Bindings):Promise<Response|null> {
+export async function publicResponse(request:Request,original:Bindings):Promise<Response|null> {
  const url=new URL(request.url),path=url.pathname
  if(path !== '/site' && !path.startsWith('/site/')) return null
+ const env=runtimeBindings(original),canonical=new URL(env.AUTH_ORIGIN).origin
+ if(request.method==='POST'&&(url.origin!==canonical||request.headers.get('Origin')!==canonical))return json({error:'Same-origin request required.'},403)
  const row=await env.DB.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first()
  if(!row) return document('Website not published','<div class="public-site"><div class="public-shell"><main class="public-main" id="main"><h1>This website is getting ready</h1><p>The business has not published its first version.</p></main></div></div>','site')
  const site=revision(row).site, slug=path==='/site'?'home':path.slice(6)
  if(path==='/site/visit' && request.method==='POST') {
-  if(request.headers.get('Origin')!==url.origin) return json({error:'Same-origin request required.'},403)
   if(request.headers.get('DNT')==='1'||request.headers.get('Sec-GPC')==='1')return new Response(null,{status:204})
   const body=await request.json() as {path:string}
   if(!slugs.includes(body.path))return json({error:'Unknown page.'},400)
@@ -24,7 +25,6 @@ export async function publicResponse(request:Request,env:Bindings):Promise<Respo
   return new Response(null,{status:204})
  }
  if(slug==='contact'&&request.method==='POST') {
-  if(request.headers.get('Origin')!==url.origin)return json({error:'Same-origin request required.'},403)
   if(Number(request.headers.get('content-length')??0)>100000)return json({error:'Message too large.'},413)
   const f=await request.formData(),name=String(f.get('name')??'').trim(),email=String(f.get('email')??'').trim(),message=String(f.get('message')??'').trim(),id=String(f.get('idempotency')??'')
   if(String(f.get('website')??''))return new Response(null,{status:303,headers:{location:'/site/contact?sent=1'}})
