@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import {readFile, mkdir} from 'node:fs/promises'
 import {resolve} from 'node:path'
 import {chromium} from '@playwright/test'
-const fixtureRuntime = process.env.PANE_BROWSER_FIXTURE ? await import('../tests/browser-runtime.mjs') : null
+const fixtureRuntime = (process.env.PANE_BROWSER_FIXTURE || process.env.PANE_SEARCH_FIXTURE) ? await import('../tests/browser-runtime.mjs') : null
 const log = fixtureRuntime ? '' : await readFile(process.env.PANE_LAUNCH_LOG, 'utf8'), entry = fixtureRuntime ? fixtureRuntime.origin + '/app' : log.match(/RER_OPEN\s+(https?:\/\/\S+)/)?.[1]
 if (!entry) throw Error('Launch a local Pane installation first.')
 const origin = new URL(entry).origin, folder = resolve(process.env.PANE_SCREENSHOTS ?? 'test-results/search')
@@ -18,6 +18,11 @@ async function capture(name) {
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 2), false, `${name} overflow at ${width}`)
  }
 }
+async function searchLink() {
+ const menu = page.locator('.public-menu-mobile')
+ if (await menu.isVisible() && await menu.getAttribute('open') === null) await menu.locator(':scope > summary').click()
+ return page.getByRole('link', {name: 'Search', exact: true})
+}
 async function submit(name, path) {
  const button = page.getByRole('button', {name, exact: true}).first()
  const action = await button.evaluate(node => node.form.action)
@@ -27,7 +32,8 @@ async function submit(name, path) {
  await page.waitForLoadState('domcontentloaded')
 }
 try {
- if (fixtureRuntime) await fixtureRuntime.signIn(page)
+ if (process.env.PANE_SEARCH_FIXTURE) {await fixtureRuntime.bootstrap(context); await page.goto(origin + '/setup')}
+ else if (fixtureRuntime) await fixtureRuntime.signIn(page)
  else await page.goto(entry)
  await page.waitForURL(url => ['/setup', '/app'].includes(url.pathname))
  if (new URL(page.url()).pathname === '/setup') {await page.getByRole('checkbox').check(); await submit('Finish setup', '/app')}
@@ -123,10 +129,10 @@ try {
  assert.equal((await page.request.post(origin + '/api/pane/publish', {headers: {Origin: origin}, data: {revision: searchRevision.id}})).status(), 200)
  for (const p of searchSite.pages) {
   await page.goto(origin + (p.slug === 'home' ? '/site' : '/site/' + p.slug))
-  assert.equal(await page.getByRole('link', {name: 'Search', exact: true}).getAttribute('href'), '/site/search', 'CMS-008: every live page opens search')
+  assert.equal(await (await searchLink()).getAttribute('href'), '/site/search', 'CMS-008: every live page opens search')
   await capture('site-search-nav-' + p.slug)
  }
- await page.getByRole('link', {name: 'Search', exact: true}).click()
+ await (await searchLink()).click()
  await capture('site-search-empty')
  for (const width of [1440, 390]) {
   await page.setViewportSize({width, height: 1000})
@@ -141,7 +147,7 @@ try {
   await page.keyboard.press('Enter')
   await page.waitForURL(url => url.pathname === '/site/services')
   assert.match(await page.locator('.public-content').innerText(), /cedar restoration/)
-  await page.getByRole('link', {name: 'Search', exact: true}).click()
+  await (await searchLink()).click()
  }
  const privateSite = structuredClone(searchSite)
  privateSite.pages.find(p => p.slug === 'services').body = 'unpublished-search-secret'
@@ -158,4 +164,4 @@ try {
  assert.match(await page.getByRole('status').innerText(), /No pages found/, 'CMS-008: rollback restores search')
  console.log('CMS-008 live-page search passed at 1440 and 390: navigation, normalized query, keyboard result, unpublished exclusion, publication and rollback.')
  console.log('SEO-009 checks/fix links and SEO-001/003/004 browser path passed at 1440 and 390: Sites, saved search preview, publication, canonical/noindex, sitemap and robots.')
-} finally {await browser.close()}
+} finally {await browser.close(); if (process.env.PANE_SEARCH_FIXTURE) await fixtureRuntime.stop()}
