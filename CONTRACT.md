@@ -844,7 +844,7 @@ Pane's own counting needs no consent. When the owner adds GA4, the Meta Pixel, t
 
 **Acceptance evidence:** Add GA4, the Meta Pixel, a Google Ads tag and a YouTube embed, visit with and without GPC, and see no third-party request before consent, and none at all under GPC for GA4, the Meta Pixel or the Google tag; submit a form under GPC and see no Conversions API or enhanced-conversion request sent.
 
-*Status:* partial. DNT and GPC are honored for Pane's own counts; there is no consent banner because there are no third-party embeds yet.
+*Status:* partial. Current external embeds require explicit per-origin consent and stay off under GPC, including saved grants. GA4, Meta, Google Ads, custom code and server-side conversion consent remain unproved.
 
 #### PRIV-002 — Person-level privacy requests.
 
@@ -1110,7 +1110,7 @@ No desk homepage claims file (`CLAIMS.md`) exists for Pane on 17 October 2026. W
 
 ## Status
 
-Judged from the code and tests at commit `75e1c582c277a9337bfbf9b8549cb41ddd3dfcd5` (21 October 2026).
+Judged from the code and tests at commit `dde4facaff2fd1e24edb2b0be6e02ffcc560880b` (21 October 2026).
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
