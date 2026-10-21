@@ -264,6 +264,10 @@ test('published URL changes offer explicit redirects and each revision owns its 
   for (const method of ['GET','HEAD']) {const response = await f.request(from + '?source=old-link', {method}); assert.equal(response.status,status); assert.equal(response.headers.get('location'),to)}
  }
  for (const redirects of [[{from:'/site/contact',to:'/site',status:301}], [{from:'/site/a',to:'/site/b',status:301},{from:'/site/b',to:'/site/a',status:302}], [{from:'/site/old',to:'//elsewhere.invalid',status:302}], [{from:'/site/old',to:'javascript:alert(1)',status:301}]]) assert.equal((await post('/api/pane/prepare',{site:{...draft.site,redirects}})).status,400)
+ const prior=(await dashboard()).draft
+ const bad=await f.request('/app/autosave',{method:'POST',headers:{Cookie:owner,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({base:prior.id,'redirects.import':'from,to,status\n/site/valid,/site/contact,301\n/site/invalid,/site/services,999'})})
+ assert.equal(bad.status,400)
+ assert.equal((await dashboard()).draft.id,prior.id,'A malformed CSV never saves a partial map')
  await post('/api/pane/rollback', {revision: before.id})
  assert.equal((await f.request('/site/about')).status, 200)
  assert.equal((await f.request('/site/temporary')).status, 404)

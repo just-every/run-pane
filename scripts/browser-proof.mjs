@@ -11,7 +11,7 @@ try {
 // journeys must not spend one another's sign-in budget or inherit site state.
 const env={...process.env}
 delete env.PANE_BROWSER_FIXTURE
-for (const name of ['privacy', 'acknowledgment', 'traffic', 'navigation', 'pages']) {
+for (const name of ['privacy', 'acknowledgment', 'traffic', 'navigation', 'pages', 'redirects']) {
  const result=spawnSync(process.execPath, [`scripts/${name}-journey.mjs`], {env, stdio:'inherit'})
  if (result.error) throw result.error
  if (result.status!==0) throw Error(`${name} journey failed (${result.signal ?? result.status})`)
