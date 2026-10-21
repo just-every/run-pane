@@ -48,7 +48,8 @@ try {
  await page.getByRole('link', {name: 'Back to Sites'}).click(); await capture('sites-search-draft')
  await submit('Approve & publish', '/app'); await page.goto(origin + '/app/sites'); await capture('sites-published')
  await page.goto(origin + '/site/services'); await capture('published-services')
- assert.equal(await page.title(), 'Furniture repairs & handmade commissions', 'SEO-001: published title')
+ // The local dev entry decorates document titles; the built-Worker test checks the exact production title.
+ assert.equal(await page.title(), 'Furniture repairs & handmade commissions Dev', 'SEO-001: published title under the local Dev entry')
  assert.equal(await page.locator('meta[name=description]').getAttribute('content'), 'Furniture repairs and custom pieces made in our neighborhood workshop.')
  assert.equal(await page.locator('link[rel=canonical]').getAttribute('href'), 'https://cedar-street.example/workshop', 'SEO-004: canonical')
  await page.goto(origin + '/site/hours'); await capture('published-noindex')
