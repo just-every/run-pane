@@ -18,16 +18,10 @@ const lifecycle = operatorInstaller({
   await writeFile(join(root, 'src/branding.json'), JSON.stringify({ name: input.APP_NAME, primaryColor: input.PRIMARY_COLOR }, null, 2) + '\n');
  },
 });
-// A fresh Vite Worker can take longer than a minute to initialize on small hosts.
-// Keep the normal health probe and bounded startup; allow its supported two minutes.
-const devTarget = context => {
- const [command, args, options] = developmentTarget(context);
- return [command, args, { ...options, timeoutMs: 120000 }];
-};
 export const adapter = lifecycle;
 export const { install } = lifecycle;
 export const commandAdapter = createCommandAdapter(lifecycle, {
- dev: devTarget, preview: previewTarget, verify: ['pnpm', ['run', 'verify:app']], deploy: ownerDeploy('deploy.json', lifecycle),
+ dev: developmentTarget, preview: previewTarget, verify: ['pnpm', ['run', 'verify:app']], deploy: ownerDeploy('deploy.json', lifecycle),
  portability: localPortability({ database: 'foundation', policy: productPolicy, transient: ['local runtime caches and logs'] }),
  setup: { manifestFile: 'rer-setup.json' }, browserModule: 'scripts/installer/ui/seed.mjs',
  // The run site (rer build --site, rer deploy --site, RER_SITE): pages from

@@ -2,7 +2,8 @@ import assert from 'node:assert/strict'
 import { readFile, mkdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { chromium } from '@playwright/test'
-const log=await readFile(process.env.PANE_LAUNCH_LOG,'utf8'),entry=log.match(/RER_OPEN\s+(https?:\/\/\S+)/)?.[1]
+const fixtureRuntime=process.env.PANE_BROWSER_FIXTURE?await import('../tests/browser-runtime.mjs'):null
+const log=fixtureRuntime?'':await readFile(process.env.PANE_LAUNCH_LOG,'utf8'),entry=fixtureRuntime?fixtureRuntime.origin+'/setup':log.match(/RER_OPEN\s+(https?:\/\/\S+)/)?.[1]
 if(!entry)throw Error('Launch log has no private RER_OPEN link; rer dev must finish first.')
 const origin=new URL(entry).origin,folder=resolve(process.env.PANE_SCREENSHOTS??'test-results/browser')
 await mkdir(folder,{recursive:true})
@@ -32,6 +33,7 @@ try {
  const sharedTheme=await theme();assert.ok(sharedTheme.every(Boolean),'LOBBY-001: Lobby loads shared theme tokens')
  await capture('installed-lobby')
  await page.goto(origin+'/signin');assert.deepEqual(await theme(),sharedTheme,'LOBBY-001: sign-in shares Lobby theme');await capture('signin')
+ if(fixtureRuntime)await fixtureRuntime.bootstrap(context)
  try { await page.goto(entry) } catch { throw Error('Private local sign-in navigation failed.') };await page.waitForURL(url=>['/setup','/app'].includes(url.pathname))
  if(new URL(page.url()).pathname==='/setup'){
   assert.deepEqual(await theme(),sharedTheme,'LOBBY-001: setup shares Lobby theme');await capture('setup');await page.getByRole('checkbox').check();await submit(page.getByRole('button',{name:'Finish setup'}))

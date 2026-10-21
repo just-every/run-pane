@@ -3,7 +3,8 @@ import {readFile, mkdir} from 'node:fs/promises'
 import {resolve} from 'node:path'
 import {chromium} from '@playwright/test'
 const entry = async path => (await readFile(path,'utf8')).match(/RER_OPEN\s+(https?:\/\/\S+)/)?.[1]
-const first = await entry(process.env.PANE_LAUNCH_LOG), second = await entry(process.env.PANE_SECOND_LAUNCH_LOG ?? process.env.PANE_LAUNCH_LOG)
+const fixtureRuntime=process.env.PANE_BROWSER_FIXTURE?await import('../tests/browser-runtime.mjs'):null
+const first = fixtureRuntime?fixtureRuntime.origin:await entry(process.env.PANE_LAUNCH_LOG), second = fixtureRuntime?fixtureRuntime.origin:await entry(process.env.PANE_SECOND_LAUNCH_LOG ?? process.env.PANE_LAUNCH_LOG)
 if (!first || !second) throw Error('A native local dev entry is required for each isolated browser context.')
 const origin = new URL(first).origin, folder = resolve(process.env.PANE_SCREENSHOTS ?? 'test-results/editing')
 await mkdir(folder,{recursive:true})
@@ -21,8 +22,8 @@ async function capture(tab,name) {
  assert.equal(await tab.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,name+' overflow')
 }
 try {
- await page.goto(first);await page.waitForURL(url=>url.pathname==='/app')
- await other.goto(second);await other.waitForURL(url=>url.pathname==='/app')
+ if(fixtureRuntime){await fixtureRuntime.signIn(page);await fixtureRuntime.signIn(other)}
+ else {await page.goto(first);await page.waitForURL(url=>url.pathname==='/app');await other.goto(second);await other.waitForURL(url=>url.pathname==='/app')}
  for (const width of [1440,390]) {
   await page.setViewportSize({width,height:1000});await other.setViewportSize({width,height:1000})
   await page.goto(origin+'/app?page=services')
