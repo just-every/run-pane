@@ -696,7 +696,7 @@ The workspace shows visits by page, day, referrer, device type, country or US st
 
 **Acceptance evidence:** Visit pages from a phone and a desktop with UTM tags and a referrer, then read the dashboard by page, source, device and campaign; a GPC visit is not counted.
 
-*Status:* partial. Day and path counts only; no source, device, location or campaign.
+*Status:* partial. Public visits and the owner dashboard now aggregate page, day, coarse referrer source, phone/tablet/desktop, country or US state and published owner-approved business campaign labels. GPC and DNT exclude visits before storage. Only enum source buckets and coarse location are retained; no cookies, raw referrers, IP addresses, user agents or visitor identifiers are stored. Conservative default adopted pending ct approval: campaign labels must be explicitly approved in a published site revision; unknown UTM text is discarded while the visit counts without a campaign. STATS-002, STATS-003 and STATS-005 inherit these collection boundaries and PRIV-001 consent obligations when their doors ship. The remaining gap is ct approval of this campaign policy.
 
 #### STATS-002 — Conversion goals and click insights.
 
@@ -1112,7 +1112,7 @@ No desk homepage claims file (`CLAIMS.md`) exists for Pane on 17 October 2026. W
 
 ## Status
 
-Judged from the code and tests at commit `697304eb45f19e73c6d62bb8ce8e8d6bd20af37b` (21 October 2026).
+Judged from the code and tests at commit `f6d80f5ee6f918c2c774b11884d8205b44538c08` (21 October 2026).
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
@@ -1206,7 +1206,7 @@ Judged from the code and tests at commit `697304eb45f19e73c6d62bb8ce8e8d6bd20af3
 | `LINK-004` | Zapier, Crank and outgoing webhooks | target | missing |  | No outgoing events. |
 | `LINK-005` | Connection health panel | target | missing |  | No connections to show. |
 | `API-001` | Agent command helper and API | target | partial | `scripts/pane.mjs`; `docs/AGENT.md` | The helper uses a copied session cookie and has no test; there are no scoped tokens and no read API. |
-| `STATS-001` | Traffic by page, source, device and campaign | target | partial | `src/pane/public.ts`; `tests/pane.test.mjs` | Day and path counts only; no source, device, location or campaign. |
+| `STATS-001` | Traffic by page, source, device and campaign | target | partial | `tests/pane.test.mjs` — traffic groups real public visit events without retaining referrers or unapproved identifiers and excludes privacy opt-outs (page/day, phone/desktop, source, trusted country/state, approved campaigns, privacy-safe stored fields and GPC/DNT non-counting); `scripts/traffic-journey.mjs` — owner publication of campaign labels, actual phone/desktop tagged and referred visits, dashboard dimensions and zero GPC events at 1440 and 390 | ct approval pending for adopted default: published owner-approved business campaign allowlist, unknown UTM text discarded with visit counted unclassified, coarse source buckets only and no raw referrers or visitor identifiers. |
 | `STATS-002` | Conversion goals and click insights | target | missing |  | No goals. |
 | `STATS-003` | Vane and Google Analytics 4 with consent | target | missing |  | No analytics connections. |
 | `STATS-004` | Monthly owner report | target | missing |  | No reports. |

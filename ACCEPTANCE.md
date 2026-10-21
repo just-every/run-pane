@@ -142,7 +142,7 @@ The first release serves the public business site at `/site`; installing the Wor
 
 ### Analytics and reporting
 
-- **STATS-001 — Traffic by page, source, device and campaign** (partial). Visit pages from a phone and a desktop with UTM tags and a referrer, then read the dashboard by page, source, device and campaign; a GPC visit is not counted. Evidence: `src/pane/public.ts`; `tests/pane.test.mjs`.
+- **STATS-001 — Traffic by page, source, device and campaign** (partial). Visit pages from a phone and a desktop with UTM tags and a referrer, then read the dashboard by page, source, device and campaign; a GPC visit is not counted. Evidence: `tests/pane.test.mjs` — traffic groups real public visit events without retaining referrers or unapproved identifiers and excludes privacy opt-outs; `scripts/traffic-journey.mjs` — published label settings, real phone/desktop visits, dashboard dimensions and GPC exclusion at 1440 and 390. Adopted default pending ct approval: only owner-approved published business campaign labels are retained; unknown UTM text is discarded, with the visit counted unclassified. No raw referrers or visitor identifiers are retained.
 - **STATS-002 — Conversion goals and click insights** (missing). Define a quote-form goal and a phone-click goal, complete each from a tagged campaign, and see them counted by page and campaign with a funnel.
 - **STATS-003 — Vane and Google Analytics 4 with consent** (missing). Connect Vane and see events arrive; connect GA4 and see it load only after consent and send page views and goals.
 - **STATS-004 — Monthly owner report** (missing). Advance the clock to a month boundary and see the report accepted by the mail provider with figures that match the dashboard.
