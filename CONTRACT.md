@@ -169,7 +169,7 @@ The editor and preview switch between desktop, tablet and phone widths. Pane der
 
 #### PAGE-006 — Autosave, undo and safe concurrent editing.
 
-Edits save as a draft continuously, an editor can undo and redo within a session, and two editors on the same page never silently overwrite each other: the second sees the other's change and merges or keeps their own copy.
+Edits save as a draft continuously, an editor can undo and redo within a session, and two editors on the same page never silently overwrite each other: the second sees the other's change and merges or keeps their own copy. Every future page or body editor introduced by `PAGE-001`, `PAGE-002` or `CMS-011` inherits these requirements before it ships.
 
 **Acceptance evidence:** Edit, close the tab and reopen to find the draft kept; undo and redo five steps; edit one page from two browsers and see the conflict surfaced, never lost.
 
