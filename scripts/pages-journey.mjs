@@ -71,7 +71,7 @@ try {
  for(const offer of await offers.all()) {
   const from=await offer.getAttribute('data-redirect-source')
   if(from.endsWith('/cabinet-care-4'))await offer.getByLabel('Redirect target',{exact:true}).fill('/site/contact')
-  await offer.getByLabel('Add this redirect?',{exact:true}).selectOption('yes')
+  await offer.getByLabel('Add this redirect?',{exact:true}).selectOption('yes');await saved(page)
  }
  await saved(page)
  for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await capture('reviewed-redirect-offers',width)}
