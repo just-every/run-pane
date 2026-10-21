@@ -96,6 +96,31 @@ test('the editor prepares one page over the revision it opened, and every screen
  for(const path of ['/app','/app?page=hours','/app/sites','/app/inquiries','/app/moves']){const page=await f.request(path,{headers:{Cookie:member}});assert.equal(page.status,200,path);assert.match(await page.text(),/aria-current="page"/)}
  assert.equal((await f.request('/app/elsewhere',{headers:{Cookie:owner}})).status,404)
 })
+test('PAGE-006: autosave persists an immutable draft, rejects stale and simultaneous edits, and keeps publication separate',async()=>{
+ const save=(base,body,cookie=admin,originHeader=origin)=>f.request('/app/autosave',{method:'POST',headers:{Origin:originHeader,'Content-Type':'application/x-www-form-urlencoded',Cookie:cookie??''},body:new URLSearchParams({base,slug:'services','page.services.body':body})})
+ const before=await data(),base=before.draft,body='Repairs, refinishing and custom cabinets.'
+ assert.equal((await save(base.id,body,'')).status,303)
+ assert.equal((await save(base.id,body,member)).status,403)
+ assert.equal((await save(base.id,body,admin,'https://elsewhere.invalid')).status,403)
+ const result=await save(base.id,body);assert.equal(result.status,200);const draft=await result.json()
+ assert.equal(draft.site.pages.find(p=>p.slug==='services').body,body)
+ assert.equal((await data()).live.id,before.live.id)
+ assert.ok((await (await f.request('/app?page=services',{headers:{Cookie:admin}})).text()).includes(body),'Reopening the editor reads the saved draft')
+ const stale=await save(base.id,'A conflicting edit');assert.equal(stale.status,409)
+ assert.equal((await stale.json()).latest.id,draft.id)
+ assert.equal((await data()).draft.id,draft.id)
+ // Both requests saw the same base; exactly one compare-and-insert may succeed.
+ const raced=await Promise.all([save(draft.id,'First concurrent draft'),save(draft.id,'Second concurrent draft')])
+ assert.deepEqual(raced.map(r=>r.status).sort(),[200,409])
+ const winner=await raced.find(r=>r.status===200).json()
+ assert.equal((await data()).draft.id,winner.id)
+ const merged=await save(winner.id,'First and second changes merged')
+ assert.equal(merged.status,200)
+ const after=await data()
+ assert.equal(after.draft.site.pages.find(p=>p.slug==='services').body,'First and second changes merged')
+ assert.deepEqual(after.revisions.find(r=>r.id===base.id),base,'Autosave never rewrites its base')
+ assert.equal(after.live.id,before.live.id)
+})
 test('move-in dry run requires reviewed fingerprint, applies inert draft and journals undo',async()=>{
  const source=JSON.stringify({...fixture,name:'Riverbend imported'})
  const plan=await json('/api/pane/import/dry-run',{source},admin);assert.equal(plan.status,200,await plan.clone().text());const p=await plan.json()

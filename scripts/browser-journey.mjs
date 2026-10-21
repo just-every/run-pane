@@ -17,19 +17,26 @@ async function capture(name) {
  }
 }
 async function submit(button,path='/app') {
- const [response]=await Promise.all([page.waitForResponse(response=>response.request().method()==='POST'&&new URL(response.url()).origin===origin),button.click()])
+ const [response]=await Promise.all([page.waitForResponse(response=>response.request().method()==='POST'&&new URL(response.url()).origin===origin&&new URL(response.url()).pathname!=='/app/autosave'),button.click()])
  const expected=path==='/app/import/dry-run'?200:303
  if(response.status()!==expected)throw Error(`Form refused (${response.status()}): ${await response.text()}`)
  await page.waitForURL(url=>url.pathname===path)
  await page.waitForLoadState('domcontentloaded')
 }
+const theme = async () => page.evaluate(() => {
+ const root = getComputedStyle(document.documentElement)
+ return ['--pn-font', '--pn-tint', '--pn-action'].map(name => root.getPropertyValue(name).trim())
+})
 try {
- await page.goto(origin+'/signin');await capture('signin')
+ await page.goto(origin+'/');await page.locator('.door').waitFor();await page.evaluate(()=>document.fonts.ready)
+ const sharedTheme=await theme();assert.ok(sharedTheme.every(Boolean),'LOBBY-001: Lobby loads shared theme tokens')
+ await capture('installed-lobby')
+ await page.goto(origin+'/signin');assert.deepEqual(await theme(),sharedTheme,'LOBBY-001: sign-in shares Lobby theme');await capture('signin')
  try { await page.goto(entry) } catch { throw Error('Private local sign-in navigation failed.') };await page.waitForURL(url=>['/setup','/app'].includes(url.pathname))
  if(new URL(page.url()).pathname==='/setup'){
-  await capture('setup');await page.getByRole('checkbox').check();await submit(page.getByRole('button',{name:'Finish setup'}))
+  assert.deepEqual(await theme(),sharedTheme,'LOBBY-001: setup shares Lobby theme');await capture('setup');await page.getByRole('checkbox').check();await submit(page.getByRole('button',{name:'Finish setup'}))
  }
- await capture('empty-workspace')
+ assert.deepEqual(await theme(),sharedTheme,'LOBBY-001: workspace shares Lobby theme');assert.equal(await page.locator('a[href="#main"]').count(),1);assert.equal(await page.locator('#main').count(),1);await capture('empty-workspace')
  await page.goto(origin+'/site');await capture('not-published');await page.goto(origin+'/app')
  await page.getByLabel('Site name',{exact:true}).fill(fixture.name)
  await page.getByLabel('Description',{exact:true}).fill(fixture.description)

@@ -2,7 +2,7 @@ import { wireDatabase } from '@runeditrun/rer/internal/modules/d1-transport/inde
 import { erasureStatements, invalidateTransfersStatements } from '@runeditrun/rer/internal/modules/portability/journal.mjs'
 import { operatorAuth, runtimeBindings, type Bindings } from '../auth.server'
 import { dashboardData } from './data'
-import { prepare, publish, revision, slugs, normalizeSite, siteFromForm } from './content'
+import { prepare, DraftConflict, publish, revision, slugs, normalizeSite, siteFromForm } from './content'
 import { document, screens, workspace } from './views'
 import { publicPage } from './public-view'
 import { shell } from './ui/shell'
@@ -39,8 +39,9 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   const action=api?path.slice('/api/pane/'.length):path.slice('/app/'.length)
   let result:unknown,notice='Saved.',back='/app'
   if(['publish','rollback','messages/erase'].includes(action)?!owner:!editor)return json({error:'Your role cannot perform this action.'},403)
-  if(action==='prepare') {
-   result=await prepare(env.DB,actor.id,input.site??await siteFromForm(env.DB,input))
+  if(action==='prepare'||action==='autosave') {
+   result=await prepare(env.DB,actor.id,input.site??await siteFromForm(env.DB,input), action==='autosave' ? String(input.base??'') : typeof input.base==='string' ? input.base : undefined)
+   if(action==='autosave')return json(result)
    notice='Draft prepared. Preview it before publishing.'
    if(slugs.includes(input.slug))back='/app?page='+input.slug
   } else if(action==='publish'||action==='rollback') {
@@ -71,6 +72,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   } else return json({error:'Not found.'},404)
   return api?json(result):new Response(null,{status:303,headers:{location:back+(back.includes('?')?'&':'?')+'notice='+encodeURIComponent(notice)}})
  } catch(error) {
+  if(error instanceof DraftConflict)return json({error:error.message,latest:error.latest},409)
   const message=error instanceof Error?error.message:'Request failed.'
   return json({error:message},400)
  }

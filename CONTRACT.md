@@ -56,7 +56,7 @@ A business phone system has no sibling; Pane links phone numbers for click-to-ca
 
 - **Published clauses** are the `- **ID — Title.**` bullets in [Released guarantees](#released-guarantees). The previous contract and ACCEPTANCE.md already promised them; this edition gives them IDs and keeps every guarantee, widening only where a target clause names the change.
 - **Target clauses** are the `#### ID — Title.` headings in [Target clauses](#target-clauses), and **push-further clauses** are those in [Push further](#push-further). They are binding product requirements; each carries its status beside it.
-- **Status** is judged from the code and tests at commit `fb6118f4c2628b30f6ec6a2bba51d6068e048c0f` (21 October 2026). `done` means the behavior ships and a cited test or journey exercises it; `partial` means some of it ships, or it ships without a test; `missing` means there is no implementation. Status is a build-planning judgment, not acceptance.
+- **Status** is judged from the code and tests at commit `4d8d9f91886016ca078a9f5d38625a04843c5c24` (21 October 2026). `done` means the behavior ships and a cited test or journey exercises it; `partial` means some of it ships, or it ships without a test; `missing` means there is no implementation. Status is a build-planning judgment, not acceptance.
 
 ## Target amendment — 16 October 2026
 
@@ -173,7 +173,7 @@ Edits save as a draft continuously, an editor can undo and redo within a session
 
 **Acceptance evidence:** Edit, close the tab and reopen to find the draft kept; undo and redo five steps; edit one page from two browsers and see the conflict surfaced, never lost.
 
-*Status:* missing. Drafts are created only by an explicit whole-site prepare; no autosave, undo or conflict detection.
+*Status:* done. The page editor automatically prepares immutable drafts, keeps a session undo/redo history, and compares the opened revision atomically before saving. Conflicts retain the current fields, show the newer version and offer a merged draft, a downloaded copy or the latest draft. New editor doors introduced by `PAGE-001`, `PAGE-002` and `CMS-011` inherit this obligation before they ship.
 
 #### PAGE-007 — Page status and review requests.
 
@@ -1105,13 +1105,13 @@ No desk homepage claims file (`CLAIMS.md`) exists for Pane on 17 October 2026. W
 
 ## Status
 
-Judged from the code and tests at commit `fb6118f4c2628b30f6ec6a2bba51d6068e048c0f` (21 October 2026).
+Judged from the code and tests at commit `4d8d9f91886016ca078a9f5d38625a04843c5c24` (21 October 2026).
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 13 | 3 | 0 | 16 |
-| Target and push further | 0 | 28 | 81 | 109 |
-| All | 13 | 31 | 81 | 125 |
+| Target and push further | 1 | 28 | 80 | 109 |
+| All | 14 | 31 | 80 | 125 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -1129,14 +1129,14 @@ Judged from the code and tests at commit `fb6118f4c2628b30f6ec6a2bba51d6068e048c
 | `HEALTH-001` | Deployment health and unknown paths | published | partial | `src/server.ts`; `src/pane/public.ts` | No Pane test reads `/health` or an unknown installed path; only the run-site 404 is tested. |
 | `DEPLOY-001` | Install on the owner's Cloudflare account | published | partial | `deploy.json`; `wrangler.jsonc` | No recorded owner-account deploy acceptance; only local build and dry-run validation. |
 | `RUNSITE-001` | Public run site and documentation | published | done | `tests/site.test.mjs`; `docs/site.json` |  |
-| `LOBBY-001` | Shared Lobby, workspace and theme | published | partial | `src/server.ts`; `src/pane/views.ts`; `scripts/browser-journey.mjs` | The browser journey covers sign-in, setup and `/app` but no Pane test opens the installed `/` Lobby. |
+| `LOBBY-001` | Shared Lobby, workspace and theme | published | partial | `src/server.ts`; `src/pane/views.ts`; `scripts/browser-journey.mjs` | Installed Lobby, shared theme tokens and workspace anchor now have browser coverage at 1440 and 390. The owner-approved fuchsia/Figtree theme differs from the clause’s cerulean/Noto promise; wording or design needs a ct/br decision. |
 | `PRESENT-001` | Labeled previews and unbranded live pages | published | done | `src/pane/public-view.ts`; `src/pane/views.ts`; `tests/pane.test.mjs`; `scripts/browser-journey.mjs` |  |
 | `PAGE-001` | Unlimited pages, folders and clean URLs | target | partial | `src/pane/content.ts` | Exactly five fixed slugs (home, about, services, hours, contact); no page creation, folders, slug editing or editable not-found page. |
 | `PAGE-002` | Visual section and block editor with layout controls | target | partial | `src/pane/views.ts`; `src/pane/handler.ts` | Content is edited as name, description and a pages JSON text field; no visual canvas, sections, blocks, grid placement, column ratios, section backgrounds, padding or image cropping. |
 | `PAGE-003` | Navigation menus, header and footer | target | partial | `src/pane/public-view.ts` | Navigation lists the five fixed pages; no menu editing, dropdowns, buttons, footer links or social icons. |
 | `PAGE-004` | Reusable sections and global components | target | missing |  | No components; pages are plain text. |
 | `PAGE-005` | Device previews and a separate mobile layout | target | partial | `src/pane/handler.ts`; `src/pane/public-view.ts` | One responsive preview; no width switcher, separate phone layout or per-device settings. |
-| `PAGE-006` | Autosave, undo and safe concurrent editing | target | missing |  | Drafts are created only by an explicit whole-site prepare; no autosave, undo or conflict detection. |
+| `PAGE-006` | Autosave, undo and safe concurrent editing | target | done | `src/pane/content.ts`; `src/pane/handler.ts`; `src/pane/ui/editor.ts`; `public/pane-autosave.js`; `tests/pane.test.mjs`; `scripts/editing-journey.mjs` |  |
 | `PAGE-007` | Page status and review requests | target | partial | `src/pane/content.ts`; `src/pane/handler.ts` | Whole-site drafts and owner approval only; no per-page status or review request. |
 | `PAGE-008` | Custom code, embeds and CSS | target | missing |  | No custom code, per-page header code, goal event or embed support; the public CSP allows only same-origin scripts. |
 | `PAGE-009` | Accessible output by default | target | partial | `src/pane/views.ts`; `src/pane/public-view.ts`; `scripts/browser-journey.mjs` | Skip link and labeled contact fields exist; no alt-text, heading or contrast checks and no automated accessibility test. |

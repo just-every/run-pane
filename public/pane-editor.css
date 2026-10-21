@@ -234,3 +234,10 @@
   .pane .chip { max-width: none; }
   .rer-themed .pane .clock { text-align: right; }
 }
+
+/* Draft actions share the existing edit-card controls at both widths. */
+.pane .draft-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.pane .draft-tools [role=status] { flex-basis: 100%; font-size: 13px; }
+.pane [data-conflict] { min-width: 0; padding: 12px; border: 1px solid var(--pn-action); border-radius: 10px; }
+.pane [data-conflict][hidden] { display: none; }
+.pane [data-latest] { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; max-height: 240px; overflow-y: auto; }

@@ -33,9 +33,25 @@ export async function draftRevision(id: string, actor: string, value: unknown, c
  const site = normalizeSite(value)
  return { id, site, hash: await contentHash(site), actor, created_at }
 }
-export async function prepare(db: D1Database, actor: string, value: unknown): Promise<Revision> {
- const row = await draftRevision(crypto.randomUUID(), actor, value, new Date().toISOString())
- await revisionStatement(db, row).run()
+export class DraftConflict extends Error {
+ constructor(public latest: Revision | null) { super('Another editor saved a newer draft. Compare their changes before saving yours.') }
+}
+export async function prepare(db: D1Database, actor: string, value: unknown, expectedBase?: string): Promise<Revision> {
+ const latest = await db.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
+ // Keep revision ordering stable even when saves share a millisecond.
+ const created = new Date(Math.max(Date.now(), latest ? Date.parse(String(latest.created_at)) + 1 : 0)).toISOString()
+ const row = await draftRevision(crypto.randomUUID(), actor, value, created)
+ if (expectedBase === undefined) await revisionStatement(db, row).run()
+ else {
+  // Compare and insert in one statement: two saves of the same base cannot both win.
+  const result = await db.prepare(`INSERT INTO pane_revisions(id,site,hash,actor,created_at)
+   SELECT ?,?,?,?,? WHERE COALESCE((SELECT id FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1),'')=?`)
+   .bind(row.id, JSON.stringify(row.site), row.hash, row.actor, row.created_at, expectedBase).run()
+  if (!result.meta.changes) {
+   const current = await db.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
+   throw new DraftConflict(current ? revision(current) : null)
+  }
+ }
  return row
 }
 export async function publish(db:D1Database,actor:string,id:string,action:'publish'|'rollback') {
