@@ -4,10 +4,10 @@ import assert from 'node:assert/strict'
 import {createServer} from 'node:http'
 import {readFile} from 'node:fs/promises'
 import {resolve,extname,sep} from 'node:path'
-import {runtime,origin,settings} from './runtime.mjs'
+import {runtime,settings} from './runtime.mjs'
 import {createOperatorAuth} from '../src/modules/operator-auth/index.mjs'
-export {origin}
-const f=await runtime(),assets=resolve('dist/client')
+let f
+const assets=resolve('dist/client')
 const types={'.css':'text/css','.js':'text/javascript','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp','.ico':'image/x-icon','.woff2':'font/woff2','.woff':'font/woff','.json':'application/json','.webmanifest':'application/manifest+json'}
 const server=createServer(async(req,res)=>{
  try {
@@ -24,7 +24,9 @@ const server=createServer(async(req,res)=>{
   res.writeHead(response.status);res.end(req.method==='HEAD'?undefined:Buffer.from(await response.arrayBuffer()))
  } catch(error){res.writeHead(500,{'content-type':'text/plain'});res.end('Browser fixture request failed.');console.error(error.name+': '+error.message.split('\n')[0])}
 })
-await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(new URL(origin).port,'127.0.0.1',resolve)})
+await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve)})
+export const origin = 'http://127.0.0.1:' + server.address().port
+f = await runtime({bindings: {AUTH_ORIGIN: origin}})
 export async function bootstrap(context){
  const response=await context.request.post(origin+'/auth/bootstrap',{headers:{Origin:origin},data:{token:settings.SETUP_TOKEN,displayName:'Browser proof owner'},maxRedirects:0})
  assert.equal(response.status(),303,'Native bootstrap creates the first browser session')
