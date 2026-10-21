@@ -134,7 +134,7 @@ An editor adds, renames, reorders, hides and deletes any number of pages, groups
 
 **Acceptance evidence:** Create 40 pages in three folders through the editor, rename two slugs, delete one, publish, and open every URL; renamed and deleted pages answer 301 to the chosen targets, and the revision snapshot holds all 40. Edit the not-found page, publish, request an unknown URL and see the edited page with status 404.
 
-*Status:* partial. Exactly five fixed slugs (home, about, services, hours, contact); no page creation, folders, slug editing or editable not-found page.
+*Status:* done. Stable page identities and immutable whole-site revisions support any page inventory, folders, clean nested URLs, ordering, hiding, chosen home and deletion. Deleted entries retain their content in the snapshot. Retired published URLs offer explicitly accepted redirects before publication. The chosen not-found page uses the ordinary page renderer for heading, text, search box, links and embeds, with HTTP 404; PAGE-002 and PAGE-014 inherit that renderer for future sections. The organizer uses PAGE-006 autosave, five-step undo/redo, durable reopen and explicit conflict comparison/copy/latest selection.
 
 #### PAGE-002 — Visual section and block editor with layout controls.
 
@@ -504,7 +504,7 @@ The owner manages 301 and 302 redirects one by one or by CSV import, and Pane of
 
 **Acceptance evidence:** Rename a published slug and accept the offered redirect, import 200 redirects by CSV, and request each old URL to get the right status and target.
 
-*Status:* missing. No redirects.
+*Status:* partial. Published revisions own 301/302 redirect maps, individual edits and reviewed offers for retired URLs after slug changes or deletion; drafts do not alter routes and rollback restores the map. The 200-row CSV import acceptance journey is pending. IMPORT-005 and DOMAIN-001 inherit the URL map when adding imported and custom-domain public doors.
 
 #### SEO-003 — Automatic sitemap and robots.txt.
 
@@ -1117,8 +1117,8 @@ Judged from the code and tests at commit `f6d80f5ee6f918c2c774b11884d8205b44538c
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 16 | 0 | 0 | 16 |
-| Target and push further | 4 | 30 | 75 | 109 |
-| All | 20 | 30 | 75 | 125 |
+| Target and push further | 5 | 30 | 74 | 109 |
+| All | 21 | 30 | 74 | 125 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -1138,7 +1138,7 @@ Judged from the code and tests at commit `f6d80f5ee6f918c2c774b11884d8205b44538c
 | `RUNSITE-001` | Public run site and documentation | published | done | `tests/site.test.mjs`; `docs/site.json` |  |
 | `LOBBY-001` | Shared Lobby, workspace and theme | published | done | `src/server.ts`; `src/pane/views.ts`; `public/site/theme.css`; `public/fonts/fonts.css`; `scripts/browser-journey.mjs` |  |
 | `PRESENT-001` | Labeled previews and unbranded live pages | published | done | `src/pane/public-view.ts`; `src/pane/views.ts`; `tests/pane.test.mjs`; `scripts/browser-journey.mjs` |  |
-| `PAGE-001` | Unlimited pages, folders and clean URLs | target | partial | `src/pane/content.ts` | Exactly five fixed slugs (home, about, services, hours, contact); no page creation, folders, slug editing or editable not-found page. |
+| `PAGE-001` | Unlimited pages, folders and clean URLs | target | done | `tests/pane.test.mjs` — “page organization keeps stable identities, complete revisions, safe edits and chosen public home and not-found content” (identities, folders, chosen home, nested preview, deleted retention, edited 404/search/links, conflict refusal, publication/rollback); `tests/search.test.mjs` — “published URL changes offer explicit redirects and each revision owns its exact status and target map” (rename/deletion offers, chosen 301 targets); `scripts/pages-journey.mjs` — “Forty-page editor journey” (40 pages created through editor in three folders, order/hide/home, two renamed slugs and one deletion, all current/old URLs, complete 40-entry snapshot, edited 404, tab reopen, five undo/redo steps and structural conflicts at 1440/390; exact candidate heavy-slot run cited in campaign plan) | None. |
 | `PAGE-002` | Visual section and block editor with layout controls | target | partial | `src/pane/views.ts`; `src/pane/handler.ts` | Content is edited as name, description and a pages JSON text field; no visual canvas, sections, blocks, grid placement, column ratios, section backgrounds, padding or image cropping. |
 | `PAGE-003` | Navigation menus, header and footer | target | done | `tests/pane.test.mjs` — “published navigation keeps ordered dropdowns, links, CTA, footer and shared accessible social profiles with hidden pages excluded” (order, both dropdowns, external/CTA destinations, hidden exclusion, footer details/links, all eight named social profiles, draft isolation and rollback); `scripts/navigation-journey.mjs` — “Navigation editor and published menus” (editor controls, mouse/keyboard, 1440/390 mobile disclosure and Instagram/Facebook/Yelp destinations in header/footer) | None. |
 | `PAGE-004` | Reusable sections and global components | target | missing |  | No components; pages are plain text. |
@@ -1183,7 +1183,7 @@ Judged from the code and tests at commit `f6d80f5ee6f918c2c774b11884d8205b44538c
 | `HOST-004` | Transparent running cost in USD | target | missing |  | No usage or cost view. |
 | `HOST-005` | Install from the browser with no terminal | target | missing |  | Installation runs through `rer deploy` or the `npx @runeditrun/rer` command line only; no browser install path. |
 | `SEO-001` | Page titles and meta descriptions | target | partial | `src/pane/search.ts`; `src/pane/search-settings.ts`; `src/pane/search-view.ts`; `tests/search.test.mjs`; `scripts/search-journey.mjs` | Current pages have editable search titles and descriptions, defaults and a saved search preview. Posts and collection items still depend on CMS-001, CMS-002 and CMS-004. |
-| `SEO-002` | Redirect manager and slug-change redirects | target | missing |  | No redirects. |
+| `SEO-002` | Redirect manager and slug-change redirects | target | partial | `tests/search.test.mjs` — “published URL changes offer explicit redirects and each revision owns its exact status and target map”; `scripts/pages-journey.mjs` — “Forty-page editor journey” (rename/deletion offers and chosen 301 targets) | 200-row CSV import public proof pending. |
 | `SEO-003` | Automatic sitemap and robots.txt | target | partial | `src/pane/search.ts`; `src/pane/search-settings.ts`; `src/pane/search-view.ts`; `tests/search.test.mjs`; `scripts/search-journey.mjs` | Published revisions generate sitemap.xml with last-modified dates and noindex exclusions, and editable robots.txt; drafts never change either and rollback restores them. Hidden/protected pages and post/item URLs await PAGE-001, PAGE-011 and CMS-001 to CMS-004. |
 | `SEO-004` | Canonical URLs and indexing controls | target | partial | `src/pane/search.ts`; `src/pane/search-settings.ts`; `src/pane/search-view.ts`; `tests/search.test.mjs`; `scripts/search-journey.mjs` | Current pages have canonical URLs, custom canonical overrides and noindex controls; draft previews and development-origin pages send noindex. Primary custom-domain routing and www/apex acceptance await DOMAIN-001. |
 | `SEO-005` | Structured data for local businesses | target | missing |  | No structured data. |
