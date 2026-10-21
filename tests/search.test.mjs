@@ -241,3 +241,30 @@ test('only an approved page embed widens its frame policy and workspace previews
  assert.match((await f.request('/site')).headers.get('content-security-policy'), /frame-src https:\/\/www.youtube-nocookie.com/)
  await post('/api/pane/rollback', {revision: initial})
 })
+
+test('published URL changes offer explicit redirects and each revision owns its exact status and target map', async () => {
+ const initial = {...structuredClone(fixture), pages: fixture.pages.map(page => ({...page, id: page.slug}))}
+ const before = await (await post('/api/pane/prepare', {site: initial})).json()
+ await post('/api/pane/publish', {revision: before.id})
+ const site = structuredClone(initial)
+ site.pages.find(page => page.id === 'about').slug = 'our-story'
+ site.pages.find(page => page.id === 'hours').deleted = true
+ let draft = await (await post('/api/pane/prepare', {site})).json()
+ assert.deepEqual(draft.site.redirectOffers.map(row => [row.from, row.reason]).sort(), [['/site/about', 'renamed'], ['/site/hours', 'deleted']])
+ const fields = {base: draft.id, 'redirects.csv': 'from,to,status\n/site/temporary,/site/contact,302'}
+ for (const offer of draft.site.redirectOffers) {
+  const prefix = 'redirect.offer.' + encodeURIComponent(offer.from)
+  fields[prefix + '.accept'] = 'yes'; fields[prefix + '.status'] = '301'; fields[prefix + '.to'] = offer.reason === 'deleted' ? '/site/contact' : offer.to
+ }
+ const accepted = await f.request('/app/autosave', {method: 'POST', headers: {Cookie: owner, Origin: origin, 'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams(fields)})
+ assert.equal(accepted.status, 200, await accepted.clone().text()); draft = await accepted.json()
+ assert.equal((await f.request('/site/about')).status, 200, 'Draft redirects do not change a published route')
+ await post('/api/pane/publish', {revision: draft.id})
+ for (const [from,to,status] of [['/site/about','/site/our-story',301], ['/site/hours','/site/contact',301], ['/site/temporary','/site/contact',302]]) {
+  for (const method of ['GET','HEAD']) {const response = await f.request(from + '?source=old-link', {method}); assert.equal(response.status,status); assert.equal(response.headers.get('location'),to)}
+ }
+ for (const redirects of [[{from:'/site/contact',to:'/site',status:301}], [{from:'/site/a',to:'/site/b',status:301},{from:'/site/b',to:'/site/a',status:302}], [{from:'/site/old',to:'//elsewhere.invalid',status:302}], [{from:'/site/old',to:'javascript:alert(1)',status:301}]]) assert.equal((await post('/api/pane/prepare',{site:{...draft.site,redirects}})).status,400)
+ await post('/api/pane/rollback', {revision: before.id})
+ assert.equal((await f.request('/site/about')).status, 200)
+ assert.equal((await f.request('/site/temporary')).status, 404)
+})

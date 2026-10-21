@@ -314,3 +314,49 @@ test('published navigation keeps ordered dropdowns, links, CTA, footer and share
   for (const invalid of [{...site, socials: {instagram: 'javascript:alert(1)'}}, {...site, navigation: {...site.navigation, main: [{label: 'Unsafe', url: 'data:text/html,unsafe'}]}}]) assert.equal((await post('/api/pane/prepare', {site: invalid})).status, 400)
  } finally {await app.mf.dispose()}
 })
+
+test('page organization keeps stable identities, complete revisions, safe edits and chosen public home and not-found content', async () => {
+ const app = await runtime()
+ let cookie
+ const post = (path, body) => app.request(path, {method: 'POST', headers: {Cookie: cookie ?? '', Origin: origin, 'Content-Type': 'application/json'}, body: JSON.stringify(body)})
+ const form = (base, fields) => app.request('/app/autosave', {method: 'POST', headers: {Cookie: cookie, Origin: origin, 'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({base, ...fields})})
+ try {
+  cookie = (await post('/auth/bootstrap', {token: settings.SETUP_TOKEN, displayName: 'Pages owner'})).headers.get('set-cookie').split(';')[0]
+  const original = await (await post('/api/pane/prepare', {site: fixture})).json()
+  await post('/api/pane/publish', {revision: original.id})
+  const structure = {pages: fixture.pages.map(page => ({id: page.slug, slug: page.slug, title: page.title, folder: 'Business'})), folders: ['Business', 'Resources', 'Support'], home: 'services', notFound: 'missing-page'}
+  structure.pages.push({id: 'missing-page', slug: 'help/missing', title: 'Let us help you find it', folder: 'Support', hidden: true})
+  structure.pages.find(page => page.id === 'about').slug = 'our-studio'
+  structure.pages.find(page => page.id === 'hours').deleted = true
+  let response = await form(original.id, {slug: 'about', pageId: 'about', structure: JSON.stringify(structure), 'page.about.body': 'A larger workshop for local projects.'})
+  assert.equal(response.status, 200, await response.clone().text())
+  const organized = await response.json()
+  assert.equal(organized.site.pages.length, 6)
+  assert.equal(organized.site.pages.find(page => page.id === 'hours').deleted, true)
+  assert.equal(organized.site.pages.find(page => page.id === 'about').slug, 'our-studio')
+  assert.equal(organized.site.pages.find(page => page.id === 'about').body, 'A larger workshop for local projects.')
+  assert.deepEqual(organized.site.folders, ['Business', 'Resources', 'Support'])
+  assert.deepEqual(organized.site.redirectOffers.map(offer => [offer.from, offer.reason]).sort(), [['/site/about', 'renamed'], ['/site/hours', 'deleted'], ['/site/services', 'renamed']])
+  assert.match(await (await app.request('/site')).text(), /Made to last/)
+  assert.equal((await form(original.id, {structure: JSON.stringify(structure)})).status, 409)
+  response = await form(organized.id, {slug: 'help/missing', pageId: 'missing-page', 'page.help/missing.title': 'Find your next workshop', 'page.help/missing.body': 'Search our services or contact the studio.', 'page.help/missing.searchBox': 'yes', 'page.help/missing.links': 'Contact our team | /site/contact'})
+  assert.equal(response.status, 200)
+  const complete = await response.json()
+  assert.equal((await post('/api/pane/publish', {revision: complete.id})).status, 200)
+  assert.match(await (await app.request('/site')).text(), /Repairs and commissions/)
+  assert.match(await (await app.request('/site/home')).text(), /Made to last/)
+  assert.match(await (await app.request('/site/our-studio')).text(), /larger workshop/)
+  for (const path of ['/site/missing', '/site/nested/unknown', '/site/hours']) {
+   const missing = await app.request(path); assert.equal(missing.status, 404)
+   const html = await missing.text(); assert.match(html, /Find your next workshop/); assert.match(html, /role="search"/); assert.match(html, /href="\/site\/contact"/)
+  }
+  const map = await (await app.request('/sitemap.xml')).text()
+  assert.doesNotMatch(map, /help\/missing|\/site\/hours/)
+  const preview = await app.request(`/preview/${complete.id}/help/missing`, {headers: {Cookie: cookie}})
+  assert.equal(preview.status, 200); assert.match(preview.headers.get('x-robots-tag'), /noindex/)
+  assert.equal((await app.request(`/preview/${complete.id}/hours`, {headers: {Cookie: cookie}})).status, 404)
+  await post('/api/pane/rollback', {revision: original.id})
+  assert.match(await (await app.request('/site')).text(), /Made to last/)
+  assert.equal((await app.request('/site/our-studio')).status, 404)
+ } finally {await app.mf.dispose()}
+})

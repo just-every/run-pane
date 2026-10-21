@@ -1,6 +1,6 @@
 // Drafts use the same native session, origin checks and immutable revisions as Prepare.
 for (const form of document.querySelectorAll('form[data-autosave]')) {
- const fields = [...form.querySelectorAll('input:not([type=hidden]), textarea, select')]
+ const fields = [...form.querySelectorAll('input[name]:not([type=hidden]), textarea[name], select[name]')]
  const state = () => Object.fromEntries(fields.map(field => [field.name, field.value]))
  const signature = value => JSON.stringify(value)
  const status = form.querySelector('[data-save-status]'), conflict = form.querySelector('[data-conflict]')
@@ -16,7 +16,7 @@ for (const form of document.querySelectorAll('form[data-autosave]')) {
   status.textContent = unchanged ? 'Draft saved. Not published.' : 'Unsaved changes.'
   if (!blocked && !unchanged) timer = setTimeout(save, 600)
  }
- function restore(value) { for (const field of fields) field.value = value[field.name] ?? ''; changed(false) }
+ function restore(value) { for (const field of fields) field.value = value[field.name] ?? ''; form.dispatchEvent(new Event('draftrestore')); changed(false) }
  function adopt(revision) {
   base.value = revision.id
   const bar = document.querySelector('[data-live]')
@@ -47,7 +47,7 @@ for (const form of document.querySelectorAll('form[data-autosave]')) {
      blocked = true; latest = result.latest; conflict.hidden = false
      const slug = form.elements.slug?.value
      const other = latest?.site.pages.find(page => page.slug === slug)
-     form.querySelector('[data-latest]').textContent = other ? [latest.site.name, latest.site.description, other.title, other.body].join('\n\n') : JSON.stringify(latest?.site, null, 2)
+     form.querySelector('[data-latest]').textContent = form.querySelector('[name=structure]') ? JSON.stringify(latest?.site, null, 2) : other ? [latest.site.name, latest.site.description, other.title, other.body].join('\n\n') : JSON.stringify(latest?.site, null, 2)
      status.textContent = 'Conflict: your changes have not replaced the newer draft. Compare both versions.'
      return
     }

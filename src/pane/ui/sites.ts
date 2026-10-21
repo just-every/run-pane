@@ -1,3 +1,4 @@
+import { activePages, homeSlug } from '../pages'
 // Sites: the site as one homepage tile with its live and draft state, every
 // revision on a ribbon with the owner's decisions on it, and visits by page.
 import { trafficView } from './traffic'
@@ -13,11 +14,11 @@ function tile(data: Dashboard, owner: boolean, canPreview: boolean): string {
   const pending = data.draft && data.draft.id !== data.live?.id ? data.draft : null
   const actions = [
     data.live ? '<a class="button secondary" href="/site">Open live site</a>' : '',
-    pending && canPreview ? `<a class="button secondary" href="/preview/${encodeURIComponent(pending.id)}/home">Preview draft</a>` : '',
+    pending && canPreview ? `<a class="button secondary" href="/preview/${encodeURIComponent(pending.id)}/${homeSlug(pending.site)}">Preview draft</a>` : '',
     pending && owner ? form('/app/publish', hidden('revision', pending.id), 'Approve & publish', 'primary') : '',
     site && canPreview ? '<a class="button secondary" href="/app/search">Search settings</a>' : site ? '' : '<a class="button primary" href="/app">Start your site</a>',
   ].join('')
-  const nav = site ? `<ul class="tile-pages">${site.pages.map(page => `<li class="tile-${pageBrick[page.slug]}">${escape(page.title)}</li>`).join('')}</ul>` : ''
+  const nav = site ? `<ul class="tile-pages">${activePages(site).map(page => `<li class="tile-${pageBrick[page.slug] ?? 'blog'}">${escape(page.title)}</li>`).join('')}</ul>` : ''
   return `<section class="site-tile" aria-labelledby="site-name"><div class="site-tile-top"><span class="site-dot" aria-hidden="true"></span><h1 id="site-name">${escape(site?.name ?? 'Your site')}</h1></div><p class="site-tile-desc">${escape(site?.description || 'Prepare your five pages to start the site.')}</p>${nav}<p class="site-tile-status">${data.live ? icon('check') : ''}${escape(siteStatus(data))}</p><div class="actions">${actions}</div></section>`
 }
 
@@ -36,7 +37,7 @@ function ribbon(data: Dashboard, owner: boolean, canPreview: boolean): string {
   const rows = data.revisions.map(revision => {
     const decisions = data.approvals.filter(approval => approval.revision === revision.id).map(approval => `<li>${approval.action === 'rollback' ? 'Restored' : 'Published'} ${when(approval.created_at, 'short')} · ${escape(data.people[approval.actor] ?? 'a former team member')}</li>`).join('')
     const live = revision.id === data.live?.id, draft = revision.id === data.draft?.id && !live
-    return `<li class="revision${live ? ' is-live' : ''}"><span class="revision-dot" aria-hidden="true"></span><div class="revision-card"><div class="revision-head"><strong><code>${short(revision.id)}</code></strong>${live ? '<span class="pill pill-live-state">Live</span>' : ''}${draft ? '<span class="pill pill-state">Draft</span>' : ''}<span class="revision-time">${when(revision.created_at, 'short')}</span></div><p>${escape(revision.site.name)} · Prepared by ${escape(data.people[revision.actor] ?? 'a former team member')}</p>${decisions ? `<ul class="decisions" aria-label="Decisions">${decisions}</ul>` : ''}<div class="actions">${canPreview ? `<a class="text-link" href="/preview/${encodeURIComponent(revision.id)}/home">Preview</a>` : ''}${!owner || live ? '' : once.has(revision.id) ? form('/app/rollback', hidden('revision', revision.id), 'Restore live', 'secondary small') : draft ? form('/app/publish', hidden('revision', revision.id), 'Approve & publish', 'primary small') : ''}</div></div></li>`
+    return `<li class="revision${live ? ' is-live' : ''}"><span class="revision-dot" aria-hidden="true"></span><div class="revision-card"><div class="revision-head"><strong><code>${short(revision.id)}</code></strong>${live ? '<span class="pill pill-live-state">Live</span>' : ''}${draft ? '<span class="pill pill-state">Draft</span>' : ''}<span class="revision-time">${when(revision.created_at, 'short')}</span></div><p>${escape(revision.site.name)} · Prepared by ${escape(data.people[revision.actor] ?? 'a former team member')}</p>${decisions ? `<ul class="decisions" aria-label="Decisions">${decisions}</ul>` : ''}<div class="actions">${canPreview ? `<a class="text-link" href="/preview/${encodeURIComponent(revision.id)}/${homeSlug(revision.site)}">Preview</a>` : ''}${!owner || live ? '' : once.has(revision.id) ? form('/app/rollback', hidden('revision', revision.id), 'Restore live', 'secondary small') : draft ? form('/app/publish', hidden('revision', revision.id), 'Approve & publish', 'primary small') : ''}</div></div></li>`
   }).join('')
   return `<ol class="ribbon">${rows}</ol>`
 }

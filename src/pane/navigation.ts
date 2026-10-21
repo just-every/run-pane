@@ -23,11 +23,11 @@ function externalUrl(value: unknown): string {
 }
 
 /** Validate links at the content boundary; hidden pages never enter either menu. */
-export function normalizeNavigation(value: unknown, pages: readonly NavigationPage[]): Navigation {
+export function normalizeNavigation(value: unknown, pages: readonly NavigationPage[], filterHidden = false): Navigation {
  const input = value === undefined ? {} : record(value, 'Provide navigation menus and footer details.')
  const pageMap = new Map(pages.map(page => [page.slug, page]))
  const menu = (value: unknown, depth = 0): MenuItem[] => {
-  if (!Array.isArray(value) || value.length > 100 || depth > 8) throw Error('Use a menu of up to 100 items with at most eight child levels.')
+  if (!Array.isArray(value) || depth > 8) throw Error('Use a list of menu items with at most eight child levels.')
   return value.flatMap((value): MenuItem[] => {
    const item = record(value, 'Each menu item needs a label and a page, link or child menu.')
    if (typeof item.label !== 'string' || !item.label.trim() || item.label.length > 120 || /[\r\n|]/.test(item.label)) throw Error('Menu labels need 1–120 characters without line breaks or |.')
@@ -37,7 +37,7 @@ export function normalizeNavigation(value: unknown, pages: readonly NavigationPa
    let page: string | undefined, url: string | undefined
    if (item.page !== undefined) {
     if (typeof item.page !== 'string' || !pageMap.has(item.page)) throw Error(`Choose an existing page for ${label}.`)
-    if (pageMap.get(item.page)!.hidden) return []
+    if (pageMap.get(item.page)!.deleted || (filterHidden && pageMap.get(item.page)!.hidden)) return []
     page = item.page
    }
    if (item.url !== undefined) url = externalUrl(item.url)
@@ -57,7 +57,7 @@ export function normalizeNavigation(value: unknown, pages: readonly NavigationPa
  }
  if (input.details !== undefined && (typeof input.details !== 'string' || input.details.length > 5000)) throw Error('Footer details can contain up to 5,000 characters.')
  return {
-  main: input.main === undefined ? pages.filter(page => !page.hidden).map(page => ({ label: page.title, page: page.slug })) : menu(input.main),
+  main: input.main === undefined ? pages.filter(page => !page.hidden && !page.deleted).map(page => ({ label: page.title, page: page.slug })) : menu(input.main),
   footer: input.footer === undefined ? [] : menu(input.footer),
   details: typeof input.details === 'string' ? input.details.normalize('NFC').trim() : '',
   headerSocials: boolean('headerSocials'), footerSocials: boolean('footerSocials'),
@@ -105,14 +105,14 @@ function menuMarkup(items: MenuItem[], pageUrl: (slug: string) => string, slug?:
 
 /** CSS switches between desktop and native mobile details at the pane's container width. */
 export function renderNavigation(site: NavigationSite, slug: string, pageUrl: (slug: string) => string): string {
- const navigation = normalizeNavigation(site.navigation, site.pages)
+ const navigation = normalizeNavigation(site.navigation, site.pages,true)
  const menu = menuMarkup([...navigation.main, {label: 'Search', url: '/site/search'}], pageUrl, slug)
  const socials = navigation.headerSocials ? socialLinks(site) : ''
  return `<div class="public-navigation"><nav class="public-menu-desktop" aria-label="Website">${menu}${socials}</nav><details class="public-menu-mobile"><summary>${icon('menu')}<span>Menu</span></summary><nav aria-label="Website">${menu}${socials}</nav></details></div>`
 }
 
 export function renderFooter(site: NavigationSite, pageUrl: (slug: string) => string): string {
- const navigation = normalizeNavigation(site.navigation, site.pages)
+ const navigation = normalizeNavigation(site.navigation, site.pages,true)
  const details = site.navigation ? navigation.details : site.description
  const menu = menuMarkup(navigation.footer, pageUrl)
  return `<footer class="public-footer"><div class="public-footer-copy"><span>${escape(site.name)}</span>${details ? `<p>${escape(details).replace(/\n/g, '<br>')}</p>` : ''}</div>${menu ? `<nav class="public-footer-menu" aria-label="Footer">${menu}</nav>` : ''}${navigation.footerSocials ? socialLinks(site) : ''}</footer>`

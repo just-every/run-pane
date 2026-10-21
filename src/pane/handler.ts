@@ -1,3 +1,4 @@
+import { activePages, homeSlug } from './pages'
 import { wireDatabase } from '@runeditrun/rer/internal/modules/d1-transport/index.mjs'
 import { erasureStatements, invalidateTransfersStatements } from '@runeditrun/rer/internal/modules/portability/journal.mjs'
 import { operatorAuth, runtimeBindings, type Bindings } from '../auth.server'
@@ -21,9 +22,11 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
  try {
   if(preview) {
    if(!editor)return json({error:'An owner or admin must preview.'},403)
-   const [, ,id,slug='home']=path.split('/'),row=await env.DB.prepare('SELECT * FROM pane_revisions WHERE id=?').bind(id).first()
-   if(!row||!slugs.includes(slug))return json({error:'Preview not found.'},404)
-   return document('Preview',publicPage(revision(row).site,slug,'preview'),'site')
+   const [, ,id,...parts]=path.split('/'),row=await env.DB.prepare('SELECT * FROM pane_revisions WHERE id=?').bind(id).first()
+   if(!row)return json({error:'Preview not found.'},404)
+   const site=revision(row).site,slug=parts.length ? decodeURIComponent(parts.join('/')) : homeSlug(site)!
+   if(!activePages(site).some(page=>page.slug===slug))return json({error:'Preview not found.'},404)
+   return document('Preview',publicPage(site,slug,'preview'),'site')
   }
   if(request.method==='GET') {
    const data=await dashboardData(env.DB,actor.displayName,actor.role)
@@ -43,7 +46,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    result=await prepare(env.DB,actor.id,input.site??await siteFromForm(env.DB,input), action==='autosave' ? String(input.base??'') : typeof input.base==='string' ? input.base : undefined)
    if(action==='autosave')return json(result)
    notice='Draft prepared. Preview it before publishing.'
-   if(slugs.includes(input.slug))back='/app?page='+input.slug
+   if(typeof input.slug==='string')back='/app?page='+encodeURIComponent(input.slug)
   } else if(action==='publish'||action==='rollback') {
    result=await publish(env.DB,actor.id,String(input.revision),action)
    notice=action==='publish'?'Published. Your approval is recorded.':'Rolled back. Your approval is recorded.'

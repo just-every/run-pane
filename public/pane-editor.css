@@ -241,3 +241,32 @@
 .pane [data-conflict] { min-width: 0; padding: 12px; border: 1px solid var(--pn-action); border-radius: 10px; }
 .pane [data-conflict][hidden] { display: none; }
 .pane [data-latest] { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; max-height: 240px; overflow-y: auto; }
+/* Scoped to the collapsed organizer inside the existing edit card. */
+.pane .page-organization-content { display: grid; gap: 12px; min-width: 0; margin-top: 12px; }
+.pane .page-organization-content > p { margin: 0; }
+.pane .page-organization-roles, .pane .page-organization-fields { display: grid; gap: 10px; min-width: 0; }
+.pane .page-organization-list { display: grid; gap: 12px; min-width: 0; margin: 0; padding: 0; list-style: none; }
+.pane .page-organization-row { display: grid; gap: 10px; min-width: 0; padding: 12px; border: 1px solid var(--pn-line); border-radius: 10px; }
+.pane .page-organization-row.is-deleted { border-style: dashed; }
+.pane .page-organization-row-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; min-width: 0; font-size: 13px; }
+.pane .page-organization-row-head strong { min-width: 0; overflow-wrap: anywhere; }
+.pane .page-organization-row-head a { margin-left: auto; font-size: 12px; }
+.pane .page-organization-deleted { color: var(--pn-muted); font-size: 12px; }
+.pane .page-organization-row-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.rer-themed .pane .page-organization label.page-organization-check { display: flex; align-items: center; gap: 8px; }
+.rer-themed .pane .page-organization-check input { flex: none; width: 18px; height: 18px; min-height: 0; margin: 0; padding: 0; accent-color: var(--pn-action); }
+.pane .page-organization-row-actions .page-organization-check { flex-basis: 100%; }
+.pane .page-organization-add { display: grid; gap: 10px; min-width: 0; margin: 0; padding: 12px; border: 1px solid var(--pn-line); border-radius: 10px; }
+.pane .page-organization-add legend { padding: 0 5px; font-size: 13px; font-weight: 700; }
+.pane .page-organization-add > button { justify-self: start; }
+.pane .page-organization-folders { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.pane .page-organization-folders li { max-width: 100%; padding: 3px 8px; border: 1px solid var(--pn-line); border-radius: 6px; font-size: 12px; overflow-wrap: anywhere; }
+.rer-themed .pane .page-organization label:has(> input), .rer-themed .pane .page-organization label:has(> select) { grid-template-columns: minmax(0, 1fr); }
+.pane .page-organization input, .pane .page-organization select { min-width: 0; max-width: 100%; }
+.pane .page-organization [data-organization-status]:empty { display: none; }
+@media (min-width: 600px) {
+ .pane .page-organization-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+ .pane .page-organization-fields > label:last-child { grid-column: 1 / -1; }
+}
+.pane .bricks[data-many] { display: flex; min-width: 0; overflow-x: auto; }
+.pane .bricks[data-many] .brick { flex: 0 0 128px; }

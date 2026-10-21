@@ -1,6 +1,6 @@
 // Cookie-free aggregate events; only published, owner-approved campaign labels travel.
 if (navigator.doNotTrack !== '1' && !navigator.globalPrivacyControl) {
- const path = location.pathname === '/site' ? 'home' : location.pathname.split('/').pop()
+ const path = document.currentScript.dataset.page
  const approved = JSON.parse(document.currentScript.dataset.campaigns)
  const candidate = new URL(location.href).searchParams.get('utm_campaign')
  const campaign = approved.includes(candidate) ? candidate : ''
