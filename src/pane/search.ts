@@ -36,7 +36,7 @@ export async function searchResponse(request: Request, original: Bindings): Prom
    const latest = await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC LIMIT 1').first()
    if (!latest || latest.id !== base) return text('A newer draft exists. Reload search settings before saving.', 'text/plain', 409)
    const draft = revision(latest)
-   const site = {...draft.site, robots: String(form.get('robots') ?? ''), pages: draft.site.pages.map(page => ({...page, search: {title: String(form.get(`${page.slug}.title`) ?? ''), description: String(form.get(`${page.slug}.description`) ?? ''), canonical: String(form.get(`${page.slug}.canonical`) ?? ''), noindex: form.has(`${page.slug}.noindex`)}}))}
+   const site = {...draft.site, robots: String(form.get('robots') ?? ''), pages: draft.site.pages.map(page => page.deleted ? page : ({...page, search: {title: String(form.get(`${page.slug}.title`) ?? ''), description: String(form.get(`${page.slug}.description`) ?? ''), canonical: String(form.get(`${page.slug}.canonical`) ?? ''), noindex: form.has(`${page.slug}.noindex`)}}))}
    await prepare(env.DB, session.operator.id, site,base)
    return new Response(null, {status: 303, headers: {location: '/app/search?saved=1'}})
   } catch (error) { return text(error instanceof Error ? error.message : 'Invalid search settings.', 'text/plain', 400) }

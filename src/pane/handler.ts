@@ -34,7 +34,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    if(api)return json(data)
    if(!screens[path])return json({error:'Not found.'},404)
    data.notice=url.searchParams.get('notice')??undefined
-   return document(screens[path][1],workspace(data,path,url.searchParams.get('page')??'home'))
+   return document(screens[path][1],workspace(data,path,url.searchParams.get('page')??''))
   }
   if(request.method!=='POST')return json({error:'Method not allowed.'},405)
   if(Number(request.headers.get('content-length')??0)>1200000)return json({error:'Input exceeds 1.2 MB.'},413)

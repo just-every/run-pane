@@ -322,6 +322,7 @@ test('page organization keeps stable identities, complete revisions, safe edits 
  const form = (base, fields) => app.request('/app/autosave', {method: 'POST', headers: {Cookie: cookie, Origin: origin, 'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({base, ...fields})})
  try {
   cookie = (await post('/auth/bootstrap', {token: settings.SETUP_TOKEN, displayName: 'Pages owner'})).headers.get('set-cookie').split(';')[0]
+  assert.equal((await app.request('/setup',{method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})).status,303)
   const original = await (await post('/api/pane/prepare', {site: fixture})).json()
   await post('/api/pane/publish', {revision: original.id})
   const structure = {pages: fixture.pages.map(page => ({id: page.slug, slug: page.slug, title: page.title, folder: 'Business'})), folders: ['Business', 'Resources', 'Support'], home: 'services', notFound: 'missing-page'}
