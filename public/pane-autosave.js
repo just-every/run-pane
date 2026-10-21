@@ -10,7 +10,7 @@ for (const form of document.querySelectorAll('form[data-autosave]')) {
  let history = [state()], index = 0, saved = signature(state()), timer, pending, latest, blocked = false
  const buttons = () => { undo.disabled = index === 0; redo.disabled = index === history.length - 1 }
  function changed(record = true) {
-  if (record) { history = history.slice(0, index + 1); history.push(state()); index++ }
+  if (record && signature(state()) !== signature(history[index])) { history = history.slice(0, index + 1); history.push(state()); index++ }
   buttons(); clearTimeout(timer)
   const unchanged = !pending && signature(state()) === saved
   status.textContent = unchanged ? 'Draft saved. Not published.' : 'Unsaved changes.'
