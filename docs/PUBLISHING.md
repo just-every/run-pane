@@ -8,8 +8,11 @@ leaves the live site as it is. Publishing makes the selected revision live.
 1. Choose **Pages** in your workspace, then the page's brick along the bottom
    (on Home, **Site name and description** opens those two fields too).
 2. In **Edit this page**, change the **Page title** or **Text**. A blank line
-   starts a new paragraph. The other four pages stay as they are.
-3. Choose **Prepare draft revision**. The phone marks each changed paragraph,
+   starts a new paragraph. Valid changes save automatically as an unpublished
+   draft; wait for **Draft saved. Not published.** before closing the tab.
+   The other four pages stay as they are. **Undo** and **Redo** step through
+   edits made while this page is open.
+3. Choose **Prepare draft revision** to refresh the page summary. The phone marks each changed paragraph,
    the brick says **Changed**, and **Not live yet** says what publishing changes.
 4. Follow **Preview this page** or **Preview draft**. Use the preview navigation
    to read every page.
@@ -20,6 +23,13 @@ The preview banner identifies the revision as **Draft preview**. It is a saved
 snapshot; editing again creates another revision. Make sure the revision you
 approve is the one you reviewed. Preview routes require an owner or admin
 session. A preview does not accept contact messages or count visits.
+
+If another editor saves first, your fields stay available and Pane shows the
+newer page below them. Compare both versions and edit your fields before choosing
+**Save merged draft**. **Download my copy** keeps your current fields in a JSON
+file; **Use latest draft** explicitly discards your unsaved fields and reloads
+the newer draft. If someone saves again during comparison, Pane asks you to
+compare again. None of these draft actions publishes the site.
 
 After publishing, choose **Open live site** to check the result. The public
 website at `/site` now serves that revision.
