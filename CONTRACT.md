@@ -230,7 +230,7 @@ The owner shows a promotional pop-up (newsletter signup, offer or announcement) 
 
 **Acceptance evidence:** Configure a newsletter pop-up after 10 seconds on two pages with a seven-day frequency cap and exit intent on desktop; see it appear on those pages only, not again within seven days, and close by keyboard; on a 390-wide phone see no full-screen interstitial on arrival; schedule an announcement bar and see it appear and expire on time.
 
-*Status:* missing. No pop-ups or announcement bars.
+*Status:* partial. An owner-approved announcement bar appears and expires on schedule. Promotional pop-ups, triggers, targeting, frequency caps and dialog behavior remain missing.
 
 #### PAGE-014 — Block catalog, text formatting and links.
 
@@ -356,7 +356,7 @@ Pages, posts, collection items and announcement sections can be scheduled to pub
 
 **Acceptance evidence:** Schedule a post for 9:00 America/Chicago and a promotion to expire across a daylight saving change; see each happen at the right local time and see an unapproved schedule flagged, not published.
 
-*Status:* missing. Publication is immediate only.
+*Status:* partial. Approved announcement sections now activate and expire in the business US time zone across daylight saving; Sites records actual events and flags overdue unapproved drafts without publishing them. Selective page, post and collection-item scheduling remains missing.
 
 #### CMS-006 — RSS and podcast feeds and new-post notifications.
 
@@ -882,7 +882,7 @@ The workspace and live site default to US English, the business's US time zone w
 
 **Acceptance evidence:** Set the time zone to America/Denver, and see workspace dates, scheduled times and opening hours in local US format with USD prices.
 
-*Status:* missing. Workspace dates use en-US in the viewer’s time zone, with UTC before browser formatting; there is no business time zone setting.
+*Status:* partial. The owner can persist a US business time zone, used by schedule controls, execution and Sites schedule history with daylight saving. Other workspace timestamps still use the viewer zone; opening-hours, price and other locale settings remain missing.
 
 ### Owner mobile
 
@@ -918,7 +918,7 @@ Time-based rules run on the owner's schedule in their US time zone: holiday-hour
 
 **Acceptance evidence:** Schedule a holiday banner for Thanksgiving and a quarterly page-review reminder, advance the clock, and see both happen at local time.
 
-*Status:* missing. No scheduler.
+*Status:* done. Approved holiday/promotion windows and recurring stale-page reminders execute through the Worker cron in the business US time zone. Exact revision approval, durable execution history, review actions, replay refusal and daylight-saving behavior are proven; reminders remain in the workspace.
 
 #### AUTO-003 — Share new posts to social accounts.
 
@@ -1112,13 +1112,13 @@ No desk homepage claims file (`CLAIMS.md`) exists for Pane on 17 October 2026. W
 
 ## Status
 
-Judged from the code and tests at commit `f6d80f5ee6f918c2c774b11884d8205b44538c08` (21 October 2026).
+Judged from the code and tests at commit `87642d31c272aeced3a71ac29f0519273bada446` (21 October 2026).
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 16 | 0 | 0 | 16 |
-| Target and push further | 6 | 29 | 74 | 109 |
-| All | 22 | 29 | 74 | 125 |
+| Target and push further | 7 | 32 | 70 | 109 |
+| All | 23 | 32 | 70 | 125 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -1150,7 +1150,7 @@ Judged from the code and tests at commit `f6d80f5ee6f918c2c774b11884d8205b44538c
 | `PAGE-010` | Duplicate pages and starter layouts | target | missing |  | No page creation. |
 | `PAGE-011` | Password-protected and member-only pages and site | target | missing |  | Every live page is public; no site-wide gate or coming-soon page. |
 | `PAGE-012` | Gallery blocks with grid, slideshow and lightbox | target | missing |  | No images or galleries. |
-| `PAGE-013` | Promotional pop-up and announcement bar | target | missing |  | No pop-ups or announcement bars. |
+| `PAGE-013` | Promotional pop-up and announcement bar | target | partial | `scripts/scheduling-journey.mjs` — “Business-local scheduling journey” (scheduled announcement bar appears and expires on time at 1440/390) | Promotional pop-ups, chosen-page targeting, delay/scroll/exit triggers, seven-day browser-storage frequency cap and accessible dialog behavior remain unimplemented. |
 | `PAGE-014` | Block catalog, text formatting and links | target | partial | `src/pane/public-view.ts` | Page bodies are plain text split into escaped paragraphs; no block catalog, headings inside a page, inline formatting, lists, alignment, links, buttons or anchors. |
 | `PAGE-015` | Trash and single page or post restore | target | partial | `src/pane/content.ts`; `tests/pane.test.mjs` | Immutable whole-site revisions and whole-site rollback only; no trash, per-page history or single page, post or item restore. |
 | `STYLE-001` | Responsive templates for US local businesses | target | partial | `public/pane.css`; `src/pane/public-view.ts` | One fixed responsive layout; no template catalog. |
@@ -1165,7 +1165,7 @@ Judged from the code and tests at commit `f6d80f5ee6f918c2c774b11884d8205b44538c
 | `CMS-002` | Collection template pages with item URLs | target | missing |  | No collections. |
 | `CMS-003` | Collection lists and filters on any page | target | missing |  | No collections. |
 | `CMS-004` | Blog with categories, tags and authors | target | missing |  | No blog. |
-| `CMS-005` | Scheduled publishing and expiry | target | missing |  | Publication is immediate only. |
+| `CMS-005` | Scheduled publishing and expiry | target | partial | `tests/pane.test.mjs` — “approved business-local schedules drive banners and reminders while drafts, roles and invalid DST dates stay fenced” (Denver promotion expiry across spring DST and unapproved schedule refusal); `scripts/scheduling-journey.mjs` — “Business-local scheduling journey” (Chicago announcement activation/expiry across fall DST, actual event history and due unapproved draft flag at 1440/390) | The scheduled post at 09:00 America/Chicago and selective scheduling of pages, posts and collection items remain unimplemented. Announcement schedules are bound to the approved immutable revision; these future doors inherit that approval fence and actual execution history. |
 | `CMS-006` | RSS and podcast feeds and new-post notifications | target | missing |  | No feeds or subscribers. |
 | `CMS-007` | Collection CSV import and export | target | missing |  | Only the static-site JSON move-in exists (`MOVEIN-001`). |
 | `CMS-008` | Site search | target | partial | `src/pane/site-search.ts`; `src/pane/public.ts`; `src/pane/public-view.ts`; `tests/search.test.mjs`; `scripts/search-journey.mjs` | Visitors search the current published pages at `/site/search`, with Unicode-normalized matching and links to results. Drafts stay private and publication/rollback update results atomically. Posts, collection items and protected-page filtering still await CMS-001, CMS-002, CMS-004 and PAGE-011. |
@@ -1228,11 +1228,11 @@ Judged from the code and tests at commit `f6d80f5ee6f918c2c774b11884d8205b44538c
 | `PRIV-002` | Person-level privacy requests | target | partial | `src/pane/handler.ts`; `tests/pane.test.mjs` | One message can be erased by ID; no lookup, export or erasure by person. |
 | `PRIV-003` | Policy and accessibility statement starters | target | missing |  | No policy pages. |
 | `PRIV-004` | Security headers on every page | target | done | `tests/search.test.mjs` — PRIV-004: current Pane workspace, preview, live, search and not-found documents retain their security headers; shared entry documents deny device permissions while native authentication and origin refusals remain intact; only an approved page embed widens its frame policy and workspace previews stay inert; `scripts/privacy-journey.mjs` — owner approval, page-only CSP, consent, GPC, opaque sandbox and API refusal at 1440 and 390 |  |
-| `LOCALE-001` | US defaults | target | missing |  | Workspace dates use en-US in the viewer’s time zone, with UTC before browser formatting; there is no business time zone setting. |
+| `LOCALE-001` | US defaults | target | partial | `tests/pane.test.mjs` — “approved business-local schedules drive banners and reminders while drafts, roles and invalid DST dates stay fenced” (persisted America/Denver schedule and DST execution); `scripts/scheduling-journey.mjs` — “Business-local scheduling journey” (owner-editable business zone, local schedule controls and schedule-history timestamps at 1440/390) | Other workspace dates still use the viewer zone. Opening-hours dates, configurable locale/currency/phone/address/Sunday-start calendar defaults and USD-priced content remain unimplemented. |
 | `MOBILE-001` | Responsive owner workspace on a phone | target | partial | `scripts/browser-journey.mjs` | The current workspace is checked for overflow at 390 wide; the target editor, inbox replies and approvals on a phone are not built. |
 | `MOBILE-002` | Native iOS and Android owner app | target | missing |  | No native app. |
 | `AUTO-001` | Form-triggered automations | target | missing |  | No automations. |
-| `AUTO-002` | Scheduled automations | target | missing |  | No scheduler. |
+| `AUTO-002` | Scheduled automations | target | done | `tests/pane.test.mjs` — “approved business-local schedules drive banners and reminders while drafts, roles and invalid DST dates stay fenced” (US business zone, spring DST expiry, duplicate/late cron, page review and approval fences); `scripts/scheduling-journey.mjs` — “Business-local scheduling journey” (Thanksgiving holiday banner and quarterly stale-page reminders at local time, fall DST promotion expiry and spring DST recurring reminders, unapproved schedules flagged without publication, durable editor reopen/undo and 1440/390 screens; exact-candidate timing run cited in campaign plan) | None. |
 | `AUTO-003` | Share new posts to social accounts | target | missing |  | No social connections. |
 | `AUTO-004` | Site problem alerts | target | missing |  | No alerts. |
 | `AI-001` | Draft a whole site from business facts | target | missing |  | Base's AI module is present but not wired to any Pane feature. |
