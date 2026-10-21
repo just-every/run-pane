@@ -41,6 +41,7 @@ Pane is one product: the website. Where the market sells a neighboring product s
 | Standalone forms and surveys | [Pencil](https://github.com/just-every/run-pencil) (or Typeform, Jotform) | Pane builds site forms (`FORM-001`); multi-step surveys and quizzes embed from Pencil |
 | Help desk and live chat | [HappyToHelp](https://github.com/just-every/run-happytohelp) (or Zendesk, Intercom) | Enquiry follow-up only (`FORM-006`, `AGENT-007`); support queues and chat widgets embed from HappyToHelp |
 | Workflow automation across apps | [Crank](https://github.com/just-every/run-crank) (or Zapier, Make) | Signed webhooks and published triggers (`LINK-004`) |
+| Observability | [Porthole](https://github.com/just-every/run-porthole) (sibling seed) | Observability stays with Porthole |
 | Uptime monitoring | [Uptime](https://github.com/just-every/run-uptime) (or UptimeRobot) | Problem alerts hand external checks to Uptime (`AUTO-004`) |
 | Team chat | [Nook](https://github.com/just-every/run-nook) (or Slack, Microsoft Teams) | Enquiry and review notifications (`AUTO-001`) |
 | Restaurant reservations | [Placemat](https://github.com/just-every/run-placemat) (or OpenTable, Resy) | Embedded through the booking and custom embed blocks (`LINK-001`, `PAGE-008`) |
@@ -117,7 +118,7 @@ These clauses restate what the previous contract and first-release acceptance pr
 
 - **RUNSITE-001 — Public run site and documentation.** The public run site is a static build of the picked Pane homepage, `/run` and the Markdown guides, with no installation sign-in links. **Acceptance evidence:** Build with `rer build --site`, open `/`, `/run` and every linked `/docs` page (200) and an unknown path (404).
 
-- **LOBBY-001 — Shared Lobby, workspace and theme.** The installed `/` is the shared Lobby; `/app` keeps its anchored workspace sections; the paper, cerulean and self-hosted Noto theme is shared with sign-in and setup. **Acceptance evidence:** Open `/`, `/signin`, `/setup` and `/app` at 1440 and 390 wide and see the shared theme, the workspace anchors and no horizontal overflow.
+- **LOBBY-001 — Shared Lobby, workspace and theme.** The installed `/` is the shared Lobby; `/app` keeps its anchored workspace sections; the fuchsia (`--pn-fuchsia: #f5026f`, with `--pn-action: #e8176e` actions) and self-hosted Figtree theme is shared across `/`, `/signin`, `/setup` and `/app`. **Acceptance evidence:** Open `/`, `/signin`, `/setup` and `/app` at 1440 and 390 wide and see the shared theme, the workspace anchors and no horizontal overflow.
 
 - **PRESENT-001 — Labeled previews and unbranded live pages.** Previews use the business site's typography with an explicit draft banner. Live business pages carry the business's name only: no Pane branding in the page, title, footer or metadata. **Acceptance evidence:** Open a preview and see the banner; open every live page and find no Pane name or mark in the HTML, including `<title>`.
 
@@ -1070,7 +1071,7 @@ Agents run the website for the owner, beyond what Framer, Webflow and Durable sh
 - **Card processing, money movement and a full store.** Pane hands checkout to Stall, Stripe Payment Links or PayPal (`LINK-002`) and never holds card details or funds. Sales tax, refunds and inventory live there.
 - **Domain registration, certificate authority and the delivery network.** The owner registers domains in their own Cloudflare Registrar account or keeps their registrar; Cloudflare issues certificates and serves traffic in the owner's account (`DOMAIN-001` to `DOMAIN-004`). Pane operates them for the owner and never holds a registration.
 - **Business email hosting.** Mailboxes stay with Google Workspace or Microsoft 365; Pane preserves their DNS records (`DOMAIN-003`), recreates registrar email forwarding in the owner's Cloudflare Email Routing (`DOMAIN-005`) and sends form mail through the installation relay or the owner's account.
-- **Rebuilding neighboring products.** CRM, booking, store, memberships billing, email marketing, help desk, surveys, chat and monitoring stay with the sibling or incumbent named in [Neighboring products stay separate](#neighboring-products-stay-separate), each with its connection status visible.
+- **Rebuilding neighboring products.** CRM, booking, store, memberships billing, email marketing, help desk, surveys, chat, uptime monitoring and observability stay with the sibling or incumbent named in [Neighboring products stay separate](#neighboring-products-stay-separate), each with its connection status visible.
 - **WordPress plugins and lossless import of every site.** Pane does not run WordPress plugins or themes. Imports bring content, media and URLs with every exception listed (`IMPORT-005`); a site that depends on a specialist plugin keeps that service through an embed, a connection or WordPress hosting.
 - **Rankings, legal compliance and invented claims.** Pane provides search controls and agents that report evidence, not guaranteed rankings. Policy starters and accessibility checks support, but do not replace, the owner's own legal review. Pane never publishes invented reviews, credentials, staff or prices.
 - **US first.** Defaults are US English, US time zones, USD and US formats (`LOCALE-001`); other locales and currencies are settings, and translated pages are drafts the owner approves (`AI-002`). No HIPAA business associate agreement is offered; a clinic keeps patient intake in its practice system (for example Balm) and links to it.
@@ -1081,7 +1082,7 @@ The released security, erasure, audit and portability rules continue under every
 
 ## Presentation and run site
 
-The public run site is a static build of the picked Pane homepage, `/run` and Markdown documentation, with no installation sign-in links (`RUNSITE-001`). The installed `/` uses the shared Lobby; `/app` keeps its anchored workspace sections; the paper, cerulean and self-hosted Noto theme is shared with sign-in and setup (`LOBBY-001`). Previews use the public business site typography and an explicit draft banner; live business pages carry no Pane branding (`PRESENT-001`). Owner-approved homepage, interface and behavior are unchanged by this edition.
+The public run site is a static build of the picked Pane homepage, `/run` and Markdown documentation, with no installation sign-in links (`RUNSITE-001`). The installed `/` uses the shared Lobby; `/app` keeps its anchored workspace sections; the fuchsia (`--pn-fuchsia: #f5026f`, with `--pn-action: #e8176e` actions) and self-hosted Figtree theme is shared across `/`, `/signin`, `/setup` and `/app` (`LOBBY-001`). Previews use the public business site typography and an explicit draft banner; live business pages carry no Pane branding (`PRESENT-001`). Owner-approved homepage, interface and behavior are unchanged by this edition.
 
 ## Scope list mapping
 
@@ -1105,13 +1106,13 @@ No desk homepage claims file (`CLAIMS.md`) exists for Pane on 17 October 2026. W
 
 ## Status
 
-Judged from the code and tests at commit `4d8d9f91886016ca078a9f5d38625a04843c5c24` (21 October 2026).
+Judged from the code and tests at commit `ebaeb7ce2df1e4222c12e01a08ddf1cd90fa99a2` (21 October 2026).
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
-| Published | 13 | 3 | 0 | 16 |
+| Published | 14 | 2 | 0 | 16 |
 | Target and push further | 1 | 28 | 80 | 109 |
-| All | 14 | 31 | 80 | 125 |
+| All | 15 | 30 | 80 | 125 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -1129,7 +1130,7 @@ Judged from the code and tests at commit `4d8d9f91886016ca078a9f5d38625a04843c5c
 | `HEALTH-001` | Deployment health and unknown paths | published | partial | `src/server.ts`; `src/pane/public.ts` | No Pane test reads `/health` or an unknown installed path; only the run-site 404 is tested. |
 | `DEPLOY-001` | Install on the owner's Cloudflare account | published | partial | `deploy.json`; `wrangler.jsonc` | No recorded owner-account deploy acceptance; only local build and dry-run validation. |
 | `RUNSITE-001` | Public run site and documentation | published | done | `tests/site.test.mjs`; `docs/site.json` |  |
-| `LOBBY-001` | Shared Lobby, workspace and theme | published | partial | `src/server.ts`; `src/pane/views.ts`; `scripts/browser-journey.mjs` | Installed Lobby, shared theme tokens and workspace anchor now have browser coverage at 1440 and 390. The owner-approved fuchsia/Figtree theme differs from the clause’s cerulean/Noto promise; wording or design needs a ct/br decision. |
+| `LOBBY-001` | Shared Lobby, workspace and theme | published | done | `src/server.ts`; `src/pane/views.ts`; `public/site/theme.css`; `public/fonts/fonts.css`; `scripts/browser-journey.mjs` |  |
 | `PRESENT-001` | Labeled previews and unbranded live pages | published | done | `src/pane/public-view.ts`; `src/pane/views.ts`; `tests/pane.test.mjs`; `scripts/browser-journey.mjs` |  |
 | `PAGE-001` | Unlimited pages, folders and clean URLs | target | partial | `src/pane/content.ts` | Exactly five fixed slugs (home, about, services, hours, contact); no page creation, folders, slug editing or editable not-found page. |
 | `PAGE-002` | Visual section and block editor with layout controls | target | partial | `src/pane/views.ts`; `src/pane/handler.ts` | Content is edited as name, description and a pages JSON text field; no visual canvas, sections, blocks, grid placement, column ratios, section backgrounds, padding or image cropping. |

@@ -12,7 +12,18 @@ const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','
 const context=await browser.newContext(),page=await context.newPage()
 async function capture(name) {
  for(const width of [1440,390]){
-  await page.setViewportSize({width,height:1000});await page.screenshot({path:resolve(folder,`${name}-${width}.png`),fullPage:true})
+  await page.setViewportSize({width,height:1000})
+  if (['installed-lobby','signin','setup','empty-workspace'].includes(name)) {
+   await page.evaluate(() => document.fonts.ready)
+   const face = await page.evaluate(() => ({
+    body: getComputedStyle(document.body).fontFamily,
+    loaded: [...document.fonts].some(font => font.family.replace(/['"]/g, '') === 'Figtree' && font.status === 'loaded'),
+    local: performance.getEntriesByType('resource').some(entry => new URL(entry.name).origin === location.origin && new URL(entry.name).pathname.startsWith('/fonts/figtree/')),
+   }))
+   assert.match(face.body, /Figtree/, `LOBBY-001: ${name} renders the shared typeface at ${width}`)
+   assert.ok(face.loaded && face.local, `LOBBY-001: ${name} loads its self-hosted font at ${width}`)
+  }
+  await page.screenshot({path:resolve(folder,`${name}-${width}.png`),fullPage:true})
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2)
   assert.equal(overflow,false,`${name} overflows at ${width}`)
  }
