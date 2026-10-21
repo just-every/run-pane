@@ -1,6 +1,6 @@
 # Pane acceptance
 
-Every clause in [CONTRACT.md](CONTRACT.md) is accepted only when the journey below runs through a public door (a route, a command, the built site or a browser journey) and passes. Status is judged from the code and tests at commit `80f6943` (17 October 2026); `done` means the journey is exercised by the cited test, not that a hosted provider accepted it. Counts: 125 clauses: 11 done, 31 partial, 83 missing.
+Every clause in [CONTRACT.md](CONTRACT.md) is accepted only when the journey below runs through a public door (a route, a command, the built site or a browser journey) and passes. Status is judged from the code and tests at commit `80f6943` (17 October 2026); `done` means the journey is exercised by the cited test, not that a hosted provider accepted it. Counts: 125 clauses: 12 done, 30 partial, 83 missing.
 
 ## First release
 
@@ -44,7 +44,7 @@ The first release serves the public business site at `/site`; installing the Wor
 - **DEPLOY-001 — Install on the owner's Cloudflare account** (partial). Run `rer deploy` against a test Cloudflare account, see migrations applied and `/health` match, then remove the deployment. Evidence: `deploy.json`; `wrangler.jsonc`.
 - **RUNSITE-001 — Public run site and documentation** (done). Build with `rer build --site`, open `/`, `/run` and every linked `/docs` page (200) and an unknown path (404). Evidence: `tests/site.test.mjs`; `docs/site.json`.
 - **LOBBY-001 — Shared Lobby, workspace and theme** (partial). Open `/`, `/signin`, `/setup` and `/app` at 1440 and 390 wide and see the shared theme, the workspace anchors and no horizontal overflow. Evidence: `src/server.ts`; `src/pane/views.ts`; `scripts/browser-journey.mjs`.
-- **PRESENT-001 — Labeled previews and unbranded live pages** (partial). Open a preview and see the banner; open every live page and find no Pane name or mark in the HTML, including `<title>`. Evidence: `src/pane/public-view.ts`; `src/pane/views.ts`.
+- **PRESENT-001 — Labeled previews and unbranded live pages** (done). Open a preview and see the banner; open every live page and find no Pane name or mark in the HTML, including `<title>`. Evidence: `src/pane/public-view.ts`; `src/pane/views.ts`; `tests/pane.test.mjs`; `scripts/browser-journey.mjs`.
 
 ## Target
 

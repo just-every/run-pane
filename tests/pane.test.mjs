@@ -32,13 +32,13 @@ test('native owner sign-in and role sessions protect direct handlers',async()=>{
  assert.equal((await json('/api/pane/publish',{revision:'missing'},admin)).status,403)
  assert.equal((await json('/api/pane/prepare',{site:fixture},owner,{Origin:'https://elsewhere.invalid'})).status,403)
 })
-test('five pages prepare and preview privately, owner publishes with approval',async()=>{
+test('PRESENT-001: five pages preview with a draft banner and publish without product branding',async()=>{
  const r=await json('/api/pane/prepare',{site:fixture},admin);assert.equal(r.status,200,await r.clone().text());first=await r.json()
  assert.equal((await f.request('/preview/'+first.id+'/home',{redirect:'manual'})).status,303)
  assert.equal((await f.request('/preview/'+first.id+'/home',{headers:{Cookie:member}})).status,403)
- const preview=await f.request('/preview/'+first.id+'/home',{headers:{Cookie:admin}});assert.match(await preview.text(),new RegExp(fixture.name))
+ const preview=await f.request('/preview/'+first.id+'/home',{headers:{Cookie:admin}}),previewHtml=await preview.text();assert.match(previewHtml,new RegExp(fixture.name));assert.match(previewHtml,/class="preview-banner"/)
  assert.equal((await json('/api/pane/publish',{revision:first.id})).status,200)
- for(const page of fixture.pages){const p=await f.request(page.slug==='home'?'/site':'/site/'+page.slug);assert.equal(p.status,200);assert.ok((await p.text()).includes(page.title))}
+ for(const page of fixture.pages){const p=await f.request(page.slug==='home'?'/site':'/site/'+page.slug);assert.equal(p.status,200);const html=await p.text();assert.ok(html.includes(page.title));assert.ok(html.includes(`<title>${fixture.name}</title>`));assert.doesNotMatch(html,/\bPane\b|\/brand\/|rel="(?:icon|apple-touch-icon|manifest)"|preview-banner/)}
  const d=await data();assert.equal(d.live.id,first.id);assert.equal(d.approvals[0].revision,first.id);assert.ok(d.approvals[0].actor)
 })
 test('contact is durable, escaped and idempotent; tracking is aggregate and privacy-aware',async()=>{

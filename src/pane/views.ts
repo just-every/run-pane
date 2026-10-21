@@ -1,5 +1,6 @@
 import { fontHead } from '../base/font-head'
 import { themeFrame } from '../base/theme-frame'
+import { iconHead } from '../base/icon-head'
 import branding from '../branding.json'
 import type { Dashboard } from './model'
 import { editor } from './ui/editor'
@@ -11,7 +12,9 @@ import { sites } from './ui/sites'
 
 export async function document(title: string, body: string, kind: 'app' | 'site' = 'app'): Promise<Response> {
   const frame = await themeFrame({ href: '/rer-theme.css', productName: branding.name, accentColor: branding.primaryColor })
-  return new Response(`<!doctype html><html lang="en"${frame.htmlClass}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(title)} · ${escape(branding.name)}</title>${fontHead}${frame.head}<link rel="stylesheet" href="/pane.css"></head><body class="pane pane-${kind}"><a class="skip-link" href="#main">Skip to content</a>${body}</body></html>`, {
+  const pageTitle = kind === 'site' ? title : `${title} · ${branding.name}`
+  const head = kind === 'site' && iconHead ? frame.head.replace(iconHead, '') : frame.head
+  return new Response(`<!doctype html><html lang="en"${frame.htmlClass}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(pageTitle)}</title>${fontHead}${head}<link rel="stylesheet" href="/pane.css"></head><body class="pane pane-${kind}"><a class="skip-link" href="#main">Skip to content</a>${body}</body></html>`, {
     headers: {
       'content-type': 'text/html; charset=utf-8',
       'cache-control': 'no-store',

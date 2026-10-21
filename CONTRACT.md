@@ -48,6 +48,8 @@ Pane is one product: the website. Where the market sells a neighboring product s
 | File storage | [Chest](https://github.com/just-every/run-chest) (or Google Drive) | Media is Pane's own (`MEDIA-001`); shared drives stay in Chest |
 | Workforce sign-in | [Auth](https://github.com/just-every/run-auth) (or Okta, Microsoft Entra ID) | Optional identity provider for the workspace through Base's native sign-in |
 
+Observability stays with [Porthole](https://github.com/just-every/run-porthole); external uptime checks stay with Uptime (`AUTO-004`).
+
 A business phone system has no sibling; Pane links phone numbers for click-to-call and counts the clicks (`STATS-002`) and does not route calls.
 
 ### How to read this contract
@@ -1107,9 +1109,9 @@ Judged from the code and tests at commit `80f6943012240b0240eafd9e5763b992bb3275
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
-| Published | 11 | 5 | 0 | 16 |
+| Published | 12 | 4 | 0 | 16 |
 | Target and push further | 0 | 26 | 83 | 109 |
-| All | 11 | 31 | 83 | 125 |
+| All | 12 | 30 | 83 | 125 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -1128,7 +1130,7 @@ Judged from the code and tests at commit `80f6943012240b0240eafd9e5763b992bb3275
 | `DEPLOY-001` | Install on the owner's Cloudflare account | published | partial | `deploy.json`; `wrangler.jsonc` | No recorded owner-account deploy acceptance; only local build and dry-run validation. |
 | `RUNSITE-001` | Public run site and documentation | published | done | `tests/site.test.mjs`; `docs/site.json` |  |
 | `LOBBY-001` | Shared Lobby, workspace and theme | published | partial | `src/server.ts`; `src/pane/views.ts`; `scripts/browser-journey.mjs` | The browser journey covers sign-in, setup and `/app` but no Pane test opens the installed `/` Lobby. |
-| `PRESENT-001` | Labeled previews and unbranded live pages | published | partial | `src/pane/public-view.ts`; `src/pane/views.ts` | Live pages append the Pane name to the document title. |
+| `PRESENT-001` | Labeled previews and unbranded live pages | published | done | `src/pane/public-view.ts`; `src/pane/views.ts`; `tests/pane.test.mjs`; `scripts/browser-journey.mjs` |  |
 | `PAGE-001` | Unlimited pages, folders and clean URLs | target | partial | `src/pane/content.ts` | Exactly five fixed slugs (home, about, services, hours, contact); no page creation, folders, slug editing or editable not-found page. |
 | `PAGE-002` | Visual section and block editor with layout controls | target | partial | `src/pane/views.ts`; `src/pane/handler.ts` | Content is edited as name, description and a pages JSON text field; no visual canvas, sections, blocks, grid placement, column ratios, section backgrounds, padding or image cropping. |
 | `PAGE-003` | Navigation menus, header and footer | target | partial | `src/pane/public-view.ts` | Navigation lists the five fixed pages; no menu editing, dropdowns, buttons, footer links or social icons. |

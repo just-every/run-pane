@@ -16,7 +16,13 @@ async function capture(name) {
   assert.equal(overflow,false,`${name} overflows at ${width}`)
  }
 }
-async function submit(button,path='/app') {await Promise.all([page.waitForURL(url=>url.pathname===path),button.click()])}
+async function submit(button,path='/app') {
+ const [response]=await Promise.all([page.waitForResponse(response=>response.request().method()==='POST'&&new URL(response.url()).origin===origin),button.click()])
+ const expected=path==='/app/import/dry-run'?200:303
+ if(response.status()!==expected)throw Error(`Form refused (${response.status()}): ${await response.text()}`)
+ await page.waitForURL(url=>url.pathname===path)
+ await page.waitForLoadState('domcontentloaded')
+}
 try {
  await page.goto(origin+'/signin');await capture('signin')
  try { await page.goto(entry) } catch { throw Error('Private local sign-in navigation failed.') };await page.waitForURL(url=>['/setup','/app'].includes(url.pathname))
@@ -32,16 +38,19 @@ try {
  await capture('prepared-draft')
  const preview=await page.getByRole('link',{name:'Preview draft'}).getAttribute('href')
  const first=(await page.locator('form[action="/app/publish"] input[name="revision"]').getAttribute('value'))
- for(const p of fixture.pages){await page.goto(origin+preview.replace(/\/home$/,'/'+p.slug));await capture('preview-'+p.slug)}
+ const previewFonts=new Map()
+ for(const p of fixture.pages){await page.goto(origin+preview.replace(/\/home$/,'/'+p.slug));assert.equal(await page.locator('.preview-banner').count(),1,'PRESENT-001: draft banner');previewFonts.set(p.slug,await page.locator('main').evaluate(el=>getComputedStyle(el).fontFamily));await capture('preview-'+p.slug)}
  await page.goto(origin+'/app');await submit(page.getByRole('button',{name:'Approve & publish'}));await capture('published-workspace')
- for(const p of fixture.pages){await page.goto(origin+(p.slug==='home'?'/site':'/site/'+p.slug));await capture('live-'+p.slug)}
+ for(const p of fixture.pages){await page.goto(origin+(p.slug==='home'?'/site':'/site/'+p.slug));assert.ok((await page.title()).includes(fixture.name),'PRESENT-001: business title');assert.doesNotMatch(await page.title(),/\bPane\b/);assert.doesNotMatch(await page.locator('body').innerText(),/\bPane\b/);assert.equal(await page.locator('[src*="/brand/"], link[rel="icon"], link[rel="apple-touch-icon"], link[rel="manifest"]').count(),0);assert.equal(await page.locator('main').evaluate(el=>getComputedStyle(el).fontFamily),previewFonts.get(p.slug),'PRESENT-001: preview typography');await capture('live-'+p.slug)}
  await page.getByLabel('Your name',{exact:true}).fill('Avery Cooper')
  await page.getByLabel('Email address',{exact:true}).fill('avery@example.test')
  await page.getByLabel('Message',{exact:true}).fill('Could you cater our studio opening for 24 people next Friday?')
  await Promise.all([page.waitForURL('**/site/contact?sent=1'),page.getByRole('button',{name:'Send message'}).click()]);await capture('contact-sent')
  await page.goto(origin+'/app/inquiries');await capture('inquiries');await page.goto(origin+'/app/sites');await capture('sites-and-visits')
- await page.goto(origin+'/app');const text=page.getByLabel('Text',{exact:true})
- await text.fill(fixture.pages[0].body+'\n\nFriday dinner service now runs until 8 PM.');await submit(page.getByRole('button',{name:'Prepare draft revision'}))
+ await page.goto(origin+'/app');await page.evaluate(()=>document.fonts.ready);const text=page.getByLabel('Text',{exact:true})
+ const changedBody=fixture.pages[0].body+'\n\nFriday dinner service now runs until 8 PM.'
+ await text.fill(changedBody);assert.equal(await text.inputValue(),changedBody)
+ await submit(page.getByRole('button',{name:'Prepare draft revision'}))
  const nextPreview=await page.getByRole('link',{name:'Preview this page'}).getAttribute('href');await page.goto(origin+nextPreview);await capture('change-preview')
  await page.goto(origin+'/app');await submit(page.getByRole('button',{name:'Approve & publish'}))
  await page.goto(origin+'/site');assert.ok((await page.textContent('body')).includes('Friday dinner service'))
@@ -54,4 +63,4 @@ try {
  await submit(page.getByRole('button',{name:'Undo import'}),'/app/moves');await capture('import-undone')
  await page.goto(origin+'/app/inquiries');await page.getByText('Erase personal data',{exact:true}).click();await submit(page.getByRole('button',{name:'Permanently erase message'}),'/app/inquiries');await capture('message-erased')
  console.log('Browser journey passed: sign-in, setup, five-page prepare/preview/publish, contact, visits, change, rollback, reviewed move-in/undo, erasure at 1440 and 390.')
-} finally {await browser.close()}
+} catch(error) {await capture('journey-failure');throw error} finally {await browser.close()}
