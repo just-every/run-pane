@@ -37,7 +37,7 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   if(!body||typeof body!=='object'||Array.isArray(body)||typeof body.path!=='string'||!activePages(site).some(page=>page.slug===body.path))return json({error:'Unknown page.'},400)
   if(await limited(env.DB,'visits',300))return new Response(null,{status:429})
   const dimensions=visitDimensions(request,body,site.analyticsCampaigns)
-  await env.DB.prepare('INSERT INTO pane_visits(day,path,source,device,country,region,campaign,count) VALUES(?,?,?,?,?,?,?,1) ON CONFLICT(day,path,source,device,country,region,campaign) DO UPDATE SET count=count+1').bind(new Date().toISOString().slice(0,10),body.path,dimensions.source,dimensions.device,dimensions.country,dimensions.region,dimensions.campaign).run()
+  await env.DB.prepare('INSERT INTO pane_visits(day,path,source,device,country,region,campaign,referrer,medium,campaign_source,count) VALUES(?,?,?,?,?,?,?,?,?,?,1) ON CONFLICT(day,path,source,device,country,region,campaign,referrer,medium,campaign_source) DO UPDATE SET count=count+1').bind(new Date().toISOString().slice(0,10),body.path,dimensions.source,dimensions.device,dimensions.country,dimensions.region,dimensions.campaign,dimensions.referrer,dimensions.medium,dimensions.campaignSource).run()
   return new Response(null,{status:204})
  }
  if((page?.kind==='contact'||(page && slug==='contact'))&&request.method==='POST') {

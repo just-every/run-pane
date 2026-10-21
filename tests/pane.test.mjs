@@ -236,46 +236,85 @@ test('an approved form acknowledgment reaches the provider once with owner wordi
  assert.equal((await data()).messages.find(message => message.id === localId).acknowledgment_status, 'suppressed')
 })
 
-test('traffic groups real public visit events without retaining referrers or unapproved identifiers and excludes privacy opt-outs', async () => {
+test('traffic groups real public visit events without retaining raw referrers or unapproved identifiers and excludes privacy opt-outs', async () => {
  const app = await runtime({cf: {country: 'US', regionCode: 'CO', city: 'Denver'}})
  let cookie = ''
  const post = (path, body) => app.request(path, {method: 'POST', headers: {Cookie: cookie, Origin: origin, 'Content-Type': 'application/json'}, body: JSON.stringify(body)})
  const dashboard = async () => (await app.request('/api/pane', {headers: {Cookie: cookie}})).json()
- const visit = (path, referrerHost, campaign, agent, headers = {}) => app.request('/site/visit', {method: 'POST', headers: {Origin: origin, 'Content-Type': 'application/json', 'User-Agent': agent, 'CF-Connecting-IP': '203.0.113.25', ...headers}, body: JSON.stringify({path, referrerHost, campaign})})
  const phone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Mobile'
  const desktop = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0)'
+ const visit = (body, agent = desktop, headers = {}) => app.request('/site/visit', {method: 'POST', headers: {Origin: origin, 'Content-Type': 'application/json', 'User-Agent': agent, 'CF-Connecting-IP': '203.0.113.25', ...headers}, body: JSON.stringify({path: 'home', ...body})})
+ const has = (traffic, dimension, label, count = 1) => assert.ok(traffic[dimension].some(row => row.label === label && row.count === count), `${dimension}: ${label} = ${count}`)
  try {
-  const signed = await post('/auth/bootstrap', {token: settings.SETUP_TOKEN, displayName: 'Traffic owner'})
-  cookie = signed.headers.get('set-cookie').split(';')[0]
+  cookie = (await post('/auth/bootstrap', {token: settings.SETUP_TOKEN, displayName: 'Traffic owner'})).headers.get('set-cookie').split(';')[0]
   await app.request('/setup', {method: 'POST', headers: {Cookie: cookie, Origin: origin, 'Content-Type': 'application/x-www-form-urlencoded'}, body: 'confirm=yes'})
+  // Run the real upgrade against pre-attribution aggregates; merged channels
+  // retain every count, without inventing domains or UTM attribution.
+  await app.db.prepare('DROP TABLE pane_visits').run()
+  const legacy = (await readFile('migrations/core/0018_visit_dimensions.sql', 'utf8')).split('INSERT INTO')[0].replace('pane_visits_dimensions', 'pane_visits')
+  await app.db.prepare(legacy).run()
+  for (const [source, count] of [['Google', 2], ['Bing', 3], ['Facebook', 4], ['Instagram', 5]]) await app.db.prepare("INSERT INTO pane_visits(day,path,source,count) VALUES('2026-10-20','home',?,?)").bind(source, count).run()
+  const migration = (await readFile('migrations/core/0020_visit_attribution.sql', 'utf8')).split(';').filter(sql => sql.trim())
+  await app.db.batch(migration.map(sql => app.db.prepare(sql)))
+  const historical = await dashboard()
+  assert.deepEqual(historical.visits, [{path: 'home', count: 14}])
+  assert.deepEqual(historical.traffic.source, [{label: 'Social', count: 9}, {label: 'Search', count: 5}])
+  for (const dimension of ['referrer', 'medium', 'campaignSource']) assert.deepEqual(historical.traffic[dimension], [{label: '', count: 14}])
+  await app.db.prepare('DELETE FROM pane_visits').run()
   const first = await (await post('/api/pane/prepare', {site: fixture})).json()
   await post('/api/pane/publish', {revision: first.id})
   const site = {...fixture, analyticsCampaigns: ['spring-open-house', 'summer-workshop']}
   const prepared = await (await post('/api/pane/prepare', {site})).json()
-  await visit('home', '', 'spring-open-house', desktop)
-  assert.deepEqual((await dashboard()).traffic.campaign, [{label: '', count: 1}], 'Draft labels cannot authorize retention')
+  await visit({campaign: 'spring-open-house', utm_source: 'spring-open-house'})
+  assert.deepEqual((await dashboard()).traffic.campaign, [{label: 'Unapproved campaign tag', count: 1}], 'Draft labels cannot authorize retention')
+  assert.deepEqual((await dashboard()).traffic.campaignSource, [{label: '', count: 1}], 'Draft source labels cannot authorize retention')
   await post('/api/pane/publish', {revision: prepared.id})
-  assert.equal((await visit('home', 'www.google.com', 'spring-open-house', phone)).status, 204)
-  assert.equal((await visit('about', 'www.facebook.com', 'summer-workshop', desktop)).status, 204)
-  assert.equal((await visit('services', 'avery.private.example', 'customer-avery-29383838', desktop)).status, 204)
-  const data = await dashboard()
-  assert.deepEqual(data.visits, [{path: 'about', count: 1}, {path: 'home', count: 2}, {path: 'services', count: 1}])
-  assert.ok(data.traffic.source.some(row => row.label === 'Google' && row.count === 1))
-  assert.ok(data.traffic.source.some(row => row.label === 'Facebook' && row.count === 1))
-  assert.ok(data.traffic.source.some(row => row.label === 'Other website' && row.count === 1))
-  assert.ok(data.traffic.device.some(row => row.label === 'phone' && row.count === 1))
-  assert.ok(data.traffic.device.some(row => row.label === 'desktop' && row.count === 3))
-  assert.deepEqual(data.traffic.location, [{label: 'US-CO', count: 4}])
-  assert.deepEqual(data.traffic.day, [{label: new Date().toISOString().slice(0, 10), count: 4}])
-  assert.ok(data.traffic.campaign.some(row => row.label === 'spring-open-house' && row.count === 1))
-  assert.ok(data.traffic.campaign.some(row => row.label === 'summer-workshop' && row.count === 1))
-  assert.ok(data.traffic.campaign.some(row => row.label === '' && row.count === 2))
-  for (const privacy of [{'Sec-GPC': '1'}, {DNT: '1'}]) assert.equal((await visit('home', 'www.google.com', 'spring-open-house', phone, privacy)).status, 204)
+  const cases = [
+   [{referrerHost: 'https://www.yelp.com:8443/biz/synthetic-pane-1?private=synthetic-pane-2', campaign: 'SPRING-OPEN-HOUSE'}, phone, 'Local and review', 'yelp.com'],
+   [{path: 'about', referrerHost: 'https://chatgpt.com/c/synthetic-pane-3'}, desktop, 'AI assistants', 'chatgpt.com'],
+   [{referrerHost: 'answers.perplexity.ai'}, desktop, 'AI assistants', 'perplexity.ai'],
+   [{referrerHost: 'www.nextdoor.com'}, desktop, 'Local and review', 'nextdoor.com'],
+   [{referrerHost: 'www.google.co.uk'}, desktop, 'Search', 'google.co.uk'],
+   [{referrerHost: 'www.facebook.com', campaign: 'summer-workshop'}, desktop, 'Social', 'facebook.com'],
+   [{referrerHost: 'https://mail.google.com/mail/u/0/#synthetic-pane-4'}, desktop, 'Email', 'google.com'],
+   [{referrerHost: 'blog.mozilla.org'}, desktop, 'Other website', 'mozilla.org'],
+   [{referrerHost: 'synthetic-pane-5.github.io'}, desktop, 'Other website', 'synthetic-pane-5.github.io'],
+   [{utm_medium: 'EMAIL', utm_source: 'summer-WORKSHOP'}, desktop, 'Email', ''],
+   [{utm_medium: 'cpc', utm_source: 'GOOGLE'}, desktop, 'Search', ''],
+   [{campaign: 'synthetic-pane-6', utm_source: 'synthetic-pane-7', utm_medium: 'synthetic-pane-8', utm_term: 'synthetic-pane-9', utm_content: 'synthetic-pane-10'}, desktop, 'Other website', ''],
+   ...['social', 'display', 'referral', 'affiliate'].map(medium => [{utm_medium: medium}, desktop, medium === 'social' ? 'Social' : 'Other website', '']),
+   [{}, desktop, 'Direct', ''],
+   [{campaignTagged: true}, desktop, 'Direct', ''],
+  ]
+  for (const [body, agent, channel, domain] of cases) {
+   assert.equal((await visit(body, agent)).status, 204)
+   const row = (await app.db.prepare('SELECT * FROM pane_visits WHERE path=? AND source=? AND referrer=?').bind(body.path ?? 'home', channel, domain).all()).results
+   assert.ok(row.length, JSON.stringify({channel, domain}))
+  }
+  for (const host of ['https://203.0.113.25/private', '192.168.1.1', '[::1]', 'http://[2001:db8::1]:8080/private', 'localhost', 'printer', 'router.local', 'workspace.internal', 'https://private.example/path', 'file:///etc/passwd', 'malformed host']) {
+   assert.equal((await visit({referrerHost: host})).status, 204)
+  }
+  const data = await dashboard(), total = 1 + cases.length + 11
+  assert.deepEqual(data.visits, [{path: 'about', count: 1}, {path: 'home', count: total - 1}])
+  has(data.traffic, 'referrer', 'Unknown', 11)
+  has(data.traffic, 'campaign', 'spring-open-house')
+  has(data.traffic, 'campaign', 'summer-workshop')
+  has(data.traffic, 'campaign', 'Unapproved campaign tag', 3)
+  has(data.traffic, 'campaign', '', total - 5)
+  for (const medium of ['email', 'paid search', 'social', 'display', 'referral', 'affiliate', 'other']) has(data.traffic, 'medium', medium)
+  has(data.traffic, 'campaignSource', 'summer-workshop'); has(data.traffic, 'campaignSource', 'Google')
+  has(data.traffic, 'device', 'phone'); has(data.traffic, 'device', 'desktop', total - 1)
+  assert.deepEqual(data.traffic.location, [{label: 'US-CO', count: total}])
+  assert.deepEqual(data.traffic.day, [{label: new Date().toISOString().slice(0, 10), count: total}])
+  const tables = (await app.db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all()).results.filter(({name}) => !name.startsWith('_cf_') && !name.startsWith('sqlite_'))
+  const snapshot = async () => Promise.all(tables.map(async ({name}) => [name, (await app.db.prepare(`SELECT * FROM "${name}"`).all()).results]))
+  const before = await snapshot()
+  for (const privacy of [{'Sec-GPC': '1'}, {DNT: '1'}]) assert.equal((await visit({referrerHost: 'www.yelp.com', campaign: 'synthetic-pane-11'}, phone, privacy)).status, 204)
   assert.deepEqual(await dashboard(), data, 'Privacy opt-outs cause no counter write')
-  const rows = await app.db.prepare('SELECT * FROM pane_visits').all()
-  assert.doesNotMatch(JSON.stringify(rows.results), /avery|29383838|203\.0\.113\.25|Mozilla|Denver|private\.example/)
+  assert.deepEqual(await snapshot(), before, 'GPC/DNT write zero rows to every application table, including rate limits')
+  assert.doesNotMatch(JSON.stringify(before), /synthetic-pane-(?:[1-4]|[6-9]|10)(?!\d)|203\.0\.113\.25|Mozilla|Denver|private\.example|www\.yelp|:8443|utm_term|utm_content/)
   const html = await (await app.request('/app/sites', {headers: {Cookie: cookie}})).text()
-  for (const label of ['Google', 'Facebook', 'spring-open-house', 'summer-workshop', 'US-CO']) assert.ok(html.includes(label))
+  for (const label of ['yelp.com', 'chatgpt.com', 'Local and review', 'AI assistants', 'Email', 'spring-open-house', 'Unapproved campaign tag', 'US-CO']) assert.ok(html.includes(label), label)
   assert.equal((await app.request('/api/pane')).status, 401)
  } finally { await app.mf.dispose() }
 })

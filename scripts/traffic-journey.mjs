@@ -41,17 +41,37 @@ try {
   const visitor = await browser.newContext({viewport: {width, height: 1000}, userAgent: width === 390 ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Mobile' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0)'})
   visitors.push(visitor)
   const tab = await visitor.newPage(), campaign = width === 390 ? campaigns[1] : campaigns[0]
-  const counted = tab.waitForResponse(response => new URL(response.url()).pathname === '/site/visit')
-  await tab.goto(origin + '/site?utm_campaign=' + campaign, {referer: width === 390 ? 'https://www.facebook.com/' : 'https://www.google.com/search?q=local+workshop'})
-  assert.equal((await counted).status(), 204)
+  const examples = [
+   {query: '?utm_campaign=' + campaign.toUpperCase(), referer: 'https://www.yelp.com/biz/synthetic-pane-1?private=synthetic-pane-2', domain: 'yelp.com', channel: 'Local and review'},
+   {query: '', referer: 'https://chatgpt.com/c/synthetic-pane-3', domain: 'chatgpt.com', channel: 'AI assistants'},
+   {query: '?utm_medium=email&utm_source=' + campaign.toUpperCase(), channel: 'Email'},
+   {query: '?utm_source=perplexity&utm_medium=social', channel: 'Social'},
+   {query: '?utm_campaign=synthetic-pane-6&utm_source=synthetic-pane-7&utm_medium=synthetic-pane-8&utm_term=synthetic-pane-9&utm_content=synthetic-pane-10', channel: 'Other website'},
+  ]
+  for (const example of examples) {
+   const counted = tab.waitForResponse(response => new URL(response.url()).pathname === '/site/visit')
+   await tab.goto(origin + '/site' + example.query, {referer: example.referer})
+   const response = await counted
+   assert.equal(response.status(), 204)
+   const sent = response.request().postDataJSON()
+   assert.doesNotMatch(JSON.stringify(sent), /synthetic-pane-|utm_term|utm_content/)
+   const traffic = (await data()).traffic
+   assert.ok(traffic.source.some(row => row.label === example.channel && row.count >= 1))
+   if (example.domain) assert.ok(traffic.referrer.some(row => row.label === example.domain && row.count >= 1))
+  }
+  // The browser's public request door also refuses IP-literal attribution.
+  assert.equal((await visitor.request.post(origin + '/site/visit', {headers: {Origin: origin}, data: {path: 'home', referrerHost: 'https://192.168.1.1/private'}})).status(), 204)
   const dashboard = await data()
-  assert.ok(dashboard.traffic.campaign.some(row => row.label === campaign && row.count >= 1))
+  for (const [dimension, label] of [['campaign', campaign], ['campaign', 'Unapproved campaign tag'], ['referrer', 'Unknown'], ['campaignSource', campaign], ['campaignSource', 'Perplexity'], ['medium', 'email'], ['medium', 'social'], ['medium', 'other']]) {
+   assert.ok(dashboard.traffic[dimension].some(row => row.label === label && row.count >= 1), dimension + ': ' + label)
+  }
   assert.ok(dashboard.traffic.device.some(row => row.label === (width === 390 ? 'phone' : 'desktop') && row.count >= 1))
-  assert.ok(dashboard.traffic.source.some(row => row.label === (width === 390 ? 'Facebook' : 'Google') && row.count >= 1))
   await page.goto(origin + '/app/sites')
+  const panel = page.locator('[aria-labelledby="traffic-title"]')
+  for (const label of ['yelp.com', 'chatgpt.com', 'Local and review', 'AI assistants', 'Email', campaign, 'Unapproved campaign tag']) assert.ok((await panel.innerText()).includes(label), label)
   await page.getByRole('heading', {name: 'Traffic details', exact: true}).scrollIntoViewIfNeeded()
   await capture('traffic-dashboard-' + width)
-  await page.locator('[aria-labelledby="traffic-title"]').screenshot({path: resolve(folder, 'traffic-panel-' + width + '.png')})
+  await panel.screenshot({path: resolve(folder, 'traffic-panel-' + width + '.png')})
   const privateVisitor = await browser.newContext({viewport: {width, height: 1000}, extraHTTPHeaders: {'Sec-GPC': '1'}})
   visitors.push(privateVisitor)
   await privateVisitor.addInitScript(() => Object.defineProperty(navigator, 'globalPrivacyControl', {value: true}))
@@ -62,5 +82,5 @@ try {
   assert.equal(events, 0)
   assert.deepEqual((await data()).traffic, dashboard.traffic)
  }
- console.log('Traffic browser journey passed: owner-approved labels, real phone and desktop tagged/referrer visits, all dashboard dimensions, and zero GPC events at 1440 and 390.')
+ console.log('Traffic browser journey passed: case-insensitive published labels, registrable Yelp/ChatGPT referrers and channels, safe UTM source/medium and unapproved counts, all dashboard dimensions, and zero GPC events at 1440 and 390.')
 } finally { await browser.close(); if (ownsFixture) await fixture.stop() }
