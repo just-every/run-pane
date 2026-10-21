@@ -150,7 +150,7 @@ The owner edits the main menu (order, labels, dropdown groups, external links, a
 
 **Acceptance evidence:** Build a menu with two dropdowns, an external link and a Book button, hide one page, add Instagram, Facebook and Yelp links to the brand kit with icons in header and footer, publish, and use the menu and icons with a mouse, keyboard and a 390-wide phone; each icon link has an accessible name and opens its profile.
 
-*Status:* partial. Navigation lists the five fixed pages; no menu editing, dropdowns, buttons, footer links or social icons.
+*Status:* done. Revisioned menus support ordered labels, dropdown groups, external links and CTA buttons; footer details/secondary links and mobile disclosures share the published snapshot. Hidden pages leave every menu. Brand-kit social profiles are entered once and rendered as named icons in both header and footer; STYLE-004 image uploads and SEO-005 sameAs inherit these fields.
 
 #### PAGE-004 — Reusable sections and global components.
 
@@ -1117,8 +1117,8 @@ Judged from the code and tests at commit `f6d80f5ee6f918c2c774b11884d8205b44538c
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 16 | 0 | 0 | 16 |
-| Target and push further | 3 | 31 | 75 | 109 |
-| All | 19 | 31 | 75 | 125 |
+| Target and push further | 4 | 30 | 75 | 109 |
+| All | 20 | 30 | 75 | 125 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -1140,7 +1140,7 @@ Judged from the code and tests at commit `f6d80f5ee6f918c2c774b11884d8205b44538c
 | `PRESENT-001` | Labeled previews and unbranded live pages | published | done | `src/pane/public-view.ts`; `src/pane/views.ts`; `tests/pane.test.mjs`; `scripts/browser-journey.mjs` |  |
 | `PAGE-001` | Unlimited pages, folders and clean URLs | target | partial | `src/pane/content.ts` | Exactly five fixed slugs (home, about, services, hours, contact); no page creation, folders, slug editing or editable not-found page. |
 | `PAGE-002` | Visual section and block editor with layout controls | target | partial | `src/pane/views.ts`; `src/pane/handler.ts` | Content is edited as name, description and a pages JSON text field; no visual canvas, sections, blocks, grid placement, column ratios, section backgrounds, padding or image cropping. |
-| `PAGE-003` | Navigation menus, header and footer | target | partial | `src/pane/public-view.ts` | Navigation lists the five fixed pages; no menu editing, dropdowns, buttons, footer links or social icons. |
+| `PAGE-003` | Navigation menus, header and footer | target | done | `tests/pane.test.mjs` — “published navigation keeps ordered dropdowns, links, CTA, footer and shared accessible social profiles with hidden pages excluded” (order, both dropdowns, external/CTA destinations, hidden exclusion, footer details/links, all eight named social profiles, draft isolation and rollback); `scripts/navigation-journey.mjs` — “Navigation editor and published menus” (editor controls, mouse/keyboard, 1440/390 mobile disclosure and Instagram/Facebook/Yelp destinations in header/footer) | None. |
 | `PAGE-004` | Reusable sections and global components | target | missing |  | No components; pages are plain text. |
 | `PAGE-005` | Device previews and a separate mobile layout | target | partial | `src/pane/handler.ts`; `src/pane/public-view.ts` | One responsive preview; no width switcher, separate phone layout or per-device settings. |
 | `PAGE-006` | Autosave, undo and safe concurrent editing | target | done | `src/pane/content.ts`; `src/pane/handler.ts`; `src/pane/ui/editor.ts`; `public/pane-autosave.js`; `tests/pane.test.mjs`; `scripts/editing-journey.mjs` |  |
