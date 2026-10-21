@@ -12,8 +12,9 @@ for (const form of document.querySelectorAll('form[data-autosave]')) {
  function changed(record = true) {
   if (record) { history = history.slice(0, index + 1); history.push(state()); index++ }
   buttons(); clearTimeout(timer)
-  status.textContent = 'Unsaved changes.'
-  if (!blocked) timer = setTimeout(save, 600)
+  const unchanged = !pending && signature(state()) === saved
+  status.textContent = unchanged ? 'Draft saved. Not published.' : 'Unsaved changes.'
+  if (!blocked && !unchanged) timer = setTimeout(save, 600)
  }
  function restore(value) { for (const field of fields) field.value = value[field.name] ?? ''; changed(false) }
  function adopt(revision) {
