@@ -32,9 +32,9 @@ try {
   const edits=Array.from({length:5},(_,i)=>original+`\n\nEditing step ${width}-${i+1}.`)
   for(const edit of edits){await text(page).fill(edit);await saved(page)}
   // The five-step history is visible behavior; it is not an implementation-state assertion.
-  for(let i=4;i>=0;i--){await page.getByRole('button',{name:'Undo',exact:true}).click();assert.equal(await text(page).inputValue(),i?edits[i-1]:original);await saved(page)}
+  for(let i=4;i>=0;i--){await page.getByRole('button',{name:'Undo',exact:true}).click();const expected=i?edits[i-1]:original;await page.waitForFunction(value=>document.querySelector('#page-text').value===value,expected);assert.equal(await text(page).inputValue(),expected);await saved(page)}
   assert.equal(await page.getByRole('button',{name:'Undo',exact:true}).isEnabled(),false)
-  for(const edit of edits){await page.getByRole('button',{name:'Redo',exact:true}).click();assert.equal(await text(page).inputValue(),edit);await saved(page)}
+  for(const edit of edits){await page.getByRole('button',{name:'Redo',exact:true}).click();await page.waitForFunction(value=>document.querySelector('#page-text').value===value,edit);assert.equal(await text(page).inputValue(),edit);await saved(page)}
   await capture(page,`saved-history-${width}`)
   await page.close();page=await a.newPage();page.setDefaultTimeout(20000);await page.setViewportSize({width,height:1000})
   await page.goto(origin+'/app?page=services')
@@ -71,4 +71,4 @@ try {
   await capture(other,`latest-selected-${width}`)
  }
  console.log('PAGE-006 browser journey passed at 1440 and 390: autosave, tab reopen, five undo/redo steps, comparison, copy download, merge and latest selection without changing the live site.')
-} finally {await browser.close()}
+} catch(error) {try{await capture(page,'editing-failure')}catch{};throw error} finally {await browser.close()}
