@@ -51,10 +51,13 @@ try {
   await page.goto(origin + '/site')
   if (width === 390) await page.locator('.public-menu-mobile > summary').click()
   await capture('navigation-published', width)
+  await page.goto(origin + '/site')
   for (const region of ['header', 'footer']) for (const [name, url] of [['Instagram', 'https://www.instagram.com/cedarworkshop/'], ['Facebook', 'https://www.facebook.com/cedarworkshop/'], ['Yelp', 'https://www.yelp.com/biz/cedar-workshop']]) {
    // Observe the actual navigation without depending on provider sign-in or availability.
    await page.route(url, route => route.fulfill({contentType: 'text/html', body: '<h1>Profile network edge</h1>'}))
-   const link = page.locator(region).getByRole('link', {name, exact: true})
+   if (region === 'header' && width === 390) await page.locator('.public-menu-mobile > summary').click()
+   const area = region === 'header' ? page.locator(width === 390 ? '.public-menu-mobile' : '.public-menu-desktop') : page.locator('footer')
+   const link = area.getByRole('link', {name, exact: true})
    assert.equal(await link.getAttribute('href'), url)
    await link.focus(); await page.keyboard.press('Enter'); await page.waitForURL(url)
    assert.equal(page.url(), url)
