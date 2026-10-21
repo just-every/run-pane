@@ -373,7 +373,10 @@ test('approved business-local schedules drive banners and reminders while drafts
   cookie=(await post('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Scheduling owner'},'')).headers.get('set-cookie').split(';')[0]
   await app.request('/setup',{method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
   const site={...fixture,automations:{timeZone:'America/Denver',banners:[{id:'spring',text:'Spring workshop offer',start:'2027-03-13T09:00',end:'2027-03-14T09:00'}],review:{start:'2027-04-01T09:00',months:3}}}
-  const first=await (await post('/api/pane/prepare',{site})).json()
+  let first=await (await post('/api/pane/prepare',{site})).json()
+  const edit=await app.request('/app/autosave',{method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({base:first.id,description:site.description+' Workshop bookings are open.','automation.timeZone':'America/Denver','automation.review.start':'2027-04-01T09:00'})})
+  assert.equal(edit.status,200);first=await edit.json()
+  assert.equal(first.site.automations.banners[0].id,'spring','Editing named settings retains schedules configured through the API')
   await tick('2027-03-13T16:00:00Z')
   assert.equal((await html()).includes('Spring workshop offer'),false,'An unapproved schedule does not execute')
   assert.ok((await state()).schedules.draftDue.length)
