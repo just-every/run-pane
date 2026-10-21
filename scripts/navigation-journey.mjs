@@ -29,13 +29,15 @@ try {
   await page.getByText('Navigation and brand links', {exact: true}).click()
   await page.getByLabel('Main menu', {exact: true}).fill('Visit\n> Our hours | page:hours\n> Hidden about | page:about\nExplore\n> Our services | page:services\nJournal | https://journal.example.test/\nBook | page:contact | button')
   await page.getByLabel('Footer links', {exact: true}).fill('Get in touch | page:contact\nHidden footer | page:about')
-  await page.getByLabel('Business details', {exact: true}).fill('24 Cedar Street\nOpen Monday to Friday')
+  const details = width === 1440 ? '24 Cedar Street\nOpen Monday to Friday' : '24 Cedar Street\nOpen Monday to Saturday'
+  await page.getByLabel('Business details', {exact: true}).fill(details)
   for (const [name, url] of [['Instagram', 'https://www.instagram.com/cedarworkshop/'], ['Facebook', 'https://www.facebook.com/cedarworkshop/'], ['Yelp', 'https://www.yelp.com/biz/cedar-workshop']]) await page.getByLabel(name + ' profile', {exact: true}).fill(url)
   await page.getByLabel('Social icons in header', {exact: true}).selectOption('yes')
   await page.getByLabel('Social icons in footer', {exact: true}).selectOption('yes'); await saved()
   await capture('navigation-editor', width)
   await Promise.all([page.waitForURL(url => url.pathname === '/app' && url.searchParams.has('notice')), page.getByRole('button', {name: 'Approve & publish'}).click()])
   await page.goto(origin + '/site')
+  assert.ok((await page.locator('footer').innerText()).includes(details.split('\n')[1]))
   const nav = page.locator(width === 390 ? '.public-menu-mobile' : '.public-menu-desktop')
   if (width === 390) await nav.locator(':scope > summary').click()
   for (const group of ['Visit', 'Explore']) {
