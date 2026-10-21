@@ -4,6 +4,7 @@ import { document } from './views'
 import { publicPage } from './public-view'
 import { siteSearch } from './site-search'
 const json = (v:unknown,status=200) => Response.json(v,{status,headers:{'cache-control':'no-store'}})
+const notFound = () => document('Not found','<div class="public-site"><div class="public-shell"><main class="public-main" id="main"><h1>Page not found</h1><p><a href="/site">Back to the home page</a></p></main></div></div>','site').then(r=>new Response(r.body,{status:404,headers:r.headers}))
 async function limited(db:D1Database,key:string,limit:number) {
  const bucket = `${new Date().toISOString().slice(0,16)}:${key}`
  const r=await db.prepare('INSERT INTO pane_rate_limits(bucket,count) VALUES(?,1) ON CONFLICT(bucket) DO UPDATE SET count=count+1 RETURNING count').bind(bucket).first<{count:number}>()
@@ -14,9 +15,11 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
  if(path !== '/site' && !path.startsWith('/site/')) return null
  const env=runtimeBindings(original),canonical=new URL(env.AUTH_ORIGIN).origin
  if(request.method==='POST'&&(url.origin!==canonical||request.headers.get('Origin')!==canonical))return json({error:'Same-origin request required.'},403)
+ const slug=path==='/site'?'home':path.slice(6)
+ if(!slugs.includes(slug)&&slug!=='search'&&!(slug==='visit'&&request.method==='POST'))return notFound()
  const row=await env.DB.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first()
  if(!row) return document('Website not published','<div class="public-site"><div class="public-shell"><main class="public-main" id="main"><h1>This website is getting ready</h1><p>The business has not published its first version.</p></main></div></div>','site')
- const site=revision(row).site, slug=path==='/site'?'home':path.slice(6)
+ const site=revision(row).site
  if(path==='/site/visit' && request.method==='POST') {
   if(request.headers.get('DNT')==='1'||request.headers.get('Sec-GPC')==='1')return new Response(null,{status:204})
   const body=await request.json() as {path:string}
@@ -41,7 +44,6 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   const response=await document(`Search · ${site.name}`,siteSearch(site,query),'site')
   return query.length > 200 ? new Response(response.body,{status:400,headers:response.headers}) : response
  }
- if(!slugs.includes(slug))return document('Not found','<div class="public-site"><div class="public-shell"><main class="public-main" id="main"><h1>Page not found</h1><p><a href="/site">Back to the home page</a></p></main></div></div>','site').then(r=>new Response(r.body,{status:404,headers:r.headers}))
  const notice=slug==='contact'&&url.searchParams.has('sent')?'<div class="public-site public-sent"><div class="public-shell"><p class="notice" role="status">Thank you. Your message is in the business inbox.</p></div></div>':''
  return document(site.name,notice+publicPage(site,slug,'live'),'site')
 }
