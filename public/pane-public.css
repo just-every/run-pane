@@ -49,3 +49,5 @@
   .pane .public-footer { flex-direction: column; gap: 10px; }
 }
 @media (max-width: 700px) { .pane .preview-banner { justify-content: flex-start; padding: 12px 16px; } }
+
+.external-embed{margin-block:2rem;padding:1.25rem;border:1px solid currentColor;border-radius:12px}.external-embed iframe{display:block;width:100%;aspect-ratio:16/9;border:0}.external-embed .form-actions{display:flex;flex-wrap:wrap;gap:.75rem}.external-embed button{max-width:100%}

@@ -1,3 +1,4 @@
+import { embedOrigin } from './embeds'
 import { runtimeBindings, type Bindings } from '../auth.server'
 import { slugs, revision } from './content'
 import { document } from './views'
@@ -45,5 +46,6 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   return query.length > 200 ? new Response(response.body,{status:400,headers:response.headers}) : response
  }
  const notice=slug==='contact'&&url.searchParams.has('sent')?'<div class="public-site public-sent"><div class="public-shell"><p class="notice" role="status">Thank you. Your message is in the business inbox.</p></div></div>':''
- return document(site.name,notice+publicPage(site,slug,'live'),'site')
+ const embed=site.pages.find(page=>page.slug===slug)?.embed
+ return document(site.name,notice+publicPage(site,slug,'live',request.headers.get('Sec-GPC')==='1'),'site',embed ? embedOrigin(embed) : undefined)
 }

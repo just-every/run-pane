@@ -1,3 +1,4 @@
+import { documentPermissions } from './pane/document-security'
 import { withDemo } from './modules/demo/index.mjs'
 import { searchResponse, searchMetadata } from './pane/search'
 import { paneResponse } from './pane/handler'
@@ -32,7 +33,7 @@ export default withDemo<Bindings, ExportedHandler<Bindings>>({
     const state = await setupStateResponse(request, runtimeBindings(env))
     if (state) return state
     const lobby = await lobbyResponse(request, runtimeBindings(env), identity)
-    if (lobby) return lobby
+    if (lobby) return documentPermissions(lobby)
     // Pane's documents are handled above. Hono owns health and the final 404;
     // an empty Start route tree otherwise answers unknown documents with 200.
     return rejectedResponse(request, await api.fetch(request, env, execution))

@@ -167,3 +167,77 @@ test('PRIV-004: current Pane workspace, preview, live, search and not-found docu
   assert.doesNotMatch(csp, /https?:|unsafe-eval|\*/, path + ': no external hosts or wildcard sources')
  }
 })
+
+test('shared entry documents deny device permissions while native authentication and origin refusals remain intact', async () => {
+ const entry = await runtime()
+ const secure = async (path, cookie = '') => {
+  const response = await entry.request(path, {headers: {Cookie: cookie}})
+  assert.match(response.headers.get('content-type'), /text\/html/, path)
+  assert.equal(response.headers.get('permissions-policy'), 'camera=(), microphone=(), geolocation=()', path)
+  assert.equal(response.headers.get('x-content-type-options'), 'nosniff', path)
+  assert.ok(response.headers.get('referrer-policy'), path)
+  const csp = response.headers.get('content-security-policy')
+  assert.match(csp, /frame-ancestors 'none'/, path)
+  assert.doesNotMatch(csp, /https?:|unsafe-|\*/, path)
+  return response
+ }
+ try {
+  assert.equal((await secure('/')).status, 200)
+  assert.equal((await secure('/signin')).status, 200)
+  assert.equal((await secure('/auth/confirm?token=synthetic-pane-1')).status, 400)
+  const refused = await entry.request('/setup')
+  assert.equal(refused.status, 303)
+  assert.equal(refused.headers.get('location'), '/signin?returnTo=%2Fsetup')
+  assert.equal((await entry.request('https://foreign.example/')).status, 404)
+  assert.equal((await entry.request('/api/pane')).status, 401)
+  const bootstrap = await entry.request('/auth/bootstrap', {method: 'POST', headers: {Origin: origin, 'Content-Type': 'application/json'}, body: JSON.stringify({token: settings.SETUP_TOKEN, displayName: 'Security proof owner'})})
+  const cookie = bootstrap.headers.get('set-cookie').split(';')[0]
+  assert.equal((await secure('/')).status, 200)
+  assert.equal((await secure('/signin')).status, 200)
+  assert.equal((await secure('/setup', cookie)).status, 200)
+  assert.equal((await entry.request('/setup', {method: 'HEAD', headers: {Cookie: cookie}})).headers.get('permissions-policy'), 'camera=(), microphone=(), geolocation=()')
+  assert.equal((await entry.request('/setup', {method: 'POST', headers: {Cookie: cookie, Origin: 'https://foreign.example', 'Content-Type': 'application/x-www-form-urlencoded'}, body: 'confirm=yes'})).status, 403)
+  assert.equal((await secure('/setup', cookie)).status, 200, 'Foreign-origin POST did not complete setup')
+  assert.equal((await entry.request('/setup', {method: 'POST', headers: {Cookie: cookie, Origin: origin, 'Content-Type': 'application/x-www-form-urlencoded'}, body: 'confirm=yes'})).status, 303)
+  assert.equal((await entry.request('/app', {headers: {Cookie: cookie}})).status, 200, 'The header wrapper preserves native sign-in and setup')
+ } finally { await entry.mf.dispose() }
+})
+
+test('only an approved page embed widens its frame policy and workspace previews stay inert', async () => {
+ const initial = (await dashboard()).live.id
+ const site = structuredClone(fixture)
+ site.pages[0].embed = {title: 'Visit our workshop', url: 'https://www.youtube-nocookie.com/embed/synthetic-pane-1'}
+ const prepared = await (await post('/api/pane/prepare', {site})).json()
+ assert.doesNotMatch((await f.request('/site')).headers.get('content-security-policy'), /youtube/)
+ for (const path of ['/app', `/preview/${prepared.id}/home`]) {
+  const response = await f.request(path, {headers: {Cookie: owner}})
+  assert.doesNotMatch(response.headers.get('content-security-policy'), /youtube|frame-src/)
+  assert.doesNotMatch(await response.text(), /<iframe|data-embed /)
+ }
+ assert.equal((await post('/api/pane/publish', {revision: prepared.id})).status, 200)
+ const response = await f.request('/site')
+ const csp = response.headers.get('content-security-policy')
+ assert.ok(csp.split(';').map(value => value.trim()).includes('frame-src https://www.youtube-nocookie.com'))
+ assert.doesNotMatch(csp, /frame-src https:;|\*|unsafe-/)
+ assert.equal(response.headers.get('permissions-policy'), 'camera=(), microphone=(), geolocation=()')
+ const html = await response.text()
+ assert.match(html, /data-url="https:\/\/www.youtube-nocookie.com\/embed\/synthetic-pane-1"/)
+ assert.doesNotMatch(html, /<iframe/)
+ assert.match(html, /Allow external content/)
+ assert.doesNotMatch((await f.request('/site/about')).headers.get('content-security-policy'), /youtube|frame-src/)
+ const gpc = await f.request('/site', {headers: {'Sec-GPC': '1'}})
+ assert.match(await gpc.text(), /data-gpc="1"/)
+ for (const url of [origin + '/api/pane', 'http://www.youtube-nocookie.com/embed/a', 'https://evil.example/embed/a', 'https://user@www.youtube-nocookie.com/embed/a']) {
+  const invalid = structuredClone(site); invalid.pages[0].embed.url = url
+  assert.equal((await post('/api/pane/prepare', {site: invalid})).status, 400)
+ }
+ const removed = await f.request('/app/prepare', {method: 'POST', headers: {Cookie: owner, Origin: origin, 'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({base: prepared.id, slug: 'home', 'page.home.embed.url': ''})})
+ assert.equal(removed.status, 303)
+ const draft = (await dashboard()).draft
+ assert.equal(draft.site.pages[0].embed, undefined)
+ assert.equal((await post('/api/pane/publish', {revision: draft.id})).status, 200)
+ assert.doesNotMatch((await f.request('/site')).headers.get('content-security-policy'), /youtube|frame-src/)
+ assert.equal((await post('/api/pane/rollback', {revision: prepared.id})).status, 200)
+ assert.match((await f.request('/site')).headers.get('content-security-policy'), /frame-src https:\/\/www.youtube-nocookie.com/)
+ await post('/api/pane/rollback', {revision: initial})
+})

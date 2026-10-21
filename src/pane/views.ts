@@ -1,3 +1,4 @@
+import { permissionsPolicy } from './document-security'
 import { fontHead } from '../base/font-head'
 import { themeFrame } from '../base/theme-frame'
 import { iconHead } from '../base/icon-head'
@@ -10,7 +11,7 @@ import { moves } from './ui/moves'
 import { shell, type Tab } from './ui/shell'
 import { sites } from './ui/sites'
 
-export async function document(title: string, body: string, kind: 'app' | 'site' = 'app'): Promise<Response> {
+export async function document(title: string, body: string, kind: 'app' | 'site' = 'app', embedOrigin?: string): Promise<Response> {
   const frame = await themeFrame({ href: '/rer-theme.css', productName: branding.name, accentColor: branding.primaryColor })
   const pageTitle = kind === 'site' ? title : `${title} · ${branding.name}`
   const head = kind === 'site' && iconHead ? frame.head.replace(iconHead, '') : frame.head
@@ -21,8 +22,8 @@ export async function document(title: string, body: string, kind: 'app' | 'site'
       'referrer-policy': 'same-origin',
       'x-content-type-options': 'nosniff',
       'x-frame-options': 'DENY',
-      'permissions-policy': 'camera=(), microphone=(), geolocation=()',
-      'content-security-policy': `default-src 'none'; script-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'; ${frame.policy}`,
+      'permissions-policy': permissionsPolicy,
+      'content-security-policy': `default-src 'none'; script-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'; ${frame.policy}${embedOrigin ? `; frame-src ${embedOrigin}` : ''}`,
     },
   })
 }

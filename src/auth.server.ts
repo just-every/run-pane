@@ -1,3 +1,4 @@
+import { documentPermissions } from './pane/document-security'
 import { rejectedResponse } from './base/rejected-response'
 import { createDependencies } from './modules/dependencies/index.mjs'
 import { createIdpOwnerClaimHandler, createOwnerClaimHandler } from './modules/owner-claim/index.mjs'
@@ -87,5 +88,5 @@ async function handleAuthResponse(request: Request, original: Bindings): Promise
 
 export async function authResponse(request: Request, original: Bindings): Promise<Response | null> {
  const response = await handleAuthResponse(request, original)
- return response ? rejectedResponse(request, response) : null
+ return response ? rejectedResponse(request, documentPermissions(response)) : null
 }
