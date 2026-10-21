@@ -190,7 +190,7 @@ An owner adds custom CSS, an HTML embed block, site-wide header and footer code 
 
 **Acceptance evidence:** Add a custom CSS rule, an embed block, a site-wide header verification tag and per-page header code on a quote form's thank-you page; see the per-page code only on that page, see a listener on `pane:goal` receive the quote-form goal when the form is submitted, and see custom code not run before consent or under GPC; see them live, see the policy list the embed's host, and see the embed unable to read workspace cookies or call `/api/pane`.
 
-*Status:* missing. No custom code, per-page header code, goal event or embed support; the public CSP allows only same-origin scripts.
+*Status:* partial. A supported URL embed is revisioned, isolated and consent-gated with its exact host in the live page CSP. Custom CSS, arbitrary HTML, header/footer code and goal events remain unproved.
 
 #### PAGE-009 — Accessible output by default.
 
@@ -314,7 +314,7 @@ A video block plays an uploaded library video (`MEDIA-001`) in an accessible pla
 
 **Acceptance evidence:** Upload a 200 MB MOV and place it in a video block with a WebVTT caption file; see it play with controls and captions by keyboard on the live site at 1440 and 390 wide, start from its poster frame and stream a phone-sized rendition at 390. Add a YouTube video, a Vimeo video, a Google Map, an Instagram post and a Facebook post; see each on the live site, see them wait for consent where required, and see the CSP list only their hosts. Connect a test Instagram professional account, place a nine-post feed block, publish a new Instagram post and see it on the live site within an hour; revoke the token and see the connection fail in `LINK-005` while the block still shows the last nine posts.
 
-*Status:* missing. No video player, embeds or Instagram feed.
+*Status:* partial. The owner-added YouTube URL embed uses the page-only CSP and consent boundary. Uploaded video, other provider rendering and the Instagram feed remain unproved.
 
 ### Collections and blog
 
@@ -866,9 +866,13 @@ Pane offers starter privacy policy, terms and accessibility statement pages that
 
 Workspace and live pages send a strict content security policy, frame protection, `nosniff`, a referrer policy and a permissions policy; the live site's policy widens only for embeds the owner added (`PAGE-008`).
 
+The installation's shared Lobby (`/`), sign-in (`/signin` and `/auth/*` pages) and setup (`/setup`) documents are workspace pages for this clause: each sends the same permissions policy, `camera=(), microphone=(), geolocation=()`, as workspace and live pages, without changing their sign-in behavior or content security policy. That policy also applies to every frame inside a page and an embed's `allow` attribute cannot override it; the live site delegates one of these features only to a named embed's own origin, on the page holding it, after consent (`PRIV-001`), and only where a target clause names that need.
+
+The current embed door stores a supported HTTPS provider URL in an immutable page revision. Only its published page lists that exact origin in frame-src; workspace and draft previews stay inert. Visitor consent is per provider origin and can be revoked; GPC keeps these embeds off even after saved consent. PAGE-008, MEDIA-004, PRIV-001, LINK-001, STATS-003 and STATS-005 inherit the same origin, consent and workspace boundaries when they add a door. No current embed delegates device permissions.
+
 **Acceptance evidence:** Read the headers on every page type and see the policy; add an embed and see only its host added.
 
-*Status:* partial. Pane workspace, preview, live, search and not-found headers are asserted through installed routes. Shared entry pages still lack a permissions policy; embed-specific widening awaits PAGE-008.
+*Status:* done. Current first-party HTML page types carry their security policy. Native auth refusals are preserved, and owner-approved embeds widen only their published page’s frame policy after an inert draft, with explicit visitor consent and GPC suppression.
 
 #### LOCALE-001 — US defaults.
 
@@ -1111,8 +1115,8 @@ Judged from the code and tests at commit `75e1c582c277a9337bfbf9b8549cb41ddd3dfc
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 16 | 0 | 0 | 16 |
-| Target and push further | 1 | 30 | 78 | 109 |
-| All | 17 | 30 | 78 | 125 |
+| Target and push further | 2 | 31 | 76 | 109 |
+| All | 18 | 31 | 76 | 125 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -1139,7 +1143,7 @@ Judged from the code and tests at commit `75e1c582c277a9337bfbf9b8549cb41ddd3dfc
 | `PAGE-005` | Device previews and a separate mobile layout | target | partial | `src/pane/handler.ts`; `src/pane/public-view.ts` | One responsive preview; no width switcher, separate phone layout or per-device settings. |
 | `PAGE-006` | Autosave, undo and safe concurrent editing | target | done | `src/pane/content.ts`; `src/pane/handler.ts`; `src/pane/ui/editor.ts`; `public/pane-autosave.js`; `tests/pane.test.mjs`; `scripts/editing-journey.mjs` |  |
 | `PAGE-007` | Page status and review requests | target | partial | `src/pane/content.ts`; `src/pane/handler.ts` | Whole-site drafts and owner approval only; no per-page status or review request. |
-| `PAGE-008` | Custom code, embeds and CSS | target | missing |  | No custom code, per-page header code, goal event or embed support; the public CSP allows only same-origin scripts. |
+| `PAGE-008` | Custom code, embeds and CSS | target | partial | `tests/search.test.mjs` — only an approved page embed widens its frame policy and workspace previews stay inert; `scripts/privacy-journey.mjs` — published URL embed, consent and opaque sandbox | Supported URL embeds are revisioned, sandboxed, consent-gated and confined to their published page. Arbitrary HTML, custom CSS, site-wide header/footer code, per-page header code and pane:goal events remain unproved. |
 | `PAGE-009` | Accessible output by default | target | partial | `src/pane/views.ts`; `src/pane/public-view.ts`; `scripts/browser-journey.mjs` | Skip link and labeled contact fields exist; no alt-text, heading or contrast checks and no automated accessibility test. |
 | `PAGE-010` | Duplicate pages and starter layouts | target | missing |  | No page creation. |
 | `PAGE-011` | Password-protected and member-only pages and site | target | missing |  | Every live page is public; no site-wide gate or coming-soon page. |
@@ -1154,7 +1158,7 @@ Judged from the code and tests at commit `75e1c582c277a9337bfbf9b8549cb41ddd3dfc
 | `MEDIA-001` | Media library with alt text and usage | target | missing |  | No uploads or media storage. |
 | `MEDIA-002` | Responsive image optimization | target | missing |  | No images. |
 | `MEDIA-003` | Basic image editing | target | missing |  | No images. |
-| `MEDIA-004` | Video, map, social embeds and Instagram feed | target | missing |  | No video player, embeds or Instagram feed. |
+| `MEDIA-004` | Video, map, social embeds and Instagram feed | target | partial | `scripts/privacy-journey.mjs` — owner-added YouTube URL embed waits for consent, keeps only its host in CSP and is suppressed under GPC | YouTube URL embed isolation is proved at both widths. Uploaded video, captions/renditions, actual playback, other named provider embeds and the official Instagram feed/refresh/revocation remain unproved. |
 | `CMS-001` | Structured collections with typed fields | target | missing |  | No collections. |
 | `CMS-002` | Collection template pages with item URLs | target | missing |  | No collections. |
 | `CMS-003` | Collection lists and filters on any page | target | missing |  | No collections. |
@@ -1218,10 +1222,10 @@ Judged from the code and tests at commit `75e1c582c277a9337bfbf9b8549cb41ddd3dfc
 | `IMPORT-006` | Verified cutover with the old site kept | target | missing |  | No cutover. |
 | `IMPORT-007` | Enquiry and subscriber history import | target | missing |  | Only the static-site JSON move-in exists; no submission or subscriber import. |
 | `EXPORT-001` | Open-format site export | target | partial | `scripts/pane-policy.mjs` | Only Pane's own installation archive exports. |
-| `PRIV-001` | Consent for analytics and third-party embeds | target | partial | `src/pane/public.ts`; `tests/pane.test.mjs` | DNT and GPC are honored for Pane's own counts; there is no consent banner because there are no third-party embeds yet. |
+| `PRIV-001` | Consent for analytics and third-party embeds | target | partial | `tests/pane.test.mjs` — ACCESS-002: mutations require the canonical origin; accepted contact is durable and visits respect privacy; `scripts/privacy-journey.mjs` — zero embed loads before consent, revocation and GPC overriding saved consent | Current embeds wait for explicit per-origin consent and stay off under GPC. GA4, Meta, Google Ads, custom code and server-side conversion consent/suppression remain unproved as their clauses add those doors. |
 | `PRIV-002` | Person-level privacy requests | target | partial | `src/pane/handler.ts`; `tests/pane.test.mjs` | One message can be erased by ID; no lookup, export or erasure by person. |
 | `PRIV-003` | Policy and accessibility statement starters | target | missing |  | No policy pages. |
-| `PRIV-004` | Security headers on every page | target | partial | `src/pane/views.ts`; `tests/search.test.mjs` | Pane workspace, preview, live, search and not-found headers are asserted through installed routes. Shared entry pages still lack a permissions policy; embed-specific widening awaits PAGE-008. |
+| `PRIV-004` | Security headers on every page | target | done | `tests/search.test.mjs` — PRIV-004: current Pane workspace, preview, live, search and not-found documents retain their security headers; shared entry documents deny device permissions while native authentication and origin refusals remain intact; only an approved page embed widens its frame policy and workspace previews stay inert; `scripts/privacy-journey.mjs` — owner approval, page-only CSP, consent, GPC, opaque sandbox and API refusal at 1440 and 390 |  |
 | `LOCALE-001` | US defaults | target | missing |  | Workspace dates use en-US in the viewer’s time zone, with UTC before browser formatting; there is no business time zone setting. |
 | `MOBILE-001` | Responsive owner workspace on a phone | target | partial | `scripts/browser-journey.mjs` | The current workspace is checked for overflow at 390 wide; the target editor, inbox replies and approvals on a phone are not built. |
 | `MOBILE-002` | Native iOS and Android owner app | target | missing |  | No native app. |
