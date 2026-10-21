@@ -48,7 +48,7 @@ try {
  summary.migrations = files
 } finally {
  await local?.mf.dispose()
- execFileSync('rer', ['deploy', '--environment', environment, '--remove', '--yes', '--non-interactive'], {stdio: 'inherit'})
+ execFileSync('rer', ['deploy', '--environment', environment, '--remove', '--yes', '--non-interactive', ...(process.env.CI === 'true' ? ['--no-queue'] : [])], {stdio: 'inherit'})
  await assert.rejects(access(recordPath), {code: 'ENOENT'})
  summary.removed = true
  console.log(JSON.stringify(summary))
