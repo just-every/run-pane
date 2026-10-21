@@ -1,6 +1,6 @@
 # Pane acceptance
 
-Every clause in [CONTRACT.md](CONTRACT.md) is accepted only when the journey below runs through a public door (a route, a command, the built site or a browser journey) and passes. Status is judged from the code and tests at commit `80f6943` (17 October 2026); `done` means the journey is exercised by the cited test, not that a hosted provider accepted it. Counts: 125 clauses: 13 done, 29 partial, 83 missing.
+Every clause in [CONTRACT.md](CONTRACT.md) is accepted only when the journey below runs through a public door (a route, a command, the built site or a browser journey) and passes. Status is judged from the code and tests at commit `fb6118f4c2628b30f6ec6a2bba51d6068e048c0f` (21 October 2026); `done` means the journey is exercised by the cited test, not that a hosted provider accepted it. Counts: 125 clauses: 13 done, 31 partial, 81 missing.
 
 ## First release
 
@@ -109,10 +109,10 @@ The first release serves the public business site at `/site`; installing the Wor
 
 ### Search visibility
 
-- **SEO-001 — Page titles and meta descriptions** (partial). Set a title and description on a page and an item, see the preview, publish, and read them in each page's `<title>` and `<meta name="description">`. Evidence: `src/pane/content.ts`; `src/pane/views.ts`.
+- **SEO-001 — Page titles and meta descriptions** (partial). Set a title and description on a page and an item, see the preview, publish, and read them in each page's `<title>` and `<meta name="description">`. Evidence: `src/pane/search.ts`; `tests/search.test.mjs`; `scripts/search-journey.mjs`. Current-page assertions cover saved preview, publication, rollback, noindex exclusions and canonical overrides; the CONTRACT Status gap retains all unbuilt page kinds and domain acceptance.
 - **SEO-002 — Redirect manager and slug-change redirects** (missing). Rename a published slug and accept the offered redirect, import 200 redirects by CSV, and request each old URL to get the right status and target.
-- **SEO-003 — Automatic sitemap and robots.txt** (missing). Publish a site with hidden, protected and noindex pages, validate the sitemap, and see only public indexable URLs listed; edit `robots.txt` and see it served.
-- **SEO-004 — Canonical URLs and indexing controls** (missing). Read canonical tags across `www` and apex, set one page noindex, and confirm previews send `noindex`.
+- **SEO-003 — Automatic sitemap and robots.txt** (partial). Publish a site with hidden, protected and noindex pages, validate the sitemap, and see only public indexable URLs listed; edit `robots.txt` and see it served. Evidence: `src/pane/search.ts`; `tests/search.test.mjs`; `scripts/search-journey.mjs`. Current-page assertions cover saved preview, publication, rollback, noindex exclusions and canonical overrides; the CONTRACT Status gap retains all unbuilt page kinds and domain acceptance.
+- **SEO-004 — Canonical URLs and indexing controls** (partial). Read canonical tags across `www` and apex, set one page noindex, and confirm previews send `noindex`. Evidence: `src/pane/search.ts`; `tests/search.test.mjs`; `scripts/search-journey.mjs`. Current-page assertions cover saved preview, publication, rollback, noindex exclusions and canonical overrides; the CONTRACT Status gap retains all unbuilt page kinds and domain acceptance.
 - **SEO-005 — Structured data for local businesses** (missing). Publish a site with hours, services, FAQs and posts, and pass Google's Rich Results Test and the Schema.org validator on each page type.
 - **SEO-006 — Social preview cards** (missing). Share a page URL into the Facebook Sharing Debugger and an X card validator and see the chosen title, description and image.
 - **SEO-007 — Google Search Console and Bing Webmaster Tools** (missing). Connect a test Google Search Console property and a test Bing Webmaster Tools site for the same domain; for each, see verification succeed and the sitemap submitted, and see per-page clicks and impressions imported for the last 28 days, labeled by search engine.

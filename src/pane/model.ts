@@ -1,5 +1,6 @@
-export type Page = { slug: string; title: string; body: string }
-export type Site = { name: string; description: string; pages: Page[] }
+export type SearchSettings = { title?: string; description?: string; canonical?: string; noindex?: boolean }
+export type Page = { slug: string; title: string; body: string; search?: SearchSettings }
+export type Site = { name: string; description: string; pages: Page[]; robots?: string }
 export type Revision = { id: string; site: Site; hash: string; created_at: string; actor: string }
 export type Dashboard = {
  name: string; role: string; draft: Revision | null; live: Revision | null;

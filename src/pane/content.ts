@@ -1,4 +1,5 @@
 import type { Site, Revision } from './model'
+import { normalizeSearch, normalizeRobots } from './search-settings'
 export const slugs = ['home','about','services','hours','contact']
 export function normalizeSite(value: unknown): Site {
  const input = value as Site
@@ -6,9 +7,9 @@ export function normalizeSite(value: unknown): Site {
  const pages = slugs.map(slug => {
   const page = input.pages.find(p => p?.slug === slug)
   if (!page || typeof page.title !== 'string' || !page.title.trim() || page.title.length > 120 || typeof page.body !== 'string' || !page.body.trim() || page.body.length > 20000) throw new Error(`Page ${slug} needs a title and body (up to 20,000 characters).`)
-  return { slug, title: page.title.normalize('NFC').trim(), body: page.body.normalize('NFC').trim() }
+  return { slug, title: page.title.normalize('NFC').trim(), body: page.body.normalize('NFC').trim(), ...(page.search ? { search: normalizeSearch(page.search) } : {}) }
  })
- return { name: input.name.normalize('NFC').trim(), description: input.description.normalize('NFC').trim(), pages }
+ return { name: input.name.normalize('NFC').trim(), description: input.description.normalize('NFC').trim(), pages, ...(input.robots !== undefined ? { robots: normalizeRobots(input.robots) } : {}) }
 }
 // Slate's revision comparison adapted to hash the entire canonical site snapshot,
 // including property names, route order and links, rather than only extracted text.
@@ -56,6 +57,7 @@ export async function siteFromForm(db: D1Database, input: Record<string, unknown
  const field = (name: string, fallback?: string) => typeof input[name] === 'string' ? String(input[name]).replace(/\r\n/g, '\n') : fallback
  return normalizeSite({
   name: field('name', base?.name), description: field('description', base?.description ?? ''),
-  pages: slugs.map(slug => { const page = base?.pages.find(p => p.slug === slug); return { slug, title: field(`page.${slug}.title`, page?.title), body: field(`page.${slug}.body`, page?.body) } }),
+  ...(base?.robots !== undefined ? { robots: base.robots } : {}),
+  pages: slugs.map(slug => { const page = base?.pages.find(p => p.slug === slug); return { slug, ...(page?.search ? { search: page.search } : {}), title: field(`page.${slug}.title`, page?.title), body: field(`page.${slug}.body`, page?.body) } }),
  })
 }

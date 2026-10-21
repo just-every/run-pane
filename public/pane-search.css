@@ -1,0 +1,9 @@
+/* Search controls extend the workspace's existing form and card vocabulary. */
+.rer-themed .pane main.search-settings { max-width: 880px; margin: 0 auto; padding: 32px 24px 64px; display: grid; gap: 18px; }
+.pane .search-settings .card { display: grid; gap: 14px; }
+.pane .search-settings .card > h2 { margin: 0; }
+.pane .search-settings label:has(input[type=checkbox]) { display: flex; align-items: center; gap: 10px; }
+.pane .search-settings [aria-label^="Search preview"] { padding: 16px; border: 1px solid var(--pn-line); border-radius: 9px; overflow-wrap: anywhere; }
+.pane .search-settings [aria-label^="Search preview"] h3 { color: var(--pn-fuchsia-deep); font-size: 20px; }
+.pane .search-settings button { justify-self: start; }
+@media (max-width: 600px) { .rer-themed .pane main.search-settings { padding: 24px 16px 48px; } }

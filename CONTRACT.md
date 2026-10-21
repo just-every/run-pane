@@ -56,7 +56,7 @@ A business phone system has no sibling; Pane links phone numbers for click-to-ca
 
 - **Published clauses** are the `- **ID — Title.**` bullets in [Released guarantees](#released-guarantees). The previous contract and ACCEPTANCE.md already promised them; this edition gives them IDs and keeps every guarantee, widening only where a target clause names the change.
 - **Target clauses** are the `#### ID — Title.` headings in [Target clauses](#target-clauses), and **push-further clauses** are those in [Push further](#push-further). They are binding product requirements; each carries its status beside it.
-- **Status** is judged from the code and tests at commit `80f6943` (17 October 2026). `done` means the behavior ships and a cited test or journey exercises it; `partial` means some of it ships, or it ships without a test; `missing` means there is no implementation. Status is a build-planning judgment, not acceptance.
+- **Status** is judged from the code and tests at commit `fb6118f4c2628b30f6ec6a2bba51d6068e048c0f` (21 October 2026). `done` means the behavior ships and a cited test or journey exercises it; `partial` means some of it ships, or it ships without a test; `missing` means there is no implementation. Status is a build-planning judgment, not acceptance.
 
 ## Target amendment — 16 October 2026
 
@@ -495,7 +495,7 @@ Every page, post and collection item has an editable search title and meta descr
 
 **Acceptance evidence:** Set a title and description on a page and an item, see the preview, publish, and read them in each page's `<title>` and `<meta name="description">`.
 
-*Status:* partial. Page headings and a site description are editable; the document title is the site name plus Pane, and there are no per-page meta descriptions.
+*Status:* partial. Current pages have editable search titles and descriptions, defaults and a saved search preview. Posts and collection items still depend on CMS-001, CMS-002 and CMS-004.
 
 #### SEO-002 — Redirect manager and slug-change redirects.
 
@@ -511,7 +511,7 @@ Pane generates `sitemap.xml` (pages, posts, items, last-modified dates; excludin
 
 **Acceptance evidence:** Publish a site with hidden, protected and noindex pages, validate the sitemap, and see only public indexable URLs listed; edit `robots.txt` and see it served.
 
-*Status:* missing. No sitemap or robots.txt.
+*Status:* partial. Published revisions generate sitemap.xml with last-modified dates and noindex exclusions, and editable robots.txt; drafts never change either and rollback restores them. Hidden/protected pages and post/item URLs await PAGE-001, PAGE-011 and CMS-001 to CMS-004.
 
 #### SEO-004 — Canonical URLs and indexing controls.
 
@@ -519,7 +519,7 @@ Every page carries a canonical URL on the primary domain; the owner can mark a p
 
 **Acceptance evidence:** Read canonical tags across `www` and apex, set one page noindex, and confirm previews send `noindex`.
 
-*Status:* missing. No canonical or robots meta.
+*Status:* partial. Current pages have canonical URLs, custom canonical overrides and noindex controls; draft previews and development-origin pages send noindex. Primary custom-domain routing and www/apex acceptance await DOMAIN-001.
 
 #### SEO-005 — Structured data for local businesses.
 
@@ -1105,13 +1105,13 @@ No desk homepage claims file (`CLAIMS.md`) exists for Pane on 17 October 2026. W
 
 ## Status
 
-Judged from the code and tests at commit `80f6943012240b0240eafd9e5763b992bb327578` (17 October 2026).
+Judged from the code and tests at commit `fb6118f4c2628b30f6ec6a2bba51d6068e048c0f` (21 October 2026).
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 13 | 3 | 0 | 16 |
-| Target and push further | 0 | 26 | 83 | 109 |
-| All | 13 | 29 | 83 | 125 |
+| Target and push further | 0 | 28 | 81 | 109 |
+| All | 13 | 31 | 81 | 125 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -1175,10 +1175,10 @@ Judged from the code and tests at commit `80f6943012240b0240eafd9e5763b992bb3275
 | `HOST-003` | Updates without plugin maintenance | target | missing |  | No in-product update channel. |
 | `HOST-004` | Transparent running cost in USD | target | missing |  | No usage or cost view. |
 | `HOST-005` | Install from the browser with no terminal | target | missing |  | Installation runs through `rer deploy` or the `npx @runeditrun/rer` command line only; no browser install path. |
-| `SEO-001` | Page titles and meta descriptions | target | partial | `src/pane/content.ts`; `src/pane/views.ts` | Page headings and a site description are editable; the document title is the site name plus Pane, and there are no per-page meta descriptions. |
+| `SEO-001` | Page titles and meta descriptions | target | partial | `src/pane/search.ts`; `src/pane/search-settings.ts`; `src/pane/search-view.ts`; `tests/search.test.mjs`; `scripts/search-journey.mjs` | Current pages have editable search titles and descriptions, defaults and a saved search preview. Posts and collection items still depend on CMS-001, CMS-002 and CMS-004. |
 | `SEO-002` | Redirect manager and slug-change redirects | target | missing |  | No redirects. |
-| `SEO-003` | Automatic sitemap and robots.txt | target | missing |  | No sitemap or robots.txt. |
-| `SEO-004` | Canonical URLs and indexing controls | target | missing |  | No canonical or robots meta. |
+| `SEO-003` | Automatic sitemap and robots.txt | target | partial | `src/pane/search.ts`; `src/pane/search-settings.ts`; `src/pane/search-view.ts`; `tests/search.test.mjs`; `scripts/search-journey.mjs` | Published revisions generate sitemap.xml with last-modified dates and noindex exclusions, and editable robots.txt; drafts never change either and rollback restores them. Hidden/protected pages and post/item URLs await PAGE-001, PAGE-011 and CMS-001 to CMS-004. |
+| `SEO-004` | Canonical URLs and indexing controls | target | partial | `src/pane/search.ts`; `src/pane/search-settings.ts`; `src/pane/search-view.ts`; `tests/search.test.mjs`; `scripts/search-journey.mjs` | Current pages have canonical URLs, custom canonical overrides and noindex controls; draft previews and development-origin pages send noindex. Primary custom-domain routing and www/apex acceptance await DOMAIN-001. |
 | `SEO-005` | Structured data for local businesses | target | missing |  | No structured data. |
 | `SEO-006` | Social preview cards | target | missing |  | No social metadata. |
 | `SEO-007` | Google Search Console and Bing Webmaster Tools | target | missing |  | No search console connection. |

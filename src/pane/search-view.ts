@@ -1,0 +1,11 @@
+import type { Revision } from './model'
+import { escape, hidden, key } from './ui/kit'
+import { sitePath } from './search-settings'
+
+export function searchView(draft: Revision, origin: string, notice: string): string {
+ const site = draft.site
+ return `<link rel="stylesheet" href="/pane-search.css"><main id="main" class="search-settings"><p><a href="/app/sites">Back to Sites</a></p><h1>Search settings</h1><p>Prepare a draft, then preview and approve it from Sites. Search titles and descriptions default to the page title and site description when left empty.</p>${notice ? `<p class="notice" role="status">${escape(notice)}</p>` : ''}<form method="post" action="/app/search" class="edit-form">${key()}${hidden('base', draft.id)}${site.pages.map(page => {
+ const search = page.search ?? {}, title = search.title || `${page.title} · ${site.name}`, description = search.description || site.description
+ return `<section class="card"><h2>${escape(page.title)}</h2><p>${escape(sitePath(page.slug))}</p><label>Search title for ${escape(page.title)}<input name="${page.slug}.title" value="${escape(search.title)}" maxlength="120"></label><label>Search description for ${escape(page.title)}<textarea name="${page.slug}.description" maxlength="500" rows="3">${escape(search.description)}</textarea></label><label>Canonical URL for ${escape(page.title)}<input type="url" name="${page.slug}.canonical" value="${escape(search.canonical)}" placeholder="${escape(origin + sitePath(page.slug))}" maxlength="2048"></label><label><input type="checkbox" name="${page.slug}.noindex"${search.noindex ? ' checked' : ''}> Keep ${escape(page.title)} out of search results</label><div aria-label="Search preview for ${escape(page.title)}"><h3>${escape(title)}</h3><p>${escape(search.canonical || origin + sitePath(page.slug))}</p><p>${escape(description)}</p></div></section>`
+ }).join('')}<section class="card"><h2>Robots rules</h2><p>Served at <a href="/robots.txt">/robots.txt</a> after publication. These crawler instructions do not restrict access to a page.</p><label>robots.txt<textarea name="robots" maxlength="10000" rows="5">${escape(site.robots ?? 'User-agent: *\nAllow: /site\n')}</textarea></label></section><button type="submit">Prepare search draft</button></form><p><a href="/sitemap.xml">View published sitemap</a></p></main>`
+}
