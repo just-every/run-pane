@@ -13,9 +13,10 @@ let page = await a.newPage()
 const other = await b.newPage()
 for (const tab of [page,other]) tab.setDefaultTimeout(20000)
 const text = tab => tab.getByLabel('Text',{exact:true})
-const status = tab => tab.locator('[data-save-status]')
 async function saved(tab) {await tab.waitForFunction(()=>document.querySelector('[data-save-status]')?.textContent==='Draft saved. Not published.')}
 async function capture(tab,name) {
+ const comparison=tab.locator('[data-conflict]:not([hidden])')
+ if(await comparison.count())await comparison.scrollIntoViewIfNeeded()
  await tab.screenshot({path:resolve(folder,name+'.png'),fullPage:true})
  assert.equal(await tab.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,name+' overflow')
 }
@@ -34,7 +35,7 @@ try {
   assert.equal(await page.getByRole('button',{name:'Undo',exact:true}).isEnabled(),false)
   for(const edit of edits){await page.getByRole('button',{name:'Redo',exact:true}).click();assert.equal(await text(page).inputValue(),edit);await saved(page)}
   await capture(page,`saved-history-${width}`)
-  await page.close();page=await a.newPage();page.setDefaultTimeout(20000)
+  await page.close();page=await a.newPage();page.setDefaultTimeout(20000);await page.setViewportSize({width,height:1000})
   await page.goto(origin+'/app?page=services')
   assert.equal(await text(page).inputValue(),edits[4],'PAGE-006: closing and reopening keeps the durable draft')
   assert.equal(await (await page.request.get(origin+'/site/services')).text(),initialLive,'Autosaving never publishes')
