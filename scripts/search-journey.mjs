@@ -17,7 +17,7 @@ async function capture(name) {
 }
 async function submit(name, path) {
  const [response] = await Promise.all([page.waitForResponse(r => r.request().method() === 'POST' && new URL(r.url()).origin === origin), page.getByRole('button', {name, exact: true}).click()])
- assert.equal(response.status(), 303, await response.text())
+ if (response.status() !== 303) throw Error(`Form refused (${response.status()}): ${await response.text()}`)
  await page.waitForURL(url => url.pathname === path)
  await page.waitForLoadState('domcontentloaded')
 }
