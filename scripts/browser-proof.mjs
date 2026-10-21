@@ -7,4 +7,5 @@ try {
  await import('./search-journey.mjs')
  await import('./privacy-journey.mjs')
  await import('./acknowledgment-journey.mjs')
+ await import('./traffic-journey.mjs')
 } finally {await fixture.stop()}
