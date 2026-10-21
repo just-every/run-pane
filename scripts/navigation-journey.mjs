@@ -7,8 +7,9 @@ const folder = resolve(process.env.PANE_SCREENSHOTS ?? 'test-results/navigation'
 await mkdir(folder, {recursive: true})
 const browser = await chromium.launch({headless: true, args: ['--use-mock-keychain', '--password-store=basic']})
 const context = await browser.newContext(), page = await context.newPage(), origin = fixture.origin
+page.setDefaultTimeout(20000)
 const post = (path, data) => context.request.post(origin + path, {headers: {Origin: origin}, data})
-const saved = () => page.waitForFunction(() => document.querySelector('[data-save-status]').textContent === 'Draft saved. Not published.')
+const saved = () => page.waitForFunction(() => document.querySelector('[data-save-status]').textContent === 'Draft saved. Not published.', {timeout: 20000})
 async function capture(name, width) {
  await page.screenshot({path: resolve(folder, `${name}-${width}.png`), fullPage: true})
  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 2), false, `${name} overflow at ${width}`)
@@ -62,4 +63,4 @@ try {
   await page.goto(origin + '/site/search?q=workshop'); await capture('navigation-search', width)
  }
  console.log('Navigation editor and published menus passed at 1440/390: two dropdowns, external link, Book, hidden page, footer, keyboard/pointer and accessible profile destinations.')
-} finally {await browser.close(); await fixture.stop()}
+} catch (error) {await page.screenshot({path: resolve(folder, 'failure.png'), fullPage: true}); console.error(await page.locator('[data-save-status]').allTextContents()); throw error} finally {await browser.close(); await fixture.stop()}
