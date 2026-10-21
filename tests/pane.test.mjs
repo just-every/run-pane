@@ -110,7 +110,7 @@ test('PAGE-006: autosave persists an immutable draft, rejects stale and simultan
  assert.equal((await stale.json()).latest.site.pages.find(p=>p.slug==='services').body,body)
  assert.deepEqual((await data()).draft.site,draft.site)
  // Both requests saw the same base; exactly one compare-and-insert may succeed.
- const raced=await Promise.all([save(draft.id,'First concurrent draft'),save(draft.id,'Second concurrent draft')])
+ const raced=await Promise.all([save(draft.id,'First concurrent draft'),save(draft.id,'Second concurrent draft',owner)])
  assert.deepEqual(raced.map(r=>r.status).sort(),[200,409])
  const winner=await raced.find(r=>r.status===200).json()
  assert.deepEqual((await data()).draft.site,winner.site)
