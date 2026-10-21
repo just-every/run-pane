@@ -3,8 +3,8 @@ import {readFile, mkdir} from 'node:fs/promises'
 import {resolve} from 'node:path'
 import {chromium} from '@playwright/test'
 const entry = async path => (await readFile(path,'utf8')).match(/RER_OPEN\s+(https?:\/\/\S+)/)?.[1]
-const first = await entry(process.env.PANE_LAUNCH_LOG), second = await entry(process.env.PANE_SECOND_LAUNCH_LOG)
-if (!first || !second) throw Error('Two fresh native local dev sign-in links are required.')
+const first = await entry(process.env.PANE_LAUNCH_LOG), second = await entry(process.env.PANE_SECOND_LAUNCH_LOG ?? process.env.PANE_LAUNCH_LOG)
+if (!first || !second) throw Error('A native local dev entry is required for each isolated browser context.')
 const origin = new URL(first).origin, folder = resolve(process.env.PANE_SCREENSHOTS ?? 'test-results/editing')
 await mkdir(folder,{recursive:true})
 const browser = await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
