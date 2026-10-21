@@ -67,6 +67,7 @@ try {
   assert.equal(await page.locator('iframe').count(), 0)
   await page.reload()
   assert.equal(await page.locator('iframe').count(), 0)
+  await page.evaluate(() => localStorage.setItem('pane:embed-consent:https://www.youtube-nocookie.com', 'allow'))
   await context.setExtraHTTPHeaders({'Sec-GPC': '1'})
   await page.reload()
   assert.equal(await page.getByRole('button', {name: 'Allow external content'}).isDisabled(), true)
