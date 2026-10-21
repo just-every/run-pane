@@ -8,7 +8,8 @@ export function normalizeSearch(input: SearchSettings): SearchSettings {
   const value = input[field]
   if (value === undefined || value === '') continue
   if (typeof value !== 'string' || value.length > limit) throw new Error(`Invalid search ${field}.`)
-  result[field] = value.normalize('NFC').trim()
+  const normalized = value.normalize('NFC').trim()
+  if (normalized) result[field] = normalized
  }
  if (result.canonical) {
   let url: URL
@@ -18,7 +19,7 @@ export function normalizeSearch(input: SearchSettings): SearchSettings {
  }
  if (input.noindex !== undefined) {
   if (typeof input.noindex !== 'boolean') throw new Error('Invalid indexing setting.')
-  result.noindex = input.noindex
+  if (input.noindex) result.noindex = true
  }
  return result
 }

@@ -2,6 +2,7 @@
 // paragraph (by position), so the editor marks exactly what publishing changes.
 import type { Page, Site } from '../model'
 import { paragraphs } from '../public-view'
+import { normalizeSearch } from '../search-settings'
 
 export type Mark = 'same' | 'changed' | 'new'
 export type PageChange = { changed: boolean; title: boolean; search: boolean; marks: Mark[]; removed: number }
@@ -12,7 +13,7 @@ export function pageChange(draft: Page, live: Page | undefined): PageChange {
   const before = paragraphs(live.body)
   const marks: Mark[] = after.map((text, index) => index >= before.length ? 'new' : text === before[index] ? 'same' : 'changed')
   const removed = Math.max(0, before.length - after.length), title = draft.title !== live.title
-  const search = JSON.stringify(draft.search ?? {}) !== JSON.stringify(live.search ?? {})
+  const search = JSON.stringify(normalizeSearch(draft.search ?? {})) !== JSON.stringify(normalizeSearch(live.search ?? {}))
   return { search, changed: search || title || removed > 0 || marks.some(mark => mark !== 'same'), title, marks, removed }
 }
 
