@@ -1,6 +1,8 @@
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
+import { execFileSync } from 'node:child_process'
+import { createHash, randomUUID } from 'node:crypto'
 import { runtime, origin, settings } from './runtime.mjs'
 import { createOperatorAuth } from '../src/modules/operator-auth/index.mjs'
 let f, owner, first
@@ -16,6 +18,21 @@ before(async () => {
  await f.request('/setup', {method: 'POST', headers: {Cookie: owner, Origin: origin, 'Content-Type': 'application/x-www-form-urlencoded'}, body: 'confirm=yes'})
 })
 after(async () => { await f?.mf.dispose() })
+
+test('health identifies the local deployment and unknown installed paths return 404', async () => {
+ const record = {sourceSha: execFileSync('git', ['rev-parse', 'HEAD'], {encoding: 'utf8'}).trim(), fingerprint: createHash('sha256').update(await readFile('deploy.json')).digest('hex'), versionId: randomUUID()}
+ const local = await runtime({bindings: {RER_DEPLOY_SOURCE: record.sourceSha, RER_DEPLOY_FINGERPRINT: record.fingerprint, RER_VERSION: {id: record.versionId}}})
+ try {
+  const response = await local.request('/health')
+  assert.equal(response.status, 200)
+  const health = await response.json()
+  assert.equal(health.ok, true)
+  assert.deepEqual(health.deployment, record)
+  assert.equal((await local.request('/unknown-installed-path')).status, 404)
+  assert.equal((await f.request('/app/unknown-page', {headers: {Cookie: owner}})).status, 404)
+  assert.equal((await f.request('/site/unknown-page')).status, 404)
+ } finally { await local.mf.dispose() }
+})
 
 test('SEO-001 SEO-003 SEO-004: search drafts, index output, page editing and rollback use the published revision', async () => {
  assert.equal((await f.request('/sitemap.xml')).status, 404)
