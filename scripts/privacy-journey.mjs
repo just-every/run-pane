@@ -24,13 +24,12 @@ try {
   assert.equal(prepared.status(), 200)
   assert.equal((await context.request.post(origin + '/api/pane/publish', {headers: {Origin: origin}, data: {revision: (await prepared.json()).id}})).status(), 200)
  } else await fixture.signIn(page)
- let loads = 0, probeStatus
- await page.addInitScript(() => { addEventListener('message', event => { if (event.data?.privacyProbe) window.privacyProbe = {parentCookie: event.data.privacyProbe, origin: event.origin} }) })
+ let loads = 0
+ await page.addInitScript(() => { addEventListener('message', event => { if (event.data?.privacyProbe) window.privacyProbe = {parentCookie: event.data.privacyProbe, origin: event.origin, api: event.data.api} }) })
  await page.route('https://www.youtube-nocookie.com/**', async route => {
   loads++
-  await route.fulfill({contentType: 'text/html', body: `<html><body><h1>Workshop video</h1><script>let result;try{void parent.document.cookie;result='exposed'}catch{result='blocked'}parent.postMessage({privacyProbe:result},'*');fetch('${origin}/api/pane',{credentials:'include'}).catch(()=>{});</script></body></html>`})
+  await route.fulfill({contentType: 'text/html', body: `<html><body><h1>Workshop video</h1><script>(async()=>{let result,api;try{void parent.document.cookie;result='exposed'}catch{result='blocked'}try{const r=await fetch('${origin}/api/pane',{credentials:'include'});api=r.status===200?'exposed':'refused'}catch{api='blocked'}parent.postMessage({privacyProbe:result,api},'*')})()</script></body></html>`})
  })
- page.on('response', response => { if (response.url() === origin + '/api/pane' && response.request().frame() !== page.mainFrame()) probeStatus = response.status() })
  for (const width of [1440, 390]) {
   await page.setViewportSize({width, height: 1000})
   await page.goto(origin + '/app?page=home')
@@ -57,7 +56,7 @@ try {
   await capture('embed-consent-' + width)
   assert.equal(loads, before)
   await page.getByRole('button', {name: 'Allow external content'}).click()
-  await page.waitForFunction(() => window.privacyProbe?.parentCookie === 'blocked')
+  await page.waitForFunction(() => window.privacyProbe?.parentCookie === 'blocked' && window.privacyProbe?.api === 'blocked')
   assert.equal((await page.evaluate(() => window.privacyProbe)).origin, 'null', 'Sandbox has an opaque origin')
   await page.waitForFunction(() => document.querySelector('iframe') !== null)
   assert.equal(await page.locator('iframe').getAttribute('sandbox'), 'allow-scripts')
@@ -75,6 +74,6 @@ try {
   await context.setExtraHTTPHeaders({})
  }
  // Fetch from the opaque third-party frame never receives the native workspace session.
- assert.equal(probeStatus, 401)
+ assert.equal((await page.evaluate(() => window.privacyProbe)).api, 'blocked')
  console.log('Privacy browser journey passed: owner revision approval, page-only CSP, inert previews, consent, GPC, opaque sandbox and API refusal at 1440 and 390.')
 } finally { await browser.close(); if (ownsFixture) await fixture.stop() }
