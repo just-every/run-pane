@@ -26,12 +26,12 @@ test('SEO-001 SEO-003 SEO-004: search drafts, index output, page editing and rol
  assert.match(before, /<loc>http:\/\/127.0.0.1:8787\/site<\/loc>/)
  assert.match(before, /<lastmod>\d{4}-\d\d-\d\dT/)
  assert.match(await page('/site/services'), new RegExp(`<title>${fixture.pages.find(p => p.slug === 'services').title} · ${fixture.name}</title>`))
- const title = 'Riverbend catering & private events', description = 'Fresh pastries for "your" studio & team.'
- const fields = {'services.title': title, 'services.description': description, 'services.canonical': 'https://riverbend.example/catering', 'hours.noindex': 'on'}
+ const title = 'Furniture repairs & handmade commissions', description = 'Fresh pastries for "your" studio & team.'
+ const fields = {'services.title': title, 'services.description': description, 'services.canonical': 'https://cedar-street.example/workshop', 'hours.noindex': 'on'}
  assert.equal((await save(first.id, fields)).status, 303)
  let draft = (await dashboard()).draft
  assert.equal((await page('/sitemap.xml')), before, 'An unpublished draft must not change the index')
- assert.doesNotMatch(await page('/site/services'), /riverbend.example\/catering/)
+ assert.doesNotMatch(await page('/site/services'), /cedar-street.example\/workshop/)
  const preview = await f.request(`/preview/${draft.id}/services`, {headers: {Cookie: owner}})
  assert.match(preview.headers.get('x-robots-tag'), /noindex/)
  assert.match(await preview.text(), /name="robots" content="noindex/)
@@ -39,20 +39,20 @@ test('SEO-001 SEO-003 SEO-004: search drafts, index output, page editing and rol
  assert.match(signedOut.headers.get('x-robots-tag'), /noindex/)
  const settingsHtml = await page('/app/search')
  assert.ok(settingsHtml.includes(`aria-label="Search preview for ${fixture.pages.find(p => p.slug === 'services').title}"`))
- assert.ok(settingsHtml.includes('Riverbend catering &amp; private events'))
+ assert.ok(settingsHtml.includes('Furniture repairs &amp; handmade commissions'))
  // Editing body content via the regular page form must retain search settings.
- const edited = await f.request('/app/prepare', {method: 'POST', headers: {Cookie: owner, Origin: origin, 'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({base: draft.id, slug: 'services', 'page.services.body': 'Catering for neighborhood gatherings.'})})
+ const edited = await f.request('/app/prepare', {method: 'POST', headers: {Cookie: owner, Origin: origin, 'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({base: draft.id, slug: 'services', 'page.services.body': 'Repairs and custom furniture for neighborhood homes.'})})
  assert.equal(edited.status, 303)
  draft = (await dashboard()).draft
  assert.equal((await post('/api/pane/publish', {revision: draft.id})).status, 200)
  const html = await page('/site/services')
- assert.ok(html.includes('<title>Riverbend catering &amp; private events</title>'))
+ assert.ok(html.includes('<title>Furniture repairs &amp; handmade commissions</title>'))
  assert.ok(html.includes('name="description" content="Fresh pastries for &quot;your&quot; studio &amp; team."'))
- assert.ok(html.includes('rel="canonical" href="https://riverbend.example/catering"'))
+ assert.ok(html.includes('rel="canonical" href="https://cedar-street.example/workshop"'))
  assert.match(await page('/site/contact'), /rel="canonical" href="http:\/\/127.0.0.1:8787\/site\/contact"/)
  const staging = await f.request('http://staging.example/site/services')
  assert.match(staging.headers.get('x-robots-tag'), /noindex/, 'Staging origins never index the business site')
- assert.match(await staging.text(), /rel="canonical" href="https:\/\/riverbend.example\/catering"/)
+ assert.match(await staging.text(), /rel="canonical" href="https:\/\/cedar-street.example\/workshop"/)
  const excluded = await f.request('/site/hours')
  assert.match(excluded.headers.get('x-robots-tag'), /noindex/)
  assert.match(await excluded.text(), /name="robots" content="noindex/)
@@ -70,7 +70,7 @@ test('SEO-001 SEO-003 SEO-004: search drafts, index output, page editing and rol
  await post('/api/pane/rollback', {revision: first.id})
  assert.equal(await page('/sitemap.xml'), before)
  assert.doesNotMatch(await page('/robots.txt'), /Disallow: \/site\/hours/)
- assert.doesNotMatch(await page('/site/services'), /riverbend.example\/catering/)
+ assert.doesNotMatch(await page('/site/services'), /cedar-street.example\/workshop/)
  assert.equal((await f.request('/site/hours')).headers.get('x-robots-tag'), null)
 })
 

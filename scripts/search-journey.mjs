@@ -8,6 +8,7 @@ const origin = new URL(entry).origin, folder = resolve(process.env.PANE_SCREENSH
 await mkdir(folder, {recursive: true})
 const browser = await chromium.launch({headless: true, args: ['--use-mock-keychain', '--password-store=basic']})
 const context = await browser.newContext(), page = await context.newPage()
+page.setDefaultTimeout(15000)
 async function capture(name) {
  for (const width of [1440, 390]) {
   await page.setViewportSize({width, height: 1000})
@@ -16,7 +17,7 @@ async function capture(name) {
  }
 }
 async function submit(name, path) {
- const [response] = await Promise.all([page.waitForResponse(r => r.request().method() === 'POST' && new URL(r.url()).origin === origin), page.getByRole('button', {name, exact: true}).click()])
+ const [response] = await Promise.all([page.waitForResponse(r => r.request().method() === 'POST' && new URL(r.url()).origin === origin), page.getByRole('button', {name, exact: true}).first().click()])
  if (response.status() !== 303) throw Error(`Form refused (${response.status()}): ${await response.text()}`)
  await page.waitForURL(url => url.pathname === path)
  await page.waitForLoadState('domcontentloaded')
@@ -35,21 +36,21 @@ try {
  await page.goto(origin + '/app/sites'); await capture('sites-before')
  await page.getByRole('link', {name: 'Search settings', exact: true}).click(); await capture('settings-defaults')
  const serviceTitle = fixture.pages.find(p => p.slug === 'services').title, hoursTitle = fixture.pages.find(p => p.slug === 'hours').title
- await page.getByLabel('Search title for ' + serviceTitle, {exact: true}).fill('Riverbend catering & private events')
- await page.getByLabel('Search description for ' + serviceTitle, {exact: true}).fill('Fresh pastries and neighborhood catering for your team.')
- await page.getByLabel('Canonical URL for ' + serviceTitle, {exact: true}).fill('https://riverbend.example/catering')
+ await page.getByLabel('Search title for ' + serviceTitle, {exact: true}).fill('Furniture repairs & handmade commissions')
+ await page.getByLabel('Search description for ' + serviceTitle, {exact: true}).fill('Furniture repairs and custom pieces made in our neighborhood workshop.')
+ await page.getByLabel('Canonical URL for ' + serviceTitle, {exact: true}).fill('https://cedar-street.example/workshop')
  await page.getByLabel('Keep ' + hoursTitle + ' out of search results', {exact: true}).check()
  await page.getByLabel('robots.txt', {exact: true}).fill('User-agent: *\nDisallow: /site/hours\n')
  await capture('settings-edited')
  await submit('Prepare search draft', '/app/search'); await capture('settings-saved')
  const preview = page.locator(`[aria-label="Search preview for ${serviceTitle}"]`)
- assert.equal(await preview.getByRole('heading').innerText(), 'Riverbend catering & private events', 'SEO-001: saved search preview')
+ assert.equal(await preview.getByRole('heading').innerText(), 'Furniture repairs & handmade commissions', 'SEO-001: saved search preview')
  await page.getByRole('link', {name: 'Back to Sites'}).click(); await capture('sites-search-draft')
  await submit('Approve & publish', '/app/sites'); await capture('sites-published')
  await page.goto(origin + '/site/services'); await capture('published-services')
- assert.equal(await page.title(), 'Riverbend catering & private events', 'SEO-001: published title')
- assert.equal(await page.locator('meta[name=description]').getAttribute('content'), 'Fresh pastries and neighborhood catering for your team.')
- assert.equal(await page.locator('link[rel=canonical]').getAttribute('href'), 'https://riverbend.example/catering', 'SEO-004: canonical')
+ assert.equal(await page.title(), 'Furniture repairs & handmade commissions', 'SEO-001: published title')
+ assert.equal(await page.locator('meta[name=description]').getAttribute('content'), 'Furniture repairs and custom pieces made in our neighborhood workshop.')
+ assert.equal(await page.locator('link[rel=canonical]').getAttribute('href'), 'https://cedar-street.example/workshop', 'SEO-004: canonical')
  await page.goto(origin + '/site/hours'); await capture('published-noindex')
  assert.match(await page.locator('meta[name=robots]').getAttribute('content'), /noindex/, 'SEO-004: noindex')
  const sitemap = await (await page.request.get(origin + '/sitemap.xml')).text()
