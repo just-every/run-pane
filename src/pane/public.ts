@@ -1,3 +1,4 @@
+import { visitDimensions } from './visit-dimensions'
 import { deliverAcknowledgment } from './acknowledgment'
 import { embedOrigin } from './embeds'
 import { runtimeBindings, type Bindings } from '../auth.server'
@@ -24,10 +25,11 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
  const site=revision(row).site
  if(path==='/site/visit' && request.method==='POST') {
   if(request.headers.get('DNT')==='1'||request.headers.get('Sec-GPC')==='1')return new Response(null,{status:204})
-  const body=await request.json() as {path:string}
-  if(!slugs.includes(body.path))return json({error:'Unknown page.'},400)
+  const body=await request.json() as Record<string,unknown>
+  if(!body||typeof body!=='object'||Array.isArray(body)||typeof body.path!=='string'||!slugs.includes(body.path))return json({error:'Unknown page.'},400)
   if(await limited(env.DB,'visits',300))return new Response(null,{status:429})
-  await env.DB.prepare('INSERT INTO pane_visits(day,path,count) VALUES(?,?,1) ON CONFLICT(day,path) DO UPDATE SET count=count+1').bind(new Date().toISOString().slice(0,10),body.path).run()
+  const dimensions=visitDimensions(request,body,site.analyticsCampaigns)
+  await env.DB.prepare('INSERT INTO pane_visits(day,path,source,device,country,region,campaign,count) VALUES(?,?,?,?,?,?,?,1) ON CONFLICT(day,path,source,device,country,region,campaign) DO UPDATE SET count=count+1').bind(new Date().toISOString().slice(0,10),body.path,dimensions.source,dimensions.device,dimensions.country,dimensions.region,dimensions.campaign).run()
   return new Response(null,{status:204})
  }
  if(slug==='contact'&&request.method==='POST') {

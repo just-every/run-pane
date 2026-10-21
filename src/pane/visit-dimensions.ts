@@ -73,7 +73,7 @@ export function visitDimensions(request: Request, input: unknown, approvedCampai
     && !/[\u0000-\u001f\u007f-\u009f]/.test(body.campaign) && approvedCampaigns.includes(body.campaign)
     ? body.campaign : ''
   return {
-    source: visitSource(body.referrerHost),
+    source: body.referrerHost === new URL(request.url).hostname ? 'Direct' : visitSource(body.referrerHost),
     device: visitDevice(request),
     country,
     region: country === 'US' ? twoLetters(cf.regionCode) : '',

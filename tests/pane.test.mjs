@@ -234,3 +234,47 @@ test('an approved form acknowledgment reaches the provider once with owner wordi
  await f.request('/site/contact', {method: 'POST', headers: {Origin: origin, 'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({idempotency: localId, name: 'Avery', email: 'avery@example.test', message: 'Local proof'})})
  assert.equal((await data()).messages.find(message => message.id === localId).acknowledgment_status, 'suppressed')
 })
+
+test('traffic groups real public visit events without retaining referrers or unapproved identifiers and excludes privacy opt-outs', async () => {
+ const app = await runtime({cf: {country: 'US', regionCode: 'CO', city: 'Denver'}})
+ let cookie = ''
+ const post = (path, body) => app.request(path, {method: 'POST', headers: {Cookie: cookie, Origin: origin, 'Content-Type': 'application/json'}, body: JSON.stringify(body)})
+ const dashboard = async () => (await app.request('/api/pane', {headers: {Cookie: cookie}})).json()
+ const visit = (path, referrerHost, campaign, agent, headers = {}) => app.request('/site/visit', {method: 'POST', headers: {Origin: origin, 'Content-Type': 'application/json', 'User-Agent': agent, 'CF-Connecting-IP': '203.0.113.25', ...headers}, body: JSON.stringify({path, referrerHost, campaign})})
+ const phone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Mobile'
+ const desktop = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0)'
+ try {
+  const signed = await post('/auth/bootstrap', {token: settings.SETUP_TOKEN, displayName: 'Traffic owner'})
+  cookie = signed.headers.get('set-cookie').split(';')[0]
+  await app.request('/setup', {method: 'POST', headers: {Cookie: cookie, Origin: origin, 'Content-Type': 'application/x-www-form-urlencoded'}, body: 'confirm=yes'})
+  const first = await (await post('/api/pane/prepare', {site: fixture})).json()
+  await post('/api/pane/publish', {revision: first.id})
+  const site = {...fixture, analyticsCampaigns: ['spring-open-house', 'summer-workshop']}
+  const prepared = await (await post('/api/pane/prepare', {site})).json()
+  await visit('home', '', 'spring-open-house', desktop)
+  assert.deepEqual((await dashboard()).traffic.campaign, [{label: '', count: 1}], 'Draft labels cannot authorize retention')
+  await post('/api/pane/publish', {revision: prepared.id})
+  assert.equal((await visit('home', 'www.google.com', 'spring-open-house', phone)).status, 204)
+  assert.equal((await visit('about', 'www.facebook.com', 'summer-workshop', desktop)).status, 204)
+  assert.equal((await visit('services', 'avery.private.example', 'customer-avery-29383838', desktop)).status, 204)
+  const data = await dashboard()
+  assert.deepEqual(data.visits, [{path: 'about', count: 1}, {path: 'home', count: 2}, {path: 'services', count: 1}])
+  assert.ok(data.traffic.source.some(row => row.label === 'Google' && row.count === 1))
+  assert.ok(data.traffic.source.some(row => row.label === 'Facebook' && row.count === 1))
+  assert.ok(data.traffic.source.some(row => row.label === 'Other website' && row.count === 1))
+  assert.ok(data.traffic.device.some(row => row.label === 'phone' && row.count === 1))
+  assert.ok(data.traffic.device.some(row => row.label === 'desktop' && row.count === 3))
+  assert.deepEqual(data.traffic.location, [{label: 'US-CO', count: 4}])
+  assert.deepEqual(data.traffic.day, [{label: new Date().toISOString().slice(0, 10), count: 4}])
+  assert.ok(data.traffic.campaign.some(row => row.label === 'spring-open-house' && row.count === 1))
+  assert.ok(data.traffic.campaign.some(row => row.label === 'summer-workshop' && row.count === 1))
+  assert.ok(data.traffic.campaign.some(row => row.label === '' && row.count === 2))
+  for (const privacy of [{'Sec-GPC': '1'}, {DNT: '1'}]) assert.equal((await visit('home', 'www.google.com', 'spring-open-house', phone, privacy)).status, 204)
+  assert.deepEqual(await dashboard(), data, 'Privacy opt-outs cause no counter write')
+  const rows = await app.db.prepare('SELECT * FROM pane_visits').all()
+  assert.doesNotMatch(JSON.stringify(rows.results), /avery|29383838|203\.0\.113\.25|Mozilla|Denver|private\.example/)
+  const html = await (await app.request('/app/sites', {headers: {Cookie: cookie}})).text()
+  for (const label of ['Google', 'Facebook', 'spring-open-house', 'summer-workshop', 'US-CO']) assert.ok(html.includes(label))
+  assert.equal((await app.request('/api/pane')).status, 401)
+ } finally { await app.mf.dispose() }
+})

@@ -1,5 +1,6 @@
 // Sites: the site as one homepage tile with its live and draft state, every
 // revision on a ribbon with the owner's decisions on it, and visits by page.
+import { trafficView } from './traffic'
 import type { Dashboard, Revision } from '../model'
 import { slugs } from '../content'
 import { siteChanges } from './changes'
@@ -51,5 +52,5 @@ function visits(data: Dashboard): string {
 
 export function sites(data: Dashboard): string {
   const role = data.role.toLowerCase(), owner = role === 'owner', canPreview = owner || role === 'admin'
-  return `<div class="sites-top">${tile(data, owner, canPreview)}${stateCards(data)}</div>${canPreview && data.draft ? searchCheckView(data.draft.site) : ''}<div class="sites-body"><section class="history" id="history" aria-labelledby="history-title"><h2 id="history-title">Every revision, kept</h2><p class="help">Preview saved revisions. The owner can restore one that was live before; each decision is recorded on its revision.</p>${ribbon(data, owner, canPreview)}</section>${visits(data)}</div>`
+  return `<div class="sites-top">${tile(data, owner, canPreview)}${stateCards(data)}</div>${canPreview && data.draft ? searchCheckView(data.draft.site) : ''}<div class="sites-body"><section class="history" id="history" aria-labelledby="history-title"><h2 id="history-title">Every revision, kept</h2><p class="help">Preview saved revisions. The owner can restore one that was live before; each decision is recorded on its revision.</p>${ribbon(data, owner, canPreview)}</section>${visits(data)}${trafficView(data.traffic)}</div>`
 }
