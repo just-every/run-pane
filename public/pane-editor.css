@@ -61,7 +61,8 @@
 .pane .side { display: grid; gap: 14px; min-width: 0; }
 .pane .cardstack { position: relative; display: grid; gap: 14px; width: min(100%, 380px); margin-top: 20px; }
 .rer-themed .pane .cardstack textarea { min-height: calc(3lh + 18px); max-height: 10lh; }
-.rer-themed .pane .cardstack textarea:not(:focus) { max-height: calc(3lh + 18px); }
+/* Keep the action under the pointer when focus moves from text to submit. */
+.rer-themed .pane .cardstack .edit-card:not(:focus-within) textarea { max-height: calc(3lh + 18px); }
 .pane .edit-card:not(:focus-within) .in-use { display: none; }
 .pane .site-fields { display: grid; gap: 10px; margin: 0; }
 .pane .site-fields summary { color: var(--pn-fuchsia-deep); font-size: 13px; font-weight: 700; }
