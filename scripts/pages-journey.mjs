@@ -15,7 +15,7 @@ const structure = tab => tab.locator('[name=structure]')
 const count = async tab => JSON.parse(await structure(tab).inputValue()).pages.length
 const row = (tab, id) => tab.locator(`[data-page-id="${id}"]`)
 const saved = tab => tab.waitForFunction(()=>document.querySelector('[data-save-status]')?.textContent==='Draft saved. Not published.',undefined,{timeout:20000})
-async function capture(name,width) {await page.screenshot({path:resolve(folder,`${name}-${width}.png`),fullPage:true});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,`${name} overflow at ${width}`)}
+async function capture(name,width) {await page.screenshot({path:resolve(folder,`${name}-${width}.png`),fullPage: !['forty-page-organization','site-revisions','page-search-settings'].includes(name)});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,`${name} overflow at ${width}`)}
 async function openOrganization(tab=page) {await tab.getByText('Pages and folders',{exact:true}).click()}
 async function publish() {
  await Promise.all([page.waitForURL(url=>url.pathname==='/app'&&url.searchParams.has('notice')),page.getByRole('button',{name:'Approve & publish',exact:true}).click()])
@@ -46,6 +46,10 @@ try {
  await page.getByLabel('Not-found page',{exact:true}).selectOption(missing.id)
  await row(page,missing.id).getByLabel('Hidden from menus',{exact:true}).check()
  await row(page,chosen.id).getByRole('button',{name:/Move .* up/}).click();await saved(page)
+ const durable=JSON.parse(await structure(page).inputValue())
+ await page.close();page=await context.newPage();page.setDefaultTimeout(20000)
+ await page.goto(origin+'/app');await openOrganization()
+ assert.deepEqual(JSON.parse(await structure(page).inputValue()),durable,'Closing and reopening keeps the saved structure')
  for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await capture('forty-page-organization',width)}
  await publish()
  let snapshot=(await data()).live
@@ -92,18 +96,25 @@ try {
  }
  // A new structural editor must also preserve both writers on conflict.
  await fixture.signIn(other)
- await page.goto(origin+'/app');await other.goto(origin+'/app');await openOrganization();await openOrganization(other)
- await page.getByLabel('New folder name',{exact:true}).fill('Owner workshop notes');await page.getByRole('button',{name:'Add folder',exact:true}).click();await saved(page)
- await other.getByLabel('New folder name',{exact:true}).fill('Second editor notes');await other.getByRole('button',{name:'Add folder',exact:true}).click()
- await other.waitForFunction(()=>document.querySelector('[data-conflict]')?.hidden===false,undefined,{timeout:20000})
- assert.match(await other.locator('[data-latest]').innerText(),/Owner workshop notes/)
- assert.ok(JSON.parse(await structure(other).inputValue()).folders.includes('Second editor notes'))
- const download=other.waitForEvent('download');await other.getByRole('button',{name:'Download my copy',exact:true}).click()
- const copy=await download;await copy.saveAs(resolve(folder,'structural-conflict-copy.json'))
- assert.match(await readFile(resolve(folder,'structural-conflict-copy.json'),'utf8'),/Second editor notes/)
- await other.getByRole('button',{name:'Use latest draft',exact:true}).click();await other.waitForLoadState('domcontentloaded')
- assert.ok(JSON.parse(await structure(other).inputValue()).folders.includes('Owner workshop notes'))
- assert.equal((await data()).live.id,snapshot.id,'Neither structural draft nor conflict resolution publishes')
+ for(const width of [1440,390]) {
+  await page.setViewportSize({width,height:1000});await other.setViewportSize({width,height:1000})
+  await page.goto(origin+'/app');await other.goto(origin+'/app');await openOrganization();await openOrganization(other)
+  const ownerFolder='Owner workshop notes '+width,otherFolder='Second editor notes '+width
+  await page.getByLabel('New folder name',{exact:true}).fill(ownerFolder);await page.getByRole('button',{name:'Add folder',exact:true}).click();await saved(page)
+  await other.getByLabel('New folder name',{exact:true}).fill(otherFolder);await other.getByRole('button',{name:'Add folder',exact:true}).click()
+  await other.waitForFunction(()=>document.querySelector('[data-conflict]')?.hidden===false,undefined,{timeout:20000})
+  assert.ok((await other.locator('[data-latest]').innerText()).includes(ownerFolder))
+  assert.ok(JSON.parse(await structure(other).inputValue()).folders.includes(otherFolder))
+  await other.locator('[data-conflict]').scrollIntoViewIfNeeded()
+  await other.screenshot({path:resolve(folder,`structure-conflict-${width}.png`),fullPage:false})
+  assert.equal(await other.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false)
+  const download=other.waitForEvent('download');await other.getByRole('button',{name:'Download my copy',exact:true}).click()
+  const copy=await download,copyPath=resolve(folder,`structural-conflict-copy-${width}.json`);await copy.saveAs(copyPath)
+  assert.ok((await readFile(copyPath,'utf8')).includes(otherFolder))
+  await other.getByRole('button',{name:'Use latest draft',exact:true}).click();await other.waitForLoadState('domcontentloaded')
+  assert.ok(JSON.parse(await structure(other).inputValue()).folders.includes(ownerFolder))
+  assert.equal((await data()).live.id,snapshot.id,'Neither structural draft nor conflict resolution publishes')
+ }
  console.log('Forty-page editor journey passed: three folders, add/order/hide/home, rename/delete 301 offers, all routes and complete snapshot, editable 404, five undo/redo steps and conflict copy/latest at 1440/390.')
 } catch(error) {await page.screenshot({path:resolve(folder,'failure.png'),fullPage:true});console.error(await page.locator('[data-save-status]').allTextContents());throw error}
 finally {await browser.close();await fixture.stop()}
