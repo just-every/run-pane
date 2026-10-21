@@ -19,6 +19,15 @@ for (const form of document.querySelectorAll('form[data-autosave]')) {
  function restore(value) { for (const field of fields) field.value = value[field.name] ?? ''; changed(false) }
  function adopt(revision) {
   base.value = revision.id
+  const bar = document.querySelector('[data-live]')
+  if (bar && bar.dataset.live !== revision.id) {
+   const action = bar.querySelector('[data-publication-action]')
+   if (action) action.hidden = false
+   const badge = document.querySelector('.pagebar .pill-state')
+   if (badge) badge.textContent = 'Draft'
+   const note = bar.querySelector('[data-publication-note]')
+   if (note) note.textContent = 'Draft saved. The owner approves publication.'
+  }
   // Publication and preview actions must follow the saved draft, never a stale revision.
   for (const field of document.querySelectorAll('form[action="/app/publish"] input[name=revision]')) field.value = revision.id
   for (const link of document.querySelectorAll('a[href^="/preview/"]')) link.pathname = link.pathname.replace(/^\/preview\/[^/]+/, '/preview/' + revision.id)
