@@ -2,6 +2,7 @@ import { runtimeBindings, type Bindings } from '../auth.server'
 import { slugs, revision } from './content'
 import { document } from './views'
 import { publicPage } from './public-view'
+import { siteSearch } from './site-search'
 const json = (v:unknown,status=200) => Response.json(v,{status,headers:{'cache-control':'no-store'}})
 async function limited(db:D1Database,key:string,limit:number) {
  const bucket = `${new Date().toISOString().slice(0,16)}:${key}`
@@ -35,6 +36,11 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   return new Response(null,{status:303,headers:{location:'/site/contact?sent=1'}})
  }
  if(request.method!=='GET')return json({error:'Method not allowed.'},405)
+ if(slug==='search') {
+  const query=url.searchParams.get('q')??''
+  const response=await document(`Search · ${site.name}`,siteSearch(site,query),'site')
+  return query.length > 200 ? new Response(response.body,{status:400,headers:response.headers}) : response
+ }
  if(!slugs.includes(slug))return document('Not found','<div class="public-site"><div class="public-shell"><main class="public-main" id="main"><h1>Page not found</h1><p><a href="/site">Back to the home page</a></p></main></div></div>','site').then(r=>new Response(r.body,{status:404,headers:r.headers}))
  const notice=slug==='contact'&&url.searchParams.has('sent')?'<div class="public-site public-sent"><div class="public-shell"><p class="notice" role="status">Thank you. Your message is in the business inbox.</p></div></div>':''
  return document(site.name,notice+publicPage(site,slug,'live'),'site')

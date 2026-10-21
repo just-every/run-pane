@@ -380,7 +380,7 @@ Visitors search the site's pages, posts and collection items; results respect pa
 
 **Acceptance evidence:** Search for a service name, a post tag and a word on a protected page; the first two return results and the protected page does not for a signed-out visitor.
 
-*Status:* missing. No site search.
+*Status:* partial. Visitors search the current published pages at `/site/search`, with Unicode-normalized matching and links to results. Drafts stay private and publication/rollback update results atomically. Posts, collection items and protected-page filtering still await CMS-001, CMS-002, CMS-004 and PAGE-011.
 
 #### CMS-009 — Events calendar with list and month views.
 
@@ -868,7 +868,7 @@ Workspace and live pages send a strict content security policy, frame protection
 
 **Acceptance evidence:** Read the headers on every page type and see the policy; add an embed and see only its host added.
 
-*Status:* partial. Headers are set on every document but no test asserts them.
+*Status:* partial. Pane workspace, preview, live, search and not-found headers are asserted through installed routes. Shared entry pages still lack a permissions policy; embed-specific widening awaits PAGE-008.
 
 #### LOCALE-001 — US defaults.
 
@@ -1106,13 +1106,13 @@ No desk homepage claims file (`CLAIMS.md`) exists for Pane on 17 October 2026. W
 
 ## Status
 
-Judged from the code and tests at commit `ebaeb7ce2df1e4222c12e01a08ddf1cd90fa99a2` (21 October 2026).
+Judged from the code and tests at commit `75e1c582c277a9337bfbf9b8549cb41ddd3dfcd5` (21 October 2026).
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 14 | 2 | 0 | 16 |
-| Target and push further | 1 | 29 | 79 | 109 |
-| All | 15 | 31 | 79 | 125 |
+| Target and push further | 1 | 30 | 78 | 109 |
+| All | 15 | 32 | 78 | 125 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -1162,7 +1162,7 @@ Judged from the code and tests at commit `ebaeb7ce2df1e4222c12e01a08ddf1cd90fa99
 | `CMS-005` | Scheduled publishing and expiry | target | missing |  | Publication is immediate only. |
 | `CMS-006` | RSS and podcast feeds and new-post notifications | target | missing |  | No feeds or subscribers. |
 | `CMS-007` | Collection CSV import and export | target | missing |  | Only the static-site JSON move-in exists (`MOVEIN-001`). |
-| `CMS-008` | Site search | target | missing |  | No site search. |
+| `CMS-008` | Site search | target | partial | `src/pane/site-search.ts`; `src/pane/public.ts`; `src/pane/public-view.ts`; `tests/search.test.mjs`; `scripts/search-journey.mjs` | Visitors search the current published pages at `/site/search`, with Unicode-normalized matching and links to results. Drafts stay private and publication/rollback update results atomically. Posts, collection items and protected-page filtering still await CMS-001, CMS-002, CMS-004 and PAGE-011. |
 | `CMS-009` | Events calendar with list and month views | target | missing |  | No events or calendar. |
 | `CMS-010` | Blog comments and moderation | target | missing |  | No comments, moderation queue or moderator notifications. |
 | `CMS-011` | Post and collection item bodies in the block editor | target | missing |  | No blog posts or collection items exist; page bodies are escaped plain paragraphs, so no post or item body editor. |
@@ -1221,7 +1221,7 @@ Judged from the code and tests at commit `ebaeb7ce2df1e4222c12e01a08ddf1cd90fa99
 | `PRIV-001` | Consent for analytics and third-party embeds | target | partial | `src/pane/public.ts`; `tests/pane.test.mjs` | DNT and GPC are honored for Pane's own counts; there is no consent banner because there are no third-party embeds yet. |
 | `PRIV-002` | Person-level privacy requests | target | partial | `src/pane/handler.ts`; `tests/pane.test.mjs` | One message can be erased by ID; no lookup, export or erasure by person. |
 | `PRIV-003` | Policy and accessibility statement starters | target | missing |  | No policy pages. |
-| `PRIV-004` | Security headers on every page | target | partial | `src/pane/views.ts` | Headers are set on every document but no test asserts them. |
+| `PRIV-004` | Security headers on every page | target | partial | `src/pane/views.ts`; `tests/search.test.mjs` | Pane workspace, preview, live, search and not-found headers are asserted through installed routes. Shared entry pages still lack a permissions policy; embed-specific widening awaits PAGE-008. |
 | `LOCALE-001` | US defaults | target | missing |  | Workspace dates use en-US in the viewer’s time zone, with UTC before browser formatting; there is no business time zone setting. |
 | `MOBILE-001` | Responsive owner workspace on a phone | target | partial | `scripts/browser-journey.mjs` | The current workspace is checked for overflow at 390 wide; the target editor, inbox replies and approvals on a phone are not built. |
 | `MOBILE-002` | Native iOS and Android owner app | target | missing |  | No native app. |

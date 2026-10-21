@@ -116,5 +116,46 @@ try {
  const sitemap = await (await page.request.get(origin + '/sitemap.xml')).text()
  assert.match(sitemap, /\/site\/services/); assert.doesNotMatch(sitemap, /\/site\/hours/, 'SEO-003: exclude noindex')
  assert.match(await (await page.request.get(origin + '/robots.txt')).text(), /Disallow: \/site\/hours/, 'SEO-003: published robots')
+ // CMS-008: search the real published pages from the website's own navigation.
+ const searchSite = structuredClone(fixture)
+ searchSite.pages.find(p => p.slug === 'services').body = 'Café furniture repairs and cedar restoration.'
+ const searchRevision = await (await page.request.post(origin + '/api/pane/prepare', {headers: {Origin: origin}, data: {site: searchSite}})).json()
+ assert.equal((await page.request.post(origin + '/api/pane/publish', {headers: {Origin: origin}, data: {revision: searchRevision.id}})).status(), 200)
+ for (const p of searchSite.pages) {
+  await page.goto(origin + (p.slug === 'home' ? '/site' : '/site/' + p.slug))
+  assert.equal(await page.getByRole('link', {name: 'Search', exact: true}).getAttribute('href'), '/site/search', 'CMS-008: every live page opens search')
+  await capture('site-search-nav-' + p.slug)
+ }
+ await page.getByRole('link', {name: 'Search', exact: true}).click()
+ await capture('site-search-empty')
+ for (const width of [1440, 390]) {
+  await page.setViewportSize({width, height: 1000})
+  await page.getByLabel('Search words', {exact: true}).fill('ＣＡＦÉ')
+  await page.getByRole('button', {name: 'Search', exact: true}).click()
+  assert.equal(await page.getByRole('status').innerText(), '1 page found.', 'CMS-008: Unicode and case normalization')
+  const result = page.getByRole('list', {name: 'Search results'}).getByRole('link', {name: serviceTitle, exact: true})
+  assert.equal(await result.getAttribute('href'), '/site/services')
+  await page.screenshot({path: resolve(folder, `site-search-results-${width}.png`), fullPage: true})
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 2), false)
+  await result.focus()
+  await page.keyboard.press('Enter')
+  await page.waitForURL(url => url.pathname === '/site/services')
+  assert.match(await page.locator('.public-content').innerText(), /cedar restoration/)
+  await page.getByRole('link', {name: 'Search', exact: true}).click()
+ }
+ const privateSite = structuredClone(searchSite)
+ privateSite.pages.find(p => p.slug === 'services').body = 'unpublished-search-secret'
+ const privateRevision = await (await page.request.post(origin + '/api/pane/prepare', {headers: {Origin: origin}, data: {site: privateSite}})).json()
+ await page.getByLabel('Search words', {exact: true}).fill('unpublished-search-secret')
+ await page.getByRole('button', {name: 'Search', exact: true}).click()
+ assert.match(await page.getByRole('status').innerText(), /No pages found/, 'CMS-008: unpublished draft is absent')
+ await capture('site-search-no-results')
+ assert.equal((await page.request.post(origin + '/api/pane/publish', {headers: {Origin: origin}, data: {revision: privateRevision.id}})).status(), 200)
+ await page.reload()
+ assert.equal(await page.getByRole('status').innerText(), '1 page found.', 'CMS-008: publication updates search')
+ assert.equal((await page.request.post(origin + '/api/pane/rollback', {headers: {Origin: origin}, data: {revision: searchRevision.id}})).status(), 200)
+ await page.reload()
+ assert.match(await page.getByRole('status').innerText(), /No pages found/, 'CMS-008: rollback restores search')
+ console.log('CMS-008 live-page search passed at 1440 and 390: navigation, normalized query, keyboard result, unpublished exclusion, publication and rollback.')
  console.log('SEO-009 checks/fix links and SEO-001/003/004 browser path passed at 1440 and 390: Sites, saved search preview, publication, canonical/noindex, sitemap and robots.')
 } finally {await browser.close()}

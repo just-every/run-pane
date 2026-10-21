@@ -88,3 +88,65 @@ test('search settings enforce native roles and canonical origin through the inst
  assert.equal((await save(latest, {'home.title': 'Unauthorized'}, member)).status, 403)
  assert.equal((await dashboard()).draft.id, latest)
 })
+
+
+test('CMS-008: visitors search published pages, follow results, and never find unpublished edits', async () => {
+ const site = structuredClone(fixture)
+ site.pages.find(p => p.slug === 'services').body = 'Café furniture repairs. Local cedar restoration.'
+ site.pages.find(p => p.slug === 'about').body = 'Our cedar workshop team.'
+ const live = await (await post('/api/pane/prepare', {site})).json()
+ assert.equal((await post('/api/pane/publish', {revision: live.id})).status, 200)
+ const search = async query => {
+  const response = await f.request('/site/search?q=' + encodeURIComponent(query))
+  assert.equal(response.status, 200)
+  assert.equal(response.headers.get('cache-control'), 'no-store')
+  return response.text()
+ }
+ const matches = await search(' ＣＥＤＡＲ ')
+ assert.match(matches, /3 pages found/)
+ assert.match(matches, /<h2><a href="\/site\/services">/)
+ assert.match(matches, /<h2><a href="\/site">/)
+ assert.match(matches, /<h2><a href="\/site\/about">/)
+ assert.match(await search('CAFE\u0301'), /1 page found/)
+ assert.match(await search('furniture   repairs'), /1 page found/)
+ for (const path of [...matches.matchAll(/<h2><a href="([^"]+)"/g)].map(m => m[1])) assert.equal((await f.request(path)).status, 200)
+ assert.match(await search(''), /Enter a word or phrase/)
+ assert.doesNotMatch(await search(''), /aria-label="Search results"/)
+ assert.match(await search('nonexistent-phrase'), /No pages found/)
+ const hostile = await search('<img src=x onerror=alert(1)>')
+ assert.doesNotMatch(hostile, /<img src=x/)
+ assert.match(hostile, /&lt;img src=x onerror=alert\(1\)&gt;/)
+ assert.doesNotMatch(matches, /pane-tracker|name="email"|name="message"/)
+ const oversize = await f.request('/site/search?q=' + 'x'.repeat(201))
+ assert.equal(oversize.status, 400)
+ assert.match(await oversize.text(), /up to 200 characters/)
+ assert.equal((await post('/site/search', {})).status, 405)
+ const unpublished = structuredClone(site)
+ unpublished.pages.find(p => p.slug === 'services').body = 'unpublished-secret-phrase'
+ const draft = await (await post('/api/pane/prepare', {site: unpublished})).json()
+ assert.match(await search('unpublished-secret-phrase'), /No pages found/)
+ assert.match(await search('cedar'), /3 pages found/)
+ assert.equal((await dashboard()).draft.id, draft.id, 'CMS-008: a search never changes the draft')
+ assert.equal((await post('/api/pane/publish', {revision: draft.id})).status, 200)
+ assert.match(await search('unpublished-secret-phrase'), /1 page found/)
+ assert.equal((await post('/api/pane/rollback', {revision: live.id})).status, 200)
+ assert.match(await search('unpublished-secret-phrase'), /No pages found/)
+ assert.match(await search('cedar'), /3 pages found/)
+ for (const p of site.pages) assert.match(await page(p.slug === 'home' ? '/site' : '/site/' + p.slug), /href="\/site\/search">Search<\/a>/)
+})
+
+test('PRIV-004: current Pane workspace, preview, live, search and not-found documents retain their security headers', async () => {
+ const draft = (await dashboard()).draft
+ for (const path of ['/app', '/app/sites', '/app/inquiries', '/app/moves', '/app/search', `/preview/${draft.id}/home`, ...fixture.pages.map(p => p.slug === 'home' ? '/site' : '/site/' + p.slug), '/site/search?q=cedar', '/site/unknown-page']) {
+  const response = await f.request(path, {headers: {Cookie: owner}})
+  assert.equal(response.status, path === '/site/unknown-page' ? 404 : 200, path)
+  assert.match(response.headers.get('content-type'), /text\/html/, path)
+  assert.equal(response.headers.get('x-content-type-options'), 'nosniff', path)
+  assert.equal(response.headers.get('x-frame-options'), 'DENY', path)
+  assert.equal(response.headers.get('referrer-policy'), 'same-origin', path)
+  assert.equal(response.headers.get('permissions-policy'), 'camera=(), microphone=(), geolocation=()', path)
+  const csp = response.headers.get('content-security-policy')
+  for (const directive of ["default-src 'none'", "script-src 'self'", "connect-src 'self'", "form-action 'self'", "base-uri 'none'", "frame-ancestors 'none'"]) assert.ok(csp.split(';').map(s => s.trim()).includes(directive), path + ': ' + directive)
+  assert.doesNotMatch(csp, /https?:|unsafe-eval|\*/, path + ': no external hosts or wildcard sources')
+ }
+})
