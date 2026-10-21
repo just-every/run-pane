@@ -1,3 +1,4 @@
+import { deliverAcknowledgment } from './acknowledgment'
 import { embedOrigin } from './embeds'
 import { runtimeBindings, type Bindings } from '../auth.server'
 import { slugs, revision } from './content'
@@ -36,7 +37,9 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   if(!/^[a-f0-9-]{36}$/.test(id)||!name||name.length>120||!/^\S+@\S+\.\S+$/.test(email)||email.length>254||!message||message.length>5000)return json({error:'Enter a name, valid email and message up to 5,000 characters.'},400)
   // Pencil's immutable original receipt: retries cannot replace an earlier answer.
   if(await limited(env.DB,'contact',20))return json({error:'Please try again in a minute.'},429)
-  await env.DB.prepare('INSERT OR IGNORE INTO pane_messages(id,name,email,message,created_at) SELECT ?,?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM pane_erased_messages WHERE id=?)').bind(id,name,email,message,new Date().toISOString(),id).run()
+  const acknowledgment=site.pages.find(page=>page.slug==='contact')?.acknowledgment
+  await env.DB.prepare('INSERT OR IGNORE INTO pane_messages(id,name,email,message,created_at,acknowledgment,acknowledgment_status) SELECT ?,?,?,?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM pane_erased_messages WHERE id=?)').bind(id,name,email,message,new Date().toISOString(),acknowledgment ? JSON.stringify(acknowledgment) : null,acknowledgment ? 'pending' : 'not_requested',id).run()
+  await deliverAcknowledgment(env,id)
   return new Response(null,{status:303,headers:{location:'/site/contact?sent=1'}})
  }
  if(request.method!=='GET')return json({error:'Method not allowed.'},405)

@@ -1,6 +1,6 @@
 // Drafts use the same native session, origin checks and immutable revisions as Prepare.
 for (const form of document.querySelectorAll('form[data-autosave]')) {
- const fields = [...form.querySelectorAll('input:not([type=hidden]), textarea')]
+ const fields = [...form.querySelectorAll('input:not([type=hidden]), textarea, select')]
  const state = () => Object.fromEntries(fields.map(field => [field.name, field.value]))
  const signature = value => JSON.stringify(value)
  const status = form.querySelector('[data-save-status]'), conflict = form.querySelector('[data-conflict]')

@@ -155,3 +155,82 @@ test('deactivated credentials lose access to direct product commands',async()=>{
  assert.equal((await json('/auth/operator/status',{operatorId:user.id,status:'inactive'})).status,200)
  assert.equal((await json('/api/pane/prepare',{site:fixture},admin)).status,401)
 })
+
+test('an approved form acknowledgment reaches the provider once with owner wording and durable independent status', async () => {
+ const hosted = 'https://pane.example.test', deliveries = []
+ let providerStatus = 202
+ const app = await runtime({bindings: {AUTH_ORIGIN: hosted, AUTH_LOCAL: 'false', MAIL_PROVIDER: 'sendgrid', MAIL_API_KEY: 'synthetic-pane-1', MAIL_FROM: 'studio@example.test'}, outboundService: async request => {
+  assert.equal(request.url, 'https://api.sendgrid.com/v3/mail/send')
+  assert.equal(request.method, 'POST')
+  deliveries.push(await request.json())
+  return new Response(null, {status: providerStatus, headers: {'x-message-id': 'synthetic-pane-2'}})
+ }})
+ let cookie = ''
+ const call = (path, body, extra = {}) => app.request(hosted + path, {method: 'POST', headers: {Cookie: cookie, Origin: hosted, 'Content-Type': 'application/json', ...extra}, body: JSON.stringify(body)})
+ const dashboard = async () => (await app.request(hosted + '/api/pane', {headers: {Cookie: cookie}})).json()
+ const submit = (id, email = 'avery@example.test') => app.request(hosted + '/site/contact', {method: 'POST', headers: {Origin: hosted, 'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({idempotency: id, name: 'Avery', email, message: 'Visitor text must stay in the inbox.'})})
+ const prepare = async site => {const r = await call('/api/pane/prepare', {site}); assert.equal(r.status, 200); return r.json()}
+ try {
+  const signed = await call('/auth/bootstrap', {token: settings.SETUP_TOKEN, displayName: 'Acknowledgment owner'})
+  assert.equal(signed.status, 303)
+  cookie = signed.headers.get('set-cookie').split(';')[0]
+  assert.equal((await app.request(hosted + '/setup', {method: 'POST', headers: {Cookie: cookie, Origin: hosted, 'Content-Type': 'application/x-www-form-urlencoded'}, body: 'confirm=yes'})).status, 303)
+  const original = await prepare(fixture)
+  await call('/api/pane/publish', {revision: original.id})
+  const disabled = crypto.randomUUID()
+  assert.equal((await submit(disabled)).status, 303)
+  assert.equal(deliveries.length, 0)
+  const site = structuredClone(fixture)
+  const acknowledgment = {subject: 'Thank you from Cedar Street', text: 'We received your request and will review it with our workshop team.', responseTime: 'Within two business days'}
+  site.pages.find(page => page.slug === 'contact').acknowledgment = acknowledgment
+  const draft = await prepare(site)
+  assert.equal((await submit(crypto.randomUUID())).status, 303)
+  assert.equal(deliveries.length, 0, 'An unpublished acknowledgment never sends')
+  await call('/api/pane/publish', {revision: draft.id})
+  const id = crypto.randomUUID()
+  const repeated = await Promise.all([submit(id), submit(id)])
+  assert.deepEqual(repeated.map(response => response.status), [303, 303])
+  assert.equal(deliveries.length, 1)
+  assert.equal(deliveries[0].subject, acknowledgment.subject)
+  assert.deepEqual(deliveries[0].personalizations[0].to, [{email: 'avery@example.test'}])
+  assert.equal(deliveries[0].content.find(part => part.type === 'text/plain').value, acknowledgment.text + '\n\nExpected response time: ' + acknowledgment.responseTime)
+  assert.doesNotMatch(JSON.stringify(deliveries[0]), /Visitor text must stay/)
+  let stored = (await dashboard()).messages.filter(message => message.id === id)
+  assert.equal(stored.length, 1)
+  assert.equal(stored[0].acknowledgment_status, 'accepted')
+  assert.equal(stored[0].acknowledgment_provider, 'sendgrid')
+  assert.equal(stored[0].acknowledgment_provider_id, 'synthetic-pane-2')
+  assert.equal((await submit(id, 'different@example.test')).status, 303)
+  assert.equal(deliveries.length, 1, 'A replay cannot change the sender or send again')
+  assert.equal((await dashboard()).messages.find(message => message.id === id).email, 'avery@example.test')
+  for (const [status, expected] of [[400, 'failed'], [503, 'uncertain']]) {
+   providerStatus = status
+   const failed = crypto.randomUUID()
+   assert.equal((await submit(failed)).status, 303)
+   stored = (await dashboard()).messages.filter(message => message.id === failed)
+   assert.equal(stored[0].acknowledgment_status, expected)
+   assert.equal(stored[0].message, 'Visitor text must stay in the inbox.')
+   const count = deliveries.length
+   await submit(failed)
+   assert.equal(deliveries.length, count, 'A failed or uncertain provider attempt is not automatically replayed')
+  }
+  const inbox = await app.request(hosted + '/app/inquiries', {headers: {Cookie: cookie}})
+  const html = await inbox.text()
+  assert.match(html, /Accepted by provider/)
+  assert.match(html, /uncertain/)
+  assert.match(html, /failed/)
+  assert.equal((await call('/api/pane/messages/erase', {id})).status, 200)
+  const count = deliveries.length
+  await submit(id)
+  assert.equal(deliveries.length, count)
+  assert.equal((await dashboard()).messages.some(message => message.id === id), false)
+ } finally { await app.mf.dispose() }
+ // Development exercises the same public door while the shared mail adapter suppresses sends.
+ const localSite = structuredClone(fixture)
+ localSite.pages.find(page => page.slug === 'contact').acknowledgment = {subject: 'Thanks', text: 'We have your message.', responseTime: 'Two days'}
+ const localDraft = await (await json('/api/pane/prepare', {site: localSite})).json()
+ await json('/api/pane/publish', {revision: localDraft.id})
+ const localId = crypto.randomUUID()
+ await f.request('/site/contact', {method: 'POST', headers: {Origin: origin, 'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({idempotency: localId, name: 'Avery', email: 'avery@example.test', message: 'Local proof'})})
+ assert.equal((await data()).messages.find(message => message.id === localId).acknowledgment_status, 'suppressed')
+})
