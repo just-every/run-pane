@@ -7,3 +7,5 @@
 .pane .search-settings [aria-label^="Search preview"] h3 { color: var(--pn-fuchsia-deep); font-size: 20px; }
 .pane .search-settings button { justify-self: start; }
 @media (max-width: 600px) { .rer-themed .pane main.search-settings { padding: 24px 16px 48px; } }
+
+.pane [id^="search-"] { scroll-margin-top: 24px; }

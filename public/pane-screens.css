@@ -116,3 +116,9 @@
   .pane .message { grid-template-columns: 36px minmax(0, 1fr); gap: 12px; padding: 14px; }
   .pane .message-avatar { width: 36px; height: 36px; font-size: 13px; }
 }
+
+.pane .search-checks { min-width: 0; overflow-wrap: anywhere; }
+.pane .sites-top + .search-checks { margin: 24px; }
+.pane .search-checks h3 { margin-bottom: 8px; }
+.pane .search-checks small { font-weight: 400; }
+.pane .search-checks li { margin: 8px 0; }

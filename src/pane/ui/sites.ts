@@ -3,6 +3,7 @@
 import type { Dashboard, Revision } from '../model'
 import { slugs } from '../content'
 import { siteChanges } from './changes'
+import { searchCheckView } from '../search-checks'
 import { siteStatus } from './shell'
 import { escape, form, hidden, icon, pageBrick, short, when } from './kit'
 
@@ -50,5 +51,5 @@ function visits(data: Dashboard): string {
 
 export function sites(data: Dashboard): string {
   const role = data.role.toLowerCase(), owner = role === 'owner', canPreview = owner || role === 'admin'
-  return `<div class="sites-top">${tile(data, owner, canPreview)}${stateCards(data)}</div><div class="sites-body"><section class="history" id="history" aria-labelledby="history-title"><h2 id="history-title">Every revision, kept</h2><p class="help">Preview saved revisions. The owner can restore one that was live before; each decision is recorded on its revision.</p>${ribbon(data, owner, canPreview)}</section>${visits(data)}</div>`
+  return `<div class="sites-top">${tile(data, owner, canPreview)}${stateCards(data)}</div>${canPreview && data.draft ? searchCheckView(data.draft.site) : ''}<div class="sites-body"><section class="history" id="history" aria-labelledby="history-title"><h2 id="history-title">Every revision, kept</h2><p class="help">Preview saved revisions. The owner can restore one that was live before; each decision is recorded on its revision.</p>${ribbon(data, owner, canPreview)}</section>${visits(data)}</div>`
 }

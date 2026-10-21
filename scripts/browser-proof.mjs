@@ -4,4 +4,5 @@ const fixture=await import('../tests/browser-runtime.mjs')
 try {
  await import('./browser-journey.mjs')
  await import('./editing-journey.mjs')
+ await import('./search-journey.mjs')
 } finally {await fixture.stop()}

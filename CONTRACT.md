@@ -556,11 +556,11 @@ The owner connects their Google Business Profile. Pane compares its name, addres
 
 #### SEO-009 — Per-page search checks.
 
-Before publication the editor lists search problems per page: missing or duplicate titles and descriptions, missing alt text, broken internal links, noindex mistakes and very large images.
+Before publication the editor lists search problems per page: missing or duplicate titles and descriptions, missing alt text, broken internal links, noindex mistakes and very large images. Title and description checks compare the effective metadata, including the site defaults, after Unicode NFKC normalization, whitespace folding and en-US lowercasing. A noindex setting is flagged for owner review, since excluding a page may be intentional; the check never changes that setting. Each future block, media and content capability inherits the corresponding checks before it ships (`PAGE-014`, `MEDIA-001`, `MEDIA-002`, `CMS-001` to `CMS-004`).
 
 **Acceptance evidence:** Publish a draft with a duplicate title, a broken internal link and a missing alt text, and see each listed with a link to fix it.
 
-*Status:* missing. No search checks.
+*Status:* partial. Draft checks list missing or duplicate effective titles/descriptions and flag noindex for review, with links to the relevant settings from Search and Sites. Broken internal links, missing alt text and large-image checks await PAGE-014 and MEDIA-001/MEDIA-002.
 
 #### SEO-010 — Multilingual sites with per-language URLs.
 
@@ -1111,8 +1111,8 @@ Judged from the code and tests at commit `ebaeb7ce2df1e4222c12e01a08ddf1cd90fa99
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 14 | 2 | 0 | 16 |
-| Target and push further | 1 | 28 | 80 | 109 |
-| All | 15 | 30 | 80 | 125 |
+| Target and push further | 1 | 29 | 79 | 109 |
+| All | 15 | 31 | 79 | 125 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -1184,7 +1184,7 @@ Judged from the code and tests at commit `ebaeb7ce2df1e4222c12e01a08ddf1cd90fa99
 | `SEO-006` | Social preview cards | target | missing |  | No social metadata. |
 | `SEO-007` | Google Search Console and Bing Webmaster Tools | target | missing |  | No search console connection. |
 | `SEO-008` | Google Business Profile consistency | target | missing |  | No Google Business Profile connection. |
-| `SEO-009` | Per-page search checks | target | missing |  | No search checks. |
+| `SEO-009` | Per-page search checks | target | partial | `src/pane/search-checks.ts`; `src/pane/search-view.ts`; `src/pane/ui/sites.ts`; `tests/search.test.mjs`; `scripts/search-journey.mjs` | Draft checks list missing or duplicate effective titles/descriptions and flag noindex for review, with links to the relevant settings from Search and Sites. Broken internal links, missing alt text and large-image checks await PAGE-014 and MEDIA-001/MEDIA-002. |
 | `SEO-010` | Multilingual sites with per-language URLs | target | missing |  | No languages or translated pages. |
 | `FORM-001` | Form builder with multiple forms | target | partial | `src/pane/public-view.ts`; `src/pane/public.ts` | One fixed contact form (name, email, message) with browser `required` and length limits; no form builder, configurable required fields, help text, per-field validation messages or file upload. |
 | `FORM-002` | Spam protection | target | partial | `src/pane/public.ts`; `src/pane/public-view.ts` | Honeypot and per-minute limits exist but no Turnstile, no spam review and no test that a filled honeypot or a burst is refused. |
