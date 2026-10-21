@@ -37,8 +37,9 @@ export function structureFromForm(base: Site, raw: unknown): Site {
   const old = original.get(entry.id)
   return {...(old ?? {body: entry.title}), id: entry.id, slug: cleanSlug(entry.slug), title: entry.title, folder: folderName(entry.folder ?? ''), hidden: entry.hidden === true, deleted: entry.deleted === true, ...(old?.slug === 'contact' ? {kind: 'contact' as const} : {})}
  })
- // Removing an entry from a request cannot silently erase its recoverable content.
- if ([...original.keys()].some(id => !pages.some(page => pageId(page) === id))) throw Error('Keep removed pages in the snapshot as deleted.')
+ // Undoing an already-saved addition removes it from the organizer without
+ // losing its body: the immutable draft keeps a recoverable deleted entry.
+ for (const [id,page] of original) if (!pages.some(candidate=>pageId(candidate)===id)) pages.push({...page,deleted:true})
  const selected = (id: unknown) => id ? pages.find(page => pageId(page) === id && !page.deleted)?.slug : undefined
  const home = selected(structure.home), notFound = selected(structure.notFound)
  if (!home || (structure.notFound && !notFound)) throw Error('Choose existing active home and not-found pages.')

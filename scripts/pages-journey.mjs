@@ -14,7 +14,7 @@ const data = async () => (await context.request.get(origin+'/api/pane')).json()
 const structure = tab => tab.locator('[name=structure]')
 const count = async tab => JSON.parse(await structure(tab).inputValue()).pages.length
 const row = (tab, id) => tab.locator(`[data-page-id="${id}"]`)
-const saved = tab => tab.waitForFunction(()=>document.querySelector('[data-save-status]')?.textContent==='Draft saved. Not published.',{timeout:20000})
+const saved = tab => tab.waitForFunction(()=>document.querySelector('[data-save-status]')?.textContent==='Draft saved. Not published.',undefined,{timeout:20000})
 async function capture(name,width) {await page.screenshot({path:resolve(folder,`${name}-${width}.png`),fullPage:true});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,`${name} overflow at ${width}`)}
 async function openOrganization(tab=page) {await tab.getByText('Pages and folders',{exact:true}).click()}
 async function publish() {
@@ -95,7 +95,7 @@ try {
  await page.goto(origin+'/app');await other.goto(origin+'/app');await openOrganization();await openOrganization(other)
  await page.getByLabel('New folder name',{exact:true}).fill('Owner workshop notes');await page.getByRole('button',{name:'Add folder',exact:true}).click();await saved(page)
  await other.getByLabel('New folder name',{exact:true}).fill('Second editor notes');await other.getByRole('button',{name:'Add folder',exact:true}).click()
- await other.waitForFunction(()=>document.querySelector('[data-conflict]')?.hidden===false,{timeout:20000})
+ await other.waitForFunction(()=>document.querySelector('[data-conflict]')?.hidden===false,undefined,{timeout:20000})
  assert.match(await other.locator('[data-latest]').innerText(),/Owner workshop notes/)
  assert.ok(JSON.parse(await structure(other).inputValue()).folders.includes('Second editor notes'))
  const download=other.waitForEvent('download');await other.getByRole('button',{name:'Download my copy',exact:true}).click()

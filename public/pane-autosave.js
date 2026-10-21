@@ -54,7 +54,7 @@ for (const form of document.querySelectorAll('form[data-autosave]')) {
     if (!response.ok) throw Error(result.error ?? 'Draft could not be saved.')
     adopt(result); saved = sent
     status.textContent = signature(state()) === sent ? 'Draft saved. Not published.' : 'Unsaved changes.'
-   } catch { status.textContent = 'Draft not saved. Check your connection, then edit or prepare again.' }
+   } catch (error) { status.textContent = 'Draft not saved. ' + (error.message || 'Check your connection, then edit or prepare again.') }
   })()
   await pending; pending = null
   if (!blocked && signature(state()) !== sent) timer = setTimeout(save, 600)
