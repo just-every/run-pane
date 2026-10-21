@@ -46,7 +46,7 @@ try {
  const preview = page.locator(`[aria-label="Search preview for ${serviceTitle}"]`)
  assert.equal(await preview.getByRole('heading').innerText(), 'Furniture repairs & handmade commissions', 'SEO-001: saved search preview')
  await page.getByRole('link', {name: 'Back to Sites'}).click(); await capture('sites-search-draft')
- await submit('Approve & publish', '/app/sites'); await capture('sites-published')
+ await submit('Approve & publish', '/app'); await page.goto(origin + '/app/sites'); await capture('sites-published')
  await page.goto(origin + '/site/services'); await capture('published-services')
  assert.equal(await page.title(), 'Furniture repairs & handmade commissions', 'SEO-001: published title')
  assert.equal(await page.locator('meta[name=description]').getAttribute('content'), 'Furniture repairs and custom pieces made in our neighborhood workshop.')
