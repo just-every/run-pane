@@ -100,7 +100,7 @@ export async function runSchedules(db:D1Database, scheduledTime:number) {
    for (const occurrence of reviewOccurrences(config,now)) {
     if (occurrence.error) { event('review','review-blocked',occurrence.local,null,{error:occurrence.error}); continue }
     const cutoff = occurrence.previous!
-    const stale = pages.filter(page => page.changedAt <= cutoff && (reviewed.get(page.id) ?? -1) < cutoff)
+    const stale = pages.filter(page => page.changedAt <= cutoff && (reviewed.get(page.id) ?? -1) <= cutoff)
     event('review','review-reminder',occurrence.local,occurrence.at,{pages:stale.map(({id,title,slug}) => ({id,title,slug}))})
    }
   }
