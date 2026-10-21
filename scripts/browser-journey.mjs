@@ -47,9 +47,9 @@ try {
  await page.getByLabel('Message',{exact:true}).fill('Could you cater our studio opening for 24 people next Friday?')
  await Promise.all([page.waitForURL('**/site/contact?sent=1'),page.getByRole('button',{name:'Send message'}).click()]);await capture('contact-sent')
  await page.goto(origin+'/app/inquiries');await capture('inquiries');await page.goto(origin+'/app/sites');await capture('sites-and-visits')
- await page.goto(origin+'/app');await page.evaluate(()=>document.fonts.ready);const text=page.getByLabel('Text',{exact:true})
+ await page.goto(origin+'/app');const text=page.getByLabel('Text',{exact:true})
  const changedBody=fixture.pages[0].body+'\n\nFriday dinner service now runs until 8 PM.'
- await text.fill(changedBody);assert.equal(await text.inputValue(),changedBody)
+ await text.fill(changedBody);assert.equal(await text.inputValue(),changedBody);await capture('edited-page')
  await submit(page.getByRole('button',{name:'Prepare draft revision'}))
  const nextPreview=await page.getByRole('link',{name:'Preview this page'}).getAttribute('href');await page.goto(origin+nextPreview);await capture('change-preview')
  await page.goto(origin+'/app');await submit(page.getByRole('button',{name:'Approve & publish'}))
