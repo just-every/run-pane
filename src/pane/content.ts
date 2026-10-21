@@ -1,3 +1,5 @@
+import { normalizeNavigation, normalizeSocials } from './navigation'
+import { navigationFromForm } from './ui/navigation-settings'
 import { normalizeCampaigns } from './visit-dimensions'
 import { normalizeAcknowledgment } from './acknowledgment'
 import { normalizeEmbed } from './embeds'
@@ -10,10 +12,11 @@ export function normalizeSite(value: unknown): Site {
  const pages = slugs.map(slug => {
   const page = input.pages.find(p => p?.slug === slug)
   if (!page || typeof page.title !== 'string' || !page.title.trim() || page.title.length > 120 || typeof page.body !== 'string' || !page.body.trim() || page.body.length > 20000) throw new Error(`Page ${slug} needs a title and body (up to 20,000 characters).`)
-  return { slug, title: page.title.normalize('NFC').trim(), body: page.body.normalize('NFC').trim(), ...(page.search ? { search: normalizeSearch(page.search) } : {}), ...(page.embed ? {embed: normalizeEmbed(page.embed)} : {}), ...(page.acknowledgment !== undefined ? {acknowledgment: normalizeAcknowledgment(page.acknowledgment)} : {}) }
+  if (page.hidden !== undefined && typeof page.hidden !== 'boolean') throw new Error('Invalid page visibility.')
+  return { slug, ...(page.hidden ? {hidden: true} : {}), title: page.title.normalize('NFC').trim(), body: page.body.normalize('NFC').trim(), ...(page.search ? { search: normalizeSearch(page.search) } : {}), ...(page.embed ? {embed: normalizeEmbed(page.embed)} : {}), ...(page.acknowledgment !== undefined ? {acknowledgment: normalizeAcknowledgment(page.acknowledgment)} : {}) }
  })
  const analyticsCampaigns = normalizeCampaigns(input.analyticsCampaigns)
- return { ...(analyticsCampaigns.length ? {analyticsCampaigns} : {}), name: input.name.normalize('NFC').trim(), description: input.description.normalize('NFC').trim(), pages, ...(input.robots !== undefined ? { robots: normalizeRobots(input.robots) } : {}) }
+ return { ...(input.navigation ? {navigation: normalizeNavigation(input.navigation, pages)} : {}), ...(input.socials ? {socials: normalizeSocials(input.socials)} : {}), ...(analyticsCampaigns.length ? {analyticsCampaigns} : {}), name: input.name.normalize('NFC').trim(), description: input.description.normalize('NFC').trim(), pages, ...(input.robots !== undefined ? { robots: normalizeRobots(input.robots) } : {}) }
 }
 // Slate's revision comparison adapted to hash the entire canonical site snapshot,
 // including property names, route order and links, rather than only extracted text.
@@ -77,7 +80,8 @@ export async function siteFromForm(db: D1Database, input: Record<string, unknown
  const field = (name: string, fallback?: string) => typeof input[name] === 'string' ? String(input[name]).replace(/\r\n/g, '\n') : fallback
  return normalizeSite({
   name: field('name', base?.name), description: field('description', base?.description ?? ''),
+  ...(base ? navigationFromForm(input, base) : {}),
   ...(base?.robots !== undefined ? { robots: base.robots } : {}), analyticsCampaigns: typeof input.analyticsCampaigns === 'string' ? input.analyticsCampaigns.split(/\r?\n/).map(label=>label.trim()).filter(Boolean) : base?.analyticsCampaigns,
-  pages: slugs.map(slug => { const page = base?.pages.find(p => p.slug === slug); return { slug, ...(page?.search ? { search: page.search } : {}), acknowledgment: input[`page.${slug}.acknowledgment.enabled`] !== undefined ? (input[`page.${slug}.acknowledgment.enabled`] === 'on' ? {subject: field(`page.${slug}.acknowledgment.subject`), text: field(`page.${slug}.acknowledgment.text`), responseTime: field(`page.${slug}.acknowledgment.responseTime`)} : undefined) : page?.acknowledgment, embed: input[`page.${slug}.embed.url`] !== undefined ? (field(`page.${slug}.embed.url`)?.trim() ? {url: field(`page.${slug}.embed.url`), title: field(`page.${slug}.embed.title`)} : undefined) : page?.embed, title: field(`page.${slug}.title`, page?.title), body: field(`page.${slug}.body`, page?.body) } }),
+  pages: slugs.map(slug => { const page = base?.pages.find(p => p.slug === slug); return { slug, ...(input[`page.${slug}.hidden`] !== undefined ? (input[`page.${slug}.hidden`] === 'yes' ? {hidden: true} : {}) : page?.hidden ? {hidden: true} : {}), ...(page?.search ? { search: page.search } : {}), acknowledgment: input[`page.${slug}.acknowledgment.enabled`] !== undefined ? (input[`page.${slug}.acknowledgment.enabled`] === 'on' ? {subject: field(`page.${slug}.acknowledgment.subject`), text: field(`page.${slug}.acknowledgment.text`), responseTime: field(`page.${slug}.acknowledgment.responseTime`)} : undefined) : page?.acknowledgment, embed: input[`page.${slug}.embed.url`] !== undefined ? (field(`page.${slug}.embed.url`)?.trim() ? {url: field(`page.${slug}.embed.url`), title: field(`page.${slug}.embed.title`)} : undefined) : page?.embed, title: field(`page.${slug}.title`, page?.title), body: field(`page.${slug}.body`, page?.body) } }),
  })
 }

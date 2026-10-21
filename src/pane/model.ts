@@ -1,6 +1,6 @@
 export type SearchSettings = { title?: string; description?: string; canonical?: string; noindex?: boolean }
-export type Page = { slug: string; title: string; body: string; search?: SearchSettings; embed?: import('./embeds').Embed; acknowledgment?: import('./acknowledgment').Acknowledgment }
-export type Site = { name: string; description: string; pages: Page[]; robots?: string; analyticsCampaigns?: string[] }
+export type Page = { slug: string; title: string; body: string; hidden?: boolean; search?: SearchSettings; embed?: import('./embeds').Embed; acknowledgment?: import('./acknowledgment').Acknowledgment }
+export type Site = { name: string; description: string; pages: Page[]; navigation?: import('./navigation').Navigation; socials?: Partial<Record<import('./navigation').SocialNetwork, string>>; robots?: string; analyticsCampaigns?: string[] }
 export type Revision = { id: string; site: Site; hash: string; created_at: string; actor: string }
 export type Dashboard = {
  name: string; role: string; draft: Revision | null; live: Revision | null;

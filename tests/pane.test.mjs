@@ -278,3 +278,39 @@ test('traffic groups real public visit events without retaining referrers or una
   assert.equal((await app.request('/api/pane')).status, 401)
  } finally { await app.mf.dispose() }
 })
+
+test('published navigation keeps ordered dropdowns, links, CTA, footer and shared accessible social profiles with hidden pages excluded', async () => {
+ const app = await runtime()
+ let cookie
+ const post = (path, body) => app.request(path, {method: 'POST', headers: {Origin: origin, Cookie: cookie ?? '', 'Content-Type': 'application/json'}, body: JSON.stringify(body)})
+ try {
+  cookie = (await post('/auth/bootstrap', {token: settings.SETUP_TOKEN, displayName: 'Navigation owner'})).headers.get('set-cookie').split(';')[0]
+  const site = structuredClone(fixture)
+  site.pages.find(page => page.slug === 'about').hidden = true
+  site.navigation = {main: [{label: 'Visit', children: [{label: 'Our hours', page: 'hours'}, {label: 'Hidden about', page: 'about'}]}, {label: 'Explore', children: [{label: 'Our services', page: 'services'}]}, {label: 'Journal', url: 'https://journal.example.test/'}, {label: 'Book', page: 'contact', cta: true}], footer: [{label: 'Get in touch', page: 'contact'}, {label: 'Hidden footer', page: 'about'}], details: '24 Cedar Street\nOpen Monday to Friday', headerSocials: true, footerSocials: true}
+  site.socials = {instagram: 'https://www.instagram.com/cedarworkshop/', facebook: 'https://www.facebook.com/cedarworkshop/', yelp: 'https://www.yelp.com/biz/cedar-workshop', linkedin: 'https://www.linkedin.com/company/cedar/', x: 'https://x.com/cedar', youtube: 'https://www.youtube.com/@cedar', tiktok: 'https://www.tiktok.com/@cedar', google: 'https://maps.google.com/?cid=123'}
+  const prepared = await post('/api/pane/prepare', {site}); assert.equal(prepared.status, 200)
+  const draft = await prepared.json()
+  assert.equal((await post('/api/pane/publish', {revision: draft.id})).status, 200)
+  for (const path of ['/site', '/site/search?q=wood']) {
+   const response = await app.request(path); assert.equal(response.status, 200)
+   const html = await response.text(), header = html.match(/<header[\s\S]*?<\/header>/)[0], footer = html.match(/<footer[\s\S]*?<\/footer>/)[0]
+   assert.ok(header.indexOf('Visit') < header.indexOf('Explore'))
+   assert.match(header, /<summary>Visit/); assert.match(header, /<summary>Explore/)
+   assert.match(header, /href="https:\/\/journal.example.test\/"/); assert.match(header, /class="public-menu-cta"/)
+   assert.doesNotMatch(header + footer, /href="\/site\/about"|Hidden about|Hidden footer/)
+   assert.match(footer, /24 Cedar Street/); assert.match(footer, /Get in touch/)
+   for (const url of Object.values(site.socials)) for (const region of [header, footer]) assert.ok(region.includes(url.replace(/&/g, '&amp;')), url)
+   for (const label of ['Instagram', 'Facebook', 'Yelp', 'LinkedIn', 'X', 'YouTube', 'TikTok', 'Google Business Profile']) for (const region of [header, footer]) assert.ok(region.includes(`aria-label="${label}"`), label)
+  }
+  assert.equal((await app.request('/site/about')).status, 200, 'Hiding from menus preserves the page URL')
+  const changed = {...site, navigation: {...site.navigation, details: 'Unpublished footer'}}
+  const next = await (await post('/api/pane/prepare', {site: changed})).json()
+  assert.doesNotMatch(await (await app.request('/site')).text(), /Unpublished footer/)
+  await post('/api/pane/publish', {revision: next.id})
+  assert.match(await (await app.request('/site')).text(), /Unpublished footer/)
+  await post('/api/pane/rollback', {revision: draft.id})
+  assert.doesNotMatch(await (await app.request('/site')).text(), /Unpublished footer/)
+  for (const invalid of [{...site, socials: {instagram: 'javascript:alert(1)'}}, {...site, navigation: {...site.navigation, main: [{label: 'Unsafe', url: 'data:text/html,unsafe'}]}}]) assert.equal((await post('/api/pane/prepare', {site: invalid})).status, 400)
+ } finally {await app.mf.dispose()}
+})

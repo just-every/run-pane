@@ -53,3 +53,33 @@
 .external-embed{margin-block:2rem;padding:1.25rem;border:1px solid currentColor;border-radius:12px}.external-embed iframe{display:block;width:100%;aspect-ratio:16/9;border:0}.external-embed .form-actions{display:flex;flex-wrap:wrap;gap:.75rem}.external-embed button{max-width:100%}
 
 .pane .traffic-counts{display:block;margin:1rem 0}.pane .traffic-counts>div{display:flex;justify-content:space-between;gap:1rem;padding:.5rem 0;border-bottom:1px solid var(--pn-line)}.pane .traffic-counts dt{overflow-wrap:anywhere}.pane .traffic-counts dd{margin:0;font-weight:700}
+
+/* Shared menus use native disclosure controls for keyboard and touch. */
+.pane .public-navigation { min-width: 0; }
+.pane .public-menu { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin: 0; padding: 0; list-style: none; }
+.pane .public-menu li { position: relative; }
+.pane .public-menu a, .pane .public-menu summary { display: inline-flex; align-items: center; min-height: 44px; color: var(--pn-ink); cursor: pointer; }
+.pane .public-dropdown > summary::after { content: ' ▾'; margin-left: 6px; }
+.pane .public-dropdown > .public-menu { display: block; position: absolute; z-index: 4; min-width: 180px; padding: 12px; background: var(--pn-white); border: 1px solid var(--pn-line); border-radius: 12px; box-shadow: var(--pn-shadow); }
+.pane .public-dropdown:not([open]) > .public-menu { display: none; }
+.pane .public-menu a.public-menu-cta { padding: 4px 18px; border-radius: 8px; background: var(--pn-action); color: white; font-weight: 700; }
+.pane .public-socials { display: flex; flex-wrap: wrap; gap: 8px; }
+.pane .public-socials a { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; color: var(--pn-ink); }
+.pane .public-socials svg { width: 22px; height: 22px; }
+.pane .public-footer { flex-wrap: wrap; }
+.pane .public-footer-copy { display: grid; gap: 8px; max-width: 560px; white-space: pre-line; }
+.pane .public-menu-mobile { display: none; }
+.pane .public-site :is(a, summary):focus-visible { outline: 3px solid var(--pn-action); outline-offset: 4px; }
+@container (max-width: 700px) {
+ .pane .public-menu-desktop { display: none; }
+ .pane .public-menu-mobile { display: block; }
+ .pane .public-menu-mobile > summary { padding: 12px 0; cursor: pointer; font-weight: 700; }
+ .pane .public-menu-mobile .public-menu { display: block; }
+ .pane .public-menu-mobile:not([open]) > .public-menu { display: none; }
+ .pane .public-menu-mobile .public-dropdown > .public-menu { position: static; margin-left: 12px; box-shadow: none; }
+ .pane .public-navigation { width: 100%; }
+ .pane .public-footer-menu .public-menu { gap: 8px 18px; }
+}
+.pane .public-navigation summary svg { width: 20px; height: 20px; margin-left: 6px; }
+.pane .public-menu-mobile > summary { display: flex; align-items: center; gap: 8px; }
+@container (min-width: 701px) { .pane .public-menu-mobile > summary { display: none; } }
