@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [types, journey]
+        shard: [types, journey, browser]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -28,10 +28,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - if: matrix.shard == 'types'
         run: pnpm run typecheck && pnpm exec rer check --profile first-party
-      - if: matrix.shard == 'journey'
+      - if: matrix.shard == 'journey' || matrix.shard == 'browser'
         run: pnpm exec playwright install --with-deps chromium
       - if: matrix.shard == 'journey'
         run: pnpm verify
+      - if: matrix.shard == 'browser'
+        run: pnpm exec vite build && node scripts/browser-proof.mjs
   verify:
     needs: product
     if: always()
