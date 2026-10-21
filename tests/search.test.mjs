@@ -25,7 +25,7 @@ test('SEO-001 SEO-003 SEO-004: search drafts, index output, page editing and rol
  assert.equal((before.match(/<url>/g) ?? []).length, fixture.pages.length)
  assert.match(before, /<loc>http:\/\/127.0.0.1:8787\/site<\/loc>/)
  assert.match(before, /<lastmod>\d{4}-\d\d-\d\dT/)
- assert.match(await page('/site/services'), new RegExp(`<title>${fixture.pages.find(p => p.slug === 'services').title} · ${fixture.name}</title>`))
+ assert.match(await page('/site/services'), new RegExp(`<title>${fixture.name}</title>`))
  const title = 'Furniture repairs & handmade commissions', description = 'Fresh pastries for "your" studio & team.'
  const fields = {'services.title': title, 'services.description': description, 'services.canonical': 'https://cedar-street.example/workshop', 'hours.noindex': 'on'}
  assert.equal((await save(first.id, fields)).status, 303)

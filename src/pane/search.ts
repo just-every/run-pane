@@ -61,7 +61,7 @@ export async function searchMetadata(request: Request, response: Response, origi
  const noindex = preview || url.origin !== new URL(env.AUTH_ORIGIN).origin || !!original.RER_DEV_ORIGIN || search.noindex
  const headers = new Headers(response.headers)
  if (noindex) headers.set('x-robots-tag', 'noindex, nofollow')
- const title = search.title || `${page.title} · ${draft.site.name}`
+ const title = search.title || draft.site.name
  const updated = new Response(response.body, {status: response.status, headers})
  return new HTMLRewriter().on('title', {element(element) {element.setInnerContent(title)}}).on('head', {element(element) {
   element.append(`<meta name="description" content="${escape(search.description || draft.site.description)}"><link rel="canonical" href="${escape(canonical)}">${noindex ? '<meta name="robots" content="noindex, nofollow">' : ''}`, {html: true})
