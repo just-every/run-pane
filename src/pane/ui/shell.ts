@@ -1,3 +1,4 @@
+import { activePages } from '../pages'
 // The one white top bar every signed-in screen shares: the mark and heavy
 // wordmark, the site switcher, the four tabs and the signed-in person.
 import branding from '../../branding.json'
@@ -10,7 +11,7 @@ const tabs: [Tab, string, string][] = [['sites', 'Sites', '/app/sites'], ['pages
 /** The site's one-line state, as the switcher and the Sites tile say it. */
 export function siteStatus(data: Dashboard): string {
   const pending = data.draft && data.draft.id !== data.live?.id
-  if (data.live) return `${data.live.site.pages.length} pages live${pending ? ' + 1 draft' : ''}`
+  if (data.live) return `${activePages(data.live.site).length} pages live${pending ? ' + 1 draft' : ''}`
   return data.draft ? 'Draft prepared, not published yet' : 'No pages yet'
 }
 

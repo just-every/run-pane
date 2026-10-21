@@ -1,7 +1,6 @@
 import { activePages, pagePath } from './pages'
 import type { Revision } from './model'
 import { escape, hidden, key } from './ui/kit'
-import { sitePath } from './search-settings'
 import { searchCheckView } from './search-checks'
 
 export function searchView(draft: Revision, origin: string, notice: string): string {

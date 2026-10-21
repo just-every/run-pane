@@ -4,7 +4,6 @@ import { prepare, revision } from './content'
 import type { Revision } from './model'
 import { document } from './views'
 import { escape } from './ui/kit'
-import { sitePath } from './search-settings'
 import { searchView } from './search-view'
 
 async function liveRevision(env: Bindings): Promise<Revision | null> {

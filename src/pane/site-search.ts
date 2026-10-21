@@ -2,7 +2,6 @@ import { activePages, pagePath } from './pages'
 import { renderNavigation, renderFooter } from './navigation'
 import type { Site } from './model'
 import { escape } from './ui/kit'
-import { sitePath } from './search-settings'
 
 const comparable = (value: string) => value.normalize('NFKC').replace(/\s+/g, ' ').trim().toLocaleLowerCase('en-US')
 

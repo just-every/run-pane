@@ -91,7 +91,7 @@ try {
   assert.equal(await page.getByRole('heading',{level:1}).innerText(),'Let us find your next project')
   assert.equal(await page.getByRole('search').count(),1);assert.equal(await page.getByRole('link',{name:'Contact the studio',exact:true}).getAttribute('href'),'/site/contact')
   await capture('edited-not-found',width)
-  await page.goto(origin+'/app/sites');await capture('site-revisions',width)
+  await page.goto(origin+'/app/sites');assert.equal(parseInt(await page.locator('.site-tile-status').innerText(),10),39,'Only active pages count as live');await capture('site-revisions',width)
   await page.goto(origin+'/app/search');await capture('page-search-settings',width)
  }
  // A new structural editor must also preserve both writers on conflict.
