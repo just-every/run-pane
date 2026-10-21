@@ -23,6 +23,7 @@ async function submit(name, path) {
 }
 try {
  await page.goto(entry)
+ await page.waitForURL(url => ['/setup', '/app'].includes(url.pathname))
  if (new URL(page.url()).pathname === '/setup') {await page.getByRole('checkbox').check(); await submit('Finish setup', '/app')}
  const fixture = JSON.parse(await readFile('fixtures/static-site.json', 'utf8'))
  if (await page.getByLabel('Site name', {exact: true}).isVisible()) {
