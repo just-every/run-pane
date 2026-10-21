@@ -51,6 +51,7 @@ try {
   await page.goto(origin + '/app/sites')
   await page.getByRole('heading', {name: 'Traffic details', exact: true}).scrollIntoViewIfNeeded()
   await capture('traffic-dashboard-' + width)
+  await page.locator('[aria-labelledby="traffic-title"]').screenshot({path: resolve(folder, 'traffic-panel-' + width + '.png')})
   const privateVisitor = await browser.newContext({viewport: {width, height: 1000}, extraHTTPHeaders: {'Sec-GPC': '1'}})
   visitors.push(privateVisitor)
   await privateVisitor.addInitScript(() => Object.defineProperty(navigator, 'globalPrivacyControl', {value: true}))

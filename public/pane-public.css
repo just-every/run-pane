@@ -52,4 +52,4 @@
 
 .external-embed{margin-block:2rem;padding:1.25rem;border:1px solid currentColor;border-radius:12px}.external-embed iframe{display:block;width:100%;aspect-ratio:16/9;border:0}.external-embed .form-actions{display:flex;flex-wrap:wrap;gap:.75rem}.external-embed button{max-width:100%}
 
-.traffic-counts{margin:1rem 0}.traffic-counts>div{display:flex;justify-content:space-between;gap:1rem;padding:.5rem 0;border-bottom:1px solid var(--pn-line)}.traffic-counts dt{overflow-wrap:anywhere}.traffic-counts dd{margin:0;font-weight:700}
+.pane .traffic-counts{display:block;margin:1rem 0}.pane .traffic-counts>div{display:flex;justify-content:space-between;gap:1rem;padding:.5rem 0;border-bottom:1px solid var(--pn-line)}.pane .traffic-counts dt{overflow-wrap:anywhere}.pane .traffic-counts dd{margin:0;font-weight:700}
