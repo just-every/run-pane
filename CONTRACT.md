@@ -600,9 +600,11 @@ Each form notifies named recipients by email (sent through the installation's ma
 
 Each form can send the visitor an acknowledgment email with the owner's wording and expected response time.
 
+The current Contact form defaults off. Its subject, wording and response time live in the immutable site revision and take effect only when the owner publishes it. The enquiry and its acknowledgment outcome are stored independently; one atomic send claim prevents replay, and uncertain provider outcomes are never automatically resent. Development and demo mail stays suppressed. FORM-001 inherits these optional per-form settings and durable provider outcomes for every form it adds.
+
 **Acceptance evidence:** Enable an acknowledgment, submit, and see the sender's message accepted by the provider edge with the configured wording.
 
-*Status:* missing. No outbound email from forms.
+*Status:* done. An enabled, published acknowledgment reaches the configured shared mail provider with the owner’s wording and response time. Durable acceptance, refusal, uncertainty, suppression and replay/erasure fences are proved through the public form and workspace.
 
 #### FORM-005 — Lead routing to Orbit, HubSpot and signed webhooks.
 
@@ -1110,13 +1112,13 @@ No desk homepage claims file (`CLAIMS.md`) exists for Pane on 17 October 2026. W
 
 ## Status
 
-Judged from the code and tests at commit `dde4facaff2fd1e24edb2b0be6e02ffcc560880b` (21 October 2026).
+Judged from the code and tests at commit `697304eb45f19e73c6d62bb8ce8e8d6bd20af37b` (21 October 2026).
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 16 | 0 | 0 | 16 |
-| Target and push further | 2 | 31 | 76 | 109 |
-| All | 18 | 31 | 76 | 125 |
+| Target and push further | 3 | 31 | 75 | 109 |
+| All | 19 | 31 | 75 | 125 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -1193,7 +1195,7 @@ Judged from the code and tests at commit `dde4facaff2fd1e24edb2b0be6e02ffcc56088
 | `FORM-001` | Form builder with multiple forms | target | partial | `src/pane/public-view.ts`; `src/pane/public.ts` | One fixed contact form (name, email, message) with browser `required` and length limits; no form builder, configurable required fields, help text, per-field validation messages or file upload. |
 | `FORM-002` | Spam protection | target | partial | `src/pane/public.ts`; `src/pane/public-view.ts` | Honeypot and per-minute limits exist but no Turnstile, no spam review and no test that a filled honeypot or a burst is refused. |
 | `FORM-003` | Enquiry email to named recipients and reply | target | partial | `src/pane/views.ts`; `src/pane/data.ts` | Enquiries appear in the workspace inbox only; no notification email or reply. |
-| `FORM-004` | Automatic acknowledgment to the sender | target | missing |  | No outbound email from forms. |
+| `FORM-004` | Automatic acknowledgment to the sender | target | done | `tests/pane.test.mjs` — an approved form acknowledgment reaches the provider once with owner wording and durable independent status (SendGrid network edge acceptance, configured recipient/text/time, one send, failure/uncertainty retained, replay/erasure and development suppression); `scripts/acknowledgment-journey.mjs` — saved wording, explicit enable, owner publication, durable inquiry, suppression and disable at 1440 and 390 |  |
 | `FORM-005` | Lead routing to Orbit, HubSpot and signed webhooks | target | missing |  | Submissions are stored locally only. |
 | `FORM-006` | Enquiry ownership, status and follow-up | target | missing |  | Enquiries have no owner or status. |
 | `FORM-007` | Submission export and Google Sheets | target | missing |  | No submission export beyond the installation archive. |
