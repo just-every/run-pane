@@ -41,6 +41,8 @@ try {
    if(step)await page.getByRole('button',{name:'Redo',exact:true}).click()
    else await page.getByRole('button',{name:'Undo',exact:true}).click()
    await saved()
+   const count=(await dashboard()).draft.site.redirects.filter(row=>row.from.startsWith('/site/legacy-'+width+'-')).length
+   assert.equal(count,step?200:0,'CSV import undo/redo changes the saved draft map')
   }
   await Promise.all([page.waitForURL(url=>url.pathname==='/app'&&url.searchParams.has('notice')),page.getByRole('button',{name:'Approve & publish',exact:true}).click()])
   for(const [from,to,status] of [...rows,['/site/'+source,'/site/our-story-'+width,301],['/site/special-'+width,'/site/contact?booking=consultation',302]]){
