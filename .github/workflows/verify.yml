@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [types, journey, browser]
+        shard: [types, journey]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -28,15 +28,29 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - if: matrix.shard == 'types'
         run: pnpm run typecheck && pnpm exec rer check --profile first-party
-      - if: matrix.shard == 'journey' || matrix.shard == 'browser'
-        run: pnpm exec playwright install --with-deps chromium
       - if: matrix.shard == 'journey'
         run: pnpm verify
-      - if: matrix.shard == 'browser'
-        run: pnpm exec vite build && node scripts/browser-proof.mjs
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    # Includes Chromium 1243 and its system libraries for @playwright/test 1.63.0.
+    # Keep dependency installation out of the browser journey's time budget.
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.20.0
+      - run: npm install --global pnpm@10.12.4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec vite build && node scripts/browser-proof.mjs
   verify:
-    needs: product
+    needs: [product, browser]
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - run: test '${{ needs.product.result }}' = success
+      - run: test '${{ needs.product.result }}' = success && test '${{ needs.browser.result }}' = success
