@@ -1,3 +1,4 @@
+import { apiIdentity, recordApi, type ApiIdentity } from './pane/api-tokens'
 import { auditedDatabase } from './pane/audit'
 import { operatorAuth } from './auth.server'
 import { runSchedules } from './pane/schedules'
@@ -31,16 +32,29 @@ export default withDemo<Bindings, ExportedHandler<Bindings>>({
     const asset = await staticAssetResponse(request, env)
     if (asset) return asset
     // Resolve attribution using the unwrapped native store, then scope all writes.
-    let actor: string | null = null
-    try { actor = (await operatorAuth(runtimeBindings(env)).getSession(request))?.operator.id ?? null } catch {}
-    const path = new URL(request.url).pathname
+    const path = new URL(request.url).pathname, isApi=path==='/api/pane'||path.startsWith('/api/pane/')
+    let principal: ApiIdentity | null = null
+    try { principal = isApi ? await apiIdentity(request,runtimeBindings(env)) : await operatorAuth(runtimeBindings(env)).getSession(request) } catch {}
+    let actor=principal?.operator.id??null
+    // A link callback acts on its persisted, transaction-fenced owner approval,
+    // rather than on a provider cookie or caller-supplied person identity.
+    if(path==='/.well-known/rer-link/callback'&&request.method==='POST'){
+      try{
+        const input=await request.clone().json() as {interface?:string}
+        const pending=await env.DB.prepare('SELECT approved_by FROM rer_dependency_pending WHERE interface=?').bind(input.interface??'oidc-provider@1').first<{approved_by:string}>()
+        if(pending&&pending.approved_by!=='setup')actor=pending.approved_by
+      }catch{}
+    }
     env = {...env, DB: auditedDatabase(env.DB,actor,path.startsWith('/auth/') ? 'authentication.change' : path.startsWith('/app/search') ? 'settings.search' : 'workspace.change')}
     const auth = await authResponse(request, env)
     if (auth) return auth
     const search = await searchResponse(request, env)
     if (search) return search
     const pane = await paneResponse(request, env)
-    if (pane) return searchMetadata(request, pane, env)
+    if (pane) {
+      if(isApi)await recordApi(env.DB,principal,path,request.method,pane.status)
+      return searchMetadata(request, pane, env)
+    }
     const website = await publicResponse(request, env)
     if (website) return searchMetadata(request, website, env)
     // The installed variant: the Lobby at / and the public claim state it reads.

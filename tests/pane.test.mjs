@@ -310,8 +310,9 @@ test('traffic groups real public visit events without retaining raw referrers or
   const snapshot = async () => Promise.all(tables.map(async ({name}) => [name, (await app.db.prepare(`SELECT * FROM "${name}"`).all()).results]))
   const before = await snapshot()
   for (const privacy of [{'Sec-GPC': '1'}, {DNT: '1'}]) assert.equal((await visit({referrerHost: 'www.yelp.com', campaign: 'synthetic-pane-11'}, phone, privacy)).status, 204)
-  assert.deepEqual(await dashboard(), data, 'Privacy opt-outs cause no counter write')
   assert.deepEqual(await snapshot(), before, 'GPC/DNT write zero rows to every application table, including rate limits')
+  // Read the dashboard after the zero-write proof: API-001 logs this owner API call.
+  assert.deepEqual(await dashboard(), data, 'Privacy opt-outs cause no counter write')
   assert.doesNotMatch(JSON.stringify(before), /synthetic-pane-(?:[1-4]|[6-9]|10)(?!\d)|203\.0\.113\.25|Mozilla|Denver|private\.example|www\.yelp|:8443|utm_term|utm_content/)
   const html = await (await app.request('/app/sites', {headers: {Cookie: cookie}})).text()
   for (const label of ['yelp.com', 'chatgpt.com', 'Local and review', 'AI assistants', 'Email', 'spring-open-house', 'Unapproved campaign tag', 'US-CO']) assert.ok(html.includes(label), label)
@@ -651,7 +652,7 @@ test('activity records successful existing changes atomically and exports ordere
   assert.deepEqual(rows.map(row=>row.sequence),[...rows.map(row=>row.sequence)].sort((a,b)=>a-b))
   assert.ok(rows.every(row=>row.created_at&&row.actor&&row.subject))
   assert.doesNotMatch(JSON.stringify(rows),/synthetic-pane-2@example|synthetic-pane-3|test-session-key|test-setup-key/)
-  const exported=await get('/api/pane/activity/export');assert.match(exported.headers.get('content-disposition'),/attachment/);assert.deepEqual(await exported.json(),rows)
+  const exported=await get('/api/pane/activity/export');assert.match(exported.headers.get('content-disposition'),/attachment/);assert.deepEqual((await exported.json()).filter(row=>row.sequence<=rows.at(-1).sequence),rows)
   assert.equal((await get('/api/pane/activity','')).status,401)
   const denied=await app.db.prepare('SELECT COUNT(*) AS count FROM pane_audit_context').first();assert.equal(denied.count,0,'Transaction actor never leaks into another request')
  } finally {await app.mf.dispose()}
@@ -685,4 +686,223 @@ test('explicit person erasure removes actor attribution, preserves the log and r
   const ownerId=(await app.db.prepare("SELECT id FROM oa_operators WHERE role='owner'").first()).id
   assert.equal((await call('/api/pane/people/erase',{id:ownerId,confirm:'erase-person'})).status,400)
  } finally {await app.mf.dispose()}
+})
+
+test('scoped agent tokens intersect native authority and audit allowed, denied, expired and revoked calls without exposing credentials',async()=>{
+ const app=await runtime();let cookie
+ const call=(path,body,headers={})=>app.request(path,{method:'POST',headers:{Cookie:cookie??'',Origin:origin,'Content-Type':'application/json',...headers},body:JSON.stringify(body)})
+ const get=(path,headers={Cookie:cookie??''})=>app.request(path,{headers})
+ try {
+  cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})).headers.get('set-cookie').split(';')[0]
+  const prepared=await (await call('/api/pane/prepare',{site:fixture})).json()
+  assert.equal((await call('/api/pane/tokens/create',{name:'synthetic-pane-1',scopes:['publish']})).status,400)
+  const created=await (await call('/api/pane/tokens/create',{name:'synthetic-pane-2',scopes:['pages:read','status:read'],days:1})).json()
+  assert.ok(created.token)
+  const bearer={Authorization:'Bearer '+created.token}
+  assert.equal((await get('/api/pane/pages',bearer)).status,200)
+  assert.equal((await (await get('/api/pane/pages',bearer)).json()).pages.length,fixture.pages.length)
+  const status=await (await get('/api/pane',bearer)).json();assert.equal(status.draft.id,prepared.id);assert.equal(status.messages,undefined)
+  assert.equal((await call('/api/pane/prepare',{site:fixture},bearer)).status,403)
+  assert.equal((await call('/api/pane/publish',{revision:prepared.id},bearer)).status,403)
+  assert.equal((await get('/api/pane/activity',bearer)).status,403)
+  assert.equal((await call('/api/pane/tokens/create',{name:'synthetic-pane-3',scopes:['pages:read']},bearer)).status,403)
+  assert.equal((await get('https://foreign.invalid/api/pane/pages',bearer)).status,403)
+  assert.equal((await call('/api/pane/prepare',{site:fixture},{...bearer,Origin:'https://foreign.invalid'})).status,403)
+  const stored=await app.db.prepare('SELECT token_hash,scopes FROM pane_api_tokens WHERE id=?').bind(created.id).first()
+  assert.notEqual(stored.token_hash,created.token);assert.equal(stored.token_hash.length,64)
+  const listing=await (await get('/api/pane/tokens')).text();assert.ok(!listing.includes(created.token));assert.ok(!listing.includes(stored.token_hash))
+  assert.equal((await call('/api/pane/tokens/revoke',{id:created.id})).status,200)
+  assert.equal((await get('/api/pane/pages',bearer)).status,401)
+  const expired=await (await call('/api/pane/tokens/create',{name:'synthetic-pane-4',scopes:['pages:read']})).json()
+  await app.db.prepare('UPDATE pane_api_tokens SET expires_at=? WHERE id=?').bind(Date.now()-1,expired.id).run()
+  assert.equal((await get('/api/pane/pages',{Authorization:'Bearer '+expired.token})).status,401)
+  const history=await (await get('/api/pane/activity')).json()
+  assert.ok(history.some(row=>row.agent===created.id&&row.action==='api.POST.403'&&row.subject==='api:prepare'))
+  for(const action of ['token.create','token.revoke','api.GET.200','api.POST.403','api.GET.401'])assert.ok(history.some(row=>row.action===action),action)
+  assert.ok(!JSON.stringify(history).includes(created.token));assert.ok(!JSON.stringify(history).includes(stored.token_hash))
+  assert.equal((await get('/api/pane/collections')).status,501,'No collection API success is claimed before CMS-001')
+ }finally{await app.mf.dispose()}
+})
+
+test('the real helper uses an authorized admin private session file for status, prepare and import and refuses publication',async()=>{
+ const {createServer}=await import('node:http'),{spawn}=await import('node:child_process')
+ const {mkdtemp,writeFile,chmod,rm}=await import('node:fs/promises'),{tmpdir}=await import('node:os'),{join}=await import('node:path')
+ let app,adminCookie
+ const server=createServer(async(req,res)=>{
+  try{
+   const chunks=[];for await(const chunk of req)chunks.push(chunk)
+   const {host,...headers}=req.headers
+   const response=await app.request(actual+req.url,{method:req.method,headers,...(chunks.length?{body:Buffer.concat(chunks).toString()}:{} )})
+   response.headers.forEach((value,key)=>res.setHeader(key,value));res.writeHead(response.status);res.end(Buffer.from(await response.arrayBuffer()))
+  }catch{res.writeHead(500);res.end('{}')}
+ })
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve))
+ const actual='http://127.0.0.1:'+server.address().port,folder=await mkdtemp(join(tmpdir(),'synthetic-pane-'))
+ const privateFile=join(folder,'session'),siteFile=join(folder,'site.json')
+ const call=(path,body,cookie='')=>app.request(actual+path,{method:'POST',headers:{Cookie:cookie,Origin:actual,'Content-Type':'application/json'},body:JSON.stringify(body)})
+ const helper=(command,extra=[])=>new Promise((resolve,reject)=>{
+  const child=spawn(process.execPath,['scripts/pane.mjs',command,'--origin',actual,'--session-file',privateFile,...extra],{stdio:['ignore','pipe','pipe']})
+  let output='';child.stdout.on('data',chunk=>output+=chunk);child.stderr.on('data',chunk=>output+=chunk);child.on('error',reject);child.on('close',code=>resolve({code,output}))
+ })
+ try {
+  app=await runtime({bindings:{AUTH_ORIGIN:actual}})
+  const ownerCookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})).headers.get('set-cookie').split(';')[0]
+  let mail
+  const auth=createOperatorAuth({db:app.db,config:{...settings,origin:actual,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async message=>{mail=message;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+  await auth.invite(new Request(actual+'/auth/invite',{method:'POST',headers:{Host:new URL(actual).host,Origin:actual,Cookie:ownerCookie}}),{email:'synthetic-pane-5@example.test',displayName:'Synthetic admin',role:'admin'})
+  const token=new URL(mail.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token')
+  adminCookie=(await call('/auth/confirm',{token})).headers.get('set-cookie').split(';')[0]
+  await writeFile(privateFile,adminCookie,{mode:0o600});await writeFile(siteFile,JSON.stringify(fixture))
+  const status=await helper('status');assert.equal(status.code,0,status.output)
+  const prepared=await helper('prepare',['--input',siteFile]);assert.equal(prepared.code,0,prepared.output)
+  const revision=JSON.parse(prepared.output).id
+  const plan=await helper('import-plan',['--input',siteFile]);assert.equal(plan.code,0,plan.output)
+  const applied=await helper('import-apply',['--input',siteFile,'--fingerprint',JSON.parse(plan.output).fingerprint]);assert.equal(applied.code,0,applied.output)
+  const refused=await helper('publish',['--revision',revision]);assert.equal(refused.code,1);assert.match(refused.output,/role cannot/)
+  assert.ok(![status,prepared,plan,applied,refused].some(value=>value.output.includes(adminCookie)))
+  await chmod(privateFile,0o644);const unsafe=await helper('status');assert.equal(unsafe.code,1);assert.match(unsafe.output,/mode 0600/)
+  const history=await (await app.request(actual+'/api/pane/activity',{headers:{Cookie:ownerCookie}})).json()
+  assert.ok(history.some(row=>row.actor==='Synthetic admin'&&row.subject==='api:import/apply'&&row.action==='api.POST.200'))
+  assert.ok(history.some(row=>row.actor==='Synthetic admin'&&row.subject==='api:publish'&&row.action==='api.POST.403'))
+ }finally{await new Promise(resolve=>server.close(resolve));await app?.mf.dispose();await rm(folder,{recursive:true,force:true})}
+})
+
+test('composable Pane roles are invited natively and enforced across workspace, preview, search and every existing API action',async()=>{
+ const hosted='https://pane.example.test',deliveries=[]
+ const app=await runtime({bindings:{AUTH_ORIGIN:hosted,AUTH_LOCAL:'false',MAIL_PROVIDER:'sendgrid',MAIL_API_KEY:'synthetic-pane-17',MAIL_FROM:'pane@example.test'},outboundService:async request=>{deliveries.push(await request.json());return new Response(null,{status:202,headers:{'x-message-id':'synthetic-pane-18'}})}})
+ let ownerCookie
+ const call=(path,body,cookie=ownerCookie,headers={})=>app.request(hosted+path,{method:'POST',headers:{Cookie:cookie??'',Origin:hosted,'Content-Type':'application/json',...headers},body:JSON.stringify(body)})
+ const get=(path,cookie=ownerCookie)=>app.request(hosted+path,{headers:{Cookie:cookie??''}})
+ const ownerData=async()=> (await get('/api/pane')).json()
+ const signInvitation=async()=>{
+  const text=deliveries.at(-1).content.find(part=>part.type==='text/plain').value
+  const link=new URL(text.match(/https:\/\/[^\s]+/)[0])
+  const confirmed=await call('/auth/confirm',{token:link.searchParams.get('token')},'');assert.equal(confirmed.status,303,await confirmed.clone().text())
+  return confirmed.headers.get('set-cookie').split(';')[0]
+ }
+ try{
+  ownerCookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})).headers.get('set-cookie').split(';')[0]
+  await app.request(hosted+'/setup',{method:'POST',headers:{Cookie:ownerCookie,Origin:hosted,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
+  const prepared=await (await call('/api/pane/prepare',{site:fixture})).json();await call('/api/pane/publish',{revision:prepared.id})
+  const id=crypto.randomUUID()
+  await app.request(hosted+'/site/contact',{method:'POST',headers:{Origin:hosted,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({idempotency:id,name:'Synthetic enquirer',email:'synthetic-pane-19@example.test',message:'synthetic-pane-20'})})
+  const matrix=[
+   {roles:['editor'],pages:true,edit:true},
+   {roles:['author']},
+   {roles:['comment-moderator']},
+   {roles:['inbox'],inbox:true},
+   {roles:['reporting'],reports:true},
+   {roles:['editor','inbox','reporting'],pages:true,edit:true,inbox:true,reports:true},
+  ]
+  for(const [index,row] of matrix.entries()){
+   const invitation=await call('/api/pane/roles/invite',{email:`synthetic-pane-${30+index}@example.test`,displayName:'Synthetic '+row.roles.join(' '),roles:row.roles})
+   assert.equal(invitation.status,200,await invitation.clone().text());const person=await invitation.json()
+   // Delivery happens only after the role assignment exists; inspect that boundary.
+   assert.equal((await app.db.prepare('SELECT roles FROM pane_roles WHERE operator_id=?').bind(person.operatorId).first()).roles,JSON.stringify([...row.roles].sort()))
+   const cookie=await signInvitation()
+   const expected=new Map([
+    ['/app',row.pages?200:403],['/app/sites',row.pages||row.reports?200:403],['/app/inquiries',row.inbox?200:403],['/app/moves',403],['/app/search',row.edit?200:403],
+    ['/preview/'+prepared.id+'/home',row.edit?200:403],['/api/pane',200],['/api/pane/pages',row.pages?200:403],['/api/pane/collections',row.pages?501:403],
+    ['/api/pane/activity',403],['/api/pane/activity/export',403],['/api/pane/roles',403],['/api/pane/tokens',403],
+   ])
+   for(const [path,status] of expected)assert.equal((await get(path,cookie)).status,status,row.roles+': '+path)
+   const status=await (await get('/api/pane',cookie)).json()
+   assert.equal(status.activity,undefined);assert.equal(status.imports.length,0)
+   assert.equal(status.messages.length,row.inbox?1:0);assert.equal(status.replies.length,row.inbox?(await ownerData()).replies.length:0)
+   assert.equal(status.revisions.length>0,!!row.pages)
+   if(!row.reports){assert.deepEqual(status.visits,[]);assert.deepEqual(status.goals,[]);assert.ok(Object.values(status.traffic).every(rows=>rows.length===0))}
+   const body={site:fixture,base:(await ownerData()).draft.id,revision:prepared.id,page:'home',id,source:JSON.stringify(fixture),fingerprint:'synthetic-pane-21',job:'synthetic-pane-22',operatorId:person.operatorId,roles:['editor'],scopes:['pages:read'],name:'synthetic-pane-23',idempotency:crypto.randomUUID(),confirm:'send-reply',subject:'Synthetic reply',body:'synthetic-pane-24'}
+   const allowed=new Set([...(row.edit?['prepare','autosave','review']:[]),...(row.inbox?['messages/update','messages/reply']:[])])
+   const actions=['prepare','autosave','publish','rollback','review','import/dry-run','import/apply','import/undo','messages/update','messages/reply','messages/erase','people/erase','roles/set','roles/invite','tokens/create','tokens/revoke']
+   for(const prefix of ['/api/pane/','/app/'])for(const action of actions){
+    const response=await call(prefix+action,{...body,idempotency:crypto.randomUUID(),...(['prepare','autosave'].includes(action)?{base:(await ownerData()).draft.id}:{})},cookie)
+    assert.equal(response.status,allowed.has(action)?(prefix==='/app/'&&action!=='autosave'?303:200):403,row.roles+': '+prefix+action+' '+await response.text())
+   }
+   for(const path of ['/auth/invite','/auth/operator/role','/auth/operator/status','/auth/domain-rules','/auth/settings/identity']){
+    assert.equal((await call(path,{operatorId:person.operatorId,role:'admin',status:'inactive',email:'synthetic-pane-99@example.test'},cookie)).status,403,row.roles+': '+path)
+   }
+   if(row.edit){
+    assert.equal((await call('/api/pane/prepare',{site:{...fixture,responseDays:2},base:(await ownerData()).draft.id},cookie)).status,403,'Editors cannot change business settings through whole-site snapshots')
+    const form=new URLSearchParams({base:(await ownerData()).draft.id})
+    for(const page of fixture.pages){form.set(page.slug+'.title','Synthetic '+page.slug);form.set(page.slug+'.description','synthetic-pane-25')}
+    assert.equal((await app.request(hosted+'/app/search',{method:'POST',headers:{Cookie:cookie,Origin:hosted,'Content-Type':'application/x-www-form-urlencoded'},body:form})).status,303)
+   }
+   const scoped=await (await call('/api/pane/tokens/create',{name:'synthetic-pane-26',operatorId:person.operatorId,scopes:['pages:read']})).json()
+   assert.equal((await app.request(hosted+'/api/pane/pages',{headers:{Authorization:'Bearer '+scoped.token}})).status,row.pages?200:403)
+   assert.equal((await call('/api/pane/roles/set',{operatorId:person.operatorId,roles:[]})).status,200)
+   assert.equal((await app.request(hosted+'/api/pane/pages',{headers:{Authorization:'Bearer '+scoped.token}})).status,403,'Tokens lose revoked Pane capabilities on the next request')
+   assert.equal((await get('/app',cookie)).status,403,'Removing a grant takes effect on the next request')
+   assert.equal((await get('/app/inquiries',cookie)).status,403)
+  }
+  assert.ok(deliveries.some(value=>value.personalizations[0].to[0].email==='synthetic-pane-19@example.test'&&value.subject==='Synthetic reply'))
+  const history=await (await get('/api/pane/activity')).json()
+  assert.ok(history.some(row=>row.action==='roles.change'));assert.ok(history.some(row=>row.action==='enquiry.reply'));assert.ok(history.some(row=>row.action==='settings.search'))
+  assert.doesNotMatch(JSON.stringify(history),/synthetic-pane-24|synthetic-pane-19@example/)
+ }finally{await app.mf.dispose()}
+})
+
+test('explicit enquiry replies are retained, delivered once at the provider edge and erased with the parent enquiry',async()=>{
+ const hosted='https://pane.example.test',deliveries=[];let providerStatus=202
+ const app=await runtime({bindings:{AUTH_ORIGIN:hosted,AUTH_LOCAL:'false',MAIL_PROVIDER:'sendgrid',MAIL_API_KEY:'synthetic-pane-50',MAIL_FROM:'pane@example.test'},outboundService:async request=>{deliveries.push(await request.json());return new Response(null,{status:providerStatus})}})
+ let cookie
+ const call=(path,body)=>app.request(hosted+path,{method:'POST',headers:{Cookie:cookie??'',Origin:hosted,'Content-Type':'application/json'},body:JSON.stringify(body)})
+ try{
+  cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})).headers.get('set-cookie').split(';')[0]
+  const revision=await (await call('/api/pane/prepare',{site:fixture})).json();await call('/api/pane/publish',{revision:revision.id})
+  const id=crypto.randomUUID();await app.request(hosted+'/site/contact',{method:'POST',headers:{Origin:hosted,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({idempotency:id,name:'Synthetic enquirer',email:'synthetic-pane-51@example.test',message:'synthetic-pane-52'})})
+  const input={id,idempotency:crypto.randomUUID(),subject:'Synthetic reply',body:'synthetic-pane-53',confirm:'send-reply'}
+  assert.equal((await call('/api/pane/messages/reply',{...input,confirm:''})).status,400);assert.equal(deliveries.length,0)
+  const results=await Promise.all([call('/api/pane/messages/reply',input),call('/api/pane/messages/reply',input)])
+  assert.ok(results.every(response=>response.status===200));assert.equal(deliveries.length,1)
+  assert.deepEqual(deliveries[0].personalizations[0].to,[{email:'synthetic-pane-51@example.test'}]);assert.equal(deliveries[0].content.find(part=>part.type==='text/plain').value,input.body)
+  assert.equal((await app.db.prepare('SELECT status FROM pane_messages WHERE id=?').bind(id).first()).status,'replied')
+  assert.equal((await call('/api/pane/messages/reply',{...input,body:'Changed'})).status,400)
+  for(const [code,status] of [[400,'failed'],[503,'uncertain']]){
+   providerStatus=code;const failed={...input,idempotency:crypto.randomUUID()}
+   assert.equal((await (await call('/api/pane/messages/reply',failed)).json()).status,status)
+   const before=deliveries.length;await call('/api/pane/messages/reply',failed);assert.equal(deliveries.length,before)
+  }
+  assert.equal((await app.db.prepare('SELECT COUNT(*) AS count FROM pane_inquiry_replies WHERE message_id=?').bind(id).first()).count,3)
+  const archive=await exportData(app.db),restored=await runtime()
+  try{assert.equal((await restore(restored.db,archive)).phase,'complete');assert.equal((await restored.db.prepare('SELECT COUNT(*) AS count FROM pane_inquiry_replies').first()).count,3)}finally{await restored.mf.dispose()}
+  await call('/api/pane/messages/erase',{id})
+  const later=await exportData(app.db),old=await runtime()
+  try{await assert.rejects(restore(old.db,archive,later),/erased_row|erasure_epoch/)}finally{await old.mf.dispose()}
+  assert.equal((await app.db.prepare('SELECT COUNT(*) AS count FROM pane_inquiry_replies WHERE message_id=?').bind(id).first()).count,0)
+  const history=await (await app.request(hosted+'/api/pane/activity',{headers:{Cookie:cookie}})).json();assert.ok(history.some(row=>row.action==='enquiry.reply'))
+ }finally{await app.mf.dispose()}
+})
+
+test('native connection approval, callback, settings and unlink produce owner-attributed secret-free activity',async()=>{
+ const provider='https://synthetic-pane.example.test';let sector
+ const app=await runtime({outboundService:async request=>{
+  if(request.url===provider+'/.well-known/openid-configuration')return Response.json({issuer:provider,authorization_endpoint:provider+'/authorize',token_endpoint:provider+'/token',jwks_uri:provider+'/jwks',response_types_supported:['code'],id_token_signing_alg_values_supported:['ES256'],token_endpoint_auth_methods_supported:['private_key_jwt'],rer_interfaces:['oidc-provider@1.0.0']})
+  if(request.url===provider+'/.well-known/rer-provider')return Response.json({issuer:provider,version:1,interface:'oidc-provider@1',initiate:provider+'/initiate',redeem:provider+'/redeem',deregister:provider+'/deregister'})
+  if(request.url===provider+'/redeem')return Response.json({issuer:provider,interface:'oidc-provider@1',origin,callback:origin+'/.well-known/rer-link/callback',sector_id:sector,client_id:'synthetic-pane-70'})
+  if(request.url===provider+'/deregister')return Response.json({removed:true})
+  throw Error('Unexpected network edge')
+ }})
+ let cookie
+ const call=(path,body,session=cookie)=>app.request(path,{method:'POST',headers:{Cookie:session??'',Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)})
+ const get=path=>app.request(path,{headers:{Cookie:cookie??''}})
+ try{
+  cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic connection owner'})).headers.get('set-cookie').split(';')[0]
+  sector=(await (await get('/.well-known/rer-dependencies')).json()).sector_id
+  let proofMail
+  const native=createOperatorAuth({db:app.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{proofMail=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+  await native.requestStepUp(new Request(origin+'/auth/step-up',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin,Cookie:cookie}}),{action:'providers:relink'})
+  const proofToken=new URL(proofMail.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token')
+  assert.equal((await call('/auth/confirm',{token:proofToken})).status,303)
+  assert.equal((await call('/auth/dependencies/relink',{issuer:provider})).status,200)
+  const linked=await call('/.well-known/rer-link/callback',{issuer:provider,interface:'oidc-provider@1',code:'synthetic-pane-71'},'')
+  assert.equal(linked.status,200,await linked.clone().text())
+  assert.equal((await (await get('/auth/dependencies/status')).json()).linked,true)
+  assert.equal((await call('/auth/settings/identity',{idpSignIn:true})).status,200)
+  const unlinked=await call('/auth/dependencies/unlink',{});assert.equal(unlinked.status,200,await unlinked.clone().text())
+  assert.equal((await (await get('/auth/dependencies/status')).json()).linked,false)
+  const history=await (await get('/api/pane/activity')).json(),connections=history.filter(row=>row.action==='connection.change')
+  assert.ok(connections.length>=2);assert.ok(connections.every(row=>row.actor==='Synthetic connection owner'))
+  assert.ok(history.some(row=>row.action==='settings.change'&&row.actor==='Synthetic connection owner'))
+  assert.doesNotMatch(JSON.stringify(history),/synthetic-pane-70|synthetic-pane-71|private_key|client_assertion|test-session-key/)
+ }finally{await app.mf.dispose()}
 })

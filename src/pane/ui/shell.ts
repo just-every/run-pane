@@ -1,3 +1,4 @@
+import { can } from '../roles'
 import { activePages } from '../pages'
 // The one white top bar every signed-in screen shares: the mark and heavy
 // wordmark, the site switcher, the four tabs and the signed-in person.
@@ -23,12 +24,13 @@ function switcher(data: Dashboard): string {
 
 function account(data: Dashboard): string {
   const owner = data.role.toLowerCase() === 'owner'
-  return `<details class="account"><summary class="avatar" title="${escape(data.name)}">${initials(data.name)}<span class="visually-hidden">Account and team</span></summary><div class="popover account-pop"><strong>${escape(data.name)}</strong><span class="role">${escape(data.role)}</span><h2>Team</h2><ul>${data.team.map(person => `<li><span class="avatar avatar-sm" aria-hidden="true">${initials(person.name)}</span><span>${escape(person.name)}</span><span class="role">${escape(person.role)}</span></li>`).join('')}</ul>${owner ? '<a class="text-link" href="/auth/settings/identity">Sign-in settings</a>' : ''}</div></details>`
+  return `<details class="account"><summary class="avatar" title="${escape(data.name)}">${initials(data.name)}<span class="visually-hidden">Account and team</span></summary><div class="popover account-pop"><strong>${escape(data.name)}</strong><span class="role">${escape(data.roleLabel??data.role)}</span><h2>Team</h2><ul>${data.team.map(person => `<li><span class="avatar avatar-sm" aria-hidden="true">${initials(person.name)}</span><span>${escape(person.name)}</span><span class="role">${escape(person.role)}</span></li>`).join('')}</ul>${owner ? '<a class="text-link" href="/auth/settings/identity">Sign-in settings</a>' : ''}</div></details>`
 }
 
 export function shell(data: Dashboard, tab: Tab, body: string): string {
   const unread = data.messages.length
-  const nav = tabs.map(([id, label, href]) => `<a href="${href}"${id === tab ? ' aria-current="page"' : ''}>${label}${id === 'inquiries' && unread ? `<span class="count">${unread}</span>` : ''}</a>`).join('')
+  const allowed: Record<Tab,boolean>={sites:can(data,'pages:read')||can(data,'reports:read'),pages:can(data,'pages:read'),inquiries:can(data,'inbox:read'),moves:can(data,'imports:read')}
+  const nav = tabs.filter(([id])=>allowed[id]).map(([id, label, href]) => `<a href="${href}"${id === tab ? ' aria-current="page"' : ''}>${label}${id === 'inquiries' && unread ? `<span class="count">${unread}</span>` : ''}</a>`).join('')
   const notice = data.notice ? `<div class="notice" role="status">${icon('check')}<span>${escape(data.notice)}</span></div>` : ''
   return `<header class="topbar"><a class="brand" href="/app"><img src="/brand/mark.svg" alt="" width="40" height="30"><span data-rer-name>${escape(branding.name)}</span></a><span class="topbar-divider" aria-hidden="true"></span>${switcher(data)}<nav class="tabs" aria-label="Workspace">${nav}</nav>${account(data)}</header>${notice}<main id="main" class="screen screen-${tab}">${body}</main><script src="/pane-app.js" defer></script>`
 }

@@ -1,3 +1,4 @@
+import { capabilities } from './roles'
 import { activePages, homeSlug, pagePath } from './pages'
 import { operatorAuth, runtimeBindings, type Bindings } from '../auth.server'
 import { prepare, revision } from './content'
@@ -26,7 +27,8 @@ export async function searchResponse(request: Request, original: Bindings): Prom
  if (request.method === 'POST' && (url.origin !== origin || request.headers.get('Origin') !== origin)) return text('Same-origin request required.', 'text/plain', 403)
  const session = await operatorAuth(env).getSession(request)
  if (!session) return new Response(null, {status: 303, headers: {location: '/signin?returnTo=%2Fapp%2Fsearch'}})
- if (!['owner', 'admin'].includes(session.operator.role)) return text('An owner or admin must edit search settings.', 'text/plain', 403)
+ const caps=await capabilities(env.DB,session.operator)
+ if (!caps.includes('pages:write')) return text('An owner or admin must edit search settings.', 'text/plain', 403)
  if (!['GET', 'POST'].includes(request.method)) return text('Method not allowed.', 'text/plain', 405)
  if (request.method === 'POST') {
   if (Number(request.headers.get('content-length') ?? 0) > 40000) return text('Search settings too large.', 'text/plain', 413)
@@ -35,14 +37,15 @@ export async function searchResponse(request: Request, original: Bindings): Prom
    const latest = await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC LIMIT 1').first()
    if (!latest || latest.id !== base) return text('A newer draft exists. Reload search settings before saving.', 'text/plain', 409)
    const draft = revision(latest)
-   const site = {...draft.site, robots: String(form.get('robots') ?? ''), pages: draft.site.pages.map(page => page.deleted ? page : ({...page, search: {title: String(form.get(`${page.slug}.title`) ?? ''), description: String(form.get(`${page.slug}.description`) ?? ''), canonical: String(form.get(`${page.slug}.canonical`) ?? ''), noindex: form.has(`${page.slug}.noindex`)}}))}
+   if(!caps.includes('settings:write')&&form.has('robots')&&String(form.get('robots'))!==(draft.site.robots??''))return text('Only owners and admins can change robots rules.','text/plain',403)
+   const site = {...draft.site, ...(caps.includes('settings:write')?{robots:String(form.get('robots')??'')}:{}), pages: draft.site.pages.map(page => page.deleted ? page : ({...page, search: {title: String(form.get(`${page.slug}.title`) ?? ''), description: String(form.get(`${page.slug}.description`) ?? ''), canonical: String(form.get(`${page.slug}.canonical`) ?? ''), noindex: form.has(`${page.slug}.noindex`)}}))}
    await prepare(env.DB, session.operator.id, site,base)
    return new Response(null, {status: 303, headers: {location: '/app/search?saved=1'}})
   } catch (error) { return text(error instanceof Error ? error.message : 'Invalid search settings.', 'text/plain', 400) }
  }
  const row = await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC LIMIT 1').first()
  if (!row) return document('Search settings', '<main id="main" class="public-shell"><h1>Search settings</h1><p><a href="/app">Prepare your first site</a> before editing search settings.</p></main>')
- return document('Search settings', searchView(revision(row), origin, url.searchParams.has('saved') ? 'Search draft prepared. Review and publish it from Sites.' : ''))
+ return document('Search settings', searchView(revision(row), origin, url.searchParams.has('saved') ? 'Search draft prepared. Review and publish it from Sites.' : '',caps.includes('settings:write')))
 }
 
 /** Add search metadata only to business documents; workspace output stays separate. */

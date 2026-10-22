@@ -31,9 +31,9 @@ export function auditedDatabase(db: D1Database, actor: string | null, action: st
   const value=Reflect.get(target,key);return typeof value==='function'?value.bind(target):value
  }})
 }
-export type Activity = {sequence:number;action:string;subject:string;created_at:string;actor:string}
+export type Activity = {sequence:number;action:string;subject:string;created_at:string;actor:string;agent:string|null}
 export async function activity(db:D1Database) {
- return (await db.prepare(`SELECT a.sequence,a.action,a.subject,a.created_at,
+ return (await db.prepare(`SELECT a.sequence,a.action,a.subject,a.created_at,a.agent,
   CASE WHEN a.actor IS NULL THEN 'Former person or system' ELSE COALESCE(o.display_name,'Former person') END AS actor
   FROM pane_activity a LEFT JOIN oa_operators o ON o.id=a.actor ORDER BY a.sequence`).all<Activity>()).results
 }
@@ -45,9 +45,10 @@ export async function erasePerson(db:D1Database,id:string,confirm:unknown) {
  if(!person)throw Error('Choose a non-owner person.')
  await db.batch([
   db.prepare('INSERT OR IGNORE INTO pane_anonymized_people(id) VALUES(?)').bind(id),
-  db.prepare('UPDATE pane_activity SET actor=NULL WHERE actor=?').bind(id),
+  db.prepare('UPDATE pane_activity SET actor=NULL,agent=NULL WHERE actor=?').bind(id),
   db.prepare("UPDATE pane_activity SET subject='erased-person' WHERE subject=?").bind('person:'+id),
   db.prepare("UPDATE oa_operators SET email=?,display_name='Former person',status='inactive' WHERE id=? AND role!='owner'").bind(id+'@erased.invalid',id),
+  db.prepare('UPDATE pane_api_tokens SET revoked_at=COALESCE(revoked_at,?) WHERE operator_id=?').bind(Date.now(),id),
   db.prepare('DELETE FROM oa_external_identities WHERE operator_id=?').bind(id),
   db.prepare('UPDATE oa_sessions SET revoked_at=COALESCE(revoked_at,?) WHERE operator_id=?').bind(Date.now(),id),
   db.prepare('UPDATE oa_tokens SET revoked_at=COALESCE(revoked_at,?) WHERE operator_id=? OR issuer_id=?').bind(Date.now(),id,id),

@@ -19,14 +19,14 @@ node scripts/pane.mjs prepare --origin http://127.0.0.1:8787 --session-file /pri
 ```
 
 The [example site export](../fixtures/static-site.json) shows the whole-site
-shape. An owner or admin may prepare; members cannot. The helper returns JSON
+shape. Owners, admins and assigned editors may prepare; unassigned members remain read-only. The helper returns JSON
 and a nonzero exit status when the request fails.
 
 ## Review the draft
 
 `status` returns revision IDs. In your running app, a preview is at
 `/preview/REVISION/home`, with the other four page slugs available through its
-navigation. Open the preview as an owner or admin, inspect every page, then
+navigation. Open the preview as an owner, admin or assigned editor, inspect every page, then
 return to the workspace and choose **Approve & publish** yourself.
 
 ## Other helper commands
@@ -46,3 +46,88 @@ authorization and recorded approval paths as the app:
 Use publication commands only with the owner's explicit approval of the exact
 revision. The normal agent workflow ends at preparing a draft for a person to
 review. Read [Move in a site](MOVE-IN.md) before applying or undoing imports.
+
+## Private credentials and scoped integrations
+
+Automated tests create their session file directly from the `Set-Cookie` response
+of their own authorized native sign-in. Do not obtain it from a browser profile,
+cookie jar or exported `storageState`. The helper refuses symlinks, non-regular
+files, files not owned by the caller and permissions other than 0600. Credentials
+never belong in arguments or repository files.
+
+For an integration, the owner uses native sign-in to call
+`POST /api/pane/tokens/create` with a name, explicit scopes, an optional active
+`operatorId` (the owner by default), and `days` (7 by default, 1–30 allowed).
+Save the returned `token` directly to a private 0600 file; it is shown once and
+only its SHA-256 hash is stored. `GET /api/pane/tokens` lists metadata;
+`POST /api/pane/tokens/revoke` takes its `id`. Dev/review sessions cannot create
+persistent tokens. Tokens are excluded from installation archives.
+
+Run the same helper with `--token-file PRIVATE_FILE` instead of `--session-file`.
+Every token call also needs its bound person's current server permissions:
+
+| Scope | Door |
+| --- | --- |
+| `status:read` | `status`: role and draft/live IDs only |
+| `pages:read` | `pages`: current draft page inventory |
+| `collections:read` | Reserved `collections` door; currently 501 until CMS-001 |
+| `draft:write` | `prepare` / autosave |
+| `imports:write` | `import-plan`, `import-apply`, `import-undo` |
+
+An absent scope is refused. Tokens cannot publish, roll back, erase people or
+messages, read activity, manage roles, or mint tokens. Deactivation, native role
+changes and erasure invalidate tokens; Pane grant changes apply on the next
+request. All API responses, including refusals, add an owner-readable audit
+entry containing a fixed route label, method, result status, actor and an opaque agent-token ID, without
+request bodies, queries or credentials. Use native owner sign-in for explicitly
+approved publication. These conservative token defaults await ct approval;
+API-001 remains partial, including the unimplemented collection reader.
+
+## Composable team roles
+
+The owner calls `POST /api/pane/roles/invite` with `email`, `displayName` and a
+nonempty `roles` array. It uses Base's native member invitation and withholds
+its email until Pane grants are saved. No separate sign-in system is created.
+`GET /api/pane/roles` lists native people and their Pane assignments;
+`POST /api/pane/roles/set` takes `operatorId` and a `roles` array. An empty array
+removes all content permissions immediately. Owners and admins retain native
+permissions. Existing native members without a Pane assignment retain their
+published read-only workspace access; an explicit Pane assignment replaces it.
+
+| Role | Current access |
+| --- | --- |
+| `editor` | Edit/preview pages and search drafts; no publication or inbox/reporting |
+| `inbox` | Read enquiries, explicitly send replies and manage their follow-up |
+| `reporting` | Read aggregate traffic and goal reports; no drafts or enquiries |
+| `author` | No content access yet; own-post writing/submission awaits CMS-004 |
+| `comment-moderator` | No content access yet; queue/notifications await CMS-010 |
+
+Roles compose by union. Every Pane handler and search/preview door checks them
+on the server; dashboard responses omit inaccessible content. Only the owner
+can assign roles. That default and the reserved author/moderator behavior await
+ct approval, so ROLE-001 remains partial. Future collection, post and moderation
+doors must implement their named permission and audit before shipping.
+
+Enquiry replies require a unique `idempotency` key and explicit
+`confirm: "send-reply"`, plus `id`, `subject` and `body`, at
+`POST /api/pane/messages/reply`. The inbox supplies these through its reply
+form. Only accepted provider sends mark the enquiry replied. Development/demo
+mail is suppressed. Failed or uncertain sends retain their text and status;
+a key is never automatically retried. Erasing the enquiry also erases replies,
+and the existing backup-erasure fence rejects an older archive containing it.
+
+## Owner activity and account erasure
+
+The owner reads the Activity log on Sites or `GET /api/pane/activity` and exports
+it through `/api/pane/activity/export`. Events use a monotonic sequence, time,
+actor attribution and an opaque subject. Successful mutations and their audit
+record commit together; native connection callbacks attribute the persisted
+owner approval. API call outcomes are also recorded. No automatic purge runs.
+
+`POST /api/pane/people/erase` requires a non-owner `id` and explicit
+`confirm: "erase-person"`. It erases the account's email/name and external
+identity associations, deactivates it, revokes sessions/links/tokens and removes
+its activity attribution while keeping events. It does not erase authored
+business content or implement PRIV-002's complete person discovery or older
+account-backup fencing. Those boundaries and the retention/anonymization policy
+keep AUDIT-001 partial pending ct approval. Last-owner protection is preserved.
