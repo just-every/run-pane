@@ -27,6 +27,10 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
  const actor=session.operator,owner=actor.role==='owner',caps=await capabilities(env.DB,actor),editor=caps.includes('pages:write')
  if(!['owner','admin','member'].includes(actor.role))return json({error:'Role has no access.'},403)
  try {
+  if(path==='/app'&&request.method==='GET'&&!caps.includes('pages:read')){
+   const home=caps.includes('inbox:read')?'/app/inquiries':caps.includes('reports:read')?'/app/sites':null
+   if(home)return new Response(null,{status:303,headers:{location:home}})
+  }
   const requiredCapability=routeCapability(path,request.method)
   if(requiredCapability&&!caps.includes(requiredCapability))return json({error:'Your role cannot perform this action.'},403)
   if(path==='/app/sites'&&!caps.includes('pages:read')&&!caps.includes('reports:read'))return json({error:'Your role cannot read this screen.'},403)

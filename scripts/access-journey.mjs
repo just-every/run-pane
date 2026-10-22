@@ -25,7 +25,7 @@ try {
   const link=await fixture.invitePerson(context,{email:'synthetic-pane-'+role+'@example.test',displayName:'Synthetic '+role,roles:[role]})
   const member=await browser.newContext({timezoneId:'Asia/Tokyo'}),tab=await member.newPage();roleContexts.push(member)
   await tab.goto(link);await tab.getByRole('button',{name:/Confirm/}).click()
-  await tab.waitForURL(url=>url.pathname==='/app')
+  await tab.waitForURL(url=>url.pathname.startsWith('/app'))
   people[role]={context:member,page:tab}
  }
  async function capture(tab,name){
@@ -59,7 +59,10 @@ try {
   await editor.goto(origin+'/app/search');await editor.getByRole('heading',{name:'Search settings',exact:true}).waitFor();await capture(editor,'editor-search-'+width)
   await editor.goto(origin+'/app/sites');assert.equal(await editor.getByRole('heading',{name:'Traffic details',exact:true}).count(),0);await capture(editor,'editor-sites-'+width)
   assert.equal((await people.editor.context.request.post(origin+'/api/pane/publish',{headers:{Origin:origin},data:{revision}})).status(),403)
+  assert.equal((await people.inbox.context.request.get(origin+'/app',{maxRedirects:0})).headers().location,'/app/inquiries')
+  assert.equal((await people.reporting.context.request.get(origin+'/app',{maxRedirects:0})).headers().location,'/app/sites')
   const inbox=people.inbox.page;await inbox.setViewportSize({width,height:1000});await inbox.goto(origin+'/app/inquiries')
+  assert.ok((await inbox.locator('a.brand').getAttribute('href'))==='/app/inquiries')
   await inbox.getByText('Reply to enquiry',{exact:true}).click()
   await inbox.getByLabel('Reply text',{exact:true}).fill('Synthetic reply '+width)
   await capture(inbox,'inbox-compose-'+width)

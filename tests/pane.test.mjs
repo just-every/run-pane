@@ -774,10 +774,11 @@ test('composable Pane roles are invited natively and enforced across workspace, 
  const call=(path,body,cookie=ownerCookie,headers={})=>app.request(hosted+path,{method:'POST',headers:{Cookie:cookie??'',Origin:hosted,'Content-Type':'application/json',...headers},body:JSON.stringify(body)})
  const get=(path,cookie=ownerCookie)=>app.request(hosted+path,{headers:{Cookie:cookie??''}})
  const ownerData=async()=> (await get('/api/pane')).json()
- const signInvitation=async()=>{
+ const signInvitation=async(expectedHome)=>{
   const text=deliveries.at(-1).content.find(part=>part.type==='text/plain').value
   const link=new URL(text.match(/https:\/\/[^\s]+/)[0])
   const confirmed=await call('/auth/confirm',{token:link.searchParams.get('token')},'');assert.equal(confirmed.status,303,await confirmed.clone().text())
+  assert.equal(confirmed.headers.get('location'),expectedHome)
   return confirmed.headers.get('set-cookie').split(';')[0]
  }
  try{
@@ -799,15 +800,16 @@ test('composable Pane roles are invited natively and enforced across workspace, 
    assert.equal(invitation.status,200,await invitation.clone().text());const person=await invitation.json()
    // Delivery happens only after the role assignment exists; inspect that boundary.
    assert.equal((await app.db.prepare('SELECT roles FROM pane_roles WHERE operator_id=?').bind(person.operatorId).first()).roles,JSON.stringify([...row.roles].sort()))
-   const cookie=await signInvitation()
+   const cookie=await signInvitation(row.edit?'/app':row.inbox?'/app/inquiries':row.reports?'/app/sites':'/app')
    const admission=await (await get('/api/pane/activity')).json()
    assert.ok(admission.some(event=>event.subject==='person:'+person.operatorId&&event.action==='authentication.change'&&event.actor==='Synthetic '+row.roles.join(' ')),'Native confirmation attributes the admitted person')
    const expected=new Map([
-    ['/app',row.pages?200:403],['/app/sites',row.pages||row.reports?200:403],['/app/inquiries',row.inbox?200:403],['/app/moves',403],['/app/search',row.edit?200:403],
+    ['/app',row.pages?200:row.inbox||row.reports?303:403],['/app/sites',row.pages||row.reports?200:403],['/app/inquiries',row.inbox?200:403],['/app/moves',403],['/app/search',row.edit?200:403],
     ['/preview/'+prepared.id+'/home',row.edit?200:403],['/api/pane',200],['/api/pane/pages',row.pages?200:403],['/api/pane/collections',row.pages?501:403],
     ['/api/pane/activity',403],['/api/pane/activity/export',403],['/api/pane/roles',403],['/api/pane/tokens',403],
    ])
    for(const [path,status] of expected)assert.equal((await get(path,cookie)).status,status,row.roles+': '+path)
+   if(!row.pages&&(row.inbox||row.reports))assert.equal((await get('/app',cookie)).headers.get('location'),row.inbox?'/app/inquiries':'/app/sites')
    const status=await (await get('/api/pane',cookie)).json()
    assert.equal(status.activity,undefined);assert.equal(status.imports.length,0)
    assert.equal(status.messages.length,row.inbox?1:0);assert.equal(status.replies.length,row.inbox?(await ownerData()).replies.length:0)

@@ -29,8 +29,9 @@ function account(data: Dashboard): string {
 
 export function shell(data: Dashboard, tab: Tab, body: string): string {
   const unread = data.messages.length
+  const home=can(data,'pages:read')?'/app':can(data,'inbox:read')?'/app/inquiries':can(data,'reports:read')?'/app/sites':'/app'
   const allowed: Record<Tab,boolean>={sites:can(data,'pages:read')||can(data,'reports:read'),pages:can(data,'pages:read'),inquiries:can(data,'inbox:read'),moves:can(data,'imports:read')}
   const nav = tabs.filter(([id])=>allowed[id]).map(([id, label, href]) => `<a href="${href}"${id === tab ? ' aria-current="page"' : ''}>${label}${id === 'inquiries' && unread ? `<span class="count">${unread}</span>` : ''}</a>`).join('')
   const notice = data.notice ? `<div class="notice" role="status">${icon('check')}<span>${escape(data.notice)}</span></div>` : ''
-  return `<header class="topbar"><a class="brand" href="/app"><img src="/brand/mark.svg" alt="" width="40" height="30"><span data-rer-name>${escape(branding.name)}</span></a><span class="topbar-divider" aria-hidden="true"></span>${switcher(data)}<nav class="tabs" aria-label="Workspace">${nav}</nav>${account(data)}</header>${notice}<main id="main" class="screen screen-${tab}">${body}</main><script src="/pane-app.js" defer></script>`
+  return `<header class="topbar"><a class="brand" href="${home}"><img src="/brand/mark.svg" alt="" width="40" height="30"><span data-rer-name>${escape(branding.name)}</span></a><span class="topbar-divider" aria-hidden="true"></span>${switcher(data)}<nav class="tabs" aria-label="Workspace">${nav}</nav>${account(data)}</header>${notice}<main id="main" class="screen screen-${tab}">${body}</main><script src="/pane-app.js" defer></script>`
 }

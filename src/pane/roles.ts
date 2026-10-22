@@ -56,7 +56,8 @@ export async function inviteRoles(env:Bindings,request:Request,actorId:string,in
   // Returning the real result preserves native failed-send link revocation.
   return sender.send(message)
  }})
- await native.invite(request,{email,displayName:input.displayName,role:'member',returnTo:'/app'})
+ const returnTo=input.roles.includes('editor')?'/app':input.roles.includes('inbox')?'/app/inquiries':input.roles.includes('reporting')?'/app/sites':'/app'
+ await native.invite(request,{email,displayName:input.displayName,role:'member',returnTo})
  if(!result)throw Error('Invitation was not prepared.')
  return {...result,invited:true}
 }
