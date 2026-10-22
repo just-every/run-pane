@@ -52,7 +52,7 @@ export default withDemo<Bindings, ExportedHandler<Bindings>>({
     if (search) return search
     const pane = await paneResponse(request, env)
     if (pane) {
-      if(isApi)await recordApi(env.DB,principal,path,request.method,pane.status)
+      if(isApi)await recordApi(env.DB,principal,request,pane.status)
       return searchMetadata(request, pane, env)
     }
     const website = await publicResponse(request, env)

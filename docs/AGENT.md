@@ -79,7 +79,8 @@ messages, read activity, manage roles, or mint tokens. Deactivation, native role
 changes and erasure invalidate tokens; Pane grant changes apply on the next
 request. All API responses, including refusals, add an owner-readable audit
 entry containing a fixed route label, method, result status, actor and an opaque agent-token ID, without
-request bodies, queries or credentials. Use native owner sign-in for explicitly
+request bodies, queries or credentials. A refused call presenting an expired or
+revoked token, or one whose person is deactivated, keeps that token's ID. Use native owner sign-in for explicitly
 approved publication. These conservative token defaults await ct approval;
 API-001 remains partial, including the unimplemented collection reader.
 
@@ -127,7 +128,7 @@ owner approval. API call outcomes are also recorded. No automatic purge runs.
 `POST /api/pane/people/erase` requires a non-owner `id` and explicit
 `confirm: "erase-person"`. It erases the account's email/name and external
 identity associations, deactivates it, revokes sessions/links/tokens and removes
-its activity attribution while keeping events. It does not erase authored
+its activity attribution, including its tokens' IDs, while keeping events. It does not erase authored
 business content or implement PRIV-002's complete person discovery or older
 account-backup fencing. Those boundaries and the retention/anonymization policy
 keep AUDIT-001 partial pending ct approval. Last-owner protection is preserved.

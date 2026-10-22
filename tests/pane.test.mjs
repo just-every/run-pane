@@ -672,12 +672,19 @@ test('explicit person erasure removes actor attribution, preserves the log and r
   const person=(await app.db.prepare("SELECT id FROM oa_operators WHERE role='admin'").first()).id
   const draft=await (await call('/api/pane/prepare',{site:fixture},adminCookie)).json()
   assert.equal((await app.request('/api/pane/activity',{headers:{Cookie:adminCookie}})).status,403)
+  const issued=await (await call('/api/pane/tokens/create',{name:'synthetic-pane-6',operatorId:person,scopes:['pages:read']})).json()
+  assert.equal((await call('/api/pane/tokens/revoke',{id:issued.id})).status,200)
+  const presented={headers:{Authorization:'Bearer '+issued.token}}
+  assert.equal((await app.request('/api/pane/pages',presented)).status,401)
   const before=await rows(),entry=before.find(row=>row.subject==='revision:'+draft.id)
   assert.equal(entry.actor,'Synthetic administrator')
+  assert.ok(before.some(row=>row.agent===issued.id&&row.action==='api.GET.401'))
   assert.equal((await call('/api/pane/people/erase',{id:person})).status,400)
   assert.equal((await call('/api/pane/people/erase',{id:person,confirm:'erase-person'},adminCookie)).status,403)
   assert.equal((await call('/api/pane/people/erase',{id:person,confirm:'erase-person'})).status,200)
+  assert.equal((await app.request('/api/pane/pages',presented)).status,401)
   const after=await rows();assert.ok(after.length>=before.length)
+  assert.ok(!after.some(row=>row.agent===issued.id),'Erasure anonymizes the person\'s token attribution, including later refused calls')
   assert.match(after.find(row=>row.sequence===entry.sequence).actor,/Former person/)
   assert.doesNotMatch(JSON.stringify(after),/Synthetic administrator|synthetic-pane-4@example/)
   assert.equal((await call('/api/pane/prepare',{site:fixture},adminCookie)).status,401)
@@ -719,6 +726,7 @@ test('scoped agent tokens intersect native authority and audit allowed, denied, 
   const history=await (await get('/api/pane/activity')).json()
   assert.ok(history.some(row=>row.agent===created.id&&row.action==='api.POST.403'&&row.subject==='api:prepare'))
   for(const action of ['token.create','token.revoke','api.GET.200','api.POST.403','api.GET.401'])assert.ok(history.some(row=>row.action===action),action)
+  for(const token of [created,expired])assert.ok(history.some(row=>row.agent===token.id&&row.action==='api.GET.401'&&row.subject==='api:pages'),'A refused revoked or expired token call keeps its token id')
   assert.ok(!JSON.stringify(history).includes(created.token));assert.ok(!JSON.stringify(history).includes(stored.token_hash))
   assert.equal((await get('/api/pane/collections')).status,501,'No collection API success is claimed before CMS-001')
  }finally{await app.mf.dispose()}

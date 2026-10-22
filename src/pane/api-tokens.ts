@@ -27,11 +27,20 @@ export async function createToken(db:D1Database,actorId:string,input:Record<stri
   .bind(id,input.name.trim(),operatorId,operator.version,await digest(token),JSON.stringify([...new Set(input.scopes)]),now,expiresAt).run()
  return {id,token,expiresAt,scopes:input.scopes}
 }
-export async function recordApi(db:D1Database,identity:ApiIdentity|null,path:string,method:string,status:number){
+/** The stored token a refused call presents (expired, revoked or its person deactivated).
+ * An erased person's tokens stay anonymous. */
+async function presentedTokenId(db:D1Database,request:Request){
+ const header=request.headers.get('authorization')
+ if(header===null||!/^Bearer [A-Za-z0-9_-]{43}$/.test(header))return null
+ const row=await db.prepare('SELECT id FROM pane_api_tokens WHERE token_hash=? AND operator_id NOT IN (SELECT id FROM pane_anonymized_people)').bind(await digest(header.slice(7))).first<{id:string}>()
+ return row?.id??null
+}
+export async function recordApi(db:D1Database,identity:ApiIdentity|null,request:Request,status:number){
  const known=['','prepare','autosave','publish','rollback','review','messages/update','messages/reply','messages/erase','people/erase','import/dry-run','import/apply','import/undo','activity','activity/export','tokens','tokens/create','tokens/revoke','pages','collections','roles','roles/set','roles/invite']
+ const path=new URL(request.url).pathname,method=request.method
  const route=path==='/api/pane'?'':path.slice('/api/pane/'.length)
  const actor=identity?.operator.id??null
  await db.prepare(`INSERT INTO pane_activity(actor,action,subject,created_at,agent) VALUES(
   CASE WHEN ? IN (SELECT id FROM pane_anonymized_people) THEN NULL ELSE ? END,?,?,?,?)`)
-  .bind(actor,actor,'api.'+(method==='GET'?'GET':method==='POST'?'POST':'OTHER')+'.'+status,'api:'+(known.includes(route)?route||'status':'unknown'),new Date().toISOString(),identity?.tokenId??null).run()
+  .bind(actor,actor,'api.'+(method==='GET'?'GET':method==='POST'?'POST':'OTHER')+'.'+status,'api:'+(known.includes(route)?route||'status':'unknown'),new Date().toISOString(),identity?.tokenId??await presentedTokenId(db,request)).run()
 }

@@ -47,7 +47,7 @@ export async function erasePerson(db:D1Database,id:string,confirm:unknown) {
   db.prepare(`UPDATE pane_audit_context SET valid=CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND role!='owner')
    AND EXISTS(SELECT 1 FROM oa_operators WHERE id=pane_audit_context.actor AND role='owner' AND status='active') THEN 1 ELSE 0 END WHERE id=1`).bind(id),
   db.prepare('INSERT OR IGNORE INTO pane_anonymized_people(id) VALUES(?)').bind(id),
-  db.prepare('UPDATE pane_activity SET actor=NULL,agent=NULL WHERE actor=?').bind(id),
+  db.prepare('UPDATE pane_activity SET actor=NULL,agent=NULL WHERE actor=? OR agent IN (SELECT id FROM pane_api_tokens WHERE operator_id=?)').bind(id,id),
   db.prepare("UPDATE pane_activity SET subject='erased-person' WHERE subject=?").bind('person:'+id),
   db.prepare("UPDATE oa_operators SET email=?,display_name='Former person',status='inactive' WHERE id=? AND role!='owner'").bind(id+'@erased.invalid',id),
   db.prepare('UPDATE pane_api_tokens SET revoked_at=COALESCE(revoked_at,?) WHERE operator_id=?').bind(Date.now(),id),
