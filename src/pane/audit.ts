@@ -44,6 +44,8 @@ export async function erasePerson(db:D1Database,id:string,confirm:unknown) {
  const person=await db.prepare("SELECT id FROM oa_operators WHERE id=? AND role!='owner'").bind(id).first()
  if(!person)throw Error('Choose a non-owner person.')
  await db.batch([
+  db.prepare(`UPDATE pane_audit_context SET valid=CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND role!='owner')
+   AND EXISTS(SELECT 1 FROM oa_operators WHERE id=pane_audit_context.actor AND role='owner' AND status='active') THEN 1 ELSE 0 END WHERE id=1`).bind(id),
   db.prepare('INSERT OR IGNORE INTO pane_anonymized_people(id) VALUES(?)').bind(id),
   db.prepare('UPDATE pane_activity SET actor=NULL,agent=NULL WHERE actor=?').bind(id),
   db.prepare("UPDATE pane_activity SET subject='erased-person' WHERE subject=?").bind('person:'+id),

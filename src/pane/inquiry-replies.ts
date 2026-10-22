@@ -16,7 +16,11 @@ export async function replyToInquiry(env:Bindings,actor:string,input:Record<stri
  }
  const inserted=await env.DB.prepare(`INSERT INTO pane_inquiry_replies(id,message_id,actor,subject,body,status,created_at)
   VALUES(?,?,?,?,?,'sending',?) ON CONFLICT(id) DO NOTHING RETURNING id`).bind(replyId,id,actor,input.subject.trim(),input.body.trim(),new Date().toISOString()).first()
- if(!inserted)return {id:replyId,status:'sending'}
+ if(!inserted){
+  const winner=await env.DB.prepare('SELECT message_id,actor,subject,body,status FROM pane_inquiry_replies WHERE id=?').bind(replyId).first<{message_id:string;actor:string;subject:string;body:string;status:string}>()
+  if(!winner||winner.message_id!==id||winner.actor!==actor||winner.subject!==input.subject.trim()||winner.body!==input.body.trim())throw Error('This reply key already belongs to a different reply.')
+  return {id:replyId,status:winner.status}
+ }
  let status:'accepted'|'suppressed'|'failed'|'uncertain'='failed'
  try{
   const sender=operatorMail(env)
