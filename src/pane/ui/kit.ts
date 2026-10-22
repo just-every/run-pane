@@ -7,7 +7,7 @@ export const form = (action: string, fields: string, label: string, kind = '') =
 export const short = (value: string) => escape(value.slice(0, 8))
 export const initials = (name: string) => escape(name.trim().split(/\s+/).slice(0, 2).map(part => part[0] ?? '').join('').toUpperCase() || '?')
 
-/** A <time> the browser rewrites in the viewer's own zone; until then it reads in UTC. */
+/** Workspace dates use the saved business zone on the server and in the browser. */
 export type TimeFormat = 'full' | 'short' | 'day' | 'time'
 const fallback: Record<TimeFormat, Intl.DateTimeFormatOptions> = {
   full: { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' },
@@ -15,11 +15,11 @@ const fallback: Record<TimeFormat, Intl.DateTimeFormatOptions> = {
   day: { weekday: 'short', month: 'short', day: 'numeric' },
   time: { hour: 'numeric', minute: '2-digit' },
 }
-export function when(value: string | Date, format: TimeFormat = 'short'): string {
+export function when(value: string | Date, format: TimeFormat = 'short', timeZone = 'America/New_York'): string {
   const parsed = new Date(value)
   if (Number.isNaN(parsed.getTime())) return escape(value)
-  const text = parsed.toLocaleString('en-US', { ...fallback[format], timeZone: 'UTC' }) + (format === 'day' ? '' : ' UTC')
-  return `<time datetime="${parsed.toISOString()}" data-format="${format}">${escape(text)}</time>`
+  const text = parsed.toLocaleString('en-US', { ...fallback[format], timeZone, ...(format==='day'?{}:{timeZoneName:'short'}) })
+  return `<time datetime="${parsed.toISOString()}" data-format="${format}" data-time-zone="${escape(timeZone)}">${escape(text)}</time>`
 }
 
 const paths: Record<string, string> = {

@@ -1,15 +1,15 @@
-// Times in the viewer's own zone (the server writes UTC), and one open popover at a time.
+// Keep server-rendered dates in the saved business zone, independent of the viewer.
 const formats = {
   full: { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' },
   short: { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' },
   day: { weekday: 'short', month: 'short', day: 'numeric' },
   time: { hour: 'numeric', minute: '2-digit' },
 }
-const thisYear = new Date().getFullYear()
 for (const element of document.querySelectorAll('time[data-format]')) {
-  const value = new Date(element.dateTime), options = { ...formats[element.dataset.format] }
+  const value = new Date(element.dateTime), options = { ...formats[element.dataset.format],timeZone:element.dataset.timeZone??'America/New_York' }
   if (Number.isNaN(value.getTime()) || !options) continue
-  if (element.dataset.format !== 'time' && element.dataset.format !== 'full' && value.getFullYear() !== thisYear) options.year = 'numeric'
+  const year = new Intl.DateTimeFormat('en-US',{timeZone:options.timeZone,year:'numeric'})
+  if (element.dataset.format !== 'time' && element.dataset.format !== 'full' && year.format(value) !== year.format(new Date())) options.year = 'numeric'
   element.textContent = value.toLocaleString('en-US', options).replace(/^(\w{3}), /, '$1 ')
 }
 const popovers = [...document.querySelectorAll('details.switcher, details.account')]

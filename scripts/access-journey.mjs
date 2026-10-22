@@ -7,12 +7,13 @@ const folder=resolve(process.env.PANE_SCREENSHOTS??'test-results/access')
 await mkdir(folder,{recursive:true})
 const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
 const roleContexts=[]
-const context=await browser.newContext(),page=await context.newPage(),origin=fixture.origin
+const context=await browser.newContext({timezoneId:'Asia/Tokyo'}),page=await context.newPage(),origin=fixture.origin
 try {
  await fixture.bootstrap(context)
  await page.goto(origin+'/setup');await page.getByRole('checkbox').check()
  await Promise.all([page.waitForURL('**/app'),page.getByRole('button',{name:'Finish setup'}).click()])
  const site=JSON.parse(await readFile('fixtures/static-site.json','utf8'))
+ site.automations={timeZone:'America/Denver',banners:[]}
  const prepared=await context.request.post(origin+'/api/pane/prepare',{headers:{Origin:origin},data:{site}})
  assert.equal(prepared.status(),200)
  const revision=(await prepared.json()).id
@@ -22,12 +23,17 @@ try {
  const people={}
  for(const role of ['editor','inbox','reporting']){
   const link=await fixture.invitePerson(context,{email:'synthetic-pane-'+role+'@example.test',displayName:'Synthetic '+role,roles:[role]})
-  const member=await browser.newContext(),tab=await member.newPage();roleContexts.push(member)
+  const member=await browser.newContext({timezoneId:'Asia/Tokyo'}),tab=await member.newPage();roleContexts.push(member)
   await tab.goto(link);await tab.getByRole('button',{name:/Confirm/}).click()
   await tab.waitForURL(url=>url.pathname==='/app')
   people[role]={context:member,page:tab}
  }
  async function capture(tab,name){
+  for(const element of await tab.locator('time[data-format]').all()){
+   assert.equal(await element.getAttribute('data-time-zone'),'America/Denver','Every current workspace timestamp carries the published business zone')
+   const valid=await element.evaluate(time=>{return time.textContent.includes(new Intl.DateTimeFormat('en-US',{timeZone:'America/Denver',...(time.dataset.format==='day'?{day:'numeric'}:{hour:'numeric',minute:'2-digit'})}).format(new Date(time.dateTime)))})
+   assert.equal(valid,true,'Business-local date survives a Tokyo browser')
+  }
   assert.equal(await tab.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,name+' overflow')
   await tab.screenshot({path:resolve(folder,name+'.png'),fullPage:true})
  }
@@ -40,6 +46,7 @@ try {
   const exported=await download;assert.equal(exported.suggestedFilename(),'pane-activity.json')
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,'Activity screen overflow '+width)
   await page.screenshot({path:resolve(folder,'activity-'+width+'.png'),fullPage:true})
+  await capture(page,'owner-sites-'+width)
   await log.screenshot({path:resolve(folder,'activity-panel-'+width+'.png')})
   for(const path of ['/app','/app/moves','/app/inquiries']){await page.goto(origin+path);await capture(page,'owner-'+path.split('/').at(-1)+'-'+width)}
   const editor=people.editor.page;await editor.setViewportSize({width,height:1000})
@@ -65,5 +72,5 @@ try {
   assert.equal(await reporter.getByRole('heading',{name:'Activity log',exact:true}).count(),0)
   await capture(reporter,'reporting-'+width)
  }
- console.log('Access browser journey passed: owner activity and export, permitted editor/search/preview controls, isolated reporting and explicit inbox replies at 1440 and 390.')
+ console.log('Access browser journey passed: owner activity and export, permitted editor/search/preview controls, isolated reporting and explicit inbox replies and Denver workspace dates in a Tokyo browser at 1440 and 390.')
 }finally{for(const member of roleContexts)await member.close();await browser.close();await fixture.stop()}

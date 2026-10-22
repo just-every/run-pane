@@ -4,6 +4,7 @@ export type Site = { automations?: import('./schedules').Automations; name: stri
 export type Revision = { id: string; site: Site; hash: string; created_at: string; actor: string }
 export type Dashboard = {
  replies: {id:string;message_id:string;subject:string;body:string;status:string;created_at:string}[];
+ timeZone?: string;
  roleLabel?: string;
  capabilities?: import('./roles').Capability[];
  activity?: import('./audit').Activity[];
