@@ -7,6 +7,7 @@ import { redirectsFromForm } from './ui/redirect-settings'
 import { normalizeNavigation, normalizeSocials } from './navigation'
 import { navigationFromForm } from './ui/navigation-settings'
 import { normalizeCampaigns } from './visit-dimensions'
+import { goalsFromText, normalizeGoals } from './goals'
 import { normalizeAcknowledgment } from './acknowledgment'
 import { normalizeEmbed } from './embeds'
 import type { Site, Revision } from './model'
@@ -24,8 +25,8 @@ export function normalizeSite(value: unknown): Site {
   if (page.kind !== undefined && page.kind !== 'contact') throw Error('Invalid page kind.')
   return {slug, ...(page.id ? {id: page.id} : {}), ...(page.kind ? {kind: page.kind} : {}), ...(page.folder ? {folder: folderName(page.folder)} : {}), ...(page.hidden ? {hidden: true} : {}), ...(page.deleted ? {deleted: true} : {}), title: page.title.normalize('NFC').trim(), body: page.body.normalize('NFC').trim(), ...(page.search ? {search: normalizeSearch(page.search)} : {}), ...(page.embed ? {embed: normalizeEmbed(page.embed)} : {}), ...(page.acknowledgment !== undefined ? {acknowledgment: normalizeAcknowledgment(page.acknowledgment)} : {}), ...(page.searchBox ? {searchBox: true} : {}), ...(page.links !== undefined ? {links: normalizePageLinks(page.links)} : {})}
  })
- const analyticsCampaigns = normalizeCampaigns(input.analyticsCampaigns)
- const site: Site = {...normalizePageOrganization(input,pages), ...(input.automations !== undefined ? {automations: normalizeAutomations(input.automations)} : {}), ...(input.navigation ? {navigation: normalizeNavigation(input.navigation,pages)} : {}), ...(input.socials ? {socials: normalizeSocials(input.socials)} : {}), ...(analyticsCampaigns.length ? {analyticsCampaigns} : {}), name: input.name.normalize('NFC').trim(), description: input.description.normalize('NFC').trim(), pages, ...(input.robots !== undefined ? {robots: normalizeRobots(input.robots)} : {}), ...(input.redirects !== undefined ? {redirects: normalizeRedirects(input.redirects)} : {})}
+ const analyticsCampaigns = normalizeCampaigns(input.analyticsCampaigns), goals = normalizeGoals(input.goals,pages)
+ const site: Site = {...normalizePageOrganization(input,pages), ...(input.automations !== undefined ? {automations: normalizeAutomations(input.automations)} : {}), ...(input.navigation ? {navigation: normalizeNavigation(input.navigation,pages)} : {}), ...(input.socials ? {socials: normalizeSocials(input.socials)} : {}), ...(analyticsCampaigns.length ? {analyticsCampaigns} : {}), ...(goals.length ? {goals} : {}), name: input.name.normalize('NFC').trim(), description: input.description.normalize('NFC').trim(), pages, ...(input.robots !== undefined ? {robots: normalizeRobots(input.robots)} : {}), ...(input.redirects !== undefined ? {redirects: normalizeRedirects(input.redirects)} : {})}
  const routes = new Set(activePages(site).map(page => pagePath(site,page.slug)))
  for (const redirect of site.redirects ?? []) if (routes.has(redirect.from) || ['/site/search','/site/visit'].includes(redirect.from)) throw Error(`Redirect ${redirect.from} would replace an existing page or service.`)
  return site
@@ -90,7 +91,7 @@ export async function siteFromForm(db: D1Database, input: Record<string, unknown
  const base = row ? revision(row).site : null
  const field = (name: string, fallback?: string) => typeof input[name] === 'string' ? String(input[name]).replace(/\r\n/g,'\n') : fallback
  const site: Site = base ? structureFromForm({...base, ...navigationFromForm(input,base), ...redirectsFromForm(input,base), ...schedulesFromForm(input,base)},input.structure) : {name: '',description: '',pages: slugs.map(slug => ({slug,title:'',body:''}))}
- return normalizeSite({...site, name: field('name',site.name), description: field('description',site.description), analyticsCampaigns: typeof input.analyticsCampaigns === 'string' ? input.analyticsCampaigns.split(/\r?\n/).map(label=>label.trim()).filter(Boolean) : site.analyticsCampaigns,
+ return normalizeSite({...site, name: field('name',site.name), description: field('description',site.description), analyticsCampaigns: typeof input.analyticsCampaigns === 'string' ? input.analyticsCampaigns.split(/\r?\n/).map(label=>label.trim()).filter(Boolean) : site.analyticsCampaigns, goals: typeof input.goals === 'string' ? goalsFromText(input.goals) : site.goals,
  pages: site.pages.map(page => {
   const original = base?.pages.find(old => pageId(old) === pageId(page))
   const slug = input.pageId === pageId(page) && typeof input.slug === 'string' ? input.slug : original?.slug ?? page.slug

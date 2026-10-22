@@ -82,3 +82,5 @@
 .pane .public-navigation summary svg { width: 20px; height: 20px; margin-left: 6px; }
 .pane .public-menu-mobile > summary { display: flex; align-items: center; gap: 8px; }
 @container (min-width: 701px) { .pane .public-menu-mobile > summary { display: none; } }
+
+.pane .goal{padding:1rem 0;border-bottom:1px solid var(--pn-line)}.pane .goal h3{margin:0}.pane .funnel{list-style:none;margin:1rem 0;padding:0;display:grid;gap:.5rem}.pane .funnel li{position:relative;display:flex;justify-content:space-between;gap:1rem;padding:.5rem .75rem;overflow:hidden;border:1px solid var(--pn-line);border-radius:8px}.pane .funnel li>*{position:relative}.pane .funnel i{position:absolute;inset:0 auto 0 0;background:var(--pn-fuchsia);opacity:.14}.pane .goal-rows{display:block;margin:.5rem 0}.pane .goal-rows>div{display:flex;justify-content:space-between;gap:1rem;padding:.4rem 0;border-bottom:1px solid var(--pn-line)}.pane .goal-rows dt{overflow-wrap:anywhere}.pane .goal-rows dd{margin:0;font-weight:700;text-align:right}

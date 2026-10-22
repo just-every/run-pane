@@ -319,6 +319,87 @@ test('traffic groups real public visit events without retaining raw referrers or
  } finally { await app.mf.dispose() }
 })
 
+test('conversion goals count quote-form submissions and phone clicks by page, channel and campaign with a funnel, never for opt-outs or replays', async () => {
+ const app = await runtime({cf: {country: 'US', regionCode: 'CO'}})
+ let cookie = ''
+ const post = (path, body, headers = {}) => app.request(path, {method: 'POST', headers: {Cookie: cookie, Origin: origin, 'Content-Type': 'application/json', ...headers}, body: JSON.stringify(body)})
+ const dashboard = async () => (await app.request('/api/pane', {headers: {Cookie: cookie}})).json()
+ const visit = (body, headers = {}) => app.request('/site/visit', {method: 'POST', headers: {Origin: origin, 'Content-Type': 'application/json', ...headers}, body: JSON.stringify({path: 'contact', ...body})})
+ const tap = (body, headers = {}) => app.request('/site/visit/goal', {method: 'POST', headers: {Origin: origin, 'Content-Type': 'application/json', ...headers}, body: JSON.stringify({path: 'home', goal: 'phone-calls', ...body})})
+ const submit = (fields, headers = {}) => app.request('/site/contact', {method: 'POST', headers: {Origin: origin, 'Content-Type': 'application/x-www-form-urlencoded', ...headers}, body: new URLSearchParams({name: 'Synthetic Pane', email: 'synthetic-pane@example.test', message: 'Quote please', website: '', ...fields}), redirect: 'manual'})
+ const goal = (data, id) => data.goals.find(item => item.id === id)
+ try {
+  cookie = (await post('/auth/bootstrap', {token: settings.SETUP_TOKEN, displayName: 'Goal owner'})).headers.get('set-cookie').split(';')[0]
+  await app.request('/setup', {method: 'POST', headers: {Cookie: cookie, Origin: origin, 'Content-Type': 'application/x-www-form-urlencoded'}, body: 'confirm=yes'})
+  const site = structuredClone(fixture)
+  site.analyticsCampaigns = ['spring-open-house']
+  site.pages.find(page => page.slug === 'home').links = [{label: 'Call us', url: 'tel:+13035550100'}, {label: 'Email us', url: 'mailto:hello@example.test'}]
+  for (const bad of [[{name: 'Quote', type: 'form', page: 'about'}], [{name: 'Quote', type: 'form'}], [{name: 'Calls', type: 'phone', page: 'nowhere'}], [{name: 'Calls', type: 'phone'}, {name: 'calls', type: 'email'}], [{name: 'Calls', type: 'phone', target: 'example.com'}], [{name: 'Visit', type: 'view'}]]) {
+   assert.equal((await post('/api/pane/prepare', {site: {...site, goals: bad}})).status, 400, JSON.stringify(bad))
+  }
+  assert.equal((await post('/api/pane/prepare', {site: {...site, pages: site.pages.map(page => page.slug === 'about' ? {...page, links: [{label: 'Call', url: 'tel:javascript'}]} : page)}})).status, 400)
+  site.goals = [{name: 'Quote request', type: 'form', page: 'contact'}, {name: 'Phone calls', type: 'phone'}, {name: 'Partner site', type: 'outbound', target: 'example.org'}]
+  const prepared = await (await post('/api/pane/prepare', {site})).json()
+  assert.deepEqual(prepared.site.goals.map(item => item.id), ['quote-request', 'phone-calls', 'partner-site'])
+  await post('/api/pane/publish', {revision: prepared.id})
+  const live = await (await app.request('/site')).text()
+  assert.match(live, /data-goals="\[[^"]*phone-calls/)
+  assert.doesNotMatch(live, /quote-request/, 'A page carries only the goals that can count on it')
+  const contactPage = await (await app.request('/site/contact')).text()
+  assert.match(contactPage, /name="attribution"/)
+  assert.match(contactPage, /quote-request/)
+  // Visits are the funnel's first step; three tagged contact views, one untagged and one opt-out.
+  for (let index = 0; index < 3; index++) assert.equal((await visit({campaign: 'spring-open-house', utm_medium: 'email'})).status, 204)
+  assert.equal((await visit({})).status, 204)
+  assert.equal((await visit({campaign: 'spring-open-house'}, {'Sec-GPC': '1'})).status, 204)
+  const attribution = JSON.stringify({campaign: 'spring-open-house', campaignTagged: true, utm_medium: 'email', utm_source: 'synthetic-pane-1', referrerHost: 'https://mail.google.com/mail/u/0/'})
+  const first = crypto.randomUUID()
+  for (const response of [await submit({idempotency: first, attribution}), await submit({idempotency: first, attribution})]) {
+   assert.equal(response.status, 303)
+   assert.equal(response.headers.get('set-cookie'), null, 'Goal counting sets no cookie')
+  }
+  assert.equal((await submit({idempotency: crypto.randomUUID(), attribution: JSON.stringify({campaign: 'synthetic-pane-2', campaignTagged: true})})).status, 303)
+  assert.equal((await submit({idempotency: crypto.randomUUID(), attribution: '{broken'})).status, 303)
+  assert.equal((await submit({idempotency: crypto.randomUUID(), website: 'synthetic-pane-3', attribution})).status, 303, 'Honeypot visits are discarded')
+  const private_ = await submit({idempotency: crypto.randomUUID(), attribution}, {'Sec-GPC': '1'})
+  assert.equal(private_.status, 303)
+  let data = await dashboard()
+  assert.equal(data.messages.length, 4, 'Opt-out visitors still reach the inbox')
+  let quote = goal(data, 'quote-request')
+  assert.deepEqual([quote.visits, quote.conversions, quote.page], [4, 3, 'contact'])
+  assert.equal(quote.rate, 0.75)
+  assert.deepEqual(quote.byPage, [{label: 'contact', visits: 4, conversions: 3}])
+  assert.deepEqual(quote.byCampaign.map(row => [row.label, row.visits, row.conversions]), [['spring-open-house', 3, 1], ['', 1, 1], ['Unapproved campaign tag', 0, 1]])
+  assert.deepEqual(quote.bySource.find(row => row.label === 'Email'), {label: 'Email', visits: 3, conversions: 1})
+  // Phone clicks come from any page, on the page view where they happen.
+  const click = {campaign: 'spring-open-house', campaignTagged: true, referrerHost: 'www.yelp.com'}
+  for (const body of [click, click, {path: 'about', ...click}]) {
+   const response = await tap(body)
+   assert.equal(response.status, 204)
+   assert.equal(response.headers.get('set-cookie'), null)
+  }
+  assert.equal((await tap({campaign: 'synthetic-pane-4'}, {DNT: '1'})).status, 204)
+  assert.equal((await tap({}, {'Sec-GPC': '1'})).status, 204)
+  for (const bad of [{goal: 'quote-request'}, {goal: 'missing'}, {goal: 'partner-site', path: 'nowhere'}, {goal: ['phone-calls']}]) assert.equal((await tap(bad)).status, 400, JSON.stringify(bad))
+  assert.equal((await app.request('/site/visit/goal', {method: 'POST', headers: {Origin: origin}, body: 'not json'})).status, 400)
+  assert.equal((await app.request('/site/visit/goal', {method: 'POST', headers: {Origin: 'https://foreign.example'}, body: '{}'})).status, 403)
+  data = await dashboard()
+  const phone = goal(data, 'phone-calls')
+  assert.deepEqual([phone.conversions, phone.visits], [3, 4])
+  assert.deepEqual(phone.byCampaign.find(row => row.label === 'spring-open-house'), {label: 'spring-open-house', visits: 3, conversions: 3})
+  assert.deepEqual(phone.bySource.find(row => row.label === 'Local and review'), {label: 'Local and review', visits: 0, conversions: 3})
+  assert.deepEqual(phone.byPage.map(row => [row.label, row.conversions]).filter(([, count]) => count).sort(), [['about', 1], ['home', 2]])
+  assert.equal(goal(data, 'partner-site').conversions, 0)
+  assert.equal(goal(data, 'partner-site').rate, 0)
+  const tables = (await app.db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all()).results.filter(({name}) => !name.startsWith('_cf_') && !name.startsWith('sqlite_'))
+  const snapshot = JSON.stringify(await Promise.all(tables.map(async ({name}) => name.startsWith('pane_goals') || name === 'pane_visits' ? (await app.db.prepare(`SELECT * FROM "${name}"`).all()).results : [])))
+  assert.doesNotMatch(snapshot, /synthetic-pane|Quote please|example\.test|mail\.google|yelp\.com\/|u\/0/)
+  const html = await (await app.request('/app/sites', {headers: {Cookie: cookie}})).text()
+  for (const label of ['Conversion goals', 'Quote request', 'Phone calls', '75%', 'spring-open-house', 'Unapproved campaign tag', 'Funnel']) assert.ok(html.includes(label), label)
+  assert.equal((await app.request('/api/pane')).status, 401)
+ } finally { await app.mf.dispose() }
+})
+
 test('published navigation keeps ordered dropdowns, links, CTA, footer and shared accessible social profiles with hidden pages excluded', async () => {
  const app = await runtime()
  let cookie

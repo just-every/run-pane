@@ -2,6 +2,7 @@ import { activeBanners } from './schedules'
 import { escape } from './ui/kit'
 import { activePages, homeSlug, pagePath } from './pages'
 import { visitDimensions } from './visit-dimensions'
+import { recordGoal } from './goal-data'
 import { deliverAcknowledgment } from './acknowledgment'
 import { embedOrigin } from './embeds'
 import { runtimeBindings, type Bindings } from '../auth.server'
@@ -11,6 +12,7 @@ import { publicPage } from './public-view'
 import { siteSearch } from './site-search'
 const json = (v:unknown,status=200) => Response.json(v,{status,headers:{'cache-control':'no-store'}})
 const notFound = () => document('Not found','<div class="public-site"><div class="public-shell"><main class="public-main" id="main"><h1>Page not found</h1><p><a href="/site">Back to the home page</a></p></main></div></div>','site').then(r=>new Response(r.body,{status:404,headers:r.headers}))
+const optedOut=(request:Request)=>request.headers.get('DNT')==='1'||request.headers.get('Sec-GPC')==='1'
 async function limited(db:D1Database,key:string,limit:number) {
  const bucket = `${new Date().toISOString().slice(0,16)}:${key}`
  const r=await db.prepare('INSERT INTO pane_rate_limits(bucket,count) VALUES(?,1) ON CONFLICT(bucket) DO UPDATE SET count=count+1 RETURNING count').bind(bucket).first<{count:number}>()
@@ -32,12 +34,21 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
  if (redirect && ['GET','HEAD'].includes(request.method)) return new Response(null,{status:redirect.status,headers:{location:redirect.to,'cache-control':'no-store'}})
  const page=activePages(site).find(page=>page.slug===slug)
  if(path==='/site/visit' && request.method==='POST') {
-  if(request.headers.get('DNT')==='1'||request.headers.get('Sec-GPC')==='1')return new Response(null,{status:204})
+  if(optedOut(request))return new Response(null,{status:204})
   const body=await request.json() as Record<string,unknown>
   if(!body||typeof body!=='object'||Array.isArray(body)||typeof body.path!=='string'||!activePages(site).some(page=>page.slug===body.path))return json({error:'Unknown page.'},400)
   if(await limited(env.DB,'visits',300))return new Response(null,{status:429})
   const dimensions=visitDimensions(request,body,site.analyticsCampaigns)
   await env.DB.prepare('INSERT INTO pane_visits(day,path,source,device,country,region,campaign,referrer,medium,campaign_source,count) VALUES(?,?,?,?,?,?,?,?,?,?,1) ON CONFLICT(day,path,source,device,country,region,campaign,referrer,medium,campaign_source) DO UPDATE SET count=count+1').bind(new Date().toISOString().slice(0,10),body.path,dimensions.source,dimensions.device,dimensions.country,dimensions.region,dimensions.campaign,dimensions.referrer,dimensions.medium,dimensions.campaignSource).run()
+  return new Response(null,{status:204})
+ }
+ if(path==='/site/visit/goal' && request.method==='POST') {
+  if(optedOut(request))return new Response(null,{status:204})
+  const body=await request.json().catch(()=>null) as Record<string,unknown>
+  const goal=body&&typeof body==='object'&&!Array.isArray(body)?site.goals?.find(goal=>goal.id===body.goal):undefined
+  if(!goal||goal.type==='form'||typeof body.path!=='string'||(goal.page&&goal.page!==body.path)||!activePages(site).some(page=>page.slug===body.path))return json({error:'Unknown goal.'},400)
+  if(await limited(env.DB,'goals',300))return new Response(null,{status:429})
+  await recordGoal(env.DB,goal.id,body.path,visitDimensions(request,body,site.analyticsCampaigns))
   return new Response(null,{status:204})
  }
  if((page?.kind==='contact'||(page && slug==='contact'))&&request.method==='POST') {
@@ -48,7 +59,15 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   // Pencil's immutable original receipt: retries cannot replace an earlier answer.
   if(await limited(env.DB,'contact',20))return json({error:'Please try again in a minute.'},429)
   const acknowledgment=page?.acknowledgment
-  await env.DB.prepare('INSERT OR IGNORE INTO pane_messages(id,name,email,message,created_at,acknowledgment,acknowledgment_status) SELECT ?,?,?,?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM pane_erased_messages WHERE id=?)').bind(id,name,email,message,new Date().toISOString(),acknowledgment ? JSON.stringify(acknowledgment) : null,acknowledgment ? 'pending' : 'not_requested',id).run()
+  const stored=await env.DB.prepare('INSERT OR IGNORE INTO pane_messages(id,name,email,message,created_at,acknowledgment,acknowledgment_status) SELECT ?,?,?,?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM pane_erased_messages WHERE id=?)').bind(id,name,email,message,new Date().toISOString(),acknowledgment ? JSON.stringify(acknowledgment) : null,acknowledgment ? 'pending' : 'not_requested',id).run()
+  // A goal counts once per stored message, from the submitting page view's own attribution; never for opt-outs.
+  const goals=optedOut(request)||!stored.meta.changes ? [] : (site.goals??[]).filter(goal=>goal.type==='form'&&goal.page===slug)
+  if(goals.length) {
+   let attribution:unknown={}
+   try { const text=String(f.get('attribution')??''); attribution=text.length<=2000 ? JSON.parse(text||'{}') : {} } catch {}
+   const dimensions=visitDimensions(request,attribution,site.analyticsCampaigns)
+   for(const goal of goals) await recordGoal(env.DB,goal.id,slug,dimensions)
+  }
   await deliverAcknowledgment(env,id)
   return new Response(null,{status:303,headers:{location:pagePath(site,slug)+'?sent=1'}})
  }

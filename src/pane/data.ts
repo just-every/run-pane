@@ -1,5 +1,6 @@
 import { scheduleOverview } from './schedules'
 import { trafficBreakdowns } from './visit-data'
+import { goalReports } from './goal-data'
 import type { Dashboard } from './model'
 import { revision } from './content'
 export async function dashboardData(db:D1Database,name:string,role:string):Promise<Dashboard> {
@@ -16,5 +17,6 @@ export async function dashboardData(db:D1Database,name:string,role:string):Promi
  const revisions = revs.results.map(revision)
  const liveRevision = live ? revision(live) : null
  const schedules = await scheduleOverview(db,revisions[0]??null,liveRevision)
- return {name,role,traffic,schedules,revisions,draft:revisions[0]??null,live:live?revision(live):null,messages:messages.results as any,visits:visits.results as any,approvals:approvals.results as any,imports:imports.results as any,people:Object.fromEntries(operators.results.map(o=>[o.id,o.display_name])),team:operators.results.filter(o=>o.status==='active').map(o=>({name:o.display_name,role:o.role}))}
+ const goals = await goalReports(db,(liveRevision??revisions[0])?.site.goals)
+ return {name,role,traffic,goals,schedules,revisions,draft:revisions[0]??null,live:live?revision(live):null,messages:messages.results as any,visits:visits.results as any,approvals:approvals.results as any,imports:imports.results as any,people:Object.fromEntries(operators.results.map(o=>[o.id,o.display_name])),team:operators.results.filter(o=>o.status==='active').map(o=>({name:o.display_name,role:o.role}))}
 }

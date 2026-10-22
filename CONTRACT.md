@@ -704,7 +704,7 @@ The owner sets goals (form submissions, bookings, checkouts, signups, phone-numb
 
 **Acceptance evidence:** Define a quote-form goal and a phone-click goal, complete each from a tagged campaign, and see them counted by page and campaign with a funnel.
 
-*Status:* missing. No goals.
+*Status:* done. The owner lists goals in the editor (name, type, optional page and, for outbound, site) and publishes them with the site: form submissions (the page holding the contact form), phone-number clicks (`tel:` links), email clicks (`mailto:` links) and outbound clicks. A phone or email address becomes a link through the page-links field. A completion is stored as an aggregate count under the same coarse page, day, channel, device, location, approved campaign, referrer-domain, medium and source dimensions a visit keeps, from the page view it happens on: nothing is written to the visitor's device, no visitor identifier links a visit to a later goal, and a journey across pages is not stitched. A form goal counts once per stored message on the server, with the submitting page view's attribution; click goals post to `/site/visit/goal`. GPC and DNT visitors count nothing, no cookie is set and unapproved campaign text is discarded as in `STATS-001`. The dashboard shows each goal's visits and conversions with the conversion rate by page, channel and campaign and a visit-to-goal funnel, where visits are those of the goal's page (or the whole site). The tracker raises a browser `pane:goal` event carrying the goal name on each completion. Booking, checkout and signup goals arrive with `LINK-001`, `LINK-002` and `LINK-003`: each must record its completion through the same aggregate door and GPC refusal. Mapping goals to Meta and Google Ads events is `STATS-005`'s; the documented event value and consent gating for custom code are `PAGE-008`'s and `PRIV-001`'s.
 
 #### STATS-003 — Vane and Google Analytics 4 with consent.
 
@@ -1117,8 +1117,8 @@ Judged from the code and tests at commit `87642d31c272aeced3a71ac29f0519273bada4
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 16 | 0 | 0 | 16 |
-| Target and push further | 8 | 31 | 70 | 109 |
-| All | 24 | 31 | 70 | 125 |
+| Target and push further | 9 | 31 | 69 | 109 |
+| All | 25 | 31 | 69 | 125 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -1207,7 +1207,7 @@ Judged from the code and tests at commit `87642d31c272aeced3a71ac29f0519273bada4
 | `LINK-005` | Connection health panel | target | missing |  | No connections to show. |
 | `API-001` | Agent command helper and API | target | partial | `scripts/pane.mjs`; `docs/AGENT.md` | The helper uses a copied session cookie and has no test; there are no scoped tokens and no read API. |
 | `STATS-001` | Traffic by page, source, device and campaign | target | done | `tests/pane.test.mjs` — traffic groups real public visit events without retaining raw referrers or unapproved identifiers and excludes privacy opt-outs (page/day/device/trusted location; registrable domains and channel groups; fixed medium and approved/known source; canonical case-insensitive campaigns and separate unapproved counts; no discarded text in any table; GPC/DNT zero writes; every public visit response carries no Set-Cookie); `scripts/traffic-journey.mjs` — published label settings, actual tagged phone/desktop visits, Yelp/ChatGPT domain/channel dashboard output, IP refusal, safe source/medium and unapproved counts, GPC exclusion and an empty browser cookie jar at 1440 and 390 | |
-| `STATS-002` | Conversion goals and click insights | target | missing |  | No goals. |
+| `STATS-002` | Conversion goals and click insights | target | done | `tests/pane.test.mjs` — conversion goals count quote-form submissions and phone clicks by page, channel and campaign with a funnel, never for opt-outs or replays (goal definition validation; tagged form and phone completions; campaign, channel and page conversion rates; opt-out, replay, honeypot and unapproved-text refusals; no cookie); `scripts/traffic-journey.mjs` — goals defined in the editor and published, a tagged quote form and phone tap, the dashboard funnel and rates, an empty visitor cookie jar and no GPC goal request at 1440 and 390 | |
 | `STATS-003` | Vane and Google Analytics 4 with consent | target | missing |  | No analytics connections. |
 | `STATS-004` | Monthly owner report | target | missing |  | No reports. |
 | `STATS-005` | Meta Pixel and Google Ads conversion tracking | target | missing |  | No Meta Pixel, Google Ads connection, goal-to-event mapping or server-side conversions. |
