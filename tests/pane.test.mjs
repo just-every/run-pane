@@ -800,6 +800,8 @@ test('composable Pane roles are invited natively and enforced across workspace, 
    // Delivery happens only after the role assignment exists; inspect that boundary.
    assert.equal((await app.db.prepare('SELECT roles FROM pane_roles WHERE operator_id=?').bind(person.operatorId).first()).roles,JSON.stringify([...row.roles].sort()))
    const cookie=await signInvitation()
+   const admission=await (await get('/api/pane/activity')).json()
+   assert.ok(admission.some(event=>event.subject==='person:'+person.operatorId&&event.action==='authentication.change'&&event.actor==='Synthetic '+row.roles.join(' ')),'Native confirmation attributes the admitted person')
    const expected=new Map([
     ['/app',row.pages?200:403],['/app/sites',row.pages||row.reports?200:403],['/app/inquiries',row.inbox?200:403],['/app/moves',403],['/app/search',row.edit?200:403],
     ['/preview/'+prepared.id+'/home',row.edit?200:403],['/api/pane',200],['/api/pane/pages',row.pages?200:403],['/api/pane/collections',row.pages?501:403],
