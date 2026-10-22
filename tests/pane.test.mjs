@@ -835,6 +835,10 @@ test('composable Pane roles are invited natively and enforced across workspace, 
    assert.equal((await app.request(hosted+'/api/pane/pages',{headers:{Authorization:'Bearer '+scoped.token}})).status,403,'Tokens lose revoked Pane capabilities on the next request')
    assert.equal((await get('/app',cookie)).status,403,'Removing a grant takes effect on the next request')
    assert.equal((await get('/app/inquiries',cookie)).status,403)
+   assert.equal((await call('/auth/operator/status',{operatorId:person.operatorId,status:'inactive'})).status,200)
+   assert.equal((await app.request(hosted+'/api/pane/pages',{headers:{Authorization:'Bearer '+scoped.token}})).status,401,'Native deactivation invalidates the scoped token')
+   assert.equal((await call('/auth/operator/status',{operatorId:person.operatorId,status:'active'})).status,200)
+   assert.equal((await app.request(hosted+'/api/pane/pages',{headers:{Authorization:'Bearer '+scoped.token}})).status,401,'Reactivation cannot resurrect an old-version token')
   }
   assert.ok(deliveries.some(value=>value.personalizations[0].to[0].email==='synthetic-pane-19@example.test'&&value.subject==='Synthetic reply'))
   const history=await (await get('/api/pane/activity')).json()
