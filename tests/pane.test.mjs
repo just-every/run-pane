@@ -243,7 +243,7 @@ test('traffic groups real public visit events without retaining raw referrers or
  const dashboard = async () => (await app.request('/api/pane', {headers: {Cookie: cookie}})).json()
  const phone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Mobile'
  const desktop = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0)'
- const visit = (body, agent = desktop, headers = {}) => app.request('/site/visit', {method: 'POST', headers: {Origin: origin, 'Content-Type': 'application/json', 'User-Agent': agent, 'CF-Connecting-IP': '203.0.113.25', ...headers}, body: JSON.stringify({path: 'home', ...body})})
+ const visit = async (body, agent = desktop, headers = {}) => { const response = await app.request('/site/visit', {method: 'POST', headers: {Origin: origin, 'Content-Type': 'application/json', 'User-Agent': agent, 'CF-Connecting-IP': '203.0.113.25', ...headers}, body: JSON.stringify({path: 'home', ...body})}); assert.equal(response.headers.get('set-cookie'), null, 'Public visit responses never set a cookie'); return response }
  const has = (traffic, dimension, label, count = 1) => assert.ok(traffic[dimension].some(row => row.label === label && row.count === count), `${dimension}: ${label} = ${count}`)
  try {
   cookie = (await post('/auth/bootstrap', {token: settings.SETUP_TOKEN, displayName: 'Traffic owner'})).headers.get('set-cookie').split(';')[0]

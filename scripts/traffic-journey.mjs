@@ -61,6 +61,7 @@ try {
   }
   // The browser's public request door also refuses IP-literal attribution.
   assert.equal((await visitor.request.post(origin + '/site/visit', {headers: {Origin: origin}, data: {path: 'home', referrerHost: 'https://192.168.1.1/private'}})).status(), 204)
+  assert.deepEqual(await visitor.cookies(), [], 'Tagged visits leave the visitor browser without any cookie')
   const dashboard = await data()
   for (const [dimension, label] of [['campaign', campaign], ['campaign', 'Unapproved campaign tag'], ['referrer', 'Unknown'], ['campaignSource', campaign], ['campaignSource', 'Perplexity'], ['medium', 'email'], ['medium', 'social'], ['medium', 'other']]) {
    assert.ok(dashboard.traffic[dimension].some(row => row.label === label && row.count >= 1), dimension + ': ' + label)
