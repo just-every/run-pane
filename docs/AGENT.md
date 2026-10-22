@@ -81,8 +81,8 @@ request. All API responses, including refusals, add an owner-readable audit
 entry containing a fixed route label, method, result status, actor and an opaque agent-token ID, without
 request bodies, queries or credentials. A refused call presenting an expired or
 revoked token, or one whose person is deactivated, keeps that token's ID. Use native owner sign-in for explicitly
-approved publication. These conservative token defaults await ct approval;
-API-001 remains partial, including the unimplemented collection reader.
+approved publication. ct approved these token defaults on 22 Oct; API-001
+remains partial until the collection reader exists (CMS-001).
 
 ## Composable team roles
 
@@ -105,8 +105,9 @@ published read-only workspace access; an explicit Pane assignment replaces it.
 
 Roles compose by union. Every Pane handler and search/preview door checks them
 on the server; dashboard responses omit inaccessible content. Only the owner
-can assign roles. That default and the reserved author/moderator behavior await
-ct approval, so ROLE-001 remains partial. Future collection, post and moderation
+can assign roles. ct approved that default and the reserved author/moderator
+behavior on 22 Oct; ROLE-001 stays partial until every role's doors exist.
+Future collection, post and moderation
 doors must implement their named permission and audit before shipping.
 
 Enquiry replies require a unique `idempotency` key and explicit
@@ -130,5 +131,5 @@ owner approval. API call outcomes are also recorded. No automatic purge runs.
 identity associations, deactivates it, revokes sessions/links/tokens and removes
 its activity attribution, including its tokens' IDs, while keeping events. It does not erase authored
 business content or implement PRIV-002's complete person discovery or older
-account-backup fencing. Those boundaries and the retention/anonymization policy
-keep AUDIT-001 partial pending ct approval. Last-owner protection is preserved.
+account-backup fencing. ct approved the retention/anonymization policy on
+22 Oct; those boundaries keep AUDIT-001 partial. Last-owner protection is preserved.
