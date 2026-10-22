@@ -62,6 +62,7 @@ try {
   await tick(`${year+1}-01-${thanksgiving}T15:00:00Z`)
   state=await dashboard();assert.ok(state.schedules.reminders.some(r=>r.occurrence===`${year+1}-01-${thanksgiving}T09:00`&&r.pages.length===source.pages.length),'Quarterly stale-page reminder arrives at 9 AM CST')
   await page.goto(origin+'/app/sites');const status=page.getByRole('region',{name:'Schedules and reviews'})
+  assert.ok((await status.innerText()).includes(new Intl.DateTimeFormat('en-US',{dateStyle:'medium',timeStyle:'short',timeZone:'UTC'}).format(new Date(`${year+1}-01-${thanksgiving}T09:00Z`))),'Scheduled wall-clock occurrences use local US date/time labels')
   await status.getByText('Page review reminders',{exact:true}).waitFor();await status.scrollIntoViewIfNeeded();await capture('quarterly-review',width)
   const homeReminder=status.locator('li').filter({has:page.locator('a[href="/app?page=home"]')}).last()
   await Promise.all([page.waitForURL(url=>url.searchParams.has('notice')),homeReminder.getByRole('button',{name:'Mark reviewed',exact:true}).click()])

@@ -12,7 +12,9 @@ function businessTime(timestamp: number, timeZone: string): string {
 }
 
 function localTime(occurrence: string, timeZone: string): string {
- return `<time datetime="${escape(occurrence)}">${escape(occurrence.replace('T', ' '))} (${escape(timeZone)})</time>`
+ // Format the saved wall-clock fields without converting their business zone.
+ const label=new Intl.DateTimeFormat('en-US',{dateStyle:'medium',timeStyle:'short',timeZone:'UTC'}).format(new Date(occurrence+'Z'))
+ return `<time datetime="${escape(occurrence)}">${escape(label)} (${escape(timeZone)})</time>`
 }
 
 function reviewReminders(schedules: ScheduleOverview, canReview: boolean): string {
@@ -32,7 +34,7 @@ export function scheduleStatus(data: Dashboard): string {
  const role = data.role.toLowerCase(), canReview = role === 'owner' || role === 'admin'
  const checked = schedules.lastTick === null
   ? 'The scheduler has not checked yet.'
-  : `Last checked ${businessTime(schedules.lastTick, schedules.timeZone ?? 'UTC')}.`
+  : `Last checked ${businessTime(schedules.lastTick, schedules.timeZone ?? data.timeZone ?? 'America/New_York')}.`
  const due = schedules.draftDue.length
   ? `<p class="notice" role="status">Unapproved schedules are due. The owner must publish the draft before they can affect the live site.</p><ul aria-label="Due schedules awaiting approval">${schedules.draftDue.map(label => `<li>${escape(label)}</li>`).join('')}</ul>`
   : ''
