@@ -620,7 +620,7 @@ Each enquiry has an owner, a status (new, replied, booked, closed, spam) and a f
 
 **Acceptance evidence:** Assign an enquiry, leave another unanswered past the window, and see the reminder and escalation; mark one replied and see it leave the queue.
 
-*Status:* missing. Enquiries have no owner or status.
+*Status:* done. Every contact enquiry carries a status (new, replied, booked, closed, spam), an owner (an active owner or admin, or none) and a follow-up time. The follow-up time is the received time plus the site's reply window in business days (Monday to Friday, the local clock time kept, one day by default and set in the editor from 1 to 10), counted in the business time zone from Schedules (US Eastern until one is set); an owner or admin may edit it. The Worker cron reminds the owner of a new enquiry once its follow-up time passes (the site owner when it has no owner) and, if an assigned owner was reminded and it is still new one window later, tells the site owner once; each message is claimed once and its delivery status is kept on the enquiry. The mail goes to the existing team member's address, names the enquirer and carries no message text or contact details. The inbox lists new enquiries by follow-up time under 'Needs reply' with overdue marked, and any other status under 'Handled', so a replied enquiry leaves the queue; reopening restarts the window. Owners and admins manage enquiries, and members cannot yet (`ROLE-001` adds the inbox permission). Assignment and status changes are not yet in an audit log (`AUDIT-001`), and typed forms (`FORM-001`) inherit the status, owner and follow-up fields.
 
 #### FORM-007 — Submission export and Google Sheets.
 
@@ -1117,8 +1117,8 @@ Judged from the code and tests at commit `87642d31c272aeced3a71ac29f0519273bada4
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 16 | 0 | 0 | 16 |
-| Target and push further | 9 | 31 | 69 | 109 |
-| All | 25 | 31 | 69 | 125 |
+| Target and push further | 10 | 31 | 68 | 109 |
+| All | 26 | 31 | 68 | 125 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -1197,7 +1197,7 @@ Judged from the code and tests at commit `87642d31c272aeced3a71ac29f0519273bada4
 | `FORM-003` | Enquiry email to named recipients and reply | target | partial | `src/pane/views.ts`; `src/pane/data.ts` | Enquiries appear in the workspace inbox only; no notification email or reply. |
 | `FORM-004` | Automatic acknowledgment to the sender | target | done | `tests/pane.test.mjs` — an approved form acknowledgment reaches the provider once with owner wording and durable independent status (SendGrid network edge acceptance, configured recipient/text/time, one send, failure/uncertainty retained, replay/erasure and development suppression); `scripts/acknowledgment-journey.mjs` — saved wording, explicit enable, owner publication, durable inquiry, suppression and disable at 1440 and 390 |  |
 | `FORM-005` | Lead routing to Orbit, HubSpot and signed webhooks | target | missing |  | Submissions are stored locally only. |
-| `FORM-006` | Enquiry ownership, status and follow-up | target | missing |  | Enquiries have no owner or status. |
+| `FORM-006` | Enquiry ownership, status and follow-up | target | done | `tests/pane.test.mjs` — enquiries carry an owner, status and follow-up time; unanswered ones are reminded then escalated by business day and replied ones leave the queue (SendGrid network edge: assignee reminder, owner fallback, one-time owner escalation, no enquiry text in mail; weekend and daylight-saving business days; role refusals; replied leaves the queue; reopen); `scripts/acknowledgment-journey.mjs` — assign an owner and mark an enquiry replied from the inbox into Handled at 1440 and 390 | |
 | `FORM-007` | Submission export and Google Sheets | target | missing |  | No submission export beyond the installation archive. |
 | `FORM-008` | Consent capture for email and SMS | target | missing |  | No consent fields. |
 | `LINK-001` | Booking through Dial, Calendly or Acuity | target | missing |  | No booking embeds; the previous contract excluded bookings. |

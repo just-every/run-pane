@@ -1,4 +1,5 @@
 import { runSchedules } from './pane/schedules'
+import { runFollowUps } from './pane/followups'
 import { documentPermissions } from './pane/document-security'
 import { withDemo } from './modules/demo/index.mjs'
 import { searchResponse, searchMetadata } from './pane/search'
@@ -19,7 +20,10 @@ api.get('/health', (context) => context.json({ status: 'ok', ...deploymentHealth
 
 export default withDemo<Bindings, ExportedHandler<Bindings>>({
   async scheduled(controller, env) {
-    await runSchedules(runtimeBindings(env).DB,controller.scheduledTime)
+    const bindings=runtimeBindings(env)
+    // One failing sweep must not stop the other.
+    const sweeps=await Promise.allSettled([runSchedules(bindings.DB,controller.scheduledTime),runFollowUps(bindings,controller.scheduledTime)])
+    for(const sweep of sweeps) if(sweep.status==='rejected') throw sweep.reason
   },
   async fetch(request, env, execution) {
     const asset = await staticAssetResponse(request, env)

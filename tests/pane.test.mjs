@@ -400,6 +400,105 @@ test('conversion goals count quote-form submissions and phone clicks by page, ch
  } finally { await app.mf.dispose() }
 })
 
+test('enquiries carry an owner, status and follow-up time; unanswered ones are reminded then escalated by business day and replied ones leave the queue', async () => {
+ const hosted = 'https://pane.example.test', mails = []
+ const app = await runtime({bindings: {AUTH_ORIGIN: hosted, AUTH_LOCAL: 'false', MAIL_PROVIDER: 'sendgrid', MAIL_API_KEY: 'synthetic-pane-1', MAIL_FROM: 'studio@example.test'}, outboundService: async request => {
+  mails.push(await request.json())
+  return new Response(null, {status: 202, headers: {'x-message-id': 'synthetic-pane-2'}})
+ }})
+ const cookies = {}
+ const call = (path, body, who = 'owner') => app.request(hosted + path, {method: 'POST', headers: {Cookie: cookies[who] ?? '', Origin: hosted, 'Content-Type': 'application/json'}, body: JSON.stringify(body)})
+ const state = async () => (await app.request(hosted + '/api/pane', {headers: {Cookie: cookies.owner}})).json()
+ const tick = async time => assert.equal((await (await app.mf.getWorker()).scheduled({scheduledTime: new Date(time), cron: '* * * * *'})).outcome, 'ok')
+ const submit = name => app.request(hosted + '/site/contact', {method: 'POST', headers: {Origin: hosted, 'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({idempotency: crypto.randomUUID(), name, email: 'synthetic-pane@example.test', message: 'Private visitor words for ' + name})})
+ const find = async name => (await state()).messages.find(message => message.name === name)
+ const memberId = async () => (await app.db.prepare("SELECT id FROM oa_operators WHERE role='member'").first()).id
+ const recipients = () => mails.map(mail => mail.personalizations[0].to[0].email)
+ try {
+  cookies.owner = (await call('/auth/bootstrap', {token: settings.SETUP_TOKEN, displayName: 'Follow-up owner'}, '')).headers.get('set-cookie').split(';')[0]
+  await app.request(hosted + '/setup', {method: 'POST', headers: {Cookie: cookies.owner, Origin: hosted, 'Content-Type': 'application/x-www-form-urlencoded'}, body: 'confirm=yes'})
+  let delivered
+  const auth = createOperatorAuth({db: app.db, config: {...settings, origin: hosted, local: false}, clientIp: () => '127.0.0.1', mailSender: {send: async mail => { delivered = mail; return {status: 'accepted', provider: 'test-network-edge', providerMessageId: 'synthetic-pane-3'} }}})
+  for (const role of ['admin', 'member']) {
+   await auth.invite(new Request(hosted + '/auth/invite', {method: 'POST', headers: {Host: new URL(hosted).host, Origin: hosted, Cookie: cookies.owner}}), {email: role + '@example.test', displayName: 'Follow-up ' + role, role})
+   const token = new URL(delivered.text.match(/https:\/\/[^\s]+/)[0]).searchParams.get('token')
+   const confirmed = await call('/auth/confirm', {token}, '')
+   assert.equal(confirmed.status, 303)
+   cookies[role] = confirmed.headers.get('set-cookie').split(';')[0]
+  }
+  const site = {...structuredClone(fixture), automations: {timeZone: 'America/Denver', banners: []}}
+  for (const days of [0, 11, 1.5, 'soon']) assert.equal((await call('/api/pane/prepare', {site: {...site, responseDays: days}})).status, 400, String(days))
+  const prepared = await (await call('/api/pane/prepare', {site})).json()
+  await call('/api/pane/publish', {revision: prepared.id})
+  for (const name of ['Queue Alpha', 'Queue Bravo', 'Queue Charlie']) assert.equal((await submit(name)).status, 303)
+  let data = await state()
+  const people = Object.fromEntries(data.assignees.map(person => [person.role, person.id]))
+  assert.deepEqual(data.replyWindow, {zone: 'America/Denver', days: 1})
+  const [alpha, bravo, charlie] = await Promise.all(['Queue Alpha', 'Queue Bravo', 'Queue Charlie'].map(find))
+  for (const message of [alpha, bravo, charlie]) {
+   assert.equal(message.status, 'new')
+   assert.ok(message.follow_up_at - Date.now() > 20 * 3_600_000 && message.follow_up_at - Date.now() < 4 * 86_400_000, 'One business day ahead')
+   assert.ok(!['Sat', 'Sun'].includes(new Date(message.follow_up_at).toLocaleDateString('en-US', {timeZone: 'America/Denver', weekday: 'short'})), 'Follow-ups fall on weekdays')
+  }
+  // Roles: owners and admins manage enquiries and assign them to each other, never to a member.
+  assert.equal((await call('/api/pane/messages/update', {id: alpha.id, status: 'closed'}, '')).status, 401)
+  assert.equal((await call('/api/pane/messages/update', {id: alpha.id, status: 'closed'}, 'member')).status, 403)
+  assert.equal((await call('/api/pane/messages/update', {id: alpha.id, assignee: await memberId()})).status, 400)
+  assert.equal((await call('/api/pane/messages/update', {id: alpha.id, status: 'invented'})).status, 400)
+  assert.equal((await call('/api/pane/messages/update', {id: alpha.id, assignee: 'nobody'})).status, 400)
+  assert.equal((await call('/api/pane/messages/update', {id: 'missing', status: 'closed'})).status, 400)
+  assert.equal((await call('/api/pane/messages/update', {id: alpha.id, assignee: people.admin}, 'admin')).status, 200)
+  assert.equal((await call('/api/pane/messages/update', {id: charlie.id, assignee: people.owner})).status, 200)
+  assert.equal((await call('/api/pane/messages/update', {id: charlie.id, status: 'replied'})).status, 200)
+  const queue = html => html.slice(html.indexOf('id="queue-open"'), html.indexOf('id="queue-handled"'))
+  let inbox = await (await app.request(hosted + '/app/inquiries', {headers: {Cookie: cookies.owner}})).text()
+  assert.ok(queue(inbox).includes('Queue Alpha') && queue(inbox).includes('Queue Bravo') && !queue(inbox).includes('Queue Charlie'), 'A replied enquiry leaves the queue')
+  assert.match(inbox, /Owner Follow-up admin/)
+  // The reminder goes to the assignee, or the site owner when unassigned, once.
+  const due = alpha.follow_up_at
+  await tick(due - 60_000)
+  assert.equal(mails.length, 0, 'Nothing is sent before the window ends')
+  await tick(due + 60_000); await tick(due + 60_000)
+  assert.deepEqual(recipients().sort(), ['admin@example.test', 'owner@example.test'])
+  assert.doesNotMatch(JSON.stringify(mails), /Private visitor words|synthetic-pane@example\.test/, 'Internal mail never carries the enquiry text or contact details')
+  data = await state()
+  assert.deepEqual([data.messages.find(m => m.id === alpha.id).reminder_to, data.messages.find(m => m.id === alpha.id).reminder_status], [people.admin, 'accepted'])
+  assert.deepEqual([data.messages.find(m => m.id === bravo.id).reminder_to, data.messages.find(m => m.id === charlie.id).reminded_at], [people.owner, null])
+  // The site owner hears of an unanswered assigned enquiry one business day after the reminder, once.
+  await tick(due + 12 * 3_600_000); assert.equal(mails.length, 2)
+  await tick(due + 4 * 86_400_000); await tick(due + 4 * 86_400_000)
+  assert.deepEqual(recipients().sort(), ['admin@example.test', 'owner@example.test', 'owner@example.test'])
+  data = await state()
+  const escalated = data.messages.find(message => message.id === alpha.id)
+  assert.deepEqual([escalated.escalated_to, escalated.escalation_status, data.messages.find(m => m.id === bravo.id).escalated_at], [people.owner, 'accepted', null])
+  inbox = await (await app.request(hosted + '/app/inquiries', {headers: {Cookie: cookies.owner}})).text()
+  assert.match(inbox, /Reminder to Follow-up admin sent/); assert.match(inbox, /Escalated to Follow-up owner sent/); assert.match(inbox, /Overdue/)
+  // Replying ends the chain and leaves the queue; reopening restarts the window.
+  assert.equal((await call('/api/pane/messages/update', {id: alpha.id, status: 'replied'}, 'admin')).status, 200)
+  assert.equal(queue(await (await app.request(hosted + '/app/inquiries', {headers: {Cookie: cookies.owner}})).text()).includes('Queue Alpha'), false)
+  assert.equal((await call('/api/pane/messages/update', {id: alpha.id, status: 'new'})).status, 200)
+  const reopened = await find('Queue Alpha')
+  assert.deepEqual([reopened.reminded_at, reopened.escalated_at], [null, null])
+  assert.ok(reopened.follow_up_at > Date.now())
+  assert.equal((await call('/api/pane/messages/update', {id: alpha.id, followUp: '2027-01-05T09:30'})).status, 200)
+  assert.equal((await find('Queue Alpha')).follow_up_at, Date.parse('2027-01-05T16:30:00Z'), 'A follow-up time is read in the business zone')
+  // Business-day arithmetic keeps the local clock across weekends and a daylight-saving change.
+  for (const [name, created] of [['Friday', '2026-10-23T22:00:00.000Z'], ['Saturday', '2026-10-24T16:00:00.000Z'], ['Before the clocks change', '2026-10-30T22:00:00.000Z']]) {
+   await app.db.prepare('INSERT INTO pane_messages(id,name,email,message,created_at) VALUES(?,?,?,?,?)').bind(crypto.randomUUID(), name, 'synthetic-pane@example.test', 'Older enquiry', created).run()
+  }
+  await tick('2026-10-24T00:00:00Z')
+  for (const [name, expected] of [['Friday', '2026-10-26T22:00:00.000Z'], ['Saturday', '2026-10-26T16:00:00.000Z'], ['Before the clocks change', '2026-11-02T23:00:00.000Z']]) assert.equal(new Date((await find(name)).follow_up_at).toISOString(), expected, name)
+  // A longer owner-chosen window applies to enquiries received after it is published.
+  const longer = await (await call('/api/pane/prepare', {site: {...site, responseDays: 3}})).json()
+  await call('/api/pane/publish', {revision: longer.id})
+  assert.equal((await state()).replyWindow.days, 3)
+  await submit('Queue Delta')
+  assert.ok((await find('Queue Delta')).follow_up_at - Date.now() > 2.9 * 86_400_000)
+  assert.equal((await call('/api/pane/messages/erase', {id: alpha.id})).status, 200)
+  assert.equal(await find('Queue Alpha'), undefined)
+ } finally { await app.mf.dispose() }
+})
+
 test('published navigation keeps ordered dropdowns, links, CTA, footer and shared accessible social profiles with hidden pages excluded', async () => {
  const app = await runtime()
  let cookie

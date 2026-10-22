@@ -51,6 +51,17 @@ try {
   assert.match(await message.innerText(), /Suppressed in development or demo/)
   assert.match(await message.innerText(), /studio dining table/)
   await capture('acknowledgment-inquiry-' + width)
+  // Ownership and follow-up: the new enquiry waits in the reply queue until it is marked replied.
+  const open = page.locator('section[aria-labelledby="queue-open"]'), handled = page.locator('section[aria-labelledby="queue-handled"]')
+  assert.match(await message.innerText(), /Reply by/)
+  await message.getByLabel('Owner', {exact: true}).selectOption({index: 1})
+  await Promise.all([page.waitForURL(url => url.searchParams.has('notice')), message.getByRole('button', {name: 'Save'}).click()])
+  assert.match(await open.locator('.message').filter({has: page.getByRole('heading', {name: 'Avery Cooper ' + width, exact: true})}).innerText(), /Owner/)
+  await open.locator('.message').filter({has: page.getByRole('heading', {name: 'Avery Cooper ' + width, exact: true})}).getByLabel('Status', {exact: true}).selectOption('replied')
+  await Promise.all([page.waitForURL(url => url.searchParams.has('notice')), open.locator('.message').filter({has: page.getByRole('heading', {name: 'Avery Cooper ' + width, exact: true})}).getByRole('button', {name: 'Save'}).click()])
+  assert.equal(await open.getByRole('heading', {name: 'Avery Cooper ' + width, exact: true}).count(), 0)
+  assert.equal(await handled.getByRole('heading', {name: 'Avery Cooper ' + width, exact: true}).count(), 1)
+  await capture('inquiry-follow-up-' + width)
  }
  await page.goto(origin + '/app?page=contact')
  await page.getByText('Acknowledgment email', {exact: true}).click()
@@ -58,5 +69,5 @@ try {
  await saved(); await publish()
  const dashboard = await (await context.request.get(origin + '/api/pane')).json()
  assert.equal(dashboard.live.site.pages.find(page => page.slug === 'contact').acknowledgment, undefined)
- console.log('Acknowledgment browser journey passed: saved wording, explicit enable, owner publication, durable inquiry, honest development suppression and disable at 1440 and 390.')
+ console.log('Acknowledgment browser journey passed: saved wording, explicit enable, owner publication, durable inquiry, honest development suppression, owner assignment, reply queue and disable at 1440 and 390.')
 } finally { await browser.close(); if (ownsFixture) await fixture.stop() }

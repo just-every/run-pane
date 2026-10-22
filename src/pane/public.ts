@@ -3,6 +3,7 @@ import { escape } from './ui/kit'
 import { activePages, homeSlug, pagePath } from './pages'
 import { visitDimensions } from './visit-dimensions'
 import { recordGoal } from './goal-data'
+import { followUpDue } from './followups'
 import { deliverAcknowledgment } from './acknowledgment'
 import { embedOrigin } from './embeds'
 import { runtimeBindings, type Bindings } from '../auth.server'
@@ -58,8 +59,8 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   if(!/^[a-f0-9-]{36}$/.test(id)||!name||name.length>120||!/^\S+@\S+\.\S+$/.test(email)||email.length>254||!message||message.length>5000)return json({error:'Enter a name, valid email and message up to 5,000 characters.'},400)
   // Pencil's immutable original receipt: retries cannot replace an earlier answer.
   if(await limited(env.DB,'contact',20))return json({error:'Please try again in a minute.'},429)
-  const acknowledgment=page?.acknowledgment
-  const stored=await env.DB.prepare('INSERT OR IGNORE INTO pane_messages(id,name,email,message,created_at,acknowledgment,acknowledgment_status) SELECT ?,?,?,?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM pane_erased_messages WHERE id=?)').bind(id,name,email,message,new Date().toISOString(),acknowledgment ? JSON.stringify(acknowledgment) : null,acknowledgment ? 'pending' : 'not_requested',id).run()
+  const acknowledgment=page?.acknowledgment,received=Date.now()
+  const stored=await env.DB.prepare('INSERT OR IGNORE INTO pane_messages(id,name,email,message,created_at,acknowledgment,acknowledgment_status,follow_up_at) SELECT ?,?,?,?,?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM pane_erased_messages WHERE id=?)').bind(id,name,email,message,new Date(received).toISOString(),acknowledgment ? JSON.stringify(acknowledgment) : null,acknowledgment ? 'pending' : 'not_requested',followUpDue(site,received),id).run()
   // A goal counts once per stored message, from the submitting page view's own attribution; never for opt-outs.
   const goals=optedOut(request)||!stored.meta.changes ? [] : (site.goals??[]).filter(goal=>goal.type==='form'&&goal.page===slug)
   if(goals.length) {

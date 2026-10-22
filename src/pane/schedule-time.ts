@@ -39,3 +39,29 @@ export function addMonths(start: string, months: number): string {
  const last = new Date(Date.UTC(next.getUTCFullYear(),next.getUTCMonth()+1,0)).getUTCDate()
  return `${String(next.getUTCFullYear()).padStart(4,'0')}-${String(next.getUTCMonth()+1).padStart(2,'0')}-${String(Math.min(day,last)).padStart(2,'0')}${start.slice(10)}`
 }
+const dayOf = (local: string) => new Date(`${local.slice(0,10)}T00:00:00Z`)
+/** Move a local date forward one calendar day, keeping the clock time. */
+function nextLocalDay(local: string): string {
+ const next = dayOf(local); next.setUTCDate(next.getUTCDate() + 1)
+ return `${next.toISOString().slice(0,10)}${local.slice(10)}`
+}
+/**
+ * Advance by whole business days (Monday to Friday) in a business zone, keeping
+ * the local clock time: Friday 4 pm plus one day is Monday 4 pm. A clock time
+ * the zone skips or repeats moves an hour later.
+ */
+export function addBusinessDays(at: number, days: number, zone: string): number {
+ let local = localAt(at,zone)
+ for (let added = 0; added < days;) {
+  local = nextLocalDay(local)
+  const weekday = dayOf(local).getUTCDay()
+  if (weekday !== 0 && weekday !== 6) added++
+ }
+ for (let attempt = 0; attempt < 3; attempt++) {
+  try { return localInstant(local,zone) } catch {
+   const later = new Date(Date.UTC(+local.slice(0,4),+local.slice(5,7)-1,+local.slice(8,10),+local.slice(11,13)+1,+local.slice(14,16)))
+   local = later.toISOString().slice(0,16)
+  }
+ }
+ throw Error(`No business time found in ${zone} for ${local}.`)
+}

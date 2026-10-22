@@ -10,6 +10,7 @@ import { publicPage } from './public-view'
 import { shell } from './ui/shell'
 import { moveReview } from './ui/moves'
 import { planMoveIn, applyMoveIn, undoMoveIn } from './imports'
+import { updateInquiry } from './followups'
 const json=(v:unknown,status=200)=>Response.json(v,{status,headers:{'cache-control':'no-store'}})
 export async function paneResponse(request:Request,original:Bindings):Promise<Response|null> {
  const url=new URL(request.url),path=url.pathname,api=path.startsWith('/api/pane'),preview=path.startsWith('/preview/')
@@ -69,6 +70,9 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    notice='Import applied as an unpublished draft. Preview it before publishing.';back='/app/moves'
   } else if(action==='import/undo') {
    result=await undoMoveIn(env.DB,actor,String(input.job));notice='Import undone. The journal is retained.';back='/app/moves'
+  } else if(action==='messages/update') {
+   const live=await env.DB.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first()
+   result=await updateInquiry(env.DB,input,live?revision(live).site:null);notice='Enquiry updated.';back='/app/inquiries'
   } else if(action==='messages/erase') {
    const id=String(input.id??'')
    const wire=wireDatabase(env.DB)
