@@ -1,3 +1,5 @@
+import { auditedDatabase } from './pane/audit'
+import { operatorAuth } from './auth.server'
 import { runSchedules } from './pane/schedules'
 import { runFollowUps } from './pane/followups'
 import { documentPermissions } from './pane/document-security'
@@ -20,7 +22,7 @@ api.get('/health', (context) => context.json({ status: 'ok', ...deploymentHealth
 
 export default withDemo<Bindings, ExportedHandler<Bindings>>({
   async scheduled(controller, env) {
-    const bindings=runtimeBindings(env)
+    const bindings={...runtimeBindings(env),DB:auditedDatabase(env.DB,null,'schedule.change')}
     // One failing sweep must not stop the other.
     const sweeps=await Promise.allSettled([runSchedules(bindings.DB,controller.scheduledTime),runFollowUps(bindings,controller.scheduledTime)])
     for(const sweep of sweeps) if(sweep.status==='rejected') throw sweep.reason
@@ -28,6 +30,11 @@ export default withDemo<Bindings, ExportedHandler<Bindings>>({
   async fetch(request, env, execution) {
     const asset = await staticAssetResponse(request, env)
     if (asset) return asset
+    // Resolve attribution using the unwrapped native store, then scope all writes.
+    let actor: string | null = null
+    try { actor = (await operatorAuth(runtimeBindings(env)).getSession(request))?.operator.id ?? null } catch {}
+    const path = new URL(request.url).pathname
+    env = {...env, DB: auditedDatabase(env.DB,actor,path.startsWith('/auth/') ? 'authentication.change' : path.startsWith('/app/search') ? 'settings.search' : 'workspace.change')}
     const auth = await authResponse(request, env)
     if (auth) return auth
     const search = await searchResponse(request, env)

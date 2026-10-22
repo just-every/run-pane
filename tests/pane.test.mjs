@@ -625,3 +625,64 @@ test('approved business-local schedules drive banners and reminders while drafts
   await post('/api/pane/publish',{revision:noSchedules.id});assert.equal((await html()).includes('Spring workshop offer'),false)
  } finally {await app.mf.dispose()}
 })
+
+test('activity records successful existing changes atomically and exports ordered owner-only metadata',async()=>{
+ const app=await runtime();let cookie
+ const call=(path,body,session=cookie)=>app.request(path,{method:'POST',headers:{Cookie:session??'',Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)})
+ const get=(path,session=cookie)=>app.request(path,{headers:{Cookie:session??''}})
+ try {
+  cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})).headers.get('set-cookie').split(';')[0]
+  const created=await (await call('/api/pane/prepare',{site:fixture})).json()
+  await call('/api/pane/publish',{revision:created.id})
+  await call('/api/pane/rollback',{revision:created.id})
+  const invalid=await call('/api/pane/prepare',{site:{name:'invalid'}});assert.equal(invalid.status,400)
+  const plan=await (await call('/api/pane/import/dry-run',{source:JSON.stringify(fixture)})).json()
+  const job=await call('/api/pane/import/apply',{source:JSON.stringify(fixture),fingerprint:plan.fingerprint});assert.equal(job.status,200,await job.clone().text())
+  const invitation=await call('/auth/invite',{email:'synthetic-pane-1@example.test',displayName:'Synthetic member',role:'member'});assert.equal(invitation.status,202)
+  const person=(await app.db.prepare("SELECT id FROM oa_operators WHERE role='member'").first()).id
+  assert.equal((await call('/auth/operator/role',{operatorId:person,role:'admin'})).status,200)
+  const id=crypto.randomUUID()
+  await app.request('/site/contact',{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({idempotency:id,name:'synthetic-pane-2',email:'synthetic-pane-2@example.test',message:'synthetic-pane-3',website:''})})
+  assert.equal((await call('/api/pane/messages/update',{id,status:'closed'})).status,200)
+  assert.equal((await call('/api/pane/messages/erase',{id})).status,200)
+  const rows=await (await get('/api/pane/activity')).json()
+  for(const action of ['edit','publish','rollback','import','person.invite','authentication.change','workspace.change','erasure'])assert.ok(rows.some(row=>row.action===action),action)
+  assert.equal(rows.filter(row=>row.action==='edit'&&row.subject==='revision:'+created.id).length,1,'Failed edits create no successful activity')
+  assert.deepEqual(rows.map(row=>row.sequence),[...rows.map(row=>row.sequence)].sort((a,b)=>a-b))
+  assert.ok(rows.every(row=>row.created_at&&row.actor&&row.subject))
+  assert.doesNotMatch(JSON.stringify(rows),/synthetic-pane-2@example|synthetic-pane-3|test-session-key|test-setup-key/)
+  const exported=await get('/api/pane/activity/export');assert.match(exported.headers.get('content-disposition'),/attachment/);assert.deepEqual(await exported.json(),rows)
+  assert.equal((await get('/api/pane/activity','')).status,401)
+  const denied=await app.db.prepare('SELECT COUNT(*) AS count FROM pane_audit_context').first();assert.equal(denied.count,0,'Transaction actor never leaks into another request')
+ } finally {await app.mf.dispose()}
+})
+
+test('explicit person erasure removes actor attribution, preserves the log and revokes access',async()=>{
+ const app=await runtime();let cookie
+ const call=(path,body,session=cookie)=>app.request(path,{method:'POST',headers:{Cookie:session??'',Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)})
+ const rows=async()=> (await app.request('/api/pane/activity',{headers:{Cookie:cookie}})).json()
+ try {
+  cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})).headers.get('set-cookie').split(';')[0]
+  let mail
+  const auth=createOperatorAuth({db:app.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async message=>{mail=message;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+  await auth.invite(new Request(origin+'/auth/invite',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin,Cookie:cookie}}),{email:'synthetic-pane-4@example.test',displayName:'Synthetic administrator',role:'admin'})
+  const token=new URL(mail.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token')
+  const adminCookie=(await call('/auth/confirm',{token},'')).headers.get('set-cookie').split(';')[0]
+  const person=(await app.db.prepare("SELECT id FROM oa_operators WHERE role='admin'").first()).id
+  const draft=await (await call('/api/pane/prepare',{site:fixture},adminCookie)).json()
+  assert.equal((await app.request('/api/pane/activity',{headers:{Cookie:adminCookie}})).status,403)
+  const before=await rows(),entry=before.find(row=>row.subject==='revision:'+draft.id)
+  assert.equal(entry.actor,'Synthetic administrator')
+  assert.equal((await call('/api/pane/people/erase',{id:person})).status,400)
+  assert.equal((await call('/api/pane/people/erase',{id:person,confirm:'erase-person'},adminCookie)).status,403)
+  assert.equal((await call('/api/pane/people/erase',{id:person,confirm:'erase-person'})).status,200)
+  const after=await rows();assert.ok(after.length>=before.length)
+  assert.match(after.find(row=>row.sequence===entry.sequence).actor,/Former person/)
+  assert.doesNotMatch(JSON.stringify(after),/Synthetic administrator|synthetic-pane-4@example/)
+  assert.equal((await call('/api/pane/prepare',{site:fixture},adminCookie)).status,401)
+  const erased=await app.db.prepare('SELECT email,display_name,status FROM oa_operators WHERE id=?').bind(person).first()
+  assert.equal(erased.status,'inactive');assert.equal(erased.display_name,'Former person');assert.ok(erased.email.endsWith('@erased.invalid'))
+  const ownerId=(await app.db.prepare("SELECT id FROM oa_operators WHERE role='owner'").first()).id
+  assert.equal((await call('/api/pane/people/erase',{id:ownerId,confirm:'erase-person'})).status,400)
+ } finally {await app.mf.dispose()}
+})

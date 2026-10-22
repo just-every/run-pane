@@ -3,6 +3,7 @@ export type Page = { id?: string; folder?: string; deleted?: boolean; kind?: 'co
 export type Site = { automations?: import('./schedules').Automations; name: string; description: string; pages: Page[]; home?: string; notFound?: string; folders?: string[]; redirects?: import('./redirects').Redirect[]; redirectOffers?: import('./redirects').RedirectOffer[]; navigation?: import('./navigation').Navigation; socials?: Partial<Record<import('./navigation').SocialNetwork, string>>; robots?: string; analyticsCampaigns?: string[]; goals?: import('./goals').Goal[]; responseDays?: number }
 export type Revision = { id: string; site: Site; hash: string; created_at: string; actor: string }
 export type Dashboard = {
+ activity?: import('./audit').Activity[];
  schedules?: import('./schedules').ScheduleOverview; name: string; role: string; draft: Revision | null; live: Revision | null;
  revisions: Revision[]; messages: {id:string;name:string;email:string;message:string;created_at:string; acknowledgment_status?:string; status?:string; assignee?:string|null; follow_up_at?:number|null; reminded_at?:number|null; reminder_to?:string|null; reminder_status?:string|null; escalated_at?:number|null; escalated_to?:string|null; escalation_status?:string|null; acknowledgment_provider?:string; acknowledgment_provider_id?:string}[];
  visits: {path:string;count:number}[]; traffic: import('./visit-data').TrafficBreakdowns; goals: import('./goal-data').GoalReport[]; approvals: {id:string;action:string;revision:string;actor:string;created_at:string}[];

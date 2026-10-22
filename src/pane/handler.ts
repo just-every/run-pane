@@ -1,3 +1,4 @@
+import { activity, erasePerson } from './audit'
 import { markReviewed } from './schedules'
 import { activePages, homeSlug } from './pages'
 import { wireDatabase } from '@runeditrun/rer/internal/modules/d1-transport/index.mjs'
@@ -30,6 +31,11 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    if(!activePages(site).some(page=>page.slug===slug))return json({error:'Preview not found.'},404)
    return document('Preview',publicPage(site,slug,'preview'),'site')
   }
+  if(request.method==='GET' && ['/api/pane/activity','/api/pane/activity/export'].includes(path)) {
+   if(!owner)return json({error:'Owner only.'},403)
+   const rows=await activity(env.DB)
+   return new Response(JSON.stringify(rows),{headers:{'content-type':'application/json','cache-control':'no-store',...(path.endsWith('/export')?{'content-disposition':'attachment; filename="pane-activity.json"'}:{})}})
+  }
   if(request.method==='GET') {
    const data=await dashboardData(env.DB,actor.displayName,actor.role)
    if(api&&path!=='/api/pane')return json({error:'Not found.'},404)
@@ -43,7 +49,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   const input:Record<string,any>=request.headers.get('content-type')?.includes('application/json')?await request.json():Object.fromEntries(await request.formData())
   const action=api?path.slice('/api/pane/'.length):path.slice('/app/'.length)
   let result:unknown,notice='Saved.',back='/app'
-  if(['publish','rollback','messages/erase'].includes(action)?!owner:!editor)return json({error:'Your role cannot perform this action.'},403)
+  if(['publish','rollback','messages/erase','people/erase'].includes(action)?!owner:!editor)return json({error:'Your role cannot perform this action.'},403)
   if(action==='prepare'||action==='autosave') {
    result=await prepare(env.DB,actor.id,input.site??await siteFromForm(env.DB,input), action==='autosave' ? String(input.base??'') : typeof input.base==='string' ? input.base : undefined)
    if(action==='autosave')return json(result)
@@ -73,6 +79,8 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   } else if(action==='messages/update') {
    const live=await env.DB.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first()
    result=await updateInquiry(env.DB,input,live?revision(live).site:null);notice='Enquiry updated.';back='/app/inquiries'
+  } else if(action==='people/erase') {
+   result=await erasePerson(env.DB,String(input.id??''),input.confirm);notice='Person erased and activity attribution anonymized.'
   } else if(action==='messages/erase') {
    const id=String(input.id??'')
    const wire=wireDatabase(env.DB)
