@@ -5,7 +5,7 @@ const require=createRequire(await realpath('node_modules/wrangler/package.json')
 const {Miniflare,convertV4MiniflareOptions}=require('miniflare')
 const {unstable_splitSqlQuery}=require('wrangler')
 export const origin='http://127.0.0.1:8787'
-export const settings={AUTH_ORIGIN:origin,AUTH_LOCAL:'true',OWNER_EMAIL:'owner@example.test',SESSION_SECRET:'test-session-key-'.repeat(4),SETUP_TOKEN:'test-setup-key-'.repeat(4),MAIL_PROVIDER:'development',MAIL_FROM:'pane@example.test'}
+export const settings={AUTH_ORIGIN:origin,AUTH_LOCAL:'true',OWNER_EMAIL:'owner@example.test',SESSION_SECRET:'test-session-key-'.repeat(4),SETUP_TOKEN:'test-setup-key-'.repeat(4),INSTALLATION_KEY:Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString('hex'),MAIL_PROVIDER:'development',MAIL_FROM:'pane@example.test'}
 export async function runtime({bindings={},outboundService,cf}={}) {
  const config=JSON.parse(await readFile('dist/server/wrangler.json','utf8'))
  const files=[config.main,...(await readdir('dist/server',{recursive:true})).filter(n=>n.endsWith('.js')&&n!==config.main)]
