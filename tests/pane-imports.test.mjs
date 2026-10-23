@@ -99,3 +99,12 @@ test('retained migration reports remain private to the applying owner or admin a
  const foreign=await f.request('/api/pane/import/dry-run',{method:'POST',headers:{Origin:'https://other.example',Cookie:owner,'Content-Type':'application/json'},body:JSON.stringify({job:job.id})});assert.equal(foreign.status,403)
  await ok(await call('undo',{job:job.id}))
 })
+
+test('unsupported-only WXR retains an exception inventory without inventing a native draft',async()=>{
+ const source='<rss xmlns:wp="http://wordpress.org/export/1.2/"><channel><title>synthetic-pane-9</title><wp:wxr_version>1.2</wp:wxr_version><item><title>Only a post</title><wp:post_type>post</wp:post_type><wp:post_id>1</wp:post_id></item></channel></rss>'
+ const before=await data(),plan=await ok(await call('dry-run',{source}));assert.equal(plan.site,null);assert.equal(plan.report.counts.post.source,1);assert.equal(plan.report.counts.post.planned,0)
+ const job=await ok(await call('apply',{source,fingerprint:plan.fingerprint}));assert.equal(job.report.counts.page.applied,0);assert.equal(job.report.counts.post.applied,0);assert.equal(job.report.ok,false)
+ assert.deepEqual((await data()).revisions,before.revisions)
+ const report=await ok(await call('dry-run',{job:job.id}));assert.deepEqual(report.report,job.report)
+ await ok(await call('undo',{job:job.id}))
+})

@@ -2,6 +2,7 @@ import { assertNoCredentials } from '../modules/import-kit/src/provenance/identi
 import { XMLParser, XMLValidator } from 'fast-xml-parser'
 import { parse } from 'parse5'
 import { normalizeSite } from './content'
+import { normalizePageLinks } from './page-extras'
 import { pagePath, cleanSlug } from './pages'
 import { importKinds, type ImportDocument, type InventoryItem, type Fidelity, type ImportKind } from './import-report'
 import type { Site, Page } from './model'
@@ -54,11 +55,11 @@ function finish(format:string,name:string,description:string,pages:Page[],items:
    const u=new URL(href);let url=href
    if(origin&&u.origin===origin){const target=items.find(i=>i.oldUrl===href.split('#')[0]&&i.targetSlug);if(!target)return [];url=pagePath(site,target.targetSlug!)+u.hash}
    if(!['http:','https:','tel:','mailto:'].includes(u.protocol))return []
-   return [{label:'Imported link '+(index+1),url}]
+   try{return normalizePageLinks([{label:'Imported link '+(index+1),url}])}catch{return []}
   })
   if(links.length)page.links=links
  }
- return {site,items,format,...(origin?{origin}:{})}
+ return {site:site?normalizeSite(site):null,items,format,...(origin?{origin}:{})}
 }
 function wordpress(source:string):ImportDocument{
  const channel=xml(source)?.rss?.channel

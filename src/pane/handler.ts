@@ -122,7 +122,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    }
   } else if(action==='import/apply') {
    result=await applyMoveIn(env.DB,actor,typeof input.source==='string'?input.source:JSON.stringify(input.source),String(input.fingerprint??''))
-   notice='Import applied as an unpublished draft. Preview it before publishing.';back='/app/moves'
+   notice=(result as Awaited<ReturnType<typeof applyMoveIn>>).report.counts.page.planned ? 'Import applied as an unpublished draft. Preview it before publishing.' : 'Import inventory recorded. No supported pages were imported.';back='/app/moves'
   } else if(action==='import/undo') {
    result=await undoMoveIn(env.DB,actor,String(input.job));notice='Import undone. The journal is retained.';back='/app/moves'
   } else if(action==='messages/reply') {

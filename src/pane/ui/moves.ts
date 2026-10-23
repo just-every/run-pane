@@ -1,6 +1,7 @@
 // Moves: bring a whole site in from an export, reviewed page by page, applied
 // as a draft for approval, and undone while it is still unpublished.
 import type { Dashboard, Site } from '../model'
+import { pagePath } from '../pages'
 import type { MigrationReport } from '../import-report'
 import { escape, icon, key, short, when } from './kit'
 
@@ -18,7 +19,7 @@ export function moves(data: Dashboard): string {
 }
 
 export function moveReview(site: Site | null, fingerprint: string, source: string, report: MigrationReport): string {
-  return `<div class="screen-head"><div><h1>Review your move-in</h1><p>Import <strong>${escape(site?.name ?? 'source inventory')}</strong> as an unpublished draft. Preview the draft before the owner publishes it.</p></div></div>${moveReport(report)}<div class="review-pages">${(site?.pages ?? []).map(page => `<article class="card"><span class="review-slug">${page.slug === 'home' ? '/site' : `/site/${escape(page.slug)}`}</span><h2>${escape(page.title)}</h2><p class="plain-text">${escape(page.body)}</p></article>`).join('')}</div><div class="card review-actions"><details><summary>Import identity</summary><code>${escape(fingerprint)}</code></details><form method="post" action="/app/import/apply" class="action-form">${key()}<input type="hidden" name="fingerprint" value="${escape(fingerprint)}"><textarea hidden name="source">${escape(source)}</textarea><button type="submit" class="primary">Approve import</button></form><a class="text-link" href="/app/moves">Cancel</a></div>`
+  return `<div class="screen-head"><div><h1>Review your move-in</h1><p>Import <strong>${escape(site?.name ?? 'source inventory')}</strong> ${site ? 'as an unpublished draft. Preview the draft before the owner publishes it.' : 'as an exception inventory. No supported page revision will be created.'}</p></div></div>${moveReport(report)}<div class="review-pages">${(site?.pages ?? []).map(page => `<article class="card"><span class="review-slug">${page.deleted ? 'Trash — not published' : escape(pagePath(site!,page.slug))}</span><h2>${escape(page.title)}</h2><p class="plain-text">${escape(page.body)}</p></article>`).join('')}</div><div class="card review-actions"><details><summary>Import identity</summary><code>${escape(fingerprint)}</code></details><form method="post" action="/app/import/apply" class="action-form">${key()}<input type="hidden" name="fingerprint" value="${escape(fingerprint)}"><textarea hidden name="source">${escape(source)}</textarea><button type="submit" class="primary">Approve import</button></form><a class="text-link" href="/app/moves">Cancel</a></div>`
 }
 
 /** Existing Moves cards and text controls keep the approved workspace design. */
