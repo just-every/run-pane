@@ -3,8 +3,10 @@ import assert from 'node:assert/strict'
 import {readFile} from 'node:fs/promises'
 import {crawlEdge,sourceOrigin} from './import-crawl-edge.mjs'
 import {runtime,origin,settings} from './runtime.mjs'
+import {createPortability,readArchive} from '@runeditrun/rer/modules/portability'
+import {productPolicy} from '../scripts/pane-policy.mjs'
 import {createOperatorAuth} from '../src/modules/operator-auth/index.mjs'
-let f,owner,member
+let f,owner,member,verifiedCapture
 const edge=crawlEdge()
 const source=await readFile('fixtures/imports/migration-report.json','utf8')
 const call=(action,body,cookie=owner)=>f.request('/api/pane/import/'+action,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',Cookie:cookie??''},body:JSON.stringify(body)})
@@ -128,6 +130,8 @@ test('malformed source references stay visible as exceptions without preventing 
  assert.deepEqual(await data(),before)
  const exceptions=plan.report.inventory.filter(item=>item.id.startsWith('document-0-reference-'))
  assert.equal(exceptions.length,3)
+ assert.equal(exceptions.filter(item=>item.kind==='media').length,2)
+ assert.equal(plan.report.counts.media.source,3)
  assert.ok(exceptions.some(item=>item.reason==='Invalid link URL: http://['))
  assert.ok(exceptions.some(item=>item.reason==='Invalid image URL: http://['))
  assert.ok(exceptions.some(item=>item.reason==='Image has no source URL.'))
@@ -152,6 +156,7 @@ test('a controlled published Wix crawl proves DNS ownership before capture and r
  assert.equal(edge.requests.length,outbound)
  edge.proof=challenge.record.value
  const captured=await ok(await call('crawl',input)),plan=captured.plan
+ verifiedCapture=captured
  assert.equal(plan.report.crawl.origin,sourceOrigin)
  assert.equal(plan.report.inventory.some(item=>item.id==='crawl-authority'),false)
  assert.equal(plan.report.counts.page.source,4)
@@ -195,13 +200,37 @@ test('crawl consent and authority refuse unsafe origins, altered challenges, mem
 })
 
 test('controlled crawls refuse private DNS and source redirects without contacting another origin',async()=>{
- for(const mode of ['private','redirect']){
+ for(const mode of ['127.0.0.1','10.0.0.1','100.64.0.1','169.254.169.254','172.16.0.1','192.168.0.1','198.18.0.1','::1','::ffff:127.0.0.1','2001:db8::1','fc00::1','fe80::1','redirect']){
   const challenge=await ok(await call('crawl-challenge',{origin:sourceOrigin,provider:'durable'}))
-  edge.proof=challenge.record.value;edge.address=mode==='private'?'127.0.0.1':'93.184.215.14';edge.redirect=mode==='redirect'
+  edge.proof=challenge.record.value;edge.address=mode==='redirect'?'93.184.215.14':mode;edge.redirect=mode==='redirect'
   const before=edge.requests.length,response=await call('crawl',{challenge:challenge.challenge,confirm:'crawl-source'})
   assert.equal(response.status,400)
-  const error=await response.json();assert.match(error.error,mode==='private'?/public Internet addresses/:/HTTP 302.*redirects are not followed/)
-  assert.equal(edge.requests.length-before,mode==='private'?0:1)
+  const error=await response.json();assert.match(error.error,mode==='redirect'?/HTTP 302.*redirects are not followed/:/public Internet addresses/)
+  assert.equal(edge.requests.length-before,mode==='redirect'?1:0)
  }
  edge.address='93.184.215.14';edge.redirect=false
+})
+
+
+test('verified capture receipts survive installation archive restore and report reads grant no further network authority',async()=>{
+ const service=await createPortability({db:f.db,policy:productPolicy}),id=await service.exports.create()
+ while((await service.exports.advance(id,{maxParts:100})).phase==='building'){}
+ const records=[];for await(const record of readArchive(await service.exports.download(id)))records.push(record)
+ const destination=await runtime({outboundService:()=>{throw Error('Restored report unexpectedly requested the network')}})
+ try{
+  const restore=await createPortability({db:destination.db,policy:productPolicy}),job=await restore.imports.create(records[0])
+  for(const part of records.filter(record=>record.kind==='part'))await restore.imports.uploadPart(job,part.index,part)
+  const closing=records.at(-1),result=await restore.imports.finalize(job,{contentHash:closing.contentHash,archiveHash:closing.archiveHash})
+  assert.equal(result.phase,'complete')
+  let mail
+  const auth=createOperatorAuth({db:destination.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async message=>{mail=message;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+  await auth.requestMagicLink(new Request(origin+'/auth/magic-link',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin}}),{email:settings.OWNER_EMAIL,returnTo:'/app'})
+  const token=new URL(mail.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token')
+  const signed=await destination.request('/auth/confirm',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({token})})
+  assert.equal(signed.status,303);const cookie=signed.headers.get('set-cookie').split(';')[0]
+  const plan=await ok(await destination.request('/api/pane/import/dry-run',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',Cookie:cookie},body:JSON.stringify({source:verifiedCapture.source})}))
+  assert.equal(plan.report.crawl.origin,sourceOrigin)
+  assert.equal(plan.report.crawl.verifiedAt,verifiedCapture.receipt.verifiedAt)
+  assert.equal(plan.report.inventory.some(item=>item.id==='crawl-authority'),false)
+ }finally{await destination.mf.dispose()}
 })

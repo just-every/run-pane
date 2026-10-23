@@ -63,7 +63,7 @@ function wordpress(source:string):ImportDocument{
    const state=({'1':'approved','0':'pending',spam:'spam'} as Record<string,string>)[text(comment['wp:comment_approved'])]??'other'
    items.push({id:item.id+'-comment-'+(text(comment['wp:comment_id'])||n),kind:'comment',title:'Comment on '+item.title,state,reason:reasons.comment,fields:{parent:text(comment['wp:comment_parent']),post:item.id,date:text(comment['wp:comment_date_gmt'])}})
   }
-  for(const [n,reason] of (fidelity.unresolved??[]).entries())items.push({id:item.id+'-reference-'+n,kind:'unsupported',title:'Unresolved reference on '+item.title,reason})
+  for(const [n,reason] of (fidelity.unresolved??[]).entries())items.push({id:item.id+'-reference-'+n,kind:reason.startsWith('Invalid image')||reason==='Image has no source URL.'?'media':'unsupported',title:'Unresolved reference on '+item.title,reason})
   for(const [n,url] of fidelity.images.entries())items.push({id:item.id+'-image-'+n,kind:'media',title:'Inline image',oldUrl:url,reason:reasons.media})
  }
  for(const [n,author] of array(channel['wp:author']).entries())items.push({id:'author-'+n,kind:'author',title:text(author['wp:author_display_name'])||text(author['wp:author_login']),reason:reasons.author})
@@ -111,7 +111,7 @@ function snapshot(raw:any):ImportDocument {
    fillPage(item,path,fidelity.text,pages)
   }
   items.push(item)
-  for(const [n,reason] of (fidelity.unresolved??[]).entries())items.push({id:item.id+'-reference-'+n,kind:'unsupported',title:'Unresolved reference on '+item.title,reason})
+  for(const [n,reason] of (fidelity.unresolved??[]).entries())items.push({id:item.id+'-reference-'+n,kind:reason.startsWith('Invalid image')||reason==='Image has no source URL.'?'media':'unsupported',title:'Unresolved reference on '+item.title,reason})
   for(const [n,image] of fidelity.images.entries())items.push({id:item.id+'-image-'+n,kind:'media',title:'Source image',oldUrl:image,reason:reasons.media})
   for(const [n,action] of htmlForms(doc.html,url).entries())items.push({id:item.id+'-form-'+n,kind:'form',title:'Form on '+item.title,oldUrl:url,destination:action,reason:reasons.form})
  }

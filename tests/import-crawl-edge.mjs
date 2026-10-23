@@ -8,7 +8,7 @@ export function crawlEdge(){
   if(url.origin==='https://cloudflare-dns.com'&&url.pathname==='/dns-query'){
    state.dnsRequests.push(url.searchParams.get('type'))
    const type=url.searchParams.get('type')
-   const Answer=type==='TXT'?[{type:16,data:'"'+state.proof+'"'}]:type==='A'?[{type:1,data:state.address}]:[]
+   const Answer=type==='TXT'?[{type:16,data:'"'+state.proof+'"'}]:type===(state.address.includes(':')?'AAAA':'A')?[{type:state.address.includes(':')?28:1,data:state.address}]:[]
    return Response.json({Status:0,Answer})
   }
   if(url.origin!==sourceOrigin)throw Error('Unexpected source network request: '+url.origin)
