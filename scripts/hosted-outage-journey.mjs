@@ -14,7 +14,7 @@ const sha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim()
 assert.equal(execFileSync('git',['status','--porcelain','--untracked-files=no'],{encoding:'utf8'}).trim(),'','Commit the candidate before running the hosted journey')
 assert.equal(process.env.CLOUDFLARE_ACCOUNT_ID,'b20c0ca9cab0c2b70e13d7cf724b89bd','Use only the authorized RunEditRun account')
 const require=createRequire(await realpath('node_modules/wrangler/package.json'))
-const {fetch:transportFetch,ProxyAgent,FormData:TransportFormData}=require('undici')
+const {fetch:transportFetch,ProxyAgent,FormData:TransportFormData}=require(process.env.PANE_PROXY_MODULE??'undici')
 const proxy=process.env.HTTPS_PROXY?new ProxyAgent(process.env.HTTPS_PROXY):undefined
 const network=(input,init={})=>{
  let body=init.body
