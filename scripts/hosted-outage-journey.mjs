@@ -78,12 +78,22 @@ try{
  const site=JSON.parse(await readFile('fixtures/static-site.json','utf8'))
  const prepared=await post('/api/pane/prepare',{site});assert.equal(prepared.status(),200)
  assert.equal((await post('/api/pane/publish',{revision:(await prepared.json()).id})).status(),200)
+ // Establish the fully deployed site before disconnecting D1. A new assets
+ // version can briefly return a missing file while its routes settle.
+ const assets=['/pane.css','/pane-base.css','/pane-editor.css','/pane-screens.css','/pane-public.css','/pane-turnstile.js','/pane-tracker.js','/rer-theme.css','/site/theme.css','/fonts/fonts.css','/fonts/figtree/figtree-latin-wght-normal.woff2']
+ const deadline=Date.now()+90000
+ for(const path of assets){
+  let ready=false
+  while(!ready&&Date.now()<deadline){const response=await context.request.get(origin+path,{maxRedirects:0});ready=response.status()===200;if(!ready)await new Promise(resolve=>setTimeout(resolve,2000))}
+  assert.equal(ready,true,'Deployed asset readiness: '+path)
+ }
  await query('ALTER TABLE pane_revisions RENAME TO synthetic_pane_unavailable_revisions; ALTER TABLE pane_messages RENAME TO synthetic_pane_unavailable_messages;');offline=true
  for(const width of [1440,390]){
   await page.setViewportSize({width,height:1000})
   for(const item of site.pages){
    phase='live '+item.slug+' at '+width
    const response=await page.goto(origin+(item.slug==='home'?'/site':'/site/'+item.slug))
+   await page.waitForFunction(()=>getComputedStyle(document.querySelector('.public-header')).display==='flex',{},{timeout:8000})
    await page.screenshot({path:resolve(folder,'hosted-outage-'+item.slug+'-'+width+'.png'),fullPage:true})
    assert.equal(response.status(),200,phase+' HTTP status');assert.equal(await page.getByRole('heading',{name:item.title,exact:true}).count(),1,phase+' heading')
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false)
@@ -122,6 +132,6 @@ finally{
  if(proofError){result.failure=proofError.message.split('\n')[0];result.providerFailure=providerFailure(proofError,text=>['CLOUDFLARE_API_TOKEN','CLOUDFLARE_ACCOUNT_ID','SESSION_SECRET','SETUP_TOKEN','MAIL_API_KEY'].reduce((clean,key)=>inputs[key]?clean.split(inputs[key]).join('[REDACTED]'):clean,String(text)))}
  if(cleanupError)result.cleanupFailure=cleanupError.message.split('\n')[0]
  await writeFile(resolve(folder,'receipt.json'),JSON.stringify(result,null,2)+'\n')
- console.log(JSON.stringify(result))
+ console.log(JSON.stringify({...result,assetResponses:undefined,assetFailures:result.assetResponses.filter(row=>row.status!==200)}))
 }
 if(proofError||cleanupError)process.exitCode=1

@@ -49,7 +49,7 @@ test('PRESENT-001: five pages preview with a draft banner and publish without pr
 test('ACCESS-002: mutations require the canonical origin; accepted contact is durable and visits respect privacy',async()=>{
  const before=await data(),foreign='https://elsewhere.invalid'
  for(const originHeader of [{},{Origin:foreign},{Origin:'null'}]){
-  for(const prefix of ['/api/pane/','/app/'])for(const action of ['prepare','publish','rollback','review','messages/erase','import/dry-run','import/apply','import/undo']){
+  for(const prefix of ['/api/pane/','/app/'])for(const action of ['prepare','publish','rollback','review','messages/erase','privacy/find','privacy/export','privacy/erase','ownership/transfer','team/revoke','policies/generate','import/dry-run','import/apply','import/undo']){
    const response=await f.request(prefix+action,{method:'POST',headers:{Cookie:owner,'Content-Type':'application/json',...originHeader},body:JSON.stringify({site:fixture,revision:first.id,id:crypto.randomUUID(),source:JSON.stringify(fixture)})})
    assert.equal(response.status,403,prefix+action)
   }
