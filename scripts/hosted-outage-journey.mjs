@@ -26,7 +26,8 @@ const network=async(input,init={})=>{
 const kit=resolve('node_modules/@runeditrun/rer/modules/deploy-kit')
 const {main:ownerCommand}=await import(resolve(kit,'owner-cli.mjs'))
 const {providerFailure}=await import(resolve(kit,'diagnostics.mjs'))
-const environment='sx-pane-c9-proof',statePath=resolve(folder,'owner-state.json'),declarationPath=resolve(folder,'declaration.json')
+// A fresh disposable host prevents a previous sandbox deletion from polluting route readiness.
+const environment='c9-'+sha.slice(0,8)+'-'+Date.now().toString(36),statePath=resolve(folder,'owner-state.json'),declarationPath=resolve(folder,'declaration.json')
 const configPath=resolve('dist/server/wrangler.json'),configBytes=await readFile(configPath),config=JSON.parse(configBytes)
 const wrapperName='__outage-proof.mjs',wrapperPath=resolve('dist/server',wrapperName)
 const declaration=JSON.parse(await readFile('deploy.json','utf8'))
