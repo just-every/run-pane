@@ -308,3 +308,43 @@ requires its absence readback. It removes the test installation and its data.
 It needs the same Cloudflare account and token used for that test deployment.
 `node scripts/health-browser-journey.mjs` checks local health and the installed
 404 at 1440 and 390; set `PANE_HEALTH_ORIGIN` to check a hosted test installation.
+
+### Contact form verification
+
+Configure a Cloudflare Turnstile widget restricted to the installation hostname.
+Set `TURNSTILE_SITE_KEY` as a public Worker variable and `TURNSTILE_SECRET` as a
+Worker secret through the deployment secret mechanism. Never put the secret in
+source or client configuration. Published contact forms fail closed if either is
+missing or the provider is unavailable. The widget loads only when Send is
+pressed; it verifies the installation hostname, `pane-contact` action and page
+slug through its SHA-256 form binding (including nested paths). Preview and workspace pages never run Turnstile. Each form permits 20
+attempts per minute independently. Honeypot, rate, verification and provider
+outage refusals are counted and reviewed separately in Inquiries. Only form,
+reason and time are retained for a refusal; rejected personal answers are not.
+
+### Published snapshots and queued enquiries
+
+Hosted deployments declare `PANE_LIVE` (the PaneLive SQLite Durable Object) and
+the minute cron in `deploy.json`. Publication copies the approved revision into
+that store. Live page delivery does not depend on D1; an empty snapshot can be
+reconstructed from the installation's approved live D1 revision after restore.
+Validated enquiries receive durable immutable-ID receipts there and drain to
+Inquiries on the next successful scheduled sweep. A D1 outage keeps them queued;
+retries and erasure fences prevent duplicate or resurrected enquiries. The
+confirmation says the message was received, independently of inbox delivery.
+
+Use the owner-only Person privacy request section in Inquiries to find/export
+matched records by email or explicitly erase them. Exports omit credentials.
+Erasure includes pending intake, non-owner account anonymization and the shared
+old-backup checkpoint. Keep the later erasure journal when testing an old archive;
+transfer ownership before requesting erasure of an owner account. Downstream
+services are listed for manual follow-up; no external erasure is sent automatically.
+
+The focused proof journeys are `scripts/outage-journey.mjs` and
+`scripts/custody-journey.mjs`. The separate `scripts/hosted-outage-journey.mjs`
+requires the owner's selected RunEditRun Cloudflare account credentials and an
+existing clean committed build. It creates only its disposable proof environment,
+uses a Turnstile network-edge fake, disconnects the real content/intake tables,
+exercises the native scheduled handler, and removes the resources through the
+deployment kit's ownership checks. Its test HTTP adapter is never part of the
+production Worker entry. Store screenshots and receipts outside the checkout.

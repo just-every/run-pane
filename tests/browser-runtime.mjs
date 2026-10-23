@@ -26,18 +26,23 @@ const server=createServer(async(req,res)=>{
 })
 await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve)})
 export const origin = 'http://127.0.0.1:' + server.address().port
-f = await runtime({bindings: {AUTH_ORIGIN: origin}})
+f = await runtime({bindings: {AUTH_ORIGIN: origin},isolatedLive:process.env.PANE_LIVE_FIXTURE==='1'})
+export async function protect(context){
+ await context.route('https://challenges.cloudflare.com/turnstile/v0/api.js**',route=>route.fulfill({contentType:'application/javascript',body:`window.turnstile={render(slot,options){if(!/^[a-f0-9]{64}$/.test(options.cData))return options['error-callback']();options.callback('synthetic-pane-3:'+options.cData)}}`}))
+}
 export async function bootstrap(context){
+ await protect(context)
  const response=await context.request.post(origin+'/auth/bootstrap',{headers:{Origin:origin},data:{token:settings.SETUP_TOKEN,displayName:'Browser proof owner'},maxRedirects:0})
  assert.equal(response.status(),303,'Native bootstrap creates the first browser session')
  ownerCookie=response.headers()['set-cookie'].split(';')[0]
 }
-export async function signIn(page){
+export async function signIn(page,email=settings.OWNER_EMAIL){
+ await protect(page.context())
  // The existing auth tests use this network-edge mail fixture too. No cookie or
  // browser profile is copied: the browser consumes and confirms a native link.
  let message
  const auth=createOperatorAuth({db:f.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{message=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
- await auth.requestMagicLink(new Request(origin+'/auth/magic-link',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin}}),{email:settings.OWNER_EMAIL,returnTo:'/app'})
+ await auth.requestMagicLink(new Request(origin+'/auth/magic-link',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin}}),{email,returnTo:'/app'})
  assert.ok(message,'The native sign-in flow issued a link to the test mail edge')
  const link=message.text.match(/http:\/\/[^\s]+/)[0]
  await page.goto(link)
@@ -57,4 +62,9 @@ export async function invitePerson(context,{email,displayName,roles}){
  const person=await f.db.prepare('SELECT id FROM oa_operators WHERE email=?').bind(email).first()
  assert.equal((await context.request.post(origin+'/api/pane/roles/set',{headers:{Origin:origin},data:{operatorId:person.id,roles}})).status(),200)
  return message.text.match(/http:\/\/[^\s]+/)[0]
+}
+
+// Only the test adapter can disconnect content/intake tables. No product outage switch.
+export async function databaseUnavailable(value){
+ for(const table of ['pane_revisions','pane_messages'])await f.db.prepare(value?`ALTER TABLE ${table} RENAME TO synthetic_unavailable_${table}`:`ALTER TABLE synthetic_unavailable_${table} RENAME TO ${table}`).run()
 }

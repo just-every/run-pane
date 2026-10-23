@@ -1,3 +1,7 @@
+import { findPersonData,erasePersonData,personEmail } from './privacy'
+import { policyStarters } from './policies'
+import { transferOwnership,revokeContributor } from './ownership'
+import { liveCall } from './outage'
 import { capabilities, permittedDashboard, routeCapability, assignRoles, inviteRoles } from './roles'
 import { apiIdentity, createToken } from './api-tokens'
 import { activity, erasePerson } from './audit'
@@ -65,6 +69,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   }
   if(request.method==='GET') {
    const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps)
+   if(env.PANE_LIVE&&['owner','admin'].includes(actor.role)){const review=await env.PANE_LIVE.get(env.PANE_LIVE.idFromName('published-site')).fetch('https://pane.internal/review');Object.assign(data,await review.json())}
    if(api&&path!=='/api/pane')return json({error:'Not found.'},404)
    if(api)return json(scopes?{role:actor.role,draft:data.draft?{id:data.draft.id}:null,live:data.live?{id:data.live.id}:null}:{...data,activity:undefined})
    if(!screens[path])return json({error:'Not found.'},404)
@@ -77,7 +82,23 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   const action=api?path.slice('/api/pane/'.length):path.slice('/app/'.length)
   let result:unknown,notice='Saved.',back='/app'
   if(!routeCapability(path,'POST')||!caps.includes(routeCapability(path,'POST')!))return json({error:'Your role cannot perform this action.'},403)
-  if(action==='roles/invite') {
+  if(['privacy/find','privacy/export','privacy/erase'].includes(action)){
+   const email=personEmail(input.email)
+   const privacyActor:{id:string;version:number;sessionId?:string}={id:actor.id,version:actor.version}
+   if(action!=='privacy/find'){const proof=await operatorAuth(env).requireStepUp(request,action==='privacy/export'?'export':'delete');privacyActor.sessionId=proof.id}
+   result=env.PANE_LIVE?await liveCall(env,action==='privacy/erase'?'/privacy/erase':'/privacy/find',{email,confirm:input.confirm,actor:privacyActor}):action==='privacy/erase'?await erasePersonData(env.DB,email,input.confirm,privacyActor):await findPersonData(env.DB,email)
+   if(action==='privacy/export')return new Response(JSON.stringify(result,null,2),{headers:{'content-type':'application/json','content-disposition':'attachment; filename="pane-person.json"','cache-control':'no-store'}})
+   if(action==='privacy/find'&&!api){const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps);data.privacyRequest=result as import('./privacy').PersonPrivacy;return document('Person privacy request',workspace(data,'/app/inquiries',''))}
+   notice='Person data erased. Backup and replay fences are retained; follow up with the listed downstream services.';back='/app/inquiries'
+  }else if(action==='ownership/transfer'){
+   result=await transferOwnership(env,request,input);notice='Ownership transferred. Sign in again as an editor.';back='/signin?returnTo=%2Fapp'
+  }else if(action==='team/revoke'){
+   result=await revokeContributor(env,request,input);notice='Contributor access revoked.';back='/app/sites'
+  }else if(action==='policies/generate'){
+   const row=await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
+   if(!row)throw Error('Prepare a site first.')
+   result=await prepare(env.DB,actor.id,policyStarters(revision(row).site,env),String(input.base??''));notice='Policy starters prepared. Review and edit before publishing.';back='/app?page=privacy-policy'
+  }else if(action==='roles/invite') {
    result=await inviteRoles(env,request,actor.id,input)
   } else if(action==='roles/set') {
    result=await assignRoles(env.DB,actor.id,input)
@@ -99,7 +120,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    notice='Draft prepared. Preview it before publishing.'
    if(typeof input.slug==='string')back='/app?page='+encodeURIComponent(input.slug)
   } else if(action==='publish'||action==='rollback') {
-   result=await publish(env.DB,actor.id,String(input.revision),action)
+   result=env.PANE_LIVE?await liveCall(env,'/publish',{actor:actor.id,id:String(input.revision),action}):await publish(env.DB,actor.id,String(input.revision),action)
    notice=action==='publish'?'Published. Your approval is recorded.':'Rolled back. Your approval is recorded.'
    if(action==='rollback')back='/app/sites'
   } else if(action==='review') {

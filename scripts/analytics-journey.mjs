@@ -36,6 +36,7 @@ async function capture(target, name, options = {}) {
 const unnamed = target => target.evaluate(() => [...document.querySelectorAll('button, a[href], summary, [role="button"]')].filter(element => element.checkVisibility() && !element.dataset.tip && !([...element.querySelectorAll('.visually-hidden')].reduce((text, hidden) => text.replace(hidden.textContent, ''), element.textContent).trim())).map(element => element.outerHTML.slice(0, 120)))
 async function visitorFor(width, {gpc = false, saved} = {}) {
  const visitor = await browser.newContext({viewport: {width, height: 900}, ...(gpc ? {extraHTTPHeaders: {'Sec-GPC': '1'}} : {})})
+ await fixture.protect(visitor)
  const hits = {vane: [], google: [], tag: [], loader: 0}
  if (gpc) await visitor.addInitScript(() => Object.defineProperty(navigator, 'globalPrivacyControl', {value: true}))
  if (saved) await visitor.addInitScript(choice => localStorage.setItem('pane:consent:analytics', choice), saved)
@@ -139,6 +140,7 @@ try {
   assert.equal(new URL(quote.url()).search, '', 'The thank-you marker is dropped once the Google goal is sent')
   assert.ok(hits.google.some(hit => hit.en === 'quote_request' && hit.goal === 'Quote request'), 'The form goal reaches Google')
   assert.ok(hits.vane.some(hit => hit.door === '/api/vane/custom' && hit.name === 'Quote request'), 'The form goal reaches Vane')
+  assert.equal(hits.vane.filter(hit=>hit.door==='/api/vane/custom'&&hit.name==='Quote request').length,1,'Verification and the accepted submit produce one Vane form goal')
   const quotes = () => hits.google.filter(hit => hit.en === 'quote_request').length
   assert.equal(quotes(), 1)
   await quote.reload({waitUntil: 'networkidle'}); await quote.waitForTimeout(300)

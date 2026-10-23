@@ -1,0 +1,19 @@
+import type { Bindings } from '../auth.server'
+import type { Page, Site } from './model'
+import { activePages } from './pages'
+export const policyKinds=['privacy','terms','accessibility'] as const
+export type PolicyKind=typeof policyKinds[number]
+/** Inventory is derived from the revision being published, never an invented service list. */
+export function policyStarters(site:Site,env:Bindings):Site{
+ const services=[site.analytics?.ga4?'Google Analytics 4 (GA4): consent-controlled visit and goal analytics; Google may receive the visitor IP address and set analytics cookies.':'',site.analytics?.vane?'Vane: cookie-free visit and goal analytics at '+site.analytics.vane.origin+'.':'',...new Set(activePages(site).filter(page=>page.embed).map(page=>'External content from '+new URL(page.embed!.url).origin+': loaded only when the visitor allows it.'))].filter(Boolean)
+ const contact=activePages(site).some(page=>page.kind==='contact'||page.slug==='contact')
+ if(contact)services.push('Cloudflare Turnstile: essential spam verification when a visitor sends a form. Cloudflare receives technical browser information to verify the request.')
+ if(contact&&activePages(site).some(page=>page.acknowledgment)&&!['development',''].includes(env.MAIL_PROVIDER??''))services.push('Email delivery through '+env.MAIL_PROVIDER+' for owner-approved acknowledgments.')
+ const collection=[contact?'The contact form stores the name, email address and message the visitor submits.':'No contact form is published in this revision.','Pane counts visits and configured goals in aggregate, without visitor cookies or identifiers. Global Privacy Control and Do Not Track prevent optional analytics and goal collection.','External-content and analytics choices are stored in the browser and can be withdrawn. Rejected form answers are not retained; form, refusal reason and time are kept for spam review.']
+ const intro='Starter for owner review — not legal advice. Confirm your actual practices and obtain appropriate advice before publishing.\n\n'
+ const bodies={privacy:intro+site.name+' — privacy policy starter\n\n'+collection.join('\n\n')+'\n\nConnected services in this revision:\n'+(services.join('\n')||'No optional analytics or external embeds are connected.')+'\n\nReview your retention, legal basis, contact details, privacy-request process and downstream services. The owner handles requests; erasure is never automatic.',terms:intro+site.name+' — terms starter\n\nDescribe your business, the information and services offered on this website, and how a visitor can contact you.\n\nReview booking, payment, cancellation, refund, intellectual-property and dispute terms that actually apply to your business. This starter does not create or replace those terms.',accessibility:intro+site.name+' — accessibility statement starter\n\nWe aim to make our website usable with keyboards and assistive technology. Contact the business if you encounter a barrier; include the page and what you were trying to do.\n\nBefore publishing, name a contact method, test your edited content and connected services, and describe any known barriers and a review date. This starter makes no claim of certified compliance.'}
+ const pages:Page[]=policyKinds.map(kind=>({id:crypto.randomUUID(),slug:kind==='privacy'?'privacy-policy':kind,title:kind==='privacy'?'Privacy policy':kind==='terms'?'Terms':'Accessibility statement',body:bodies[kind],policyStarter:kind}))
+ const add=pages.filter(page=>!site.pages.some(existing=>existing.slug===page.slug))
+ if(!add.length)throw Error('Starter pages already exist. Edit the existing pages; generation never overwrites them.')
+ return {...site,pages:[...site.pages,...add]}
+}

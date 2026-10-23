@@ -44,6 +44,7 @@ try {
   await page.goto(origin + '/app')
   await Promise.all([page.waitForURL(url => url.pathname === '/app' && url.searchParams.has('notice')), page.getByRole('button', {name: 'Approve & publish'}).click()])
   const visitor = await browser.newContext({viewport: {width, height: 1000}, userAgent: width === 390 ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Mobile' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0)'})
+ await fixture.protect(visitor)
   visitors.push(visitor)
   const tab = await visitor.newPage(), campaign = width === 390 ? campaigns[1] : campaigns[0]
   const examples = [
@@ -104,6 +105,7 @@ try {
   await capture('traffic-dashboard-' + width)
   await panel.screenshot({path: resolve(folder, 'traffic-panel-' + width + '.png')})
   const privateVisitor = await browser.newContext({viewport: {width, height: 1000}, extraHTTPHeaders: {'Sec-GPC': '1'}})
+ await fixture.protect(privateVisitor)
   visitors.push(privateVisitor)
   await privateVisitor.addInitScript(() => Object.defineProperty(navigator, 'globalPrivacyControl', {value: true}))
   const privateTab = await privateVisitor.newPage()

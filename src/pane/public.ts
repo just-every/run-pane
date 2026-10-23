@@ -1,3 +1,5 @@
+import { liveCall, liveSnapshot } from './outage'
+import { rejectForm, verifyForm } from './form-protection'
 import { activeBanners } from './schedules'
 import { escape } from './ui/kit'
 import { activePages, homeSlug, pagePath } from './pages'
@@ -26,10 +28,11 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
  if(request.method==='POST'&&(url.origin!==canonical||request.headers.get('Origin')!==canonical))return json({error:'Same-origin request required.'},403)
  let slug: string
  try {slug=path==='/site'?'':decodeURIComponent(path.slice(6))} catch {return notFound()}
- const row=await env.DB.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first()
+ const snapshot=env.PANE_LIVE?await liveSnapshot(env):null
+ const row=env.PANE_LIVE?snapshot:await env.DB.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first()
  if(!row && path !== '/site' && !slugs.includes(slug) && slug !== 'search') return notFound()
  if(!row) return document('Website not published','<div class="public-site"><div class="public-shell"><main class="public-main" id="main"><h1>This website is getting ready</h1><p>The business has not published its first version.</p></main></div></div>','site')
- const site=revision(row).site
+ const site=snapshot?snapshot.site:revision(row).site
  if (!slug) slug=homeSlug(site)!
  const redirect=site.redirects?.find(redirect=>redirect.from===path)
  if (redirect && ['GET','HEAD'].includes(request.method)) return new Response(null,{status:redirect.status,headers:{location:redirect.to,'cache-control':'no-store'}})
@@ -55,11 +58,18 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
  if((page?.kind==='contact'||(page && slug==='contact'))&&request.method==='POST') {
   if(Number(request.headers.get('content-length')??0)>100000)return json({error:'Message too large.'},413)
   const f=await request.formData(),name=String(f.get('name')??'').trim(),email=String(f.get('email')??'').trim(),message=String(f.get('message')??'').trim(),id=String(f.get('idempotency')??'')
-  if(String(f.get('website')??''))return new Response(null,{status:303,headers:{location:pagePath(site,slug)+'?sent=1'}})
+  if(String(f.get('website')??''))return rejectForm(env,slug,'honeypot')
   if(!/^[a-f0-9-]{36}$/.test(id)||!name||name.length>120||!/^\S+@\S+\.\S+$/.test(email)||email.length>254||!message||message.length>5000)return json({error:'Enter a name, valid email and message up to 5,000 characters.'},400)
   // Pencil's immutable original receipt: retries cannot replace an earlier answer.
-  if(await limited(env.DB,'contact',20))return json({error:'Please try again in a minute.'},429)
+  if(env.PANE_LIVE?(await liveCall(env,'/rate',{form:slug})).limited:await limited(env.DB,'contact:'+slug,20))return rejectForm(env,slug,'rate')
+  const verification=await verifyForm(env,String(f.get('cf-turnstile-response')??''),id,slug)
+  if(verification!=='verified')return rejectForm(env,slug,verification)
   const acknowledgment=page?.acknowledgment,received=Date.now()
+  if(env.PANE_LIVE){
+   let attribution:unknown={};try{const text=String(f.get('attribution')??'');if(text.length<=2000)attribution=JSON.parse(text||'{}')}catch{}
+   await liveCall(env,'/accept',{id,name,email,message,received:new Date(received).toISOString(),acknowledgment:acknowledgment??null,followUp:followUpDue(site,received),goals:optedOut(request)?[]:(site.goals??[]).filter(goal=>goal.type==='form'&&goal.page===slug).map(goal=>({id:goal.id,page:slug})),dimensions:visitDimensions(request,attribution,site.analyticsCampaigns)})
+   return new Response(null,{status:303,headers:{location:pagePath(site,slug)+'?sent=1'}})
+  }
   const stored=await env.DB.prepare('INSERT OR IGNORE INTO pane_messages(id,name,email,message,created_at,acknowledgment,acknowledgment_status,follow_up_at) SELECT ?,?,?,?,?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM pane_erased_messages WHERE id=?)').bind(id,name,email,message,new Date(received).toISOString(),acknowledgment ? JSON.stringify(acknowledgment) : null,acknowledgment ? 'pending' : 'not_requested',followUpDue(site,received),id).run()
   // A goal counts once per stored message, from the submitting page view's own attribution; never for opt-outs.
   const goals=optedOut(request)||!stored.meta.changes ? [] : (site.goals??[]).filter(goal=>goal.type==='form'&&goal.page===slug)
@@ -73,7 +83,7 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   return new Response(null,{status:303,headers:{location:pagePath(site,slug)+'?sent=1'}})
  }
  if(!['GET','HEAD'].includes(request.method))return json({error:'Method not allowed.'},405)
- const banners=await activeBanners(env.DB,String(row.id))
+ const banners=snapshot?snapshot.banners??[]:await activeBanners(env.DB,String(row.id))
  const announcements=banners.length ? `<div class="public-site"><aside class="public-shell public-announcements" aria-label="Announcements">${banners.map(banner=>`<p class="notice">${escape(banner.text)}</p>`).join('')}</aside></div>` : ''
  if(slug==='search') {
   const query=url.searchParams.get('q')??''
@@ -83,12 +93,17 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
  if(!page) {
   const missing=site.notFound && activePages(site).find(page=>page.slug===site.notFound)
   if(!missing)return notFound()
-  const response=await document(site.name,announcements+publicPage(site,missing.slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request)),'site',missing.embed ? embedOrigin(missing.embed) : undefined,optedOut(request) ? undefined : site.analytics)
+  const response=await document(site.name,announcements+publicPage(site,missing.slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY),'site',missing.embed ? embedOrigin(missing.embed) : undefined,optedOut(request) ? undefined : site.analytics)
   const headers=new Headers(response.headers);headers.set('x-robots-tag','noindex, nofollow')
   return new Response(request.method==='HEAD'?null:response.body,{status:404,headers})
  }
- const notice=(page.kind==='contact'||slug==='contact')&&url.searchParams.has('sent')?'<div class="public-site public-sent"><div class="public-shell"><p class="notice" role="status">Thank you. Your message is in the business inbox.</p></div></div>':''
+ const notice=(page.kind==='contact'||slug==='contact')&&url.searchParams.has('sent')?'<div class="public-site public-sent"><div class="public-shell"><p class="notice" role="status">Thank you. Your message has been received.</p></div></div>':''
  const embed=page.embed
- const response=await document(site.name,announcements+notice+publicPage(site,slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request)),'site',embed ? embedOrigin(embed) : undefined,optedOut(request) ? undefined : site.analytics)
+ const response=await document(site.name,announcements+notice+publicPage(site,slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY),'site',embed ? embedOrigin(embed) : undefined,optedOut(request) ? undefined : site.analytics)
+ if(page.kind==='contact'||slug==='contact'){
+  const headers=new Headers(response.headers),policy=headers.get('content-security-policy')!
+  headers.set('content-security-policy',policy.replace("script-src 'self'","script-src 'self' https://challenges.cloudflare.com").replace("connect-src 'self'","connect-src 'self' https://challenges.cloudflare.com")+(embed?' https://challenges.cloudflare.com':'; frame-src https://challenges.cloudflare.com'))
+  return new Response(request.method==='HEAD'?null:response.body,{status:response.status,headers})
+ }
  return request.method==='HEAD' ? new Response(null,{status:response.status,headers:response.headers}) : response
 }

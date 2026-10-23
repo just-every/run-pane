@@ -19,6 +19,7 @@ if (navigator.doNotTrack !== '1' && !navigator.globalPrivacyControl) {
  send('/site/visit', {path,...attribution})
  // A submitted contact form carries this view's attribution; the server counts the stored message.
  document.addEventListener('submit', event => {
+  if (event.defaultPrevented) return
   const field = event.target.elements?.attribution
   if (field) { field.value = JSON.stringify(attribution); goals.filter(goal => goal.type === 'form').forEach(raise) }
  })
