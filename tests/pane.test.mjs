@@ -401,6 +401,50 @@ test('conversion goals count quote-form submissions and phone clicks by page, ch
  } finally { await app.mf.dispose() }
 })
 
+test('connected Vane and Google Analytics 4 render only on live pages, widen the policy only for what is connected and stay absent for GPC and DNT visitors', async () => {
+ const app = await runtime()
+ let cookie = ''
+ const post = (path, body) => app.request(path, {method: 'POST', headers: {Cookie: cookie, Origin: origin, 'Content-Type': 'application/json'}, body: JSON.stringify(body)})
+ const live = (headers = {}, path = '/site') => app.request(path, {headers})
+ const policy = response => response.headers.get('content-security-policy')
+ try {
+  cookie = (await post('/auth/bootstrap', {token: settings.SETUP_TOKEN, displayName: 'Analytics owner'})).headers.get('set-cookie').split(';')[0]
+  await app.request('/setup', {method: 'POST', headers: {Cookie: cookie, Origin: origin, 'Content-Type': 'application/x-www-form-urlencoded'}, body: 'confirm=yes'})
+  for (const bad of [{vane: {origin: 'http://vane.example.test', site: 'site_1'}}, {vane: {origin: 'https://vane.example.test:8443', site: 'site_1'}}, {vane: {origin: 'https://vane.example.test/app', site: 'site_1'}}, {vane: {origin: 'https://192.168.1.1', site: 'site_1'}}, {vane: {origin: 'https://vane.example.test', site: 'bad id'}}, {vane: {origin: 'https://vane.example.test'}}, {ga4: 'UA-12345-1'}, {ga4: 'G-<script>'}, 'G-ABC123XYZ4']) {
+   assert.equal((await post('/api/pane/prepare', {site: {...fixture, analytics: bad}})).status, 400, JSON.stringify(bad))
+  }
+  const prepared = await (await post('/api/pane/prepare', {site: {...fixture, analytics: {vane: {origin: 'https://vane.example.test/vane.js', site: 'synthetic-pane_1'}, ga4: 'g-synth12345'}}})).json()
+  assert.deepEqual(prepared.site.analytics, {vane: {origin: 'https://vane.example.test', site: 'synthetic-pane_1'}, ga4: 'G-SYNTH12345'})
+  const draft = (await app.request('/preview/' + prepared.id + '/home', {headers: {Cookie: cookie}})), draftHtml = await draft.text()
+  assert.doesNotMatch(draftHtml + policy(draft), /vane\.example\.test|pane-analytics|G-SYNTH12345|googletagmanager/, 'Draft previews load no analytics')
+  assert.doesNotMatch(await (await live()).text(), /vane\.example\.test|pane-analytics/, 'Nothing renders before publication')
+  await post('/api/pane/publish', {revision: prepared.id})
+  for (const path of ['/site', '/site/contact', '/site/about']) {
+   const page = await live({}, path), html = await page.text()
+   assert.match(html, /<script defer src="https:\/\/vane\.example\.test\/vane\.js" data-site="synthetic-pane_1"><\/script>/, path)
+   assert.match(html, /<script src="\/pane-analytics\.js" data-ga4="G-SYNTH12345" defer><\/script>/, path)
+   assert.match(html, /data-analytics-consent aria-label="Analytics choices" hidden>/, 'The choice starts hidden and nothing from Google is in the markup')
+   assert.doesNotMatch(html, /googletagmanager|google-analytics/)
+   assert.match(policy(page), /script-src 'self' https:\/\/vane\.example\.test https:\/\/www\.googletagmanager\.com;/)
+   assert.match(policy(page), /connect-src 'self' https:\/\/vane\.example\.test https:\/\/\*\.google-analytics\.com /)
+   assert.match(policy(page), /img-src 'self' https:\/\/\*\.google-analytics\.com/)
+   assert.equal(page.headers.get('set-cookie'), null)
+  }
+  for (const privacy of [{'Sec-GPC': '1'}, {DNT: '1'}]) {
+   const page = await live(privacy), html = await page.text()
+   assert.doesNotMatch(html + policy(page), /vane\.example\.test|pane-analytics|data-analytics|G-SYNTH12345|googletagmanager|google-analytics/, JSON.stringify(privacy))
+   assert.match(policy(page), /script-src 'self'; connect-src 'self'; /)
+  }
+  const vaneOnly = await (await post('/api/pane/prepare', {site: {...fixture, analytics: {vane: {origin: 'https://vane.example.test', site: 'synthetic-pane_1'}}}})).json()
+  await post('/api/pane/publish', {revision: vaneOnly.id})
+  const only = await live(), onlyHtml = await only.text()
+  assert.match(onlyHtml, /vane\.js/); assert.doesNotMatch(onlyHtml + policy(only), /data-analytics|data-ga4|googletagmanager|google-analytics/)
+  const none = await (await post('/api/pane/prepare', {site: fixture})).json()
+  await post('/api/pane/publish', {revision: none.id})
+  const bare = await live(); assert.doesNotMatch(await bare.text() + policy(bare), /vane\.|pane-analytics|googletagmanager|google-analytics/, 'Disconnecting removes both')
+ } finally { await app.mf.dispose() }
+})
+
 test('enquiries carry an owner, status and follow-up time; unanswered ones are reminded then escalated by business day and replied ones leave the queue', async () => {
  const hosted = 'https://pane.example.test', mails = []
  const app = await runtime({bindings: {AUTH_ORIGIN: hosted, AUTH_LOCAL: 'false', MAIL_PROVIDER: 'sendgrid', MAIL_API_KEY: 'synthetic-pane-1', MAIL_FROM: 'studio@example.test'}, outboundService: async request => {
@@ -835,6 +879,7 @@ test('composable Pane roles are invited natively and enforced across workspace, 
    }
    if(row.edit){
     assert.equal((await call('/api/pane/prepare',{site:{...fixture,responseDays:2},base:(await ownerData()).draft.id},cookie)).status,403,'Editors cannot change business settings through whole-site snapshots')
+    assert.equal((await call('/api/pane/prepare',{site:{...fixture,analytics:{ga4:'G-SYNTH12345'}},base:(await ownerData()).draft.id},cookie)).status,403,'Editors cannot connect analytics')
     const form=new URLSearchParams({base:(await ownerData()).draft.id})
     for(const page of fixture.pages){form.set(page.slug+'.title','Synthetic '+page.slug);form.set(page.slug+'.description','synthetic-pane-25')}
     assert.equal((await app.request(hosted+'/app/search',{method:'POST',headers:{Cookie:cookie,Origin:hosted,'Content-Type':'application/x-www-form-urlencoded'},body:form})).status,303)

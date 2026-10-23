@@ -1,4 +1,5 @@
 import { permissionsPolicy } from './document-security'
+import { analyticsSources, type Analytics } from './analytics'
 import { fontHead } from '../base/font-head'
 import { themeFrame } from '../base/theme-frame'
 import { iconHead } from '../base/icon-head'
@@ -11,8 +12,11 @@ import { moves } from './ui/moves'
 import { shell, type Tab } from './ui/shell'
 import { sites } from './ui/sites'
 
-export async function document(title: string, body: string, kind: 'app' | 'site' = 'app', embedOrigin?: string): Promise<Response> {
+export async function document(title: string, body: string, kind: 'app' | 'site' = 'app', embedOrigin?: string, analytics?: Analytics): Promise<Response> {
   const frame = await themeFrame({ href: '/rer-theme.css', productName: branding.name, accentColor: branding.primaryColor })
+  const extra = analyticsSources(analytics)
+  const sources = (list: string[]) => list.length ? ' ' + list.join(' ') : ''
+  const policy = extra.image.length ? frame.policy.replace("img-src 'self'", `img-src 'self'${sources(extra.image)}`) : frame.policy
   const pageTitle = kind === 'site' ? title : `${title} · ${branding.name}`
   const head = kind === 'site' && iconHead ? frame.head.replace(iconHead, '') : frame.head
   return new Response(`<!doctype html><html lang="en"${frame.htmlClass}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(pageTitle)}</title>${fontHead}${head}<link rel="stylesheet" href="/pane.css"></head><body class="pane pane-${kind}"><a class="skip-link" href="#main">Skip to content</a>${body}</body></html>`, {
@@ -23,7 +27,7 @@ export async function document(title: string, body: string, kind: 'app' | 'site'
       'x-content-type-options': 'nosniff',
       'x-frame-options': 'DENY',
       'permissions-policy': permissionsPolicy,
-      'content-security-policy': `default-src 'none'; script-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'; ${frame.policy}${embedOrigin ? `; frame-src ${embedOrigin}` : ''}`,
+      'content-security-policy': `default-src 'none'; script-src 'self'${sources(extra.script)}; connect-src 'self'${sources(extra.connect)}; form-action 'self'; base-uri 'none'; frame-ancestors 'none'; ${policy}${embedOrigin ? `; frame-src ${embedOrigin}` : ''}`,
     },
   })
 }

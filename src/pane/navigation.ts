@@ -88,7 +88,7 @@ const socialPaths: Record<SocialNetwork, string> = {
 }
 function socialLinks(site: NavigationSite): string {
  const socials = normalizeSocials(site.socials)
- const links = socialNetworks.filter(network => socials[network]).map(network => `<a href="${escape(socials[network])}" aria-label="${socialNames[network]}" rel="me"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true" focusable="false">${socialPaths[network]}</svg></a>`).join('')
+ const links = socialNetworks.filter(network => socials[network]).map(network => `<a href="${escape(socials[network])}" aria-label="${socialNames[network]}" data-tip="${socialNames[network]}" rel="me"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true" focusable="false">${socialPaths[network]}</svg></a>`).join('')
  return links ? `<div class="public-socials" role="group" aria-label="Social profiles">${links}</div>` : ''
 }
 function menuMarkup(items: MenuItem[], pageUrl: (slug: string) => string, slug?: string): string {

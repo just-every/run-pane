@@ -92,7 +92,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
     const latest=await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
     const current=latest?revision(latest).site:null
     if(latest&&input.base!==latest.id)throw new DraftConflict(latest?revision(latest):null)
-    for(const key of ['automations','goals','analyticsCampaigns','responseDays','robots'] as const)if(JSON.stringify(proposed[key]??null)!==JSON.stringify(current?.[key]??null))return json({error:'Only owners and admins can change business settings.'},403)
+    for(const key of ['automations','goals','analyticsCampaigns','analytics','responseDays','robots'] as const)if(JSON.stringify(proposed[key]??null)!==JSON.stringify(current?.[key]??null))return json({error:'Only owners and admins can change business settings.'},403)
    }
    result=await prepare(env.DB,actor.id,proposed, action==='autosave' ? String(input.base??'') : typeof input.base==='string' ? input.base : undefined)
    if(action==='autosave')return json(result)
