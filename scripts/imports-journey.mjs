@@ -72,8 +72,8 @@ try{
   await page.setViewportSize({width,height:1000});await page.goto(origin+'/app/moves')
   await page.getByLabel('Source JSON',{exact:true}).fill(wxr)
   await Promise.all([page.waitForURL('**/app/import/dry-run'),page.getByRole('button',{name:'Check import'}).click()])
-  const warning=page.getByText(/^This page maps as plain text\./).first()
-  await warning.scrollIntoViewIfNeeded();assert.match(await warning.textContent(),/heading levels/)
+  const warning=page.getByText(/^Imported headings, lists and inline links/).first()
+  await warning.scrollIntoViewIfNeeded();assert.match(await warning.textContent(),/Original visual layout and unsupported widgets/)
   assert.equal((await data()).draft.id,initial.id,'Rich-page preflight still makes no writes')
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,'WXR preflight overflow at '+width)
   await page.screenshot({path:resolve(folder,`import-rich-preflight-warning-${width}.png`)})
@@ -85,6 +85,28 @@ try{
   const source=await readFile(`fixtures/imports/${provider}.json`,'utf8'),plan=await post('import/dry-run',{source}),job=await post('import/apply',{source,fingerprint:plan.fingerprint})
   assert.equal(job.report.counts.page.applied,2);assert.ok(job.report.inventory.some(item=>item.reason));await post('import/undo',{job:job.id})
  }
+ const richSource=await readFile('fixtures/imports/rich-page.json','utf8'),richPlan=await post('import/dry-run',{source:richSource}),richJob=await post('import/apply',{source:richSource,fingerprint:richPlan.fingerprint})
+ const external=[];page.on('request',request=>{if(/^https?:/.test(request.url())&&new URL(request.url()).origin!==origin)external.push(request.url())})
+ for(const width of [1440,390]){
+  await page.setViewportSize({width,height:1000});await page.goto(origin+'/preview/'+richJob.report.revision+'/home')
+  const body=page.locator('.public-content')
+  assert.equal(await body.locator('h1#welcome').textContent(),'Welcome')
+  assert.equal(await body.locator('strong').textContent(),'bold');assert.equal(await body.locator('em').textContent(),'clear')
+  assert.equal(await body.locator('ol').getAttribute('start'),'3');assert.equal(await body.locator('ol > li > ul > li').textContent(),'Nested')
+  assert.equal(await body.locator('a').filter({hasText:'Visit hours'}).getAttribute('href'),'./about#hours')
+  assert.equal(await body.locator('a').filter({hasText:'Visit hours'}).getAttribute('rel'),'noopener noreferrer')
+  assert.equal(await body.locator('a[href="sms:+13035550100"]').textContent(),'Text')
+  assert.equal(await body.locator('img,iframe').count(),0);assert.equal(await body.getByRole('img',{name:'Source alt'}).count(),1)
+  assert.equal(await body.locator('figcaption').textContent(),'Source caption');assert.equal(await page.evaluate(()=>window.syntheticPane),undefined)
+  await capture('import-structured-preview',width)
+  await page.goto(origin+'/preview/'+richJob.report.revision+'/about');await page.getByRole('link',{name:'Welcome again',exact:true}).click()
+  await page.waitForURL('**/home#welcome')
+  await page.goto(origin+'/app?page=home');assert.equal(await page.getByLabel('Text',{exact:true}).isEditable(),false)
+  await page.getByText('Imported formatting is preserved.',{exact:false}).scrollIntoViewIfNeeded()
+  await capture('import-structured-editor',width);await tooltip(width,'import-structured-editor-tooltip')
+ }
+ assert.deepEqual(external,[],'Imported source scripts, widgets and media never load in preview or workspace')
+ await post('import/undo',{job:richJob.id})
  for(const provider of ['wix','webflow','framer','durable']){
   const challenge=provider==='wix'?await helper('import-crawl-challenge',{origin:'https://synthetic-pane-1.example.com',provider}):await post('import/crawl-challenge',{origin:'https://synthetic-pane-1.example.com',provider})
   fixture.edge.proof=challenge.record.value
@@ -107,5 +129,5 @@ try{
   }
   await post('import/undo',{job:applied.id})
  }
- console.log('Import journey passed at 1440/390: preflight, typed exceptions, fingerprinted unpublished apply, stored fidelity recheck, retained report/undo and hover/keyboard tooltips. Exact-candidate WXR inventory: 100 posts, 50 comments; two native pages applied. Offline provider captures and CSV exception fields reconciled separately; explicit DNS-verified Wix/Webflow/Framer/Durable captures, retained proof and tooltips pass at both widths.')
+ console.log('Import journey passed at 1440/390: preflight, typed exceptions, fingerprinted unpublished apply, stored fidelity recheck, retained report/undo and hover/keyboard tooltips. Exact-candidate WXR inventory: 100 posts, 50 comments; two native pages applied. Offline provider captures and CSV exception fields reconciled separately; explicit DNS-verified Wix/Webflow/Framer/Durable captures, retained proof, preserved semantic page DOM, inert third-party content, readonly structured editor and tooltips pass at both widths.')
 }finally{await context.close();await browser.close();await fixture.stop();await rm(scratch,{recursive:true,force:true})}

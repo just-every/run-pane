@@ -1,3 +1,4 @@
+import { importedBody } from './import-body'
 import { knownVisitSources, visitMediums } from './visit-dimensions'
 import { homeSlug, pagePath } from './pages'
 import { goalsOnPage } from './goals'
@@ -20,7 +21,11 @@ export const paragraphs = (body: string) => body.split(/\n\s*\n/).map(text => te
 export function publicPage(site: Site, slug: string, mode: 'live' | 'preview' | 'frame', gpc = false, quiet = false): string {
   const page = site.pages.find(candidate => candidate.slug === slug && !candidate.deleted)
   const pageUrl = (value: string) => mode === 'preview' ? `./${encodeURIComponent(value)}` : mode === 'frame' ? `/app?page=${encodeURIComponent(value)}` : pagePath(site,value)
-  const body = (page ? paragraphs(page.body) : []).map(paragraph => `<p>${escape(paragraph)}</p>`).join('')
+  const body = page?.importedHtml ? importedBody(page.importedHtml,{navigation:mode!=='live',prefixIds:mode==='frame'?'pn-imported-':'',link:href=>{
+   if(!/^\/site(?:[/?#]|$)/.test(href)||mode==='live')return href
+   const url=new URL(href,'https://destination.invalid'),target=site.pages.find(candidate=>pagePath(site,candidate.slug)===url.pathname)
+   return target?pageUrl(target.slug)+url.search+(mode==='frame'&&url.hash?'#pn-imported-'+url.hash.slice(1):url.hash):href
+  }}) : (page ? paragraphs(page.body) : []).map(paragraph => `<p>${escape(paragraph)}</p>`).join('')
   const contact = (slug === 'contact'||page?.kind==='contact') && page ? `<section class="contact-section" aria-label="Send a message"><h2>Send a message</h2>${mode === 'preview' ? '<p class="notice">This is a draft preview. Contact messages can be sent from the live website.</p>' : ''}<form method="post" action="${escape(pagePath(site,slug))}" class="contact-form">${key()}${mode === 'live' ? '<input type="hidden" name="attribution">' : ''}<fieldset${mode === 'live' ? '' : ' disabled'}><label>Your name<input name="name" required maxlength="120" autocomplete="name"></label><label>Email address<input type="email" name="email" required maxlength="254" autocomplete="email"></label><label>Message<textarea name="message" rows="6" required maxlength="5000"></textarea></label><div class="honeypot" aria-hidden="true"><label>Leave this field empty<input name="website" tabindex="-1" autocomplete="off"></label></div><button type="submit">Send message</button></fieldset></form></section>` : ''
   const banner = mode === 'preview' ? '<div class="preview-banner"><img src="/brand/mark.svg" alt="" width="34" height="25"><strong>Draft preview</strong><span>This revision is not the live website.</span><a href="/app">Back to workspace</a></div>' : ''
   const footer = renderFooter(site,pageUrl)

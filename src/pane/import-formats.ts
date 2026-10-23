@@ -1,8 +1,8 @@
 import { assertNoCredentials } from '../modules/import-kit/src/provenance/identity.ts'
 import { XMLParser, XMLValidator } from 'fast-xml-parser'
+import { importedBody, importedText } from './import-body'
 import { htmlFidelity, htmlForms } from './import-html'
 import { normalizeSite } from './content'
-import { normalizePageLinks } from './page-extras'
 import { pagePath, cleanSlug } from './pages'
 import { importKinds, type ImportDocument, type InventoryItem, type ImportKind } from './import-report'
 import type { Site, Page } from './model'
@@ -24,27 +24,26 @@ function sourceUrl(value:unknown,origin?:string):string|undefined{
  return u.href
 }
 function originUrl(value:unknown):string|undefined{return sourceUrl(value)?new URL(String(value)).origin:undefined}
-function fillPage(item:InventoryItem,slug:string,body:string,pages:Page[]){
- try{cleanSlug(slug);if(pages.some(page=>page.slug===slug))throw Error('Duplicate page address.');if(!item.title.trim()||!body.trim())throw Error('A page needs a title and visible text.');if(item.title.length>120||body.length>20000)throw Error('Page exceeds native title/body limits.');pages.push({slug,title:item.title,body});item.targetSlug=slug}catch(error){item.reason=(error as Error).message}
+function fillPage(item:InventoryItem,slug:string,body:string,pages:Page[],html?:string){
+ try{cleanSlug(slug);if(pages.some(page=>page.slug===slug))throw Error('Duplicate page address.');if(!item.title.trim()||!body.trim())throw Error('A page needs a title and visible text.');if(item.title.length>120||body.length>20000)throw Error('Page exceeds native title/body limits.');pages.push({slug,title:item.title,body,...(html!==undefined?{importedHtml:html}:{})});item.targetSlug=slug}catch(error){item.reason=(error as Error).message}
 }
 function finish(format:string,name:string,description:string,pages:Page[],items:InventoryItem[],origin?:string):ImportDocument{
- const site=pages.length?normalizeSite({name,description,pages}):null
- for(const item of items)if(item.kind==='page'&&item.targetSlug){
-  const lost=['HTML layout and paragraph structure',...(item.fidelity?.links.length?['inline link positions and labels']:[]),...(item.fidelity?.headings.length?['heading levels']:[]),...(item.fidelity?.lists.length?['list structure']:[]),...(item.fidelity?.images.length?['inline images, captions and alt text']:[]),...(item.fidelity?.buttons.length?['button controls']:[]),...(item.fidelity?.formatting.length?['rich formatting']:[])]
-  item.reason='This page maps as plain text. '+lost.join('; ')+' will not be preserved. Review the draft before publishing.'+(item.fidelity?.unresolved?.length?' '+item.fidelity.unresolved.join(' '):'')
- }
- // Only page links with existing destinations are activated. Every other source
- // link remains visible as a fidelity exception; javascript is never executed.
+ let site=pages.length?normalizeSite({name,description,pages:pages.map(({importedHtml,...page})=>page)}):null
  if(site)for(const item of items.filter(item=>item.targetSlug)){
-  const page=site.pages.find(page=>page.slug===item.targetSlug)!
-  const links=(item.fidelity?.links??[]).flatMap((href,index)=>{
-   const u=new URL(href);let url=href
-   if(origin&&u.origin===origin){const target=items.find(i=>i.oldUrl===href.split('#')[0]&&i.targetSlug);if(!target)return [];url=pagePath(site,target.targetSlug!)+u.hash}
-   if(!['http:','https:','tel:','mailto:'].includes(u.protocol))return []
-   try{return normalizePageLinks([{label:'Imported link '+(index+1),url}])}catch{return []}
-  })
-  if(links.length)page.links=links
+  const page=site.pages.find(page=>page.slug===item.targetSlug)!,source=pages.find(page=>page.slug===item.targetSlug)!.importedHtml
+  if(source!==undefined){
+   const html=importedBody(source,{base:item.oldUrl??origin,retainMedia:true,link:href=>{
+    let url:URL;try{url=new URL(href)}catch{return undefined}
+    if(origin&&url.origin===origin){const mapped=items.find(candidate=>candidate.oldUrl===url.href.split('#')[0]&&candidate.targetSlug);return mapped?pagePath(site!,mapped.targetSlug!)+url.hash:undefined}
+    return href
+   }})
+   page.importedHtml=html;page.body=importedText(html)
+   if(!page.body.trim()){delete item.targetSlug;item.reason='No supported visible body remains after inert source widgets are removed.';continue}
+   const lost=[...(item.fidelity?.images.length?['Original media has no native copy; images remain inert.']:[]),...(item.fidelity?.buttons.length?['Interactive source buttons are not activated.']:[]),...(item.fidelity?.unresolved??[])]
+   item.reason='Imported headings, lists and inline links are preserved with Pane styling. Original visual layout and unsupported widgets are not recreated.'+(lost.length?' '+lost.join(' '):'')
+  }
  }
+ if(site){site.pages=site.pages.filter(page=>items.some(item=>item.targetSlug===page.slug));if(!site.pages.length)site=null}
  return {site:site?normalizeSite(site):null,items,format,...(origin?{origin}:{})}
 }
 function wordpress(source:string):ImportDocument{
@@ -55,7 +54,7 @@ function wordpress(source:string):ImportDocument{
   const type=text(entry['wp:post_type']),kind:ImportKind=type==='page'?'page':type==='post'?'post':type==='attachment'?'media':type==='nav_menu_item'?'menu':'unsupported'
   const oldUrl=sourceUrl(kind==='media'?(entry['wp:attachment_url']??entry.link):entry.link,origin),html=text(entry['content:encoded']),fidelity=htmlFidelity(html,oldUrl??origin??'https://source.invalid')
   const item:InventoryItem={id:'wxr-'+(text(entry['wp:post_id'])||index),kind,title:text(entry.title)||type,...(oldUrl?{oldUrl}:{}),fidelity,...(kind!=='page'?{reason:reasons[kind]??'Unsupported WordPress post type: '+type}:{})}
-  if(kind==='page')fillPage(item,text(entry['wp:post_name']),fidelity.text,pages)
+  if(kind==='page')fillPage(item,text(entry['wp:post_name']),fidelity.text,pages,html)
   if(/\[[a-z][\w-]*(?:[\s\]]|\/)/i.test(html))items.push({id:item.id+'-shortcodes',kind:'unsupported',title:item.title,reason:'WordPress shortcodes/plugin blocks are retained as source text, not executed.'})
   items.push(item)
   for(const [n,action] of htmlForms(html,oldUrl??origin??'https://source.invalid').entries())items.push({id:item.id+'-form-'+n,kind:'form',title:'Form on '+item.title,...(oldUrl?{oldUrl}:{}),destination:action,reason:reasons.form})
@@ -71,7 +70,7 @@ function wordpress(source:string):ImportDocument{
  return finish('wordpress-wxr',text(channel.title)||'Imported WordPress site',text(channel.description).slice(0,500),pages,items,origin)
 }
 function staticJson(raw:any):ImportDocument{
- const site=normalizeSite(raw),origin=originUrl(raw.migration?.origin),items:InventoryItem[]=site.pages.map((page,index)=>({id:'page-'+index,kind:'page',title:page.title,...(!page.deleted?{targetSlug:page.slug}:{reason:'Deleted source page is retained in trash, not an active page.'}),oldUrl:sourceUrl(raw.pages[index].oldUrl,origin)??pagePath(site,page.slug),fidelity:{text:page.body,links:page.links?.map(link=>link.url)??[],headings:[],lists:[],images:[],buttons:[],formatting:[]}}))
+ const site=normalizeSite(raw),origin=originUrl(raw.migration?.origin),items:InventoryItem[]=site.pages.map((page,index)=>({id:'page-'+index,kind:'page',title:page.title,...(!page.deleted?{targetSlug:page.slug}:{reason:'Deleted source page is retained in trash, not an active page.'}),oldUrl:sourceUrl(raw.pages[index].oldUrl,origin)??pagePath(site,page.slug),fidelity:page.importedHtml?htmlFidelity(page.importedHtml,'https://source.invalid'):{text:page.body,links:page.links?.map(link=>link.url)??[],headings:[],lists:[],images:[],buttons:[],formatting:[]}}))
  if(raw.migration!==undefined&&(!raw.migration||typeof raw.migration!=='object'||Array.isArray(raw.migration)))throw Error('Migration inventory must be an object.')
  const inventory=raw.migration?.items??[]
  if(!Array.isArray(inventory)||inventory.length>2000)throw Error('Migration inventory needs at most 2,000 items.')
@@ -108,7 +107,7 @@ function snapshot(raw:any):ImportDocument {
   if(kind!=='page')item.reason=reasons[kind]
   else {
    const path=new URL(url).pathname.replace(/^\/+|\/+$/g,'')||'home'
-   fillPage(item,path,fidelity.text,pages)
+   fillPage(item,path,fidelity.text,pages,doc.html)
   }
   items.push(item)
   for(const [n,reason] of (fidelity.unresolved??[]).entries())items.push({id:item.id+'-reference-'+n,kind:reason.startsWith('Invalid image')||reason==='Image has no source URL.'?'media':'unsupported',title:'Unresolved reference on '+item.title,reason})

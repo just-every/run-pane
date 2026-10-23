@@ -31,3 +31,9 @@ invented official provider formats. CSV rows, posts, comments and media are
 reported as exceptions while their native CMS/media targets remain absent.
 `tests/pane-imports.test.mjs` and `scripts/imports-journey.mjs` exercise these
 through the authenticated built Worker rather than parser-only calls.
+
+- `rich-page.json` proves supported semantic page bodies, nested lists, section
+  links, Unicode normalization and inline HTTP/mail/phone/SMS destinations. Its
+  source script, handler, iframe and image references remain inert. Images stay
+  reported as unfetched; the readonly imported body does not claim PAGE-014 or
+  CMS-011 rich editing.

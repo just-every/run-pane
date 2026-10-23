@@ -118,7 +118,7 @@ inert D1 SQL to Base; they do not run a parallel journal or custom undo engine.
 ## Migration inventory and retained reports
 
 The current page importer also accepts WordPress WXR 1.0–1.2 XML. It imports
-supported pages as plain-text unpublished snapshots. It inventories posts,
+supported pages as unpublished semantic snapshots (headings, lists, inline formatting, anchors and inline destinations). It inventories posts,
 comments (including parent ID, source post and moderation state), authors,
 taxonomy, menus, shortcodes and media as explicit exceptions. It does **not**
 create native posts/comments or download media. The documented synthetic WXR
@@ -148,7 +148,7 @@ Source HTML is parsed as data and never executed. Document types/entities are
 refused. No HTTP request, DNS change or old-host cutover occurs during import.
 Unknown site/page fields are named as unsupported rather than silently dropped.
 
-Before apply the report warns explicitly about each HTML page's plain-text mapping and loss of layout, heading/list/button/inline-image structure. Exception counts include partially mapped pages with fidelity warnings as well as wholly unsupported items; they are not subtracted from the planned counts.
+Before apply the report explains that supported semantic page markup is preserved with Pane styling, while original visual layout, interactive widgets and media delivery may not be recreated. Exception counts include partially mapped pages with fidelity warnings as well as wholly unsupported items; they are not subtracted from the planned counts.
 
 Before apply the report shows source, planned and exception counts for every
 content type, comment counts by state, the inventory/URL map, form destinations,
@@ -157,8 +157,7 @@ proof of a redirect on the old domain. Apply rechecks the stored native snapshot
 per-type applied counts, text/fields, link destinations and missing internal
 links. It also parses the actual production-rendered page output to check
 visible text, link/button destinations, heading levels, list types/items and
-inline images, and flags old-domain redirects that have not been verified. Semantic heading/list/button/inline-image/formatting fidelity is reported
-as unresolved where the native rich targets are unavailable. Malformed link and image references, including images with no source, are listed as unresolved exceptions without preventing review of the other content. A failure stays
+inline images, and flags old-domain redirects that have not been verified. Page heading/list/link/formatting and section-anchor fidelity is checked against the rendered native DOM. Missing media, interactive buttons and unsupported widgets remain explicit failures. Rich editing and native post/item bodies remain open. Malformed link and image references, including images with no source, are listed as unresolved exceptions without preventing review of the other content. A failure stays
 visible; it never becomes an invented successful import.
 
 Choose **View report** on the applied job to reopen the report from the exact
@@ -186,7 +185,7 @@ Pane also reads its own `wix-snapshot-v1`, `webflow-snapshot-v1`,
 
 Each captured document needs a unique same-origin HTTP(S) URL and HTML text.
 Documents may declare `kind` as page, post, collection-item, event or gallery;
-only supported pages map to native drafts. The optional flattened URL sitemap
+only supported pages map to native semantic drafts. The optional flattened URL sitemap
 contributes uncaptured URLs as exceptions.
 Wix captures additionally require the sitemap and an RSS channel in `rss`;
 RSS URLs classify blog posts and detect missing captured posts. This is an
@@ -257,3 +256,22 @@ The owner-readable audit records the explicit capture using its opaque hash.
 An uploaded capture with changed bytes or invented provenance cannot inherit a
 verified receipt. No live provider/sandbox receipt is claimed by the synthetic
 DNS/source-network fixtures.
+
+
+## Preserved page bodies
+
+Mapped HTML pages keep supported heading levels, paragraphs, ordered/unordered
+and nested lists, inline emphasis, quotes, section IDs, link positions and
+safe external/mail/phone/SMS destinations. Internal links resolve through the
+reviewed source URL map; draft links stay within that draft. New-tab links get
+`noopener noreferrer`. Source scripts, styles, handlers and widgets never run;
+source images stay inert, retaining their alternative text and captions while
+the report names the missing native media copy.
+
+An imported structured body is shown read-only in the existing page editor so
+an ordinary text save cannot silently discard its headings and links. Title,
+visibility and other page settings keep their existing draft/approval behavior.
+To update the structured body, edit and re-import the source. PAGE-014 and
+CMS-011 inherit safe rich-body editing with PAGE-006 autosave/undo/conflict
+protection; this reader does not claim those editors or native post/item/comment
+targets are complete. Standard native JSON plain-text pages remain editable.

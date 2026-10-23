@@ -15,6 +15,7 @@ export function htmlFidelity(html:string,base:string,contentOnly=false,directPar
  const content=(node:any):string=>node.nodeName==='#text'?node.value:ignored(node)?'':(blocks.has(node.tagName)?'\n':'')+(node.childNodes??[]).map(content).join('')+(blocks.has(node.tagName)?'\n':'')
  const walk=(node:any)=>{
   if(ignored(node))return
+  const id=attr(node,'id');if(id)(result.anchors??=[]).push(id)
   if(node.tagName==='a'){const href=attr(node,'href');if(href){const url=address(href,'link');if(url)result.links.push(url)}}
   if(/^h[1-6]$/.test(node.tagName??''))result.headings.push(node.tagName+':'+content(node).replace(/\s+/g,' ').trim())
   if(['ol','ul'].includes(node.tagName))result.lists.push(node.tagName+':'+(node.childNodes??[]).filter((n:any)=>n.tagName==='li').map(content).join('|'))

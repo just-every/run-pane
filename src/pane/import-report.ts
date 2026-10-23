@@ -5,7 +5,7 @@ import type { Site } from './model'
 
 export const importKinds = ['page','post','comment','collection-item','event','gallery','media','product','form','author','taxonomy','menu','unsupported'] as const
 export type ImportKind = typeof importKinds[number]
-export type Fidelity = { text: string; links: string[]; headings: string[]; lists: string[]; images: string[]; buttons: string[]; formatting: string[]; unresolved?: string[] }
+export type Fidelity = { text: string; links: string[]; headings: string[]; lists: string[]; images: string[]; buttons: string[]; formatting: string[]; unresolved?: string[]; anchors?: string[] }
 export type InventoryItem = { id: string; kind: ImportKind; title: string; oldUrl?: string; targetSlug?: string; state?: string; reason?: string; destination?: string; fidelity?: Fidelity; fields?: Record<string,string> }
 export type ImportDocument = { site: Site | null; items: InventoryItem[]; format: string; origin?: string; crawl?: {origin:string;verifiedAt:string} }
 export type ImportIssue = { id: string; check: string; reason: string }
@@ -15,6 +15,7 @@ export type MigrationReport = {
  inventory: (InventoryItem & { target: string|null })[]; failures: ImportIssue[];
  history: string[]; ok: boolean; revision?: string; crawl?: {origin:string;verifiedAt:string}
 }
+const anchorName=(hash:string)=>{try{return decodeURIComponent(hash.slice(1))}catch{return ''}}
 const normalizeText = (value: string) => value.normalize('NFC').replace(/\s+/g,' ').trim()
 
 /** A report describes only observed writes. Unsupported source items stay in custody,
@@ -23,6 +24,7 @@ export function migrationReport(input: ImportDocument, actual?: Site|null, phase
  const expected=input.site
  const planned=new Map(expected?activePages(expected).map(page=>[page.slug,page]):[])
  const observed=new Map(actual?activePages(actual).map(page=>[page.slug,page]):[])
+ const renderedPages=new Map(actual?activePages(actual).map(page=>[page.slug,htmlFidelity(publicPage(actual,page.slug,'live',true,true),'https://destination.invalid',true,input.format==='static-site-json-v1'&&!page.importedHtml)]):[])
  const counts: MigrationReport['counts'] = Object.fromEntries([...importKinds,'comment:approved','comment:pending','comment:spam','comment:other'].map(kind=>[kind,{source:0,planned:0,applied:phase==='preflight'?null:0,exceptions:0}]))
  const failures: ImportIssue[]=[]
  const inventory=input.items.map(item=>{
@@ -43,7 +45,7 @@ export function migrationReport(input: ImportDocument, actual?: Site|null, phase
      // Use the production renderer, not the input snapshot, for DOM fidelity.
      // Native JSON bodies are plain text with separately declared page links;
      // captured HTML must retain its whole visible body, including link labels.
-     const rendered=htmlFidelity(publicPage(actual!,found.slug,'preview'),'https://destination.invalid',true,input.format==='static-site-json-v1')
+     const rendered=renderedPages.get(found.slug)!
      if(item.fidelity&&normalizeText(rendered.text)!==normalizeText(item.fidelity.text))fail('rendered-text','The rendered draft text differs from the source after whitespace normalization.')
      const sourceLinks=item.fidelity?.links??[]
      for(const href of sourceLinks){
@@ -55,6 +57,7 @@ export function migrationReport(input: ImportDocument, actual?: Site|null, phase
      if(item.fidelity?.headings.length&&JSON.stringify(rendered.headings)!==JSON.stringify(item.fidelity.headings))fail('rendered-heading','The rendered draft has different heading levels or text.')
      if(item.fidelity?.lists.length&&JSON.stringify(rendered.lists)!==JSON.stringify(item.fidelity.lists))fail('rendered-list','The rendered draft has different list types or items.')
      if(item.fidelity?.images.length&&JSON.stringify(rendered.images)!==JSON.stringify(item.fidelity.images))fail('rendered-image','The rendered draft is missing source inline images; their placement, captions and alt text cannot be preserved.')
+     if(item.fidelity?.formatting.length&&JSON.stringify(rendered.formatting)!==JSON.stringify(item.fidelity.formatting))fail('rendered-formatting','The rendered draft has different inline formatting or unsupported rich elements.')
      if(item.fidelity?.buttons.length&&JSON.stringify(rendered.buttons)!==JSON.stringify(item.fidelity.buttons))fail('rendered-button','The rendered draft is missing the source button controls.')
      if(item.oldUrl&&/^https?:/.test(item.oldUrl))fail('redirect','The old URL is mapped but its live redirect has not been verified; a separate cutover is required.')
 
@@ -63,20 +66,20 @@ export function migrationReport(input: ImportDocument, actual?: Site|null, phase
    for(const link of item.fidelity?.links??[]){
     let url:URL
     try{url=new URL(link,new URL(item.oldUrl??'/',input.origin??'https://source.invalid'))}catch{fail('link','Invalid source destination: '+link);continue}
-    const nativeLink=input.format==='static-site-json-v1'&&/^\/site(?:[/?#]|$)/.test(link)
+    const nativeLink=input.format==='static-site-json-v1'&&(/^\/site(?:[/?#]|$)/.test(link)||url.origin==='https://source.invalid'&&/^\/site(?:[/?#]|$)/.test(url.pathname))
     if(nativeLink){
      if(!actual||!activePages(actual).some(page=>pagePath(actual,page.slug)===url.pathname))fail('link','Dangling internal target: '+link)
-     else if(url.hash)fail('anchor','The target section anchor could not be preserved: '+link)
+     else if(url.hash&&!renderedPages.get(activePages(actual!).find(page=>pagePath(actual!,page.slug)===url.pathname)!.slug)?.anchors?.includes(anchorName(url.hash)))fail('anchor','The target section anchor could not be preserved: '+link)
      continue
     }
     const internal=input.origin?url.origin===input.origin:url.origin==='https://source.invalid'
     if(internal){
      const mapped=input.items.find(candidate=>{if(!candidate.oldUrl||!candidate.targetSlug)return false;const sourceUrl=new URL(candidate.oldUrl,input.origin??'https://source.invalid');return sourceUrl.origin===url.origin&&sourceUrl.pathname===url.pathname&&sourceUrl.search===url.search})
      if(!mapped?.targetSlug||!observed.has(mapped.targetSlug))fail('link','Dangling internal target: '+url.href)
-     else if(url.hash)fail('anchor','The target section anchor could not be preserved: '+url.href)
+     else if(url.hash&&!renderedPages.get(mapped.targetSlug)?.anchors?.includes(anchorName(url.hash)))fail('anchor','The target section anchor could not be preserved: '+url.href)
     }
    }
-   if(target){
+   if(target&&!observed.get(item.targetSlug!)?.importedHtml){
     const found=observed.get(item.targetSlug!)
     for(const href of item.fidelity?.links??[]){
      const url=new URL(href,new URL(item.oldUrl??'/',input.origin??'https://source.invalid'))
@@ -85,11 +88,11 @@ export function migrationReport(input: ImportDocument, actual?: Site|null, phase
      if(!found?.links?.some(link=>link.url===expectedLink))fail('link','Source destination is not present in the stored page: '+href)
     }
    }
-   if(target&&input.format!=='static-site-json-v1'&&item.fidelity?.links.length)fail('link-placement','Source links are separate page links; their original inline positions and labels could not be preserved.')
+   if(target&&!observed.get(item.targetSlug!)?.importedHtml&&input.format!=='static-site-json-v1'&&item.fidelity?.links.length)fail('link-placement','Source links are separate page links; their original inline positions and labels could not be preserved.')
    if(item.fidelity?.buttons.length)fail('button','Source button controls could not be recreated in the plain-text draft.')
-   if(item.fidelity?.formatting.length)fail('formatting','Inline formatting and rich layout could not be preserved in the plain-text draft.')
-   if(item.fidelity?.headings.length)fail('heading','Heading levels could not be preserved in the plain-text draft.')
-   if(item.fidelity?.lists.length)fail('list','List structure could not be preserved in the plain-text draft.')
+   if(!observed.get(item.targetSlug!)?.importedHtml&&item.fidelity?.formatting.length)fail('formatting','Inline formatting and rich layout could not be preserved in the plain-text draft.')
+   if(!observed.get(item.targetSlug!)?.importedHtml&&item.fidelity?.headings.length)fail('heading','Heading levels could not be preserved in the plain-text draft.')
+   if(!observed.get(item.targetSlug!)?.importedHtml&&item.fidelity?.lists.length)fail('list','List structure could not be preserved in the plain-text draft.')
    if(item.fidelity?.images.length)fail('inline-image','Inline image positions, captions and alt text could not be recreated in the draft.')
    if(item.kind==='media')fail('media','Media was not fetched. Image storage and responsive copies are not available in this importer.')
   }

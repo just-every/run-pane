@@ -61,13 +61,15 @@ test('reviewed apply reconciles the stored draft, lists dangling post links and 
 test('documented WXR inventories 100 posts and 50 comments by state while applying only supported unpublished pages',async()=>{
  const wxr=await readFile('fixtures/imports/wordpress.xml','utf8'),plan=await ok(await call('dry-run',{source:wxr})),r=plan.report
  assert.equal(r.counts.post.source,100);assert.equal(r.counts.comment.source,50);assert.equal(r.counts['comment:approved'].source,17);assert.equal(r.counts['comment:pending'].source,17);assert.equal(r.counts['comment:spam'].source,16)
- assert.equal(r.counts.page.planned,2);assert.equal(r.counts.page.exceptions,2);assert.match(r.inventory.find(item=>item.kind==='page'&&item.targetSlug==='home').reason,/plain text.*heading levels/);assert.equal(r.counts.media.source,102);assert.equal(r.counts.author.source,1);assert.equal(r.counts.taxonomy.source,1);assert.equal(r.counts.form.source,1);assert.equal(r.inventory.find(item=>item.kind==='form').destination,'mailto:synthetic-pane-7@example.test')
+ assert.equal(r.counts.page.planned,2);assert.equal(r.counts.page.exceptions,2);assert.match(r.inventory.find(item=>item.kind==='page'&&item.targetSlug==='home').reason,/Imported headings, lists and inline links/);assert.equal(r.counts.media.source,102);assert.equal(r.counts.author.source,1);assert.equal(r.counts.taxonomy.source,1);assert.equal(r.counts.form.source,1);assert.equal(r.inventory.find(item=>item.kind==='form').destination,'mailto:synthetic-pane-7@example.test')
  assert.ok(r.inventory.some(item=>item.kind==='comment'&&item.fields.parent==='1'))
  assert.equal(plan.site.pages[0].body,'Welcome Read About or the guide.');assert.equal(plan.site.pages[1].body,'Our story & studio.')
- assert.deepEqual(plan.site.pages[0].links.map(link=>link.url),['/site/about','https://example.org/guide'])
+ assert.match(plan.site.pages[0].importedHtml,/<a href="\/site\/about">About<\/a>/)
+ assert.match(plan.site.pages[0].importedHtml,/<a href="https:\/\/example.org\/guide">/)
  const before=await data(),job=await ok(await call('apply',{source:wxr,fingerprint:plan.fingerprint}))
  assert.equal(job.report.counts.page.applied,2);assert.equal(job.report.counts.post.applied,0);assert.equal((await data()).live,before.live);assert.equal(job.report.failures.some(issue=>issue.id==='wxr-1'&&issue.reason.startsWith('Dangling internal target:')),false,'An external media path cannot shadow a valid internal page target')
- const preview=await f.request('/preview/'+job.report.revision,{headers:{Cookie:owner}});assert.equal(preview.status,200);assert.match(await preview.text(),/Welcome Read About/)
+ const preview=await f.request('/preview/'+job.report.revision,{headers:{Cookie:owner}});assert.equal(preview.status,200);const html=await preview.text();assert.match(html,/<h1>Welcome<\/h1>/);assert.match(html,/<a href="\.\/about">About<\/a>/)
+ assert.equal(job.report.failures.some(issue=>['rendered-text','rendered-heading','rendered-list'].includes(issue.check)),false)
  await ok(await call('undo',{job:job.id}))
 })
 
@@ -77,7 +79,10 @@ test('captured Wix sitemap and RSS preserve the source inventory and explicitly 
  assert.ok(r.inventory.some(item=>item.id==='crawl-authority'&&/Ownership has not been verified/.test(item.reason)))
  const job=await ok(await call('apply',{source:capture,fingerprint:plan.fingerprint}));assert.equal(job.report.counts.page.applied,2)
  assert.ok(job.report.failures.some(issue=>issue.check==='link'&&issue.reason.includes('/missing')))
- for(const check of ['rendered-text','rendered-heading','rendered-list','rendered-image','rendered-button','redirect'])assert.ok(job.report.failures.some(issue=>issue.check===check),check)
+ for(const check of ['rendered-image','rendered-button','redirect'])assert.ok(job.report.failures.some(issue=>issue.check===check),check)
+ for(const check of ['rendered-text','rendered-heading','rendered-list'])assert.equal(job.report.failures.some(issue=>issue.check===check),false,check)
+ const about=await f.request('/preview/'+job.report.revision+'/about',{headers:{Cookie:owner}})
+ assert.match(await about.text(),/<h2>About<\/h2><ul><li>One<\/li><li>Two<\/li><\/ul>/)
  await ok(await call('undo',{job:job.id}))
 })
 
@@ -233,4 +238,26 @@ test('verified capture receipts survive installation archive restore and report 
   assert.equal(plan.report.crawl.verifiedAt,verifiedCapture.receipt.verifiedAt)
   assert.equal(plan.report.inventory.some(item=>item.id==='crawl-authority'),false)
  }finally{await destination.mf.dispose()}
+})
+
+
+test('imported page bodies preserve semantic headings, nested lists, anchors and inline destinations while scripts, media and widgets stay inert',async()=>{
+ const source=await readFile('fixtures/imports/rich-page.json','utf8'),plan=await ok(await call('dry-run',{source})),before=await data()
+ const job=await ok(await call('apply',{source,fingerprint:plan.fingerprint}))
+ assert.equal((await data()).live,before.live)
+ for(const check of ['rendered-text','rendered-link','rendered-heading','rendered-list','anchor'])assert.equal(job.report.failures.some(issue=>issue.check===check),false,check)
+ assert.ok(job.report.failures.some(issue=>issue.check==='rendered-image'))
+ assert.ok(job.report.failures.some(issue=>issue.check==='rendered-formatting'))
+ const preview=await f.request('/preview/'+job.report.revision+'/home',{headers:{Cookie:owner}}),html=await preview.text()
+ for(const pattern of [/<h1 id="welcome">Welcome<\/h1>/,/<strong>bold<\/strong>/,/<em>clear<\/em>/,/<ol start="3"><li>One<\/li><li>Two<ul><li>Nested<\/li><\/ul><\/li><\/ol>/,/<blockquote>Original quote<\/blockquote>/,/<a href="\.\/about#hours" target="_blank" rel="noopener noreferrer">Visit hours<\/a>/,/<a href="sms:\+13035550100">Text<\/a>/,/<figcaption>Source caption<\/figcaption>/])assert.match(html,pattern)
+ assert.doesNotMatch(html,/<img[^>]+unfetchable|<iframe|<script>window\.syntheticPane|onclick=/)
+ assert.match(html,/<span role="img" aria-label="Source alt"><\/span>/)
+ const editor=await f.request('/app?page=home',{headers:{Cookie:owner}})
+ const editorHtml=await editor.text();assert.match(editorHtml,/<textarea id="page-text" readonly/)
+ assert.equal((editorHtml.match(/id="page-text"/g)??[]).length,1,'Source IDs cannot shadow workspace controls')
+ assert.match(editorHtml,/id="pn-imported-page-text"/)
+ const edit=await f.request('/app/prepare',{method:'POST',headers:{Origin:origin,Cookie:owner,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({base:job.report.revision,slug:'home','page.home.body':'Replace structured content silently'})})
+ assert.equal(edit.status,400)
+ assert.equal((await data()).draft.id,job.report.revision)
+ await ok(await call('undo',{job:job.id}))
 })

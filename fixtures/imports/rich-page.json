@@ -1,0 +1,19 @@
+{
+  "format": "wix-snapshot-v1",
+  "name": "synthetic-pane-rich",
+  "origin": "https://synthetic-pane-rich.example",
+  "sitemap": "<urlset><url><loc>https://synthetic-pane-rich.example/</loc></url><url><loc>https://synthetic-pane-rich.example/about</loc></url></urlset>",
+  "rss": "<rss><channel><title>synthetic-pane-rich</title></channel></rss>",
+  "documents": [
+    {
+      "url": "https://synthetic-pane-rich.example/",
+      "title": "Home",
+      "html": "<h1 id=\"welcome\">Welcome</h1><p>A <strong>bold</strong> and <em>clear</em> introduction to the Cafe\u0301 studio. <a href=\"/about#hours\" target=\"_blank\">Visit hours</a> <a href=\"https://example.org/guide\">Guide</a> <a href=\"mailto:synthetic-pane-1@example.test\">Email</a> <a href=\"tel:+13035550100\">Phone</a> <a href=\"sms:+13035550100\">Text</a>.</p><ol start=\"3\"><li>One</li><li>Two<ul><li>Nested</li></ul></li></ol><blockquote>Original quote</blockquote><p id=\"page-text\">Stored source id.</p><figure><img src=\"/unfetchable.png\" alt=\"Source alt\" onclick=\"window.syntheticPane=true\"><figcaption>Source caption</figcaption></figure><script>window.syntheticPane=true</script><iframe src=\"https://synthetic-pane-2.example.com/widget\"></iframe>"
+    },
+    {
+      "url": "https://synthetic-pane-rich.example/about",
+      "title": "About",
+      "html": "<h2 id=\"hours\">Opening hours</h2><ul><li>Tuesday</li><li>Wednesday</li></ul><p><a href=\"/#welcome\">Welcome again</a></p>"
+    }
+  ]
+}
