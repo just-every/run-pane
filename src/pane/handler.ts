@@ -11,8 +11,8 @@ import { prepare, DraftConflict, publish, revision, normalizeSite, siteFromForm 
 import { document, screens, workspace } from './views'
 import { publicPage } from './public-view'
 import { shell } from './ui/shell'
-import { moveReview } from './ui/moves'
-import { planMoveIn, applyMoveIn, undoMoveIn } from './imports'
+import { moveReview, moveReport } from './ui/moves'
+import { planMoveIn, applyMoveIn, undoMoveIn, readMoveInReport } from './imports'
 import { replyToInquiry } from './inquiry-replies'
 import { updateInquiry } from './followups'
 const json=(v:unknown,status=200)=>Response.json(v,{status,headers:{'cache-control':'no-store'}})
@@ -108,11 +108,17 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    if(!live || !activePages(revision(live).site).some(page=>(page.id??page.slug)===id))throw Error('Published page not found.')
    await markReviewed(env.DB,id,actor.id,Date.now());result={reviewed:id};notice='Page review recorded.';back='/app/sites'
   } else if(action==='import/dry-run') {
+   if(input.job){
+    const saved=await readMoveInReport(env.DB,actor,String(input.job))
+    if(api)return json(saved)
+    const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps)
+    return document('Migration report',shell(data,'moves',moveReport(saved.report)+'<p><a class="text-link" href="/app/moves">Back to Moves</a></p>'))
+   }
    result=await planMoveIn(env.DB,actor,typeof input.source==='string'?input.source:JSON.stringify(input.source))
    if(!api) {
-    const site=normalizeSite(JSON.parse(String(input.source)))
+    const site=(result as Awaited<ReturnType<typeof planMoveIn>>).site
     const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps)
-    return document('Review move-in',shell(data,'moves',moveReview(site,(result as {fingerprint:string}).fingerprint,String(input.source))))
+    return document('Review move-in',shell(data,'moves',moveReview(site,(result as {fingerprint:string}).fingerprint,String(input.source),(result as Awaited<ReturnType<typeof planMoveIn>>).report)))
    }
   } else if(action==='import/apply') {
    result=await applyMoveIn(env.DB,actor,typeof input.source==='string'?input.source:JSON.stringify(input.source),String(input.fingerprint??''))

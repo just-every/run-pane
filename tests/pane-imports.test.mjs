@@ -1,0 +1,101 @@
+import {test,before,after} from 'node:test'
+import assert from 'node:assert/strict'
+import {readFile} from 'node:fs/promises'
+import {runtime,origin,settings} from './runtime.mjs'
+import {createOperatorAuth} from '../src/modules/operator-auth/index.mjs'
+let f,owner,member
+const source=await readFile('fixtures/imports/migration-report.json','utf8')
+const call=(action,body,cookie=owner)=>f.request('/api/pane/import/'+action,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',Cookie:cookie??''},body:JSON.stringify(body)})
+const ok=async response=>{assert.equal(response.status,200,await response.clone().text());return response.json()}
+const data=async()=>ok(await f.request('/api/pane',{headers:{Cookie:owner}}))
+before(async()=>{
+ f=await runtime()
+ const boot=await f.request('/auth/bootstrap',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({token:settings.SETUP_TOKEN,displayName:'synthetic-pane-1'})})
+ assert.equal(boot.status,303);owner=boot.headers.get('set-cookie').split(';')[0]
+ await f.request('/setup',{method:'POST',headers:{Cookie:owner,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
+ let mail
+ const auth=createOperatorAuth({db:f.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async message=>{mail=message;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+ await auth.invite(new Request(origin+'/auth/invite',{method:'POST',headers:{Origin:origin,Host:new URL(origin).host,Cookie:owner}}),{email:'synthetic-pane-2@example.test',displayName:'synthetic-pane-2',role:'member'})
+ const token=new URL(mail.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token')
+ const session=await f.request('/auth/confirm',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({token})});assert.equal(session.status,303);member=session.headers.get('set-cookie').split(';')[0]
+})
+after(async()=>{await f?.mf.dispose()})
+
+test('migration preflight reports complete typed inventory, exceptions, old URLs, form destinations and history without writes',async()=>{
+ const before=await data(),plan=await ok(await call('dry-run',{source}))
+ assert.deepEqual(await data(),before)
+ const r=plan.report;assert.equal(r.phase,'preflight');assert.equal(r.counts.page.source,6);assert.equal(r.counts.page.planned,5)
+ for(const state of ['approved','pending','spam'])assert.equal(r.counts['comment:'+state].source,1)
+ for(const kind of ['post','media','product','form','unsupported'])assert.equal(r.counts[kind].source,1)
+ assert.equal(r.inventory.find(item=>item.oldUrl==='https://synthetic-pane-1.example/about').target,'/site/about')
+ assert.ok(r.inventory.filter(item=>item.target===null).every(item=>item.reason))
+ assert.match(r.inventory.find(item=>item.kind==='media').reason,/not fetched/)
+ assert.equal(r.inventory.find(item=>item.kind==='form').destination,'mailto:synthetic-pane-1@example.test')
+ assert.match(r.history.join(' '),/Traffic and sales analytics history stays/)
+})
+
+test('reviewed apply reconciles the stored draft, lists dangling post links and reopens the retained report',async()=>{
+ const plan=await ok(await call('dry-run',{source})),before=await data()
+ for(const input of [{source,fingerprint:'wrong'},{source:source+' ',fingerprint:plan.fingerprint}])assert.equal((await call('apply',input)).status,400)
+ assert.deepEqual(await data(),before)
+ const job=await ok(await call('apply',{source,fingerprint:plan.fingerprint}));assert.equal(job.state,'completed')
+ const r=job.report;assert.equal(r.counts.page.applied,r.counts.page.planned);assert.equal(r.counts.post.applied,0);assert.equal(r.counts.comment.applied,0)
+ assert.ok(r.failures.some(issue=>issue.id==='inventory-0'&&issue.check==='link'&&issue.reason.includes('/skipped')))
+ assert.ok(r.failures.some(issue=>issue.check==='heading'));assert.ok(r.failures.some(issue=>issue.check==='list'));assert.ok(r.failures.some(issue=>issue.check==='inline-image'))
+ const saved=await ok(await call('dry-run',{job:job.id,source:'ignored'}));assert.deepEqual(saved.report,r)
+ const state=await data();assert.equal(state.live,before.live);assert.equal(state.draft.id,r.revision)
+ const replay=await ok(await call('apply',{source,fingerprint:plan.fingerprint}));assert.equal(replay.id,job.id)
+ // The recheck observes native changes, rather than echoing the requested write.
+ const changed={...state.draft.site,pages:state.draft.site.pages.map((page,index)=>index===0?{...page,body:'A different native body'}:page)}
+ await f.db.prepare('UPDATE pane_revisions SET site=? WHERE id=?').bind(JSON.stringify(changed),r.revision).run()
+ const mismatch=await ok(await call('dry-run',{job:job.id}));assert.ok(mismatch.report.failures.some(issue=>issue.check==='text'));assert.equal(mismatch.report.ok,false)
+ await f.db.prepare('UPDATE pane_revisions SET site=? WHERE id=?').bind(JSON.stringify(state.draft.site),r.revision).run()
+ await ok(await call('undo',{job:job.id}));assert.equal((await data()).draft?.id??null,before.draft?.id??null)
+ const undone=await ok(await call('dry-run',{job:job.id}));assert.equal(undone.report.phase,'undone');assert.equal(undone.report.counts.page.applied,0)
+})
+
+test('documented WXR inventories 100 posts and 50 comments by state while applying only supported unpublished pages',async()=>{
+ const wxr=await readFile('fixtures/imports/wordpress.xml','utf8'),plan=await ok(await call('dry-run',{source:wxr})),r=plan.report
+ assert.equal(r.counts.post.source,100);assert.equal(r.counts.comment.source,50);assert.equal(r.counts['comment:approved'].source,17);assert.equal(r.counts['comment:pending'].source,17);assert.equal(r.counts['comment:spam'].source,16)
+ assert.equal(r.counts.page.planned,2);assert.equal(r.counts.media.source,101);assert.equal(r.counts.author.source,1);assert.equal(r.counts.taxonomy.source,1)
+ assert.ok(r.inventory.some(item=>item.kind==='comment'&&item.fields.parent==='1'))
+ assert.equal(plan.site.pages[0].body,'Welcome Read About or the guide.');assert.equal(plan.site.pages[1].body,'Our story & studio.')
+ assert.deepEqual(plan.site.pages[0].links.map(link=>link.url),['/site/about','https://example.org/guide'])
+ const before=await data(),job=await ok(await call('apply',{source:wxr,fingerprint:plan.fingerprint}))
+ assert.equal(job.report.counts.page.applied,2);assert.equal(job.report.counts.post.applied,0);assert.equal((await data()).live,before.live)
+ const preview=await f.request('/preview/'+job.report.revision,{headers:{Cookie:owner}});assert.equal(preview.status,200);assert.match(await preview.text(),/Welcome Read About/)
+ await ok(await call('undo',{job:job.id}))
+})
+
+test('captured Wix sitemap and RSS preserve the source inventory and explicitly report unverified live crawl',async()=>{
+ const capture=await readFile('fixtures/imports/wix.json','utf8'),plan=await ok(await call('dry-run',{source:capture})),r=plan.report
+ assert.equal(r.counts.page.source,3);assert.equal(r.counts.page.planned,2);assert.equal(r.counts.post.source,1)
+ assert.ok(r.inventory.some(item=>item.id==='crawl-authority'&&/domain-control/.test(item.reason)))
+ const job=await ok(await call('apply',{source:capture,fingerprint:plan.fingerprint}));assert.equal(job.report.counts.page.applied,2)
+ assert.ok(job.report.failures.some(issue=>issue.check==='link'&&issue.reason.includes('/missing')))
+ await ok(await call('undo',{job:job.id}))
+})
+
+test('Webflow, Framer and Durable captures are reconciled separately with every collection CSV field retained as an exception',async()=>{
+ for(const [provider,rows] of [['webflow',3],['framer',2],['durable',0]]){
+  const capture=await readFile('fixtures/imports/'+provider+'.json','utf8'),plan=await ok(await call('dry-run',{source:capture})),r=plan.report
+  assert.equal(r.counts['collection-item'].source,rows,provider);assert.equal(r.counts['collection-item'].planned,0)
+  if(rows){const collection=r.inventory.filter(item=>item.kind==='collection-item');assert.equal(collection[0].fields.Description,'First, second');assert.equal(collection[1].fields.Description,'Quoted "care"\nsecond line');assert.equal(collection[0].fields.Price,'19.95');assert.ok(collection.every(item=>/CMS-001/.test(item.reason)))}
+  const job=await ok(await call('apply',{source:capture,fingerprint:plan.fingerprint}));assert.equal(job.report.counts.page.applied,2);assert.equal(job.report.counts['collection-item'].applied,0)
+  await ok(await call('undo',{job:job.id}))
+ }
+})
+
+test('source readers refuse entity declarations, malformed exports, cross-origin captures, duplicate URLs and lossy CSV rows',async()=>{
+ const snapshot=JSON.parse(await readFile('fixtures/imports/webflow.json','utf8'))
+ const invalid=[JSON.stringify({...snapshot,token:'synthetic-pane-1'}),'<!DOCTYPE rss [<!ENTITY x SYSTEM "file:///etc/passwd">]><rss>&x;</rss>','<rss><broken></rss>','<rss><channel/></rss>',JSON.stringify({...snapshot,documents:[{url:'https://other.example/',html:'x'}]}),JSON.stringify({...snapshot,documents:[snapshot.documents[0],snapshot.documents[0]]}),JSON.stringify({...snapshot,collections:[{name:'Invalid',csv:'Name,Name\na,b'}]}),JSON.stringify({...snapshot,collections:[{name:'Invalid',csv:'Name,Slug\none'}]})]
+ const before=await data();for(const source of invalid)assert.equal((await call('dry-run',{source})).status,400,source.slice(0,80));assert.deepEqual(await data(),before)
+})
+
+test('retained migration reports remain private to the applying owner or admin and same-origin sessions',async()=>{
+ const privateSource=source+'\n'
+ const plan=await ok(await call('dry-run',{source:privateSource})),job=await ok(await call('apply',{source:privateSource,fingerprint:plan.fingerprint}))
+ assert.equal((await call('dry-run',{job:job.id},member)).status,403);assert.equal((await call('dry-run',{job:job.id},'')).status,401)
+ const foreign=await f.request('/api/pane/import/dry-run',{method:'POST',headers:{Origin:'https://other.example',Cookie:owner,'Content-Type':'application/json'},body:JSON.stringify({job:job.id})});assert.equal(foreign.status,403)
+ await ok(await call('undo',{job:job.id}))
+})

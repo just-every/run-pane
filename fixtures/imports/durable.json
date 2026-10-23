@@ -1,0 +1,18 @@
+{
+  "format": "durable-snapshot-v1",
+  "name": "synthetic-pane-durable",
+  "origin": "https://synthetic-pane-durable.example",
+  "sitemap": "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"><url><loc>https://synthetic-pane-durable.example/</loc></url><url><loc>https://synthetic-pane-durable.example/about</loc></url><url><loc>https://synthetic-pane-durable.example/missing</loc></url></urlset>",
+  "documents": [
+    {
+      "url": "https://synthetic-pane-durable.example/",
+      "title": "Home",
+      "html": "<h1>Welcome</h1><p>Our studio.</p><a href=\"/about\">About</a><a href=\"/missing\">Archive</a><img src=\"/missing.png\" alt=\"Source alt\"><form action=\"mailto:synthetic-pane-1@example.test\"><input name=\"message\"></form>"
+    },
+    {
+      "url": "https://synthetic-pane-durable.example/about",
+      "title": "About",
+      "html": "<h2>About</h2><ul><li>One</li><li>Two</li></ul>"
+    }
+  ]
+}

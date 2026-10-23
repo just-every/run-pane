@@ -7,7 +7,7 @@ format. See [the complete fixture](../fixtures/static-site.json).
 
 1. Sign in as an owner or admin and choose **Moves**.
 2. Paste the whole export into **Source JSON** under **Import a site**,
-   including `schemaVersion`, the site name, description and all five pages.
+   including `schemaVersion`, the site name, description and your complete page inventory.
 3. Choose **Check import**. This check creates no draft or import job.
 4. On **Review your move-in**, read every page. **Import identity** shows the
    exact source fingerprint. Choose **Approve import** to apply that reviewed
@@ -21,9 +21,8 @@ itself. To remove that imported draft, the operator who applied it can choose
 restore another revision first. An import that has changed since application
 is protected by a conflict refusal. Undo retains its source and journal.
 
-The importer accepts this JSON format, not a website address, HTML folder or
-a provider-specific archive. Convert your existing site to the format below
-before checking it. For another route, your agent can use
+The importer accepts pasted exports, not a website address or an HTML folder.
+The additional documented WXR and capture formats are described below. For another route, your agent can use
 [the authenticated helper](AGENT.md).
 
 ## Export format
@@ -43,7 +42,7 @@ before checking it. For another route, your agent can use
 }
 ```
 
-All five slugs are required exactly once. The importer normalizes the site with
+Page slugs must be unique and follow the ordinary editor URL rules. At least one page is required for a native site snapshot. The importer normalizes the site with
 the same validator and content hash used by the editor. A name and each page
 title may contain at most 120 characters; the description at most 500; each page
 body at most 20,000. Names, titles and bodies must contain text. The whole source
@@ -59,7 +58,7 @@ retained as text and must be rendered through ordinary escaped text nodes.
    to `applyMoveIn(db, actor, source, reviewedFingerprint)`. The server recomputes
    the deterministic plan. A changed source, actor or fingerprint cannot publish
    that reviewed operation. The return value includes the Base job `id` and
-   `state`; one site is one effect in one publication batch.
+   `state`; one supported site is one effect in one publication batch.
 3. Applying creates a new `pane_revisions` snapshot. It becomes the newest draft
    through the normal revision ordering. It does not change `pane_state.live`.
 4. `undoMoveIn(db, actor, jobId)` delegates to Base's strict reversal. It removes
@@ -115,3 +114,87 @@ mechanisms are Base's, unchanged.
 `src/pane/import-source.ts`, `import-authority.ts`, `import-targets.ts`
 and `src/pane/imports.ts` are Pane's product integration. Native writes return
 inert D1 SQL to Base; they do not run a parallel journal or custom undo engine.
+
+## Migration inventory and retained reports
+
+The current page importer also accepts WordPress WXR 1.0–1.2 XML. It imports
+supported pages as plain-text unpublished snapshots. It inventories posts,
+comments (including parent ID, source post and moderation state), authors,
+taxonomy, menus, shortcodes and media as explicit exceptions. It does **not**
+create native posts/comments or download media. The documented synthetic WXR
+fixture contains 100 posts and 50 comments; those are source counts, not a claim
+that those unsupported records were applied.
+
+A static JSON export may include `oldUrl` on each page and this optional field:
+
+```json
+{
+  "migration": {
+    "origin": "https://your-old-site.example",
+    "items": [
+      {"kind":"post","title":"Old story","oldUrl":"https://your-old-site.example/story","html":"<p>Source body</p>"},
+      {"kind":"comment","title":"Comment on Old story","state":"pending"},
+      {"kind":"media","title":"Source image","oldUrl":"https://your-old-site.example/image.png"},
+      {"kind":"form","title":"Contact","destination":"mailto:old-recipient@example.test"}
+    ]
+  }
+}
+```
+
+`kind` is page, post, comment, collection-item, event, gallery, media, product,
+form, author, taxonomy, menu or unsupported. Items are inventory-only; they do
+not activate recipients, comments, products, marketing consent or connections.
+Source HTML is parsed as data and never executed. Document types/entities are
+refused. No HTTP request, DNS change or old-host cutover occurs during import.
+Unknown site/page fields are named as unsupported rather than silently dropped.
+
+Before apply the report shows source, planned and exception counts for every
+content type, comment counts by state, the inventory/URL map, form destinations,
+unfetched media and history left with the old platform. A reviewed map is not
+proof of a redirect on the old domain. Apply rechecks the stored native snapshot,
+per-type applied counts, text/fields, link destinations and missing internal
+links. Semantic heading/list/button/inline-image/formatting fidelity is reported
+as unresolved where the native rich targets are unavailable. A failure stays
+visible; it never becomes an invented successful import.
+
+Choose **View report** on the applied job to reopen the report from the exact
+retained original bytes, or call `import-plan` with a JSON request containing
+`job` through `/api/pane/import/dry-run`. The same applying owner/admin and the
+existing `imports:write` scope are required. Reopening uses the current stored
+snapshot, so later changes are detected. Undo leaves the source/report in
+custody and shows zero applied content.
+
+## Offline published-site captures
+
+Pane also reads its own `wix-snapshot-v1`, `webflow-snapshot-v1`,
+`framer-snapshot-v1` and `durable-snapshot-v1` JSON envelopes:
+
+```json
+{
+  "format": "webflow-snapshot-v1",
+  "origin": "https://your-old-site.example",
+  "name": "Your site",
+  "sitemap": "<urlset><url><loc>https://your-old-site.example/</loc></url></urlset>",
+  "documents": [{"url":"https://your-old-site.example/","title":"Home","html":"<h1>Welcome</h1><p>Our studio.</p>"}],
+  "collections": [{"name":"Services","csv":"Name,Slug,Description\nRepair,repair,Original description\n"}]
+}
+```
+
+Each captured document needs a unique same-origin HTTP(S) URL and HTML text.
+The optional flattened URL sitemap contributes uncaptured URLs as exceptions.
+Wix captures additionally require the sitemap and an RSS channel in `rss`;
+RSS URLs classify blog posts and detect missing captured posts. This is an
+**offline capture only**: controlled live crawling and owner domain-control
+proof remain open under IMPORT-003. Do not treat uploaded HTML as authority to
+fetch a host. Webflow and Framer `collections` contain separate named official
+CSV exports; every row/field is retained and listed as a collection exception
+until CMS-001/CMS-007 provide native destinations. Durable has no CSV requirement.
+There is no claim that this envelope is any provider's official export format.
+
+The entire submitted source is limited to 512,000 UTF-8 bytes. Pages use the
+current editor's variable inventory (at least one valid page, no fixed five-page
+requirement), with the existing title/body limits. An inventory-only import with
+no supported pages creates no native page revision. See
+[documented source fixtures](../fixtures/imports/README.md) for boundaries and
+examples. No live crawler, native CMS, original-media storage or arbitrary
+old-domain redirects are supplied by these readers.

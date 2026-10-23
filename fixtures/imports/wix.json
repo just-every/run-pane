@@ -1,0 +1,24 @@
+{
+  "format": "wix-snapshot-v1",
+  "name": "synthetic-pane-wix",
+  "origin": "https://synthetic-pane-wix.example",
+  "sitemap": "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"><url><loc>https://synthetic-pane-wix.example/</loc></url><url><loc>https://synthetic-pane-wix.example/about</loc></url><url><loc>https://synthetic-pane-wix.example/missing</loc></url></urlset>",
+  "documents": [
+    {
+      "url": "https://synthetic-pane-wix.example/",
+      "title": "Home",
+      "html": "<h1>Welcome</h1><p>Our studio.</p><a href=\"/about\">About</a><a href=\"/missing\">Archive</a><img src=\"/missing.png\" alt=\"Source alt\"><form action=\"mailto:synthetic-pane-1@example.test\"><input name=\"message\"></form>"
+    },
+    {
+      "url": "https://synthetic-pane-wix.example/about",
+      "title": "About",
+      "html": "<h2>About</h2><ul><li>One</li><li>Two</li></ul>"
+    },
+    {
+      "url": "https://synthetic-pane-wix.example/blog/story",
+      "title": "Story",
+      "html": "<h2>Story</h2><p>Read <a href=\"/missing\">archive</a>.</p>"
+    }
+  ],
+  "rss": "<rss version=\"2.0\"><channel><item><title>Story</title><link>https://synthetic-pane-wix.example/blog/story</link></item></channel></rss>"
+}
