@@ -19,6 +19,7 @@ const proxy=process.env.HTTPS_PROXY?new ProxyAgent(process.env.HTTPS_PROXY):unde
 const network=(input,init={})=>providerFetch(input,{...init,...(proxy?{dispatcher:proxy}:{})})
 const kit=resolve('node_modules/@runeditrun/rer/modules/deploy-kit')
 const {main:ownerCommand}=await import(resolve(kit,'owner-cli.mjs'))
+const {providerFailure}=await import(resolve(kit,'diagnostics.mjs'))
 const environment='sx-pane-c9-proof',statePath=resolve(folder,'owner-state.json'),declarationPath=resolve(folder,'declaration.json')
 const configPath=resolve('dist/server/wrangler.json'),configBytes=await readFile(configPath),config=JSON.parse(configBytes)
 const wrapperName='__outage-proof.mjs',wrapperPath=resolve('dist/server',wrapperName)
@@ -106,7 +107,7 @@ finally{
  await writeFile(configPath,configBytes);await rm(wrapperPath,{force:true})
  await proxy?.close()
  result.status=proofError||cleanupError?'failed':'success'
- if(proofError)result.failure=proofError.message.split('\n')[0]
+ if(proofError){result.failure=proofError.message.split('\n')[0];result.providerFailure=providerFailure(proofError,text=>['CLOUDFLARE_API_TOKEN','CLOUDFLARE_ACCOUNT_ID','SESSION_SECRET','SETUP_TOKEN','MAIL_API_KEY'].reduce((clean,key)=>inputs[key]?clean.split(inputs[key]).join('[REDACTED]'):clean,String(text)))}
  if(cleanupError)result.cleanupFailure=cleanupError.message.split('\n')[0]
  await writeFile(resolve(folder,'receipt.json'),JSON.stringify(result,null,2)+'\n')
  console.log(JSON.stringify(result))
