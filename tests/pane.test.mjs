@@ -49,7 +49,7 @@ test('PRESENT-001: five pages preview with a draft banner and publish without pr
 test('ACCESS-002: mutations require the canonical origin; accepted contact is durable and visits respect privacy',async()=>{
  const before=await data(),foreign='https://elsewhere.invalid'
  for(const originHeader of [{},{Origin:foreign},{Origin:'null'}]){
-  for(const prefix of ['/api/pane/','/app/'])for(const action of ['prepare','publish','rollback','review','messages/erase','import/dry-run','import/apply','import/undo']){
+  for(const prefix of ['/api/pane/','/app/'])for(const action of ['prepare','publish','rollback','review','page-request-review','page-publish','messages/erase','import/dry-run','import/apply','import/undo']){
    const response=await f.request(prefix+action,{method:'POST',headers:{Cookie:owner,'Content-Type':'application/json',...originHeader},body:JSON.stringify({site:fixture,revision:first.id,id:crypto.randomUUID(),source:JSON.stringify(fixture)})})
    assert.equal(response.status,403,prefix+action)
   }
@@ -966,4 +966,77 @@ test('native connection approval, callback, settings and unlink produce owner-at
   assert.ok(history.some(row=>row.action==='settings.change'&&row.actor==='Synthetic connection owner'))
   assert.doesNotMatch(JSON.stringify(history),/synthetic-pane-70|synthetic-pane-71|private_key|client_assertion|test-session-key/)
  }finally{await app.mf.dispose()}
+})
+
+test('starter layouts and duplicates retain editable content and shared published styles',async()=>{
+ const initial=await (await json('/api/pane/prepare',{site:fixture})).json()
+ const layouts=['landing','service','team','menu','pricing','faq','location']
+ const pages=fixture.pages.map(page=>({id:page.id??page.slug,slug:page.slug,title:page.title}))
+ for(const layout of layouts)pages.push({id:'synthetic-pane-'+layout,slug:'starter-'+layout,title:'Starter '+layout,layout})
+ pages.push({id:'synthetic-pane-copy',slug:'services-copy',title:'Services copy',sourceId:'services'})
+ const save=await f.request('/app/prepare',{method:'POST',headers:{Cookie:owner,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({base:initial.id,structure:JSON.stringify({pages,folders:[],home:'home',notFound:''})}),redirect:'manual'})
+ assert.equal(save.status,303,await save.text())
+ const draft=(await data()).draft
+ for(const layout of layouts){const page=draft.site.pages.find(page=>page.slug==='starter-'+layout);assert.equal(page.layout,layout);assert.ok(page.body.includes('\n\n'))}
+ const source=draft.site.pages.find(page=>page.slug==='services'),copy=draft.site.pages.find(page=>page.slug==='services-copy')
+ assert.equal(copy.body,source.body);assert.notEqual(copy.id,source.id??source.slug)
+ assert.equal((await json('/api/pane/publish',{revision:draft.id})).status,200)
+ for(const slug of [...layouts.map(layout=>'starter-'+layout),'services-copy']){
+  const response=await f.request('/site/'+slug);assert.equal(response.status,200)
+  const html=await response.text();assert.match(html,/class="public-site"/);assert.match(html,/pane.css/);assert.match(html,/pane-tooltip.js/)
+  if(slug==='starter-faq')assert.match(html,/<details><summary>/)
+  else if(slug.startsWith('starter-'))assert.match(html,/<section><h2>/)
+ }
+ const changed=structuredClone(draft.site);changed.pages.find(page=>page.slug==='services-copy').body='An independent duplicate.'
+ const edit=await (await json('/api/pane/prepare',{site:changed,base:draft.id})).json()
+ assert.equal(edit.site.pages.find(page=>page.slug==='services').body,source.body)
+ assert.equal((await json('/api/pane/prepare',{site:{...changed,pages:changed.pages.map(page=>({...page,layout:'unsupported'}))}})).status,400)
+})
+
+test('page review binds the exact content and selective owner approval keeps other drafts and records an immutable revision',async()=>{
+ const base=await (await json('/api/pane/prepare',{site:fixture})).json()
+ await json('/api/pane/publish',{revision:base.id})
+ const site=structuredClone(fixture);site.pages[1].body='Reviewed studio change.';site.pages[2].body='Unfinished service draft.'
+ const draft=await (await json('/api/pane/prepare',{site,base:base.id})).json()
+ const request=await json('/api/pane/page-request-review',{base:draft.id,page:'about'})
+ assert.equal(request.status,200,await request.clone().text());const review=await request.json()
+ assert.equal((await json('/api/pane/page-publish',{base:draft.id,page:'about',request:review.id},member)).status,403)
+ const publish=await json('/api/pane/page-publish',{base:draft.id,page:'about',request:review.id})
+ assert.equal(publish.status,200,await publish.clone().text());const live=await publish.json(),after=await data()
+ assert.equal(live.site.pages[1].body,'Reviewed studio change.')
+ assert.equal(live.site.pages[2].body,fixture.pages[2].body)
+ assert.equal(after.draft.site.pages[2].body,'Unfinished service draft.')
+ assert.equal(after.approvals[0].revision,live.id)
+ assert.deepEqual(after.revisions.find(row=>row.id===draft.id).site,draft.site)
+ assert.ok((await (await f.request('/site/about')).text()).includes('Reviewed studio change.'))
+ assert.ok(!(await (await f.request('/site/services')).text()).includes('Unfinished service draft.'))
+ const stale=await json('/api/pane/page-publish',{base:draft.id,page:'about',request:review.id});assert.equal(stale.status,409)
+ const changed=structuredClone(after.draft.site);changed.pages[1].body='Changed after review.'
+ const newer=await (await json('/api/pane/prepare',{site:changed,base:after.draft.id})).json()
+ assert.equal((await json('/api/pane/page-publish',{base:newer.id,page:'about',request:review.id})).status,400)
+ assert.equal((await json('/api/pane/page-request-review',{base:draft.id,page:'about'})).status,409)
+ const requested=await (await json('/api/pane/page-request-review',{base:newer.id,page:'about'})).json()
+ const concurrent=await Promise.all([json('/api/pane/page-publish',{base:newer.id,page:'about',request:requested.id}),json('/api/pane/page-publish',{base:newer.id,page:'about',request:requested.id})])
+ assert.deepEqual(concurrent.map(response=>response.status).sort(),[200,409],'Only one concurrent approval can consume the opened draft')
+})
+
+test('US business defaults render Denver hours, currency, phone, address and Sunday calendars and owners can change the formats',async()=>{
+ const site=structuredClone(fixture)
+ site.automations={timeZone:'America/Denver',banners:[]}
+ site.pages[3].business={hours:['','09:00-17:00','09:00-17:00','09:00-17:00','09:00-17:00','09:00-17:00',''],prices:[{label:'Consultation',cents:12550}],phone:'3035550123',street:'10 Main Street',city:'Denver',region:'CO',postal:'80202',country:'United States'}
+ let draft=await (await json('/api/pane/prepare',{site})).json()
+ await json('/api/pane/publish',{revision:draft.id})
+ let html=await (await f.request('/site/hours')).text()
+ for(const value of ['America/Denver','9:00 AM','5:00 PM','$125.50','(303) 555-0123','Denver, CO 80202','title="Sunday"'])assert.ok(html.includes(value),value)
+ assert.ok(html.indexOf('title="Sunday"')<html.indexOf('title="Monday"'))
+ assert.equal((await data()).timeZone,'America/Denver')
+ const changed={...site,locale:{locale:'en-GB',currency:'GBP',phoneFormat:'international',addressFormat:'international',weekStart:1}}
+ draft=await (await json('/api/pane/prepare',{site:changed})).json()
+ assert.ok((await (await f.request('/site/hours')).text()).includes('$125.50'),'Draft formatting cannot change live content')
+ await json('/api/pane/publish',{revision:draft.id})
+ html=await (await f.request('/site/hours')).text()
+ for(const value of ['£125.50','+1 303 555 0123','80202 Denver','lang="en-GB"'])assert.ok(html.includes(value),value)
+ assert.ok(html.indexOf('title="Monday"')<html.indexOf('title="Sunday"'))
+ assert.equal((await data()).locale,'en-GB')
+ for(const bad of [{locale:{...changed.locale,currency:'invalid'}},{pages:site.pages.map(page=>page.business?{...page,business:{...page.business,hours:['bad']}}:page)}])assert.equal((await json('/api/pane/prepare',{site:{...site,...bad}})).status,400)
 })

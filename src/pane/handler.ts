@@ -1,3 +1,4 @@
+import { requestPageReview, publishPage } from './page-review'
 import { capabilities, permittedDashboard, routeCapability, assignRoles, inviteRoles } from './roles'
 import { apiIdentity, createToken } from './api-tokens'
 import { activity, erasePerson } from './audit'
@@ -70,7 +71,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    if(api)return json(scopes?{role:actor.role,draft:data.draft?{id:data.draft.id}:null,live:data.live?{id:data.live.id}:null}:{...data,activity:undefined})
    if(!screens[path])return json({error:'Not found.'},404)
    data.notice=url.searchParams.get('notice')??undefined
-   return document(screens[path][1],workspace(data,path,url.searchParams.get('page')??''))
+   return document(screens[path][1],workspace(data,path,url.searchParams.get('page')??''),'app',undefined,undefined,data.locale)
   }
   if(request.method!=='POST')return json({error:'Method not allowed.'},405)
   if(Number(request.headers.get('content-length')??0)>1200000)return json({error:'Input exceeds 1.2 MB.'},413)
@@ -93,12 +94,16 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
     const latest=await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
     const current=latest?revision(latest).site:null
     if(latest&&input.base!==latest.id)throw new DraftConflict(latest?revision(latest):null)
-    for(const key of ['automations','goals','analyticsCampaigns','analytics','responseDays','robots'] as const)if(JSON.stringify(proposed[key]??null)!==JSON.stringify(current?.[key]??null))return json({error:'Only owners and admins can change business settings.'},403)
+    for(const key of ['locale','automations','goals','analyticsCampaigns','analytics','responseDays','robots'] as const)if(JSON.stringify(proposed[key]??null)!==JSON.stringify(current?.[key]??null))return json({error:'Only owners and admins can change business settings.'},403)
    }
    result=await prepare(env.DB,actor.id,proposed, action==='autosave' ? String(input.base??'') : typeof input.base==='string' ? input.base : undefined)
    if(action==='autosave')return json(result)
    notice='Draft prepared. Preview it before publishing.'
    if(typeof input.slug==='string')back='/app?page='+encodeURIComponent(input.slug)
+  } else if(action==='page-request-review') {
+   result=await requestPageReview(env.DB,actor.id,String(input.base??''),String(input.page??''));notice='Page sent for review.';back='/app?page='+encodeURIComponent(String(input.slug??''))
+  } else if(action==='page-publish') {
+   result=await publishPage(env.DB,actor.id,String(input.base??''),String(input.page??''),String(input.request??''));notice='Selected page published. Other drafts are kept.';back='/app?page='+encodeURIComponent(String(input.slug??''))
   } else if(action==='publish'||action==='rollback') {
    result=await publish(env.DB,actor.id,String(input.revision),action)
    notice=action==='publish'?'Published. Your approval is recorded.':'Rolled back. Your approval is recorded.'

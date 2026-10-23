@@ -1,6 +1,20 @@
 import type { Page, Site } from './model'
 import type { MenuItem } from './navigation'
 
+export const starterLayouts = {
+ landing: {title:'Landing page', body:'Welcome\nIntroduce your business and the people you help.\n\nWhy choose us\nExplain what makes your service useful.\n\nGet started\nTell visitors how to take the next step.'},
+ service: {title:'Service detail', body:'About this service\nDescribe what is included.\n\nHow it works\nExplain the steps and what customers can expect.\n\nRequest this service\nAdd your contact details or a link to your contact page.'},
+ team: {title:'Team', body:'Meet our team\nIntroduce your people and their experience.\n\nTeam member\nReplace this with a name, role and biography.'},
+ menu: {title:'Menu', body:'Our menu\nDescribe your menu and any dietary information.\n\nMenu item\nReplace this with an item description and price.'},
+ pricing: {title:'Pricing', body:'Choose your service\nExplain what your prices include.\n\nPricing option\nReplace this with a package, price and included services.'},
+ faq: {title:'FAQ', body:'What should I know?\nReplace this with an answer to a common question.\n\nHow do I get started?\nExplain the next step for your customers.'},
+ location: {title:'Location', body:'Visit us\nReplace this with your business address.\n\nOpening hours\nAdd your opening hours and holiday information.\n\nGetting here\nExplain directions, parking and accessibility.'},
+} as const
+export type StarterLayout = keyof typeof starterLayouts
+export function starterPage(layout: unknown): Pick<Page,'body'|'layout'> {
+ if (typeof layout !== 'string' || !Object.hasOwn(starterLayouts,layout)) throw Error('Choose a supported starter layout.')
+ return {layout:layout as StarterLayout,body:starterLayouts[layout as StarterLayout].body}
+}
 export const pageId = (page: Page) => page.id ?? page.slug
 export const activePages = (site: Site) => site.pages.filter(page => !page.deleted)
 export const homeSlug = (site: Site) => site.home ?? activePages(site).find(page => page.slug === 'home')?.slug ?? activePages(site)[0]?.slug
@@ -35,7 +49,10 @@ export function structureFromForm(base: Site, raw: unknown): Site {
  const pages: Page[] = structure.pages.map((entry: any) => {
   if (!entry || typeof entry.id !== 'string' || !entry.id || entry.id.length > 240 || typeof entry.title !== 'string' || !entry.title.trim()) throw Error('Each page needs a title and identity.')
   const old = original.get(entry.id)
-  return {...(old ?? {body: entry.title}), id: entry.id, slug: cleanSlug(entry.slug), title: entry.title, folder: folderName(entry.folder ?? ''), hidden: entry.hidden === true, deleted: entry.deleted === true, ...(old?.slug === 'contact' ? {kind: 'contact' as const} : {})}
+  const source = entry.sourceId === undefined ? undefined : original.get(entry.sourceId)
+  if (entry.sourceId !== undefined && (!source || source.deleted)) throw Error('Choose an active page to duplicate.')
+  const initial = source ? {...source, ...(source.slug === 'contact' ? {kind:'contact' as const} : {})} : entry.layout ? starterPage(entry.layout) : {body:entry.title}
+  return {...(old ?? initial), id: entry.id, slug: cleanSlug(entry.slug), title: entry.title, folder: folderName(entry.folder ?? ''), hidden: entry.hidden === true, deleted: entry.deleted === true, ...(old?.slug === 'contact' ? {kind: 'contact' as const} : {})}
  })
  // Undoing an already-saved addition removes it from the organizer without
  // losing its body: the immutable draft keeps a recoverable deleted entry.

@@ -182,7 +182,7 @@ Each page and post carries draft, needs review, scheduled or published status. A
 
 **Acceptance evidence:** Edit two pages, send one for review, approve and publish only that one, and see the other stay draft while the revision history records the publication.
 
-*Status:* partial. Whole-site drafts and owner approval only; no per-page status or review request.
+*Status:* partial. Current pages have draft, needs-review and published states. Editors request review of exact immutable page content; only the owner approves a selected page. A new immutable whole-site live revision starts from the previous live site, while a separate draft retains every unrelated edit. Stale content and concurrent approvals are refused. Gap: scheduled page publication, post states and review, delegated publishing and notification approval through ROLE-002 remain unimplemented. URL and shared organization changes still use explicit whole-site approval with reviewed redirects.
 
 #### PAGE-008 — Custom code, embeds and CSS.
 
@@ -206,7 +206,7 @@ An editor duplicates a page or starts one from a starter layout (landing page, s
 
 **Acceptance evidence:** Create a page from each starter layout and one duplicate, publish, and see each use the site's fonts and colors.
 
-*Status:* missing. No page creation.
+*Status:* done. Seven editable starters cover landing, service detail, team, menu, pricing, FAQ and location pages. Duplication gives the copy a fresh identity and address while preserving its content. All use the existing shared site font and color rules; the organizer retains autosave, undo and conflict safety.
 
 #### PAGE-011 — Password-protected and member-only pages and site.
 
@@ -882,7 +882,7 @@ The workspace and live site default to US English, the business's US time zone w
 
 **Acceptance evidence:** Set the time zone to America/Denver, and see workspace dates, scheduled times and opening hours in local US format with USD prices.
 
-*Status:* partial. The owner can persist a US business time zone, used by schedules with daylight saving and all current Pane workspace timestamps, including drafts, approvals, enquiries, replies, imports and activity. Server-rendered labels and browser updates use the published business zone (US Eastern before configuration), independent of the viewer. Gap: opening-hours and USD-priced content, configurable locale/currency/phone/address formats and Sunday-start calendar defaults remain missing.
+*Status:* done. US English, USD, US phone and address formatting and Sunday-start calendars are the defaults. Owners and admins can change locale, currency, phone and address formats and calendar start through revisioned settings; the saved business zone applies to opening hours and all current workspace and schedule dates, including daylight saving. Editable page details publish formatted opening hours, prices, phone and address with a business-local month calendar. New calendar and CMS doors inherit these published defaults.
 
 ### Owner mobile
 
@@ -1117,8 +1117,8 @@ Judged from the code and tests at commit `87642d31c272aeced3a71ac29f0519273bada4
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 16 | 0 | 0 | 16 |
-| Target and push further | 12 | 33 | 64 | 109 |
-| All | 28 | 33 | 64 | 125 |
+| Target and push further | 14 | 32 | 63 | 109 |
+| All | 30 | 32 | 63 | 125 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -1144,10 +1144,10 @@ Judged from the code and tests at commit `87642d31c272aeced3a71ac29f0519273bada4
 | `PAGE-004` | Reusable sections and global components | target | missing |  | No components; pages are plain text. |
 | `PAGE-005` | Device previews and a separate mobile layout | target | partial | `src/pane/handler.ts`; `src/pane/public-view.ts` | One responsive preview; no width switcher, separate phone layout or per-device settings. |
 | `PAGE-006` | Autosave, undo and safe concurrent editing | target | done | `src/pane/content.ts`; `src/pane/handler.ts`; `src/pane/ui/editor.ts`; `public/pane-autosave.js`; `tests/pane.test.mjs`; `scripts/editing-journey.mjs` |  |
-| `PAGE-007` | Page status and review requests | target | partial | `src/pane/content.ts`; `src/pane/handler.ts` | Whole-site drafts and owner approval only; no per-page status or review request. |
+| `PAGE-007` | Page status and review requests | target | partial | `tests/pane.test.mjs` — “page review binds the exact content and selective owner approval keeps other drafts and records an immutable revision” (two edited pages, review request, owner approval, unrelated draft retention, immutable history and stale and concurrent refusals); `scripts/pages-journey.mjs` — “Forty-page editor journey” (review, selected publication, retained other draft and revision history at 1440 and 390). | scheduled page publication, post states and review, delegated publishing and notification approval through ROLE-002 remain unimplemented. URL and shared organization changes still use explicit whole-site approval with reviewed redirects. |
 | `PAGE-008` | Custom code, embeds and CSS | target | partial | `tests/search.test.mjs` — only an approved page embed widens its frame policy and workspace previews stay inert; `scripts/privacy-journey.mjs` — published URL embed, consent and opaque sandbox | Supported URL embeds are revisioned, sandboxed, consent-gated and confined to their published page. Arbitrary HTML, custom CSS, site-wide header/footer code, per-page header code and pane:goal events remain unproved. |
 | `PAGE-009` | Accessible output by default | target | partial | `src/pane/views.ts`; `src/pane/public-view.ts`; `scripts/browser-journey.mjs` | Skip link and labeled contact fields exist; no alt-text, heading or contrast checks and no automated accessibility test. |
-| `PAGE-010` | Duplicate pages and starter layouts | target | missing |  | No page creation. |
+| `PAGE-010` | Duplicate pages and starter layouts | target | done | `tests/pane.test.mjs` — “starter layouts and duplicates retain editable content and shared published styles” (all seven starters, duplicate content, independent editing and published routes); `scripts/pages-journey.mjs` — “Forty-page editor journey” (each starter and duplicate created and published with matching computed site font and color, editable FAQ disclosure and editor tooltip at 1440 and 390). |  |
 | `PAGE-011` | Password-protected and member-only pages and site | target | missing |  | Every live page is public; no site-wide gate or coming-soon page. |
 | `PAGE-012` | Gallery blocks with grid, slideshow and lightbox | target | missing |  | No images or galleries. |
 | `PAGE-013` | Promotional pop-up and announcement bar | target | partial | `scripts/scheduling-journey.mjs` — “Business-local scheduling journey” (scheduled announcement bar appears and expires on time at 1440/390) | Promotional pop-ups, chosen-page targeting, delay/scroll/exit triggers, seven-day browser-storage frequency cap and accessible dialog behavior remain unimplemented. |
@@ -1228,7 +1228,7 @@ Judged from the code and tests at commit `87642d31c272aeced3a71ac29f0519273bada4
 | `PRIV-002` | Person-level privacy requests | target | partial | `src/pane/handler.ts`; `tests/pane.test.mjs` | One message can be erased by ID; no lookup, export or erasure by person. |
 | `PRIV-003` | Policy and accessibility statement starters | target | missing |  | No policy pages. |
 | `PRIV-004` | Security headers on every page | target | done | `tests/search.test.mjs` — PRIV-004: current Pane workspace, preview, live, search and not-found documents retain their security headers; shared entry documents deny device permissions while native authentication and origin refusals remain intact; only an approved page embed widens its frame policy and workspace previews stay inert; `scripts/privacy-journey.mjs` — owner approval, page-only CSP, consent, GPC, opaque sandbox and API refusal at 1440 and 390 |  |
-| `LOCALE-001` | US defaults | target | partial | `tests/pane.test.mjs` — “approved business-local schedules drive banners and reminders while drafts, roles and invalid DST dates stay fenced” (persisted America/Denver schedule and DST execution); `scripts/scheduling-journey.mjs` — “Business-local scheduling journey” (owner-editable business zone, local schedule controls and schedule-history timestamps at 1440/390); `scripts/access-journey.mjs` — “Access browser journey” (all current Pane workspace date labels stay in Denver in a Tokyo browser at 1440/390) | Current Pane workspace dates use the business zone on the server and in a Tokyo browser at 1440/390. Opening-hours dates, configurable locale/currency/phone/address/Sunday-start calendar defaults and USD-priced content remain unimplemented. |
+| `LOCALE-001` | US defaults | target | done | `tests/pane.test.mjs` — “US business defaults render Denver hours, currency, phone, address and Sunday calendars and owners can change the formats” (US defaults, Denver, changed formats and draft isolation); “approved business-local schedules drive banners and reminders while drafts, roles and invalid DST dates stay fenced” (DST and schedule execution); `scripts/scheduling-journey.mjs` — “Business-local scheduling journey” (Denver hours, USD, phone, address, Sunday calendar and changed formats at 1440 and 390); `scripts/access-journey.mjs` — “Access browser journey” (all current workspace dates remain in Denver in a Tokyo browser at 1440 and 390). |  |
 | `MOBILE-001` | Responsive owner workspace on a phone | target | partial | `scripts/browser-journey.mjs` | The current workspace is checked for overflow at 390 wide; the target editor, inbox replies and approvals on a phone are not built. |
 | `MOBILE-002` | Native iOS and Android owner app | target | missing |  | No native app. |
 | `AUTO-001` | Form-triggered automations | target | missing |  | No automations. |

@@ -1,3 +1,4 @@
+import { starterLayouts } from '../pages'
 import type { Site } from '../model'
 import { escape } from './kit'
 
@@ -32,10 +33,11 @@ export function pageOrganization(site: Site): string {
  <ol class="page-organization-list" data-page-list aria-label="Pages in display order"></ol>
  <fieldset class="page-organization-add">
  <legend>Add a page</legend>
+ <label for="${prefix}-starter">Starter layout</label><select id="${prefix}-starter" data-new-page-layout><option value="">Blank page</option>${Object.entries(starterLayouts).map(([value,layout])=>`<option value="${value}">${layout.title}</option>`).join('')}</select>
  <label>New page title<input data-new-page-title maxlength="120" autocomplete="off"></label>
  <label>New page address<input data-new-page-slug maxlength="120" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="From the title"></label>
  <button type="button" class="secondary small" data-add-page>Add page</button>
- <p class="help">The new page starts with your title as its text. Save and reload to edit its text.</p>
+ <p class="help">Starter sections are editable text; the first line of each paragraph is its heading. All pages use your site styles. Save and reload to edit its text.</p>
  </fieldset>
  <fieldset class="page-organization-add">
  <legend>Folders</legend>

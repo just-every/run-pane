@@ -15,11 +15,11 @@ const fallback: Record<TimeFormat, Intl.DateTimeFormatOptions> = {
   day: { weekday: 'short', month: 'short', day: 'numeric' },
   time: { hour: 'numeric', minute: '2-digit' },
 }
-export function when(value: string | Date, format: TimeFormat = 'short', timeZone = 'America/New_York'): string {
+export function when(value: string | Date, format: TimeFormat = 'short', timeZone = 'America/New_York', locale = 'en-US'): string {
   const parsed = new Date(value)
   if (Number.isNaN(parsed.getTime())) return escape(value)
-  const text = parsed.toLocaleString('en-US', { ...fallback[format], timeZone, ...(format==='day'?{}:{timeZoneName:'short'}) })
-  return `<time datetime="${parsed.toISOString()}" data-format="${format}" data-time-zone="${escape(timeZone)}">${escape(text)}</time>`
+  const text = parsed.toLocaleString(locale, { ...fallback[format], timeZone, ...(format==='day'?{}:{timeZoneName:'short'}) })
+  return `<time datetime="${parsed.toISOString()}" data-format="${format}" data-time-zone="${escape(timeZone)}" data-locale="${escape(locale)}">${escape(text)}</time>`
 }
 
 const paths: Record<string, string> = {

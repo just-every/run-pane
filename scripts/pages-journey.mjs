@@ -115,6 +115,56 @@ try {
   assert.ok(JSON.parse(await structure(other).inputValue()).folders.includes(ownerFolder))
   assert.equal((await data()).live.id,snapshot.id,'Neither structural draft nor conflict resolution publishes')
  }
+ // Each starter and duplicate goes through the real autosaving organizer.
+ for(const width of [1440,390]) {
+  await page.setViewportSize({width,height:1000});await page.goto(origin+'/app');await openOrganization()
+  const layouts=['landing','service','team','menu','pricing','faq','location']
+  for(const layout of layouts){
+   await page.getByLabel('Starter layout',{exact:true}).selectOption(layout)
+   await page.getByLabel('New page title',{exact:true}).fill(`Starter ${layout} ${width}`)
+   await page.getByRole('button',{name:'Add page',exact:true}).click();await saved(page)
+  }
+  await row(page,'services').getByRole('button',{name:'Duplicate Repairs and commissions',exact:true}).click();await saved(page)
+  await page.getByLabel('Starter layout',{exact:true}).scrollIntoViewIfNeeded();await capture('starter-choices',width)
+  const draft=(await data()).draft, duplicate=draft.site.pages.filter(item=>item.slug.startsWith('services-copy')).at(-1)
+  assert.equal(duplicate.body,draft.site.pages.find(item=>item.slug==='services').body)
+  await page.reload();await publish()
+  await page.goto(origin+'/site');const styles=await page.locator('.public-site').evaluate(node=>({font:getComputedStyle(node).fontFamily,color:getComputedStyle(node).color}))
+  for(const slug of [...layouts.map(layout=>`starter-${layout}-${width}`),duplicate.slug]){
+   await page.goto(origin+'/site/'+slug)
+   assert.deepEqual(await page.locator('.public-site').evaluate(node=>({font:getComputedStyle(node).fontFamily,color:getComputedStyle(node).color})),styles,'Every starter and duplicate inherits the site font and color')
+   if(slug.includes('faq')){await page.locator('.public-content summary').first().focus();await page.keyboard.press('Enter');assert.equal(await page.locator('.public-content details').first().getAttribute('open'),'')}
+   await capture(slug,width)
+  }
+  await page.goto(origin+'/app')
+  const account=page.locator('[data-tip="Account and team"]');await account.focus();await page.keyboard.press('Tab');await page.keyboard.press('Shift+Tab')
+  await page.getByRole('tooltip').getByText('Account and team',{exact:true}).waitFor();await capture('editor-tooltip',width)
+ }
+ const socialSite=structuredClone((await data()).draft.site)
+ socialSite.socials={instagram:'https://www.instagram.com/synthetic-pane-99/'}
+ socialSite.navigation={main:[],footer:[],details:'',headerSocials:true,footerSocials:false}
+ const socialDraft=await (await context.request.post(origin+'/api/pane/prepare',{headers:{Origin:origin},data:{site:socialSite}})).json()
+ await context.request.post(origin+'/api/pane/publish',{headers:{Origin:origin},data:{revision:socialDraft.id}})
+ for(const width of [1440,390]){
+  await page.setViewportSize({width,height:1000});await page.goto(origin+'/site')
+  if(width===390)await page.locator('.public-menu-mobile > summary').click()
+  const profile=page.locator(width===390?'.public-menu-mobile':'.public-menu-desktop').getByRole('link',{name:'Instagram',exact:true})
+  await profile.hover();await page.getByRole('tooltip').getByText('Instagram',{exact:true}).waitFor();await capture('public-header-tooltip',width)
+  await profile.focus();await page.keyboard.press('Tab');await page.keyboard.press('Shift+Tab')
+  await page.getByRole('tooltip').getByText('Instagram',{exact:true}).waitFor();await capture('public-header-keyboard-tooltip',width)
+  await page.goto(origin+'/app?page=services');await page.getByLabel('Text',{exact:true}).fill(`Unfinished service draft ${width}`);await saved(page)
+  const before=(await data()).live
+  await page.goto(origin+'/app?page=about');await page.getByLabel('Text',{exact:true}).fill(`Reviewed studio update ${width}`);await saved(page);await page.reload()
+  await page.getByRole('button',{name:'Send page for review',exact:true}).click();await page.waitForURL(url=>url.searchParams.has('notice'))
+  await page.getByText('Needs review',{exact:true}).waitFor();await capture('page-needs-review',width)
+  await page.getByRole('button',{name:'Approve this page',exact:true}).click();await page.waitForURL(url=>url.searchParams.get('notice')?.startsWith('Selected page'))
+  const after=await data();assert.equal(after.live.site.pages.find(item=>item.slug==='about').body,`Reviewed studio update ${width}`)
+  assert.equal(after.live.site.pages.find(item=>item.slug==='services').body,before.site.pages.find(item=>item.slug==='services').body)
+  assert.equal(after.draft.site.pages.find(item=>item.slug==='services').body,`Unfinished service draft ${width}`)
+  assert.equal(after.approvals[0].revision,after.live.id)
+  await page.goto(origin+'/app?page=services');await capture('unpublished-other-page',width)
+  await page.goto(origin+'/app/sites');await capture('selective-publication-history',width)
+ }
  console.log('Forty-page editor journey passed: three folders, add/order/hide/home, rename/delete 301 offers, all routes and complete snapshot, editable 404, five undo/redo steps and conflict copy/latest at 1440/390.')
 } catch(error) {await page.screenshot({path:resolve(folder,'failure.png'),fullPage:true});console.error(await page.locator('[data-save-status]').allTextContents());throw error}
 finally {await browser.close();await fixture.stop()}

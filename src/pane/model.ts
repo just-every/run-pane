@@ -1,9 +1,11 @@
 export type SearchSettings = { title?: string; description?: string; canonical?: string; noindex?: boolean }
-export type Page = { importedHtml?: string; id?: string; folder?: string; deleted?: boolean; kind?: 'contact'; searchBox?: boolean; links?: {label: string; url: string}[]; slug: string; title: string; body: string; hidden?: boolean; search?: SearchSettings; embed?: import('./embeds').Embed; acknowledgment?: import('./acknowledgment').Acknowledgment }
-export type Site = { automations?: import('./schedules').Automations; name: string; description: string; pages: Page[]; home?: string; notFound?: string; folders?: string[]; redirects?: import('./redirects').Redirect[]; redirectOffers?: import('./redirects').RedirectOffer[]; navigation?: import('./navigation').Navigation; socials?: Partial<Record<import('./navigation').SocialNetwork, string>>; robots?: string; analyticsCampaigns?: string[]; analytics?: import('./analytics').Analytics; goals?: import('./goals').Goal[]; responseDays?: number }
+export type Page = { business?: import('./locale').BusinessContent; layout?: import('./pages').StarterLayout; importedHtml?: string; id?: string; folder?: string; deleted?: boolean; kind?: 'contact'; searchBox?: boolean; links?: {label: string; url: string}[]; slug: string; title: string; body: string; hidden?: boolean; search?: SearchSettings; embed?: import('./embeds').Embed; acknowledgment?: import('./acknowledgment').Acknowledgment }
+export type Site = { locale?: import('./locale').LocaleSettings; automations?: import('./schedules').Automations; name: string; description: string; pages: Page[]; home?: string; notFound?: string; folders?: string[]; redirects?: import('./redirects').Redirect[]; redirectOffers?: import('./redirects').RedirectOffer[]; navigation?: import('./navigation').Navigation; socials?: Partial<Record<import('./navigation').SocialNetwork, string>>; robots?: string; analyticsCampaigns?: string[]; analytics?: import('./analytics').Analytics; goals?: import('./goals').Goal[]; responseDays?: number }
 export type Revision = { id: string; site: Site; hash: string; created_at: string; actor: string }
 export type Dashboard = {
+ pageRequests?: import('./page-review').PageRequest[];
  replies: {id:string;message_id:string;subject:string;body:string;status:string;created_at:string}[];
+ locale?: string;
  timeZone?: string;
  roleLabel?: string;
  capabilities?: import('./roles').Capability[];

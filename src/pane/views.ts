@@ -12,14 +12,14 @@ import { moves } from './ui/moves'
 import { shell, type Tab } from './ui/shell'
 import { sites } from './ui/sites'
 
-export async function document(title: string, body: string, kind: 'app' | 'site' = 'app', embedOrigin?: string, analytics?: Analytics): Promise<Response> {
+export async function document(title: string, body: string, kind: 'app' | 'site' = 'app', embedOrigin?: string, analytics?: Analytics, locale = 'en-US'): Promise<Response> {
   const frame = await themeFrame({ href: '/rer-theme.css', productName: branding.name, accentColor: branding.primaryColor })
   const extra = analyticsSources(analytics)
   const sources = (list: string[]) => list.length ? ' ' + list.join(' ') : ''
   const policy = extra.image.length ? frame.policy.replace("img-src 'self'", `img-src 'self'${sources(extra.image)}`) : frame.policy
   const pageTitle = kind === 'site' ? title : `${title} · ${branding.name}`
   const head = kind === 'site' && iconHead ? frame.head.replace(iconHead, '') : frame.head
-  return new Response(`<!doctype html><html lang="en"${frame.htmlClass}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(pageTitle)}</title>${fontHead}${head}<link rel="stylesheet" href="/pane.css"></head><body class="pane pane-${kind}"><a class="skip-link" href="#main">Skip to content</a>${body}</body></html>`, {
+  return new Response(`<!doctype html><html lang="${escape(locale)}"${frame.htmlClass}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(pageTitle)}</title>${fontHead}${head}<link rel="stylesheet" href="/pane.css"></head><body class="pane pane-${kind}"><a class="skip-link" href="#main">Skip to content</a>${body}</body></html>`, {
     headers: {
       'content-type': 'text/html; charset=utf-8',
       'cache-control': 'no-store',

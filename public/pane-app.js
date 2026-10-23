@@ -10,7 +10,7 @@ for (const element of document.querySelectorAll('time[data-format]')) {
   if (Number.isNaN(value.getTime()) || !options) continue
   const year = new Intl.DateTimeFormat('en-US',{timeZone:options.timeZone,year:'numeric'})
   if (element.dataset.format !== 'time' && element.dataset.format !== 'full' && year.format(value) !== year.format(new Date())) options.year = 'numeric'
-  element.textContent = value.toLocaleString('en-US', options).replace(/^(\w{3}), /, '$1 ')
+  element.textContent = value.toLocaleString(document.querySelector('[data-workspace-locale]')?.dataset.workspaceLocale??element.dataset.locale??'en-US', options).replace(/^(\w{3}), /, '$1 ')
 }
 const popovers = [...document.querySelectorAll('details.switcher, details.account')]
 const close = except => { for (const item of popovers) if (item !== except) item.open = false }

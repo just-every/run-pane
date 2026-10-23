@@ -1,8 +1,9 @@
+import { normalizeLocale, normalizeBusiness, localeFromForm, businessFromForm } from './locale'
 import { importedBody, importedText } from './import-body'
 import { normalizeAutomations } from './schedules'
 import { schedulesFromForm } from './ui/schedule-form'
 import { normalizePageLinks, pageLinksFromText } from './page-extras'
-import { activePages, cleanSlug, folderName, normalizePageOrganization, pageId, pagePath, redirectOffers, structureFromForm } from './pages'
+import { activePages, cleanSlug, folderName, normalizePageOrganization, pageId, pagePath, redirectOffers, structureFromForm, starterPage } from './pages'
 import { normalizeRedirects } from './redirects'
 import { redirectsFromForm } from './ui/redirect-settings'
 import { normalizeNavigation, normalizeSocials } from './navigation'
@@ -23,15 +24,16 @@ export function normalizeSite(value: unknown): Site {
  const pages = input.pages.map(page => {
   if (!page || typeof page.title !== 'string' || !page.title.trim() || page.title.length > 120 || typeof page.body !== 'string' || !page.body.trim() || page.body.length > 20000) throw new Error('Every page needs a title and body (up to 20,000 characters).')
   const slug = cleanSlug(page.slug)
+  if (page.layout !== undefined) starterPage(page.layout)
   const importedHtml=page.importedHtml===undefined?undefined:importedBody(page.importedHtml,{retainMedia:true})
   if(importedHtml!==undefined&&importedText(importedHtml).normalize('NFC')!==page.body.normalize('NFC').replace(/\s+/g,' ').trim())throw Error('Imported structured text must match its body; update and re-import the source to change it.')
   for (const name of ['hidden','deleted','searchBox'] as const) if (page[name] !== undefined && typeof page[name] !== 'boolean') throw Error(`Invalid page ${name}.`)
   if (page.id !== undefined && (typeof page.id !== 'string' || !page.id || page.id.length > 240)) throw Error('Invalid page identity.')
   if (page.kind !== undefined && page.kind !== 'contact') throw Error('Invalid page kind.')
-  return {slug, ...(importedHtml!==undefined?{importedHtml}:{}), ...(page.id ? {id: page.id} : {}), ...(page.kind ? {kind: page.kind} : {}), ...(page.folder ? {folder: folderName(page.folder)} : {}), ...(page.hidden ? {hidden: true} : {}), ...(page.deleted ? {deleted: true} : {}), title: page.title.normalize('NFC').trim(), body: page.body.normalize('NFC').trim(), ...(page.search ? {search: normalizeSearch(page.search)} : {}), ...(page.embed ? {embed: normalizeEmbed(page.embed)} : {}), ...(page.acknowledgment !== undefined ? {acknowledgment: normalizeAcknowledgment(page.acknowledgment)} : {}), ...(page.searchBox ? {searchBox: true} : {}), ...(page.links !== undefined ? {links: normalizePageLinks(page.links)} : {})}
+  return {slug, ...(page.business ? {business:normalizeBusiness(page.business)} : {}), ...(page.layout ? {layout:page.layout} : {}), ...(importedHtml!==undefined?{importedHtml}:{}), ...(page.id ? {id: page.id} : {}), ...(page.kind ? {kind: page.kind} : {}), ...(page.folder ? {folder: folderName(page.folder)} : {}), ...(page.hidden ? {hidden: true} : {}), ...(page.deleted ? {deleted: true} : {}), title: page.title.normalize('NFC').trim(), body: page.body.normalize('NFC').trim(), ...(page.search ? {search: normalizeSearch(page.search)} : {}), ...(page.embed ? {embed: normalizeEmbed(page.embed)} : {}), ...(page.acknowledgment !== undefined ? {acknowledgment: normalizeAcknowledgment(page.acknowledgment)} : {}), ...(page.searchBox ? {searchBox: true} : {}), ...(page.links !== undefined ? {links: normalizePageLinks(page.links)} : {})}
  })
  const analyticsCampaigns = normalizeCampaigns(input.analyticsCampaigns), goals = normalizeGoals(input.goals,pages), analytics = normalizeAnalytics(input.analytics), responseDays = normalizeResponseDays(input.responseDays)
- const site: Site = {...normalizePageOrganization(input,pages), ...(input.automations !== undefined ? {automations: normalizeAutomations(input.automations)} : {}), ...(input.navigation ? {navigation: normalizeNavigation(input.navigation,pages)} : {}), ...(input.socials ? {socials: normalizeSocials(input.socials)} : {}), ...(analyticsCampaigns.length ? {analyticsCampaigns} : {}), ...(analytics ? {analytics} : {}), ...(goals.length ? {goals} : {}), ...(responseDays ? {responseDays} : {}), name: input.name.normalize('NFC').trim(), description: input.description.normalize('NFC').trim(), pages, ...(input.robots !== undefined ? {robots: normalizeRobots(input.robots)} : {}), ...(input.redirects !== undefined ? {redirects: normalizeRedirects(input.redirects)} : {})}
+ const site: Site = {...(input.locale ? {locale:normalizeLocale(input.locale)} : {}), ...normalizePageOrganization(input,pages), ...(input.automations !== undefined ? {automations: normalizeAutomations(input.automations)} : {}), ...(input.navigation ? {navigation: normalizeNavigation(input.navigation,pages)} : {}), ...(input.socials ? {socials: normalizeSocials(input.socials)} : {}), ...(analyticsCampaigns.length ? {analyticsCampaigns} : {}), ...(analytics ? {analytics} : {}), ...(goals.length ? {goals} : {}), ...(responseDays ? {responseDays} : {}), name: input.name.normalize('NFC').trim(), description: input.description.normalize('NFC').trim(), pages, ...(input.robots !== undefined ? {robots: normalizeRobots(input.robots)} : {}), ...(input.redirects !== undefined ? {redirects: normalizeRedirects(input.redirects)} : {})}
  const routes = new Set(activePages(site).map(page => pagePath(site,page.slug)))
  for (const redirect of site.redirects ?? []) if (routes.has(redirect.from) || ['/site/search','/site/visit'].includes(redirect.from)) throw Error(`Redirect ${redirect.from} would replace an existing page or service.`)
  return site
@@ -95,7 +97,7 @@ export async function siteFromForm(db: D1Database, input: Record<string, unknown
  if (input.base && !row) throw new Error('Revision not found.')
  const base = row ? revision(row).site : null
  const field = (name: string, fallback?: string) => typeof input[name] === 'string' ? String(input[name]).replace(/\r\n/g,'\n') : fallback
- const site: Site = base ? structureFromForm({...base, ...navigationFromForm(input,base), ...redirectsFromForm(input,base), ...schedulesFromForm(input,base)},input.structure) : {name: '',description: '',pages: slugs.map(slug => ({slug,title:'',body:''}))}
+ const site: Site = base ? structureFromForm({...base, ...localeFromForm(input,base), ...navigationFromForm(input,base), ...redirectsFromForm(input,base), ...schedulesFromForm(input,base)},input.structure) : {name: '',description: '',pages: slugs.map(slug => ({slug,title:'',body:''}))}
  return normalizeSite({...site, name: field('name',site.name), description: field('description',site.description), analyticsCampaigns: typeof input.analyticsCampaigns === 'string' ? input.analyticsCampaigns.split(/\r?\n/).map(label=>label.trim()).filter(Boolean) : site.analyticsCampaigns, goals: typeof input.goals === 'string' ? goalsFromText(input.goals) : site.goals, analytics: analyticsFromForm(input,site.analytics), responseDays: input.responseDays !== undefined ? input.responseDays : site.responseDays,
  pages: site.pages.map(page => {
   const original = base?.pages.find(old => pageId(old) === pageId(page))
@@ -104,7 +106,7 @@ export async function siteFromForm(db: D1Database, input: Record<string, unknown
   const title = changed(`page.${slug}.title`,original?.title) ? field(`page.${slug}.title`) : page.title
   const visibility = input[`page.${slug}.hidden`]
   const hidden = visibility !== undefined && visibility !== (original?.hidden ? 'yes':'no') ? visibility === 'yes' : page.hidden
-  return {...page,title,hidden,body: field(`page.${slug}.body`,page.body),
+  return {...page,title,hidden,business:businessFromForm(input,page),body: field(`page.${slug}.body`,page.body),
    acknowledgment: input[`page.${slug}.acknowledgment.enabled`] !== undefined ? (input[`page.${slug}.acknowledgment.enabled`] === 'on' ? {subject: field(`page.${slug}.acknowledgment.subject`),text: field(`page.${slug}.acknowledgment.text`),responseTime: field(`page.${slug}.acknowledgment.responseTime`)} : undefined) : page.acknowledgment,
    embed: input[`page.${slug}.embed.url`] !== undefined ? (field(`page.${slug}.embed.url`)?.trim() ? {url:field(`page.${slug}.embed.url`),title:field(`page.${slug}.embed.title`)} : undefined) : page.embed,
    searchBox: input[`page.${slug}.searchBox`] !== undefined ? input[`page.${slug}.searchBox`] === 'yes' : page.searchBox,

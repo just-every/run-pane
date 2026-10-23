@@ -64,6 +64,7 @@ for (const organizer of document.querySelectorAll('[data-page-organization]')) {
    <div class="page-organization-row-actions">${page.deleted ? `<button type="button" class="secondary small" data-page-action="restore" aria-label="Restore ${text(pageLabel)}">Restore page</button>` : `<label class="page-organization-check"><input type="checkbox" data-page-field="hidden"${page.hidden ? ' checked' : ''}>Hidden from menus</label>
    <button type="button" class="secondary small" data-page-action="up" aria-label="Move ${text(pageLabel)} up"${index === 0 ? ' disabled' : ''}>Move up</button>
    <button type="button" class="secondary small" data-page-action="down" aria-label="Move ${text(pageLabel)} down"${index === active.length - 1 ? ' disabled' : ''}>Move down</button>
+   <button type="button" class="secondary small" data-page-action="duplicate" aria-label="Duplicate ${text(pageLabel)}">Duplicate page</button>
    <button type="button" class="secondary small" data-page-action="delete" aria-label="Delete ${text(pageLabel)}">Delete page</button>`}</div></li>`
   }).join('') || '<li class="help">No pages to show.</li>'
   choices()
@@ -83,7 +84,8 @@ for (const organizer of document.querySelectorAll('[data-page-organization]')) {
    const ending = `-${suffix++}`
    slug = address.slice(0, 120 - ending.length).replace(/-+$/g, '') + ending
   }
-  const page = { id: crypto.randomUUID(), slug, title }
+  const layout = organizer.querySelector('[data-new-page-layout]').value
+  const page = { id: crypto.randomUUID(), slug, title, ...(layout ? {layout} : {}) }
   state.pages.push(page)
   if (!state.home) state.home = page.id
   titleField.value = ''; slugField.value = ''
@@ -140,7 +142,12 @@ for (const organizer of document.querySelectorAll('[data-page-organization]')) {
   const action = button.dataset.pageAction
   if (!action) return
   const page = state.pages.find(item => item.id === button.closest('[data-page-id]').dataset.pageId)
-  if (action === 'delete') {
+  if (action === 'duplicate') {
+   const title = (page.title + ' copy').slice(0,120), address = page.slug + '-copy'
+   let slug = address, suffix = 2
+   while (state.pages.some(item=>item.slug === slug)) slug = address + '-' + suffix++
+   state.pages.push({id:crypto.randomUUID(),slug,title,sourceId:page.sourceId ?? page.id, ...(page.folder ? {folder:page.folder} : {})})
+  } else if (action === 'delete') {
    page.deleted = true
    if (state.home === page.id) state.home = activePages()[0]?.id ?? ''
    if (state.notFound === page.id) state.notFound = ''
