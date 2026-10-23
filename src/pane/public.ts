@@ -17,9 +17,31 @@ const json = (v:unknown,status=200) => Response.json(v,{status,headers:{'cache-c
 const notFound = () => document('Not found','<div class="public-site"><div class="public-shell"><main class="public-main" id="main"><h1>Page not found</h1><p><a href="/site">Back to the home page</a></p></main></div></div>','site').then(r=>new Response(r.body,{status:404,headers:r.headers}))
 const optedOut=(request:Request)=>request.headers.get('DNT')==='1'||request.headers.get('Sec-GPC')==='1'
 async function limited(db:D1Database,key:string,limit:number) {
- const bucket = `${new Date().toISOString().slice(0,16)}:${key}`
- const r=await db.prepare('INSERT INTO pane_rate_limits(bucket,count) VALUES(?,1) ON CONFLICT(bucket) DO UPDATE SET count=count+1 RETURNING count').bind(bucket).first<{count:number}>()
- return (r?.count??limit+1)>limit
+ const minute = new Date().toISOString().slice(0,16)
+ // Only this minute's counts matter, so earlier buckets are dropped as each count is taken.
+ const [,r]=await db.batch<{count:number}>([
+  db.prepare('DELETE FROM pane_rate_limits WHERE bucket<?').bind(minute),
+  db.prepare('INSERT INTO pane_rate_limits(bucket,count) VALUES(?,1) ON CONFLICT(bucket) DO UPDATE SET count=count+1 RETURNING count').bind(`${minute}:${key}`),
+ ])
+ return (r?.results[0]?.count??limit+1)>limit
+}
+/** Each visitor has its own quota per form under a form-wide emergency ceiling; retrying a stored or erased enquiry spends neither. */
+async function contactLimited(db:D1Database,form:string,visitor:string,id:string) {
+ if(await db.prepare('SELECT 1 FROM pane_messages WHERE id=? UNION ALL SELECT 1 FROM pane_erased_messages WHERE id=?').bind(id,id).first())return false
+ return await limited(db,`contact-visitor:${visitor}:${form}`,20)||await limited(db,'contact:'+form,200)
+}
+/** The visitor a quota belongs to: Cloudflare's client address, an IPv6 address reduced to the /64
+ * one subscriber holds, kept only as a keyed digest so no address is stored. */
+async function visitor(request:Request,secret:string) {
+ const ip=(request.headers.get('CF-Connecting-IP')??'').toLowerCase()
+ let network=ip
+ if(ip.includes(':')&&!ip.includes('.')) {
+  const [head,tail]=ip.split('::'),left=head?head.split(':'):[],right=tail?tail.split(':'):[]
+  const groups=tail===undefined?left:[...left,...Array(Math.max(0,8-left.length-right.length)).fill('0'),...right]
+  network=groups.slice(0,4).map(group=>group.replace(/^0+(?=.)/,'')).join(':')+'::/64'
+ }
+ const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign'])
+ return Array.from(new Uint8Array(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode('contact\0'+network))),b=>b.toString(16).padStart(2,'0')).join('')
 }
 export async function publicResponse(request:Request,original:Bindings):Promise<Response|null> {
  const url=new URL(request.url),path=url.pathname
@@ -60,8 +82,9 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   const f=await request.formData(),name=String(f.get('name')??'').trim(),email=String(f.get('email')??'').trim(),message=String(f.get('message')??'').trim(),id=String(f.get('idempotency')??'')
   if(String(f.get('website')??''))return rejectForm(env,slug,'honeypot')
   if(!/^[a-f0-9-]{36}$/.test(id)||!name||name.length>120||!/^\S+@\S+\.\S+$/.test(email)||email.length>254||!message||message.length>5000)return json({error:'Enter a name, valid email and message up to 5,000 characters.'},400)
-  // Pencil's immutable original receipt: retries cannot replace an earlier answer.
-  if(env.PANE_LIVE?(await liveCall(env,'/rate',{form:slug})).limited:await limited(env.DB,'contact:'+slug,20))return rejectForm(env,slug,'rate')
+  // Pencil's immutable original receipt: retries cannot replace an earlier answer, and spend no quota.
+  const sender=await visitor(request,env.SESSION_SECRET)
+  if(env.PANE_LIVE?(await liveCall(env,'/rate',{form:slug,visitor:sender,id})).limited:await contactLimited(env.DB,slug,sender,id))return rejectForm(env,slug,'rate')
   const verification=await verifyForm(env,String(f.get('cf-turnstile-response')??''),id,slug)
   if(verification!=='verified')return rejectForm(env,slug,verification)
   const acknowledgment=page?.acknowledgment,received=Date.now()

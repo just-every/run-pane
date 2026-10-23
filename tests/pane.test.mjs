@@ -237,6 +237,30 @@ test('an approved form acknowledgment reaches the provider once with owner wordi
  assert.equal((await data()).messages.find(message => message.id === localId).acknowledgment_status, 'suppressed')
 })
 
+test('one visitor\'s burst of enquiries is refused without blocking other visitors, and retried enquiries are not charged again',async()=>{
+ // Both intake doors: D1 directly, and the independent queue behind the published snapshot.
+ for(const isolatedLive of [false,true]) {
+  const app=await runtime({isolatedLive}),door=isolatedLive?' (queued intake)':' (direct intake)';let cookie
+  const call=(path,body)=>app.request(path,{method:'POST',headers:{Cookie:cookie??'',Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)})
+  const submit=(visitor,id=crypto.randomUUID())=>app.request('/site/contact',{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded','CF-Connecting-IP':visitor},body:new URLSearchParams({'cf-turnstile-response':'synthetic-pane-3',idempotency:id,name:'synthetic-pane-1',email:'synthetic-pane-1@example.test',message:'synthetic-pane-2'})})
+  try {
+   cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})).headers.get('set-cookie').split(';')[0]
+   const draft=await (await call('/api/pane/prepare',{site:fixture})).json()
+   assert.equal((await call('/api/pane/publish',{revision:draft.id})).status,200)
+   // Addresses inside one IPv6 /64 are one visitor; 41 attempts exceed its limit even when a minute boundary splits them.
+   const burst=[];for(let i=1;i<=41;i++)burst.push((await submit('2001:db8:1:2::'+i.toString(16))).status)
+   assert.ok(burst.includes(429),'A burst from one visitor is refused'+door);assert.ok(burst.every(status=>status===303||status===429),door)
+   for(const visitor of ['2001:db8:1:3::1','192.0.2.7'])assert.equal((await submit(visitor)).status,303,'Another visitor still reaches the inbox'+door)
+   const retried=crypto.randomUUID()
+   for(let i=0;i<21;i++)assert.equal((await submit('192.0.2.8',retried)).status,303,'A retried enquiry is answered again'+door)
+   assert.equal((await submit('192.0.2.8')).status,303,'Retries do not spend the visitor\'s quota'+door)
+   if(isolatedLive)assert.equal((await (await app.mf.getWorker()).scheduled({scheduledTime:new Date(),cron:'* * * * *'})).outcome,'ok')
+   const messages=(await (await app.request('/api/pane',{headers:{Cookie:cookie}})).json()).messages
+   assert.equal(messages.filter(message=>message.id===retried).length,1,door)
+  } finally {await app.mf.dispose()}
+ }
+})
+
 test('traffic groups real public visit events without retaining raw referrers or unapproved identifiers and excludes privacy opt-outs', async () => {
  const app = await runtime({cf: {country: 'US', regionCode: 'CO', city: 'Denver'}})
  let cookie = ''

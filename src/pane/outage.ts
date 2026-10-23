@@ -56,9 +56,15 @@ export class PaneLive extends DurableObject<Bindings>{
   if(path==='/banners'){await storage.put('banners',input.banners);return Response.json({saved:true})}
   if(path==='/rate'){
    const limited=await storage.transaction(async tx=>{
-    const key='rate:'+new Date().toISOString().slice(0,16)+':'+input.form,count=(await tx.get<number>(key)??0)+1
-    await tx.put(key,count)
-    return count>20
+    // Retrying an accepted enquiry spends no quota; each visitor has its own count under the form-wide emergency ceiling.
+    if(await tx.get('receipt:'+input.id))return false
+    const key='rate:'+new Date().toISOString().slice(0,16)+':'+input.form,own=key+':visitor:'+input.visitor
+    const count=(await tx.get<number>(own)??0)+1
+    await tx.put(own,count)
+    if(count>20)return true
+    const total=(await tx.get<number>(key)??0)+1
+    await tx.put(key,total)
+    return total>200
    })
    return Response.json({limited})
   }
