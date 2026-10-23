@@ -112,7 +112,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
     const saved=await readMoveInReport(env.DB,actor,String(input.job))
     if(api)return json(saved)
     const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps)
-    return document('Migration report',shell(data,'moves',moveReport(saved.report)+'<p><a class="text-link" href="/app/moves">Back to Moves</a></p>'))
+    return document('Migration report',shell(data,'moves','<div class="screen-head"><div><h1>Your migration report</h1><p>Rechecked from the retained source against the imported draft.</p></div></div>'+moveReport(saved.report)+'<p><a class="text-link" href="/app/moves">Back to Moves</a></p>'))
    }
    result=await planMoveIn(env.DB,actor,typeof input.source==='string'?input.source:JSON.stringify(input.source))
    if(!api) {
