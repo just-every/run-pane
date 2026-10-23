@@ -18,7 +18,7 @@ const post=async(path,input)=>{
 async function capture(name,width){await page.screenshot({path:resolve(folder,`${name}-${width}.png`),fullPage:true});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,name+' overflow at '+width)}
 async function tooltip(width,name){
  const account=page.locator('.account > summary')
- await page.getByRole('heading',{level:1}).click();await account.hover()
+ await page.locator('.screen-head h1,.pagebar h1').first().click();await account.hover()
  await page.waitForTimeout(120);assert.equal(await page.getByRole('tooltip').count(),0,'Tooltip waits on hover')
  await page.getByRole('tooltip').waitFor();assert.equal(await page.getByRole('tooltip').textContent(),'Account and team')
  await page.mouse.move(0,0);await page.keyboard.press('Tab');await account.focus()
