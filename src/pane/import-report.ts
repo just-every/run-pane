@@ -47,6 +47,10 @@ export function migrationReport(input: ImportDocument, actual?: Site|null, phase
      // captured HTML must retain its whole visible body, including link labels.
      const rendered=renderedPages.get(found.slug)!
      if(item.fidelity&&normalizeText(rendered.text)!==normalizeText(item.fidelity.text))fail('rendered-text','The rendered draft text differs from the source after whitespace normalization.')
+     if(input.format!=='static-site-json-v1'){
+      if(input.format==='wordpress-wxr')fail('rendered-document-text','Full-page text cannot be compared: the export supplies body content without a published-page capture.')
+      else if(item.fidelity&&normalizeText(htmlFidelity(publicPage(actual!,found.slug,'live',true,true),'https://destination.invalid').text)!==normalizeText(item.fidelity.text))fail('rendered-document-text','The complete new page text differs from the captured page, including native navigation and page framing. Review the whole page before publishing.')
+     }
      const sourceLinks=item.fidelity?.links??[]
      for(const href of sourceLinks){
       const sourceUrl=new URL(href,new URL(item.oldUrl??'/',input.origin??'https://source.invalid'))

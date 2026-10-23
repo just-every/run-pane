@@ -157,7 +157,7 @@ proof of a redirect on the old domain. Apply rechecks the stored native snapshot
 per-type applied counts, text/fields, link destinations and missing internal
 links. It also parses the actual production-rendered page output to check
 visible text, link/button destinations, heading levels, list types/items and
-inline images, and flags old-domain redirects that have not been verified. Page heading/list/link/formatting and section-anchor fidelity is checked against the rendered native DOM. Missing media, interactive buttons and unsupported widgets remain explicit failures. Rich editing and native post/item bodies remain open. Malformed link and image references, including images with no source, are listed as unresolved exceptions without preventing review of the other content. A failure stays
+inline images, and flags old-domain redirects that have not been verified. Page heading/list/link/formatting and section-anchor fidelity is checked against the rendered native DOM. Captured sites also compare the complete visible page text, including native navigation and framing; body-only WXR exports explicitly retain an unverified whole-page comparison instead of claiming a match. Missing media, interactive buttons and unsupported widgets remain explicit failures. Rich editing and native post/item bodies remain open. Malformed link and image references, including images with no source, are listed as unresolved exceptions without preventing review of the other content. A failure stays
 visible; it never becomes an invented successful import.
 
 Choose **View report** on the applied job to reopen the report from the exact
