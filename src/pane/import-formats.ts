@@ -9,7 +9,7 @@ import type { Site, Page } from './model'
 
 const text=(v:unknown)=>typeof v==='string'?v:''
 const array=(v:any):any[]=>v===undefined?[]:Array.isArray(v)?v:[v]
-const reasons:Partial<Record<ImportKind,string>>={post:'Post destinations await CMS-004/CMS-011.',comment:'Comment threading and moderation destinations await CMS-010.',media:'Media was not fetched: MEDIA-001/002 destinations are unavailable.','collection-item':'Typed collection destinations await CMS-001/CMS-007.',event:'Event destinations await CMS-009.',gallery:'Gallery destinations await PAGE-012.',product:'Stall handoff awaits LINK-002; no product was created.',form:'Form recreation and delivery await FORM-001/003.',author:'Author destinations await CMS-004.',taxonomy:'Taxonomy destinations await CMS-004.',menu:'Source menus require an explicit navigation mapping.'}
+const reasons:Partial<Record<ImportKind,string>>={post:'Blog posts are not supported by this importer yet; the source post is retained.',comment:'Comments and their threading and moderation state remain in the source export; no comments were created.',media:'Media was not fetched. Image storage and responsive copies are not available in this importer.','collection-item':'Collection items are retained as source rows; no collection destination is available.',event:'Events are retained in the source inventory; no event destination is available.',gallery:'Gallery layouts and captions are retained in the source inventory only.',product:'Product handoff to Stall is not available; no product was created.',form:'Forms and notification delivery were not recreated; review the original destination before moving.',author:'Author profiles are retained in the source inventory only.',taxonomy:'Categories and tags are retained in the source inventory only.',menu:'Source menus require an explicit navigation mapping.'}
 function xml(source:string):any {
  if(/<!DOCTYPE|<!ENTITY/i.test(source))throw Error('XML declarations of document types or entities are not accepted.')
  if(XMLValidator.validate(source)!==true)throw Error('Invalid XML export.')
@@ -134,7 +134,7 @@ function snapshot(raw:any):ImportDocument {
  for(const url of new Set([...sitemap,...posts]))if(!seen.has(url))items.push({id:'missing-'+items.length,kind:posts.has(url)?'post':'page',title:url,oldUrl:url,reason:posts.has(url)?'RSS post has no captured HTML; '+reasons.post:'Sitemap URL has no captured HTML.'})
  if(raw.format==='wix-snapshot-v1'){
   if(raw.sitemap===undefined||raw.rss===undefined)throw Error('A Wix capture needs its published URL sitemap and blog RSS.')
-  items.push({id:'crawl-authority',kind:'unsupported',title:'Live crawl and domain-control proof',reason:'This is an offline capture only. A controlled live crawl with owner domain-control proof remains required by IMPORT-003.'})
+  items.push({id:'crawl-authority',kind:'unsupported',title:'Live crawl and domain-control proof',reason:'This upload is an offline capture. Ownership has not been verified, and the live site has not been crawled.'})
  }
  if(raw.collections!==undefined&&!Array.isArray(raw.collections))throw Error('Collections must be a list of named CSV exports.')
  for(const [collectionIndex,collection] of (raw.collections??[]).entries()){

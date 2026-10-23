@@ -45,7 +45,7 @@ export function migrationReport(input: ImportDocument, actual?: Site|null, phase
     if(internal){
      const mapped=input.items.find(candidate=>candidate.oldUrl&&new URL(candidate.oldUrl,input.origin??'https://source.invalid').pathname===url.pathname)
      if(!mapped?.targetSlug||!observed.has(mapped.targetSlug))fail('link','Dangling internal target: '+url.href)
-     else if(url.hash)fail('anchor','Section anchor fidelity awaits PAGE-014: '+url.href)
+     else if(url.hash)fail('anchor','The target section anchor could not be preserved: '+url.href)
     }
    }
    if(target){
@@ -57,13 +57,13 @@ export function migrationReport(input: ImportDocument, actual?: Site|null, phase
      if(!found?.links?.some(link=>link.url===expectedLink))fail('link','Source destination is not present in the stored page: '+href)
     }
    }
-   if(target&&item.fidelity?.links.length)fail('link-placement','Source links are separate page links; inline placement and labels await PAGE-014/CMS-011.')
-   if(item.fidelity?.buttons.length)fail('button','Source button controls await PAGE-014/CMS-011.')
-   if(item.fidelity?.formatting.length)fail('formatting','Inline formatting and rich layout await PAGE-014/CMS-011.')
-   if(item.fidelity?.headings.length)fail('heading','Semantic heading levels await PAGE-014/CMS-011.')
-   if(item.fidelity?.lists.length)fail('list','Semantic lists await PAGE-014/CMS-011.')
-   if(item.fidelity?.images.length)fail('inline-image','Inline placement, captions and alt text await MEDIA-001/002 and PAGE-014/CMS-011.')
-   if(item.kind==='media')fail('media','Media was not fetched: MEDIA-001/002 storage and rendition targets are unavailable.')
+   if(target&&item.fidelity?.links.length)fail('link-placement','Source links are separate page links; their original inline positions and labels could not be preserved.')
+   if(item.fidelity?.buttons.length)fail('button','Source button controls could not be recreated in the plain-text draft.')
+   if(item.fidelity?.formatting.length)fail('formatting','Inline formatting and rich layout could not be preserved in the plain-text draft.')
+   if(item.fidelity?.headings.length)fail('heading','Heading levels could not be preserved in the plain-text draft.')
+   if(item.fidelity?.lists.length)fail('list','List structure could not be preserved in the plain-text draft.')
+   if(item.fidelity?.images.length)fail('inline-image','Inline image positions, captions and alt text could not be recreated in the draft.')
+   if(item.kind==='media')fail('media','Media was not fetched. Image storage and responsive copies are not available in this importer.')
   }
   return {...item,target}
  })
@@ -71,7 +71,7 @@ export function migrationReport(input: ImportDocument, actual?: Site|null, phase
  return {phase,format:input.format,counts,inventory,failures,history:[
   'Traffic and sales analytics history stays with the old platform; no historical metrics are imported.',
   'Source forms and notification destinations are reported only. No recipient, subscriber or marketing permission is activated.',
-  'Unsupported content and original source bytes stay in the import journal. The old host is unchanged; no cutover or outbound fetch occurs.',
-  'Old URLs are a reviewed map only. External-domain redirects require IMPORT-006 and DOMAIN-001; this import does not change DNS.'
+  'Unsupported content and the original export stay in the import history. The old host is unchanged; no cutover or outbound fetch occurs.',
+  'Old URLs are a reviewed map only. Redirects on the old domain need a separate verified cutover; this import does not change DNS.'
  ],ok:phase==='applied'&&failures.length===0,...(revision?{revision}:{})}
 }

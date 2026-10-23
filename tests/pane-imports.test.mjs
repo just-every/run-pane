@@ -70,7 +70,7 @@ test('documented WXR inventories 100 posts and 50 comments by state while applyi
 test('captured Wix sitemap and RSS preserve the source inventory and explicitly report unverified live crawl',async()=>{
  const capture=await readFile('fixtures/imports/wix.json','utf8'),plan=await ok(await call('dry-run',{source:capture})),r=plan.report
  assert.equal(r.counts.page.source,3);assert.equal(r.counts.page.planned,2);assert.equal(r.counts.post.source,1)
- assert.ok(r.inventory.some(item=>item.id==='crawl-authority'&&/domain-control/.test(item.reason)))
+ assert.ok(r.inventory.some(item=>item.id==='crawl-authority'&&/Ownership has not been verified/.test(item.reason)))
  const job=await ok(await call('apply',{source:capture,fingerprint:plan.fingerprint}));assert.equal(job.report.counts.page.applied,2)
  assert.ok(job.report.failures.some(issue=>issue.check==='link'&&issue.reason.includes('/missing')))
  await ok(await call('undo',{job:job.id}))
@@ -80,7 +80,7 @@ test('Webflow, Framer and Durable captures are reconciled separately with every 
  for(const [provider,rows] of [['webflow',3],['framer',2],['durable',0]]){
   const capture=await readFile('fixtures/imports/'+provider+'.json','utf8'),plan=await ok(await call('dry-run',{source:capture})),r=plan.report
   assert.equal(r.counts['collection-item'].source,rows,provider);assert.equal(r.counts['collection-item'].planned,0)
-  if(rows){const collection=r.inventory.filter(item=>item.kind==='collection-item');assert.equal(collection[0].fields.Description,'First, second');assert.equal(collection[1].fields.Description,'Quoted "care"\nsecond line');assert.equal(collection[0].fields.Price,'19.95');assert.ok(collection.every(item=>/CMS-001/.test(item.reason)))}
+  if(rows){const collection=r.inventory.filter(item=>item.kind==='collection-item');assert.equal(collection[0].fields.Description,'First, second');assert.equal(collection[1].fields.Description,'Quoted "care"\nsecond line');assert.equal(collection[0].fields.Price,'19.95');assert.ok(collection.every(item=>/no collection destination/.test(item.reason)))}
   const job=await ok(await call('apply',{source:capture,fingerprint:plan.fingerprint}));assert.equal(job.report.counts.page.applied,2);assert.equal(job.report.counts['collection-item'].applied,0)
   await ok(await call('undo',{job:job.id}))
  }
