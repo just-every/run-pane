@@ -26,7 +26,7 @@ test('migration preflight reports complete typed inventory, exceptions, old URLs
  assert.deepEqual(await data(),before)
  const r=plan.report;assert.equal(r.phase,'preflight');assert.equal(r.counts.page.source,6);assert.equal(r.counts.page.planned,5)
  for(const state of ['approved','pending','spam'])assert.equal(r.counts['comment:'+state].source,1)
- for(const kind of ['post','media','product','form','unsupported'])assert.equal(r.counts[kind].source,1)
+ for(const kind of ['post','media','product','form','unsupported','collection-item','event','gallery'])assert.equal(r.counts[kind].source,1)
  assert.equal(r.inventory.find(item=>item.oldUrl==='https://synthetic-pane-1.example/about').target,'/site/about')
  assert.ok(r.inventory.filter(item=>item.target===null).every(item=>item.reason))
  assert.match(r.inventory.find(item=>item.kind==='media').reason,/not fetched/)
@@ -39,7 +39,7 @@ test('reviewed apply reconciles the stored draft, lists dangling post links and 
  for(const input of [{source,fingerprint:'wrong'},{source:source+' ',fingerprint:plan.fingerprint}])assert.equal((await call('apply',input)).status,400)
  assert.deepEqual(await data(),before)
  const job=await ok(await call('apply',{source,fingerprint:plan.fingerprint}));assert.equal(job.state,'completed')
- const r=job.report;assert.equal(r.counts.page.applied,r.counts.page.planned);assert.equal(r.counts.post.applied,0);assert.equal(r.counts.comment.applied,0)
+ const r=job.report;for(const [kind,count] of Object.entries(r.counts))assert.equal(count.applied,count.planned,kind);assert.equal(r.counts.page.applied,r.counts.page.planned);assert.equal(r.counts.post.applied,0);assert.equal(r.counts.comment.applied,0)
  assert.ok(r.failures.some(issue=>issue.id==='inventory-0'&&issue.check==='link'&&issue.reason.includes('/skipped')))
  assert.ok(r.failures.some(issue=>issue.check==='heading'));assert.ok(r.failures.some(issue=>issue.check==='list'));assert.ok(r.failures.some(issue=>issue.check==='inline-image'))
  const saved=await ok(await call('dry-run',{job:job.id,source:'ignored'}));assert.deepEqual(saved.report,r)
@@ -73,6 +73,7 @@ test('captured Wix sitemap and RSS preserve the source inventory and explicitly 
  assert.ok(r.inventory.some(item=>item.id==='crawl-authority'&&/Ownership has not been verified/.test(item.reason)))
  const job=await ok(await call('apply',{source:capture,fingerprint:plan.fingerprint}));assert.equal(job.report.counts.page.applied,2)
  assert.ok(job.report.failures.some(issue=>issue.check==='link'&&issue.reason.includes('/missing')))
+ for(const check of ['rendered-text','rendered-heading','rendered-list','rendered-image','rendered-button','redirect'])assert.ok(job.report.failures.some(issue=>issue.check===check),check)
  await ok(await call('undo',{job:job.id}))
 })
 
@@ -106,5 +107,13 @@ test('unsupported-only WXR retains an exception inventory without inventing a na
  const job=await ok(await call('apply',{source,fingerprint:plan.fingerprint}));assert.equal(job.report.counts.page.applied,0);assert.equal(job.report.counts.post.applied,0);assert.equal(job.report.ok,false)
  assert.deepEqual((await data()).revisions,before.revisions)
  const report=await ok(await call('dry-run',{job:job.id}));assert.deepEqual(report.report,job.report)
+ await ok(await call('undo',{job:job.id}))
+})
+
+test('native JSON custom home and separately declared links keep their rendering semantics in the fidelity report',async()=>{
+ const native=JSON.parse(await readFile('fixtures/static-site.json','utf8'));native.name='synthetic-pane-native';native.home='about';native.pages[0].body='Literal <script>synthetic-pane-1</script> stays text.';native.pages[0].links=[{label:'About',url:'/site'},{label:'Guide',url:'https://example.org/guide'}]
+ const source=JSON.stringify(native),plan=await ok(await call('dry-run',{source})),job=await ok(await call('apply',{source,fingerprint:plan.fingerprint}))
+ assert.equal(job.report.ok,true,JSON.stringify(job.report.failures));assert.equal(plan.report.inventory.find(item=>item.title===native.pages[1].title).target,'/site')
+ const preview=await f.request('/preview/'+job.report.revision+'/home',{headers:{Cookie:owner}});assert.equal(preview.status,200);const html=await preview.text();assert.match(html,/Literal &lt;script&gt;synthetic-pane-1&lt;\/script&gt; stays text/);assert.doesNotMatch(html,/<script>synthetic-pane-1/)
  await ok(await call('undo',{job:job.id}))
 })

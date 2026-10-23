@@ -7,7 +7,7 @@
     {
       "url": "https://synthetic-pane-framer.example/",
       "title": "Home",
-      "html": "<h1>Welcome</h1><p>Our studio.</p><a href=\"/about\">About</a><a href=\"/missing\">Archive</a><img src=\"/missing.png\" alt=\"Source alt\"><form action=\"mailto:synthetic-pane-1@example.test\"><input name=\"message\"></form>"
+      "html": "<h1>Welcome</h1><p>Our studio.</p><a href=\"/about\">About</a><a href=\"/missing\">Archive</a><img src=\"/missing.png\" alt=\"Source alt\"><form action=\"mailto:synthetic-pane-1@example.test\"><input name=\"message\"></form><button formaction=\"/missing\">Read more</button>"
     },
     {
       "url": "https://synthetic-pane-framer.example/about",

@@ -1,10 +1,11 @@
 import { assertNoCredentials } from '../modules/import-kit/src/provenance/identity.ts'
 import { XMLParser, XMLValidator } from 'fast-xml-parser'
 import { parse } from 'parse5'
+import { htmlFidelity } from './import-html'
 import { normalizeSite } from './content'
 import { normalizePageLinks } from './page-extras'
 import { pagePath, cleanSlug } from './pages'
-import { importKinds, type ImportDocument, type InventoryItem, type Fidelity, type ImportKind } from './import-report'
+import { importKinds, type ImportDocument, type InventoryItem, type ImportKind } from './import-report'
 import type { Site, Page } from './model'
 
 const text=(v:unknown)=>typeof v==='string'?v:''
@@ -24,24 +25,6 @@ function sourceUrl(value:unknown,origin?:string):string|undefined{
  return u.href
 }
 function originUrl(value:unknown):string|undefined{return sourceUrl(value)?new URL(String(value)).origin:undefined}
-export function htmlFidelity(html:string,base:string):Fidelity{
- const root=parse(html),result:Fidelity={text:'',links:[],headings:[],lists:[],images:[],buttons:[],formatting:[]}
- const attr=(node:any,key:string)=>node.attrs?.find((a:any)=>a.name===key)?.value??''
- const ignored=(node:any)=>['head','script','style','template','noscript'].includes(node.tagName)||node.attrs?.some((a:any)=>a.name==='hidden')
- const blocks=new Set(['p','div','section','article','main','header','footer','nav','h1','h2','h3','h4','h5','h6','li','ul','ol','blockquote','figure','figcaption','br','tr'])
- const content=(node:any):string=>node.nodeName==='#text'?node.value:ignored(node)?'':(blocks.has(node.tagName)?'\n':'')+(node.childNodes??[]).map(content).join('')+(blocks.has(node.tagName)?'\n':'')
- const walk=(node:any)=>{
-  if(ignored(node))return
-  if(node.tagName==='a'){const href=attr(node,'href');if(href)result.links.push(new URL(href,base).href)}
-  if(/^h[1-6]$/.test(node.tagName??''))result.headings.push(node.tagName+':'+content(node).replace(/\s+/g,' ').trim())
-  if(['ol','ul'].includes(node.tagName))result.lists.push(node.tagName+':'+(node.childNodes??[]).filter((n:any)=>n.tagName==='li').map(content).join('|'))
-  if(node.tagName==='button'||node.tagName==='input'&&['submit','button'].includes(attr(node,'type')))result.buttons.push(attr(node,'formaction')||'Interactive button without a portable destination')
-  if(['strong','em','b','i','u','s','blockquote','video','iframe','table','figure'].includes(node.tagName))result.formatting.push(node.tagName)
-  if(node.tagName==='img'){const src=attr(node,'src');if(src)result.images.push(new URL(src,base).href)}
-  for(const child of node.childNodes??[])walk(child)
- }
- walk(root);result.text=content(root).replace(/\s+/g,' ').trim();return result
-}
 function fillPage(item:InventoryItem,slug:string,body:string,pages:Page[]){
  try{cleanSlug(slug);if(pages.some(page=>page.slug===slug))throw Error('Duplicate page address.');if(!item.title.trim()||!body.trim())throw Error('A page needs a title and visible text.');if(item.title.length>120||body.length>20000)throw Error('Page exceeds native title/body limits.');pages.push({slug,title:item.title,body});item.targetSlug=slug}catch(error){item.reason=(error as Error).message}
 }
@@ -113,9 +96,11 @@ function snapshot(raw:any):ImportDocument {
   const url=sourceUrl(doc?.url,origin)
   if(!url||new URL(url).origin!==origin||new URL(url).hash||seen.has(url)||typeof doc.html!=='string')throw Error('Each captured document needs unique same-origin URL and HTML text.')
   seen.add(url)
-  const fidelity=htmlFidelity(doc.html,url),isPost=posts.has(url)||doc.kind==='post'
-  const item:InventoryItem={id:'document-'+index,kind:isPost?'post':'page',title:text(doc.title)||'Imported page',oldUrl:url,fidelity}
-  if(isPost)item.reason=reasons.post
+  const fidelity=htmlFidelity(doc.html,url)
+  if(doc.kind!==undefined&&!['page','post','collection-item','event','gallery'].includes(doc.kind))throw Error('Captured content kind must be page, post, collection-item, event or gallery.')
+  const kind:ImportKind=posts.has(url)?'post':doc.kind??'page'
+  const item:InventoryItem={id:'document-'+index,kind,title:text(doc.title)||'Imported page',oldUrl:url,fidelity}
+  if(kind!=='page')item.reason=reasons[kind]
   else {
    const path=new URL(url).pathname.replace(/^\/+|\/+$/g,'')||'home'
    fillPage(item,path,fidelity.text,pages)
@@ -143,7 +128,9 @@ function snapshot(raw:any):ImportDocument {
   if(!header?.length||header.some(value=>!value)||new Set(header).size!==header.length)throw Error('Collection CSV needs unique, nonempty field names.')
   for(const [n,row] of rows.entries()){
    if(row.length!==header.length)throw Error('Collection CSV row '+(n+2)+' has the wrong field count.')
-   items.push({id:'collection-'+collectionIndex+'-row-'+(n+2),kind:'collection-item',title:collection.name+' / row '+(n+2),fields:Object.fromEntries(header.map((field,i)=>[field,row[i]])),reason:reasons['collection-item']})
+   const fields=Object.fromEntries(header.map((field,i)=>[field,row[i]])),urlField=header.find(field=>['url','link','source url'].includes(field.toLowerCase()))
+   const oldUrl=urlField&&fields[urlField]?sourceUrl(fields[urlField],origin):undefined
+   items.push({id:'collection-'+collectionIndex+'-row-'+(n+2),kind:'collection-item',title:collection.name+' / row '+(n+2),fields,...(oldUrl?{oldUrl}:{}),reason:reasons['collection-item']})
   }
  }
  return finish(raw.format,text(raw.name)||'Imported site',text(raw.description),pages,items,origin)

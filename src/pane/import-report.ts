@@ -1,4 +1,6 @@
 import { activePages, pagePath } from './pages'
+import { htmlFidelity } from './import-html'
+import { publicPage } from './public-view'
 import type { Site } from './model'
 
 export const importKinds = ['page','post','comment','collection-item','event','gallery','media','product','form','author','taxonomy','menu','unsupported'] as const
@@ -36,11 +38,35 @@ export function migrationReport(input: ImportDocument, actual?: Site|null, phase
     else {
      if(normalizeText(found.body)!==normalizeText(wanted.body)||found.title!==wanted.title)fail('text','Stored text differs from the reviewed page.')
      if(JSON.stringify(found)!==JSON.stringify(wanted))fail('fields','Stored page fields differ from the reviewed snapshot.')
+     // Use the production renderer, not the input snapshot, for DOM fidelity.
+     // Native JSON bodies are plain text with separately declared page links;
+     // captured HTML must retain its whole visible body, including link labels.
+     const rendered=htmlFidelity(publicPage(actual!,found.slug,'preview'),'https://destination.invalid',true,input.format==='static-site-json-v1')
+     if(item.fidelity&&normalizeText(rendered.text)!==normalizeText(item.fidelity.text))fail('rendered-text','The rendered draft text differs from the source after whitespace normalization.')
+     const sourceLinks=item.fidelity?.links??[]
+     for(const href of sourceLinks){
+      const sourceUrl=new URL(href,new URL(item.oldUrl??'/',input.origin??'https://source.invalid'))
+      const mapped=input.items.find(candidate=>candidate.oldUrl===sourceUrl.href.split('#')[0]&&candidate.targetSlug)
+      const expectedLink=input.origin&&sourceUrl.origin===input.origin&&mapped?new URL(pagePath(expected!,mapped.targetSlug!)+sourceUrl.hash,'https://destination.invalid').href:new URL(href,'https://destination.invalid').href
+      if(!rendered.links.includes(expectedLink))fail('rendered-link','The rendered draft is missing the source destination: '+href)
+     }
+     if(item.fidelity?.headings.length&&JSON.stringify(rendered.headings)!==JSON.stringify(item.fidelity.headings))fail('rendered-heading','The rendered draft has different heading levels or text.')
+     if(item.fidelity?.lists.length&&JSON.stringify(rendered.lists)!==JSON.stringify(item.fidelity.lists))fail('rendered-list','The rendered draft has different list types or items.')
+     if(item.fidelity?.images.length&&JSON.stringify(rendered.images)!==JSON.stringify(item.fidelity.images))fail('rendered-image','The rendered draft is missing source inline images; their placement, captions and alt text cannot be preserved.')
+     if(item.fidelity?.buttons.length&&JSON.stringify(rendered.buttons)!==JSON.stringify(item.fidelity.buttons))fail('rendered-button','The rendered draft is missing the source button controls.')
+     if(item.oldUrl&&/^https?:/.test(item.oldUrl))fail('redirect','The old URL is mapped but its live redirect has not been verified; a separate cutover is required.')
+
     }
    } else fail('inventory',item.reason??'No native destination for this source item.')
    for(const link of item.fidelity?.links??[]){
     let url:URL
     try{url=new URL(link,new URL(item.oldUrl??'/',input.origin??'https://source.invalid'))}catch{fail('link','Invalid source destination: '+link);continue}
+    const nativeLink=input.format==='static-site-json-v1'&&/^\/site(?:[/?#]|$)/.test(link)
+    if(nativeLink){
+     if(!actual||!activePages(actual).some(page=>pagePath(actual,page.slug)===url.pathname))fail('link','Dangling internal target: '+link)
+     else if(url.hash)fail('anchor','The target section anchor could not be preserved: '+link)
+     continue
+    }
     const internal=input.origin?url.origin===input.origin:url.origin==='https://source.invalid'
     if(internal){
      const mapped=input.items.find(candidate=>candidate.oldUrl&&new URL(candidate.oldUrl,input.origin??'https://source.invalid').pathname===url.pathname)
@@ -57,7 +83,7 @@ export function migrationReport(input: ImportDocument, actual?: Site|null, phase
      if(!found?.links?.some(link=>link.url===expectedLink))fail('link','Source destination is not present in the stored page: '+href)
     }
    }
-   if(target&&item.fidelity?.links.length)fail('link-placement','Source links are separate page links; their original inline positions and labels could not be preserved.')
+   if(target&&input.format!=='static-site-json-v1'&&item.fidelity?.links.length)fail('link-placement','Source links are separate page links; their original inline positions and labels could not be preserved.')
    if(item.fidelity?.buttons.length)fail('button','Source button controls could not be recreated in the plain-text draft.')
    if(item.fidelity?.formatting.length)fail('formatting','Inline formatting and rich layout could not be preserved in the plain-text draft.')
    if(item.fidelity?.headings.length)fail('heading','Heading levels could not be preserved in the plain-text draft.')

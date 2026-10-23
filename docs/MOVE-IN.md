@@ -153,7 +153,9 @@ content type, comment counts by state, the inventory/URL map, form destinations,
 unfetched media and history left with the old platform. A reviewed map is not
 proof of a redirect on the old domain. Apply rechecks the stored native snapshot,
 per-type applied counts, text/fields, link destinations and missing internal
-links. Semantic heading/list/button/inline-image/formatting fidelity is reported
+links. It also parses the actual production-rendered page output to check
+visible text, link/button destinations, heading levels, list types/items and
+inline images, and flags old-domain redirects that have not been verified. Semantic heading/list/button/inline-image/formatting fidelity is reported
 as unresolved where the native rich targets are unavailable. A failure stays
 visible; it never becomes an invented successful import.
 
@@ -181,7 +183,9 @@ Pane also reads its own `wix-snapshot-v1`, `webflow-snapshot-v1`,
 ```
 
 Each captured document needs a unique same-origin HTTP(S) URL and HTML text.
-The optional flattened URL sitemap contributes uncaptured URLs as exceptions.
+Documents may declare `kind` as page, post, collection-item, event or gallery;
+only supported pages map to native drafts. The optional flattened URL sitemap
+contributes uncaptured URLs as exceptions.
 Wix captures additionally require the sitemap and an RSS channel in `rss`;
 RSS URLs classify blog posts and detect missing captured posts. This is an
 **offline capture only**: controlled live crawling and owner domain-control

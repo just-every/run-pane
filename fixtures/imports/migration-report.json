@@ -80,6 +80,18 @@
       {
         "kind": "unsupported",
         "title": "Specialist plugin"
+      },
+      {
+        "kind": "collection-item",
+        "title": "synthetic-pane-collection"
+      },
+      {
+        "kind": "event",
+        "title": "synthetic-pane-event"
+      },
+      {
+        "kind": "gallery",
+        "title": "synthetic-pane-gallery"
       }
     ]
   }
