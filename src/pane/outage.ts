@@ -1,3 +1,4 @@
+import { findPersonData,erasePersonData } from './privacy'
 import { DurableObject } from 'cloudflare:workers'
 import type { Bindings } from '../auth.server'
 import type { Revision } from './model'
@@ -11,7 +12,7 @@ export type QueuedEnquiry={id:string;name:string;email:string;message:string;rec
 export function liveStore(env:Bindings){if(!env.PANE_LIVE)throw Error('Live storage is not configured.');return env.PANE_LIVE.get(env.PANE_LIVE.idFromName('published-site'))}
 export async function liveSnapshot(env:Bindings):Promise<(Revision&{banners?:{text:string}[]})|null>{
  const response=await liveStore(env).fetch('https://pane.internal/live')
- if(response.status===404)return null
+ if(response.status===404){const seeded=await liveStore(env).fetch('https://pane.internal/seed',{method:'POST',body:'{}'});if(seeded.status===404)return null;if(!seeded.ok)throw Error('Published snapshot unavailable.');return seeded.json()}
  if(!response.ok)throw Error('Published snapshot unavailable.')
  return response.json()
 }
@@ -33,6 +34,19 @@ export class PaneLive extends DurableObject<Bindings>{
   if(path==='/review'&&request.method==='GET')return Response.json({formRejections:[...(await storage.list<FormRejection>({prefix:'rejection:',reverse:true,limit:100})).values()],formRejectionCount:await storage.get<number>('rejection-count')??0})
   if(request.method!=='POST')return new Response(null,{status:405})
   const input=await request.json() as any
+  if(path==='/seed')return this.ctx.blockConcurrencyWhile(async()=>{
+   let live=await storage.get<Revision>('live')
+   if(!live){const row=await this.env.DB.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first();if(row){live={...row,site:JSON.parse(String(row.site))} as Revision;await storage.put('live',live)}}
+   return live?Response.json(live):new Response(null,{status:404})
+  })
+  if(path==='/privacy/find'||path==='/privacy/erase')return this.ctx.blockConcurrencyWhile(async()=>{
+   const queued=[...(await storage.list<QueuedEnquiry>({prefix:'message:'})).values()]
+   const db=auditedDatabase(this.env.DB,input.actor.id,'privacy.erasure')
+   if(path==='/privacy/find')return Response.json(await findPersonData(db,input.email,queued))
+   const result=await erasePersonData(db,input.email,input.confirm,input.actor,queued)
+   for(const message of queued)if(message.email.trim().toLowerCase()===input.email)await storage.delete('message:'+message.id)
+   return Response.json(result)
+  })
   if(path==='/publish')return this.ctx.blockConcurrencyWhile(async()=>{
    const db=auditedDatabase(this.env.DB,input.actor,'workspace.change')
    const live=await publish(db,input.actor,input.id,input.action)

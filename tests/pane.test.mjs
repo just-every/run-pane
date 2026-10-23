@@ -1040,3 +1040,133 @@ test('published snapshot and queued forms survive missing workspace tables and d
   assert.equal((await app.db.prepare('SELECT * FROM pane_messages').all()).results.length,1)
  }finally{await app.mf.dispose()}
 })
+
+test('policy starters name actual services, remain editable drafts and require owner publication',async()=>{
+ const app=await runtime()
+ try{
+  const boot=await app.request('/auth/bootstrap',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})})
+  const cookie=boot.headers.get('set-cookie').split(';')[0]
+  const post=(path,body,who=cookie)=>app.request(path,{method:'POST',headers:{Origin:origin,Cookie:who,'Content-Type':'application/json'},body:JSON.stringify(body)})
+  const site={...fixture,analytics:{ga4:'G-SYNTH12345',vane:{origin:'https://vane.example.test',site:'synthetic-pane-1'}}}
+  const draft=await(await post('/api/pane/prepare',{site})).json();await post('/api/pane/publish',{revision:draft.id})
+  assert.equal((await post('/api/pane/policies/generate',{base:draft.id},'')).status,401)
+  const generated=await(await post('/api/pane/policies/generate',{base:draft.id})).json()
+  assert.equal(generated.site.pages.length,site.pages.length+3)
+  const privacy=generated.site.pages.find(p=>p.slug==='privacy-policy')
+  for(const name of ['Google Analytics 4 (GA4)','Vane','Cloudflare Turnstile','name, email address and message','not legal advice'])assert.ok(privacy.body.includes(name),name)
+  assert.doesNotMatch(privacy.body,/HubSpot|Orbit|Meta Pixel|Mailchimp/,'Unconnected services are never invented')
+  assert.equal((await app.request('/site/privacy-policy')).status,404)
+  const edited=await(await post('/api/pane/prepare',{base:generated.id,site:{...generated.site,pages:generated.site.pages.map(p=>p.slug==='privacy-policy'?{...p,body:p.body+'\n\nContact our business at the studio.'}:p)}})).json()
+  assert.equal((await post('/api/pane/policies/generate',{base:edited.id})).status,400,'Regeneration does not overwrite reviewed text')
+  await post('/api/pane/publish',{revision:edited.id})
+  for(const slug of ['privacy-policy','terms','accessibility']){
+   const response=await app.request('/site/'+slug);assert.equal(response.status,200);assert.match(await response.text(),/Starter for owner review — not legal advice/)
+  }
+  assert.match(await(await app.request('/site/privacy-policy')).text(),/Contact our business at the studio/)
+ }finally{await app.mf.dispose()}
+})
+
+test('ownership handover atomically grants the business owner, demotes the designer and permits immediate revocation',async()=>{
+ const app=await runtime();let mail
+ const native=createOperatorAuth({db:app.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{mail=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+ const request=cookie=>new Request(origin+'/auth/invite',{method:'POST',headers:{Origin:origin,Host:new URL(origin).host,Cookie:cookie??''}})
+ const post=(path,body,cookie)=>app.request(path,{method:'POST',headers:{Origin:origin,Cookie:cookie??'','Content-Type':'application/json'},body:JSON.stringify(body)})
+ const confirm=async()=>{const token=new URL(mail.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token');const response=await post('/auth/confirm',{token});assert.equal(response.status,303,await response.clone().text());return response.headers.get('set-cookie').split(';')[0]}
+ const signIn=async email=>{await native.requestMagicLink(request(),{email,returnTo:'/app'});return confirm()}
+ try{
+  const boot=await post('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic designer'}),original=boot.headers.get('set-cookie').split(';')[0]
+  let designer=original
+  const prepared=await(await post('/api/pane/prepare',{site:fixture},designer)).json();await post('/api/pane/publish',{revision:prepared.id},designer)
+  const clients=[]
+  for(const n of [1,2]){
+   const email='synthetic-pane-business-'+n+'@example.test';await native.invite(request(designer),{email,displayName:'Synthetic business '+n,role:'member'})
+   const cookie=await confirm(),person=await app.db.prepare('SELECT id FROM oa_operators WHERE email=?').bind(email).first();clients.push({email,id:person.id,cookie})
+  }
+  const input=client=>({operatorId:client.id,email:client.email,confirm:'transfer-ownership'})
+  assert.equal((await post('/api/pane/ownership/transfer',input(clients[0]),'')).status,401)
+  assert.equal((await post('/api/pane/ownership/transfer',input(clients[0]),clients[0].cookie)).status,403)
+  assert.equal((await post('/api/pane/ownership/transfer',input(clients[0]),designer)).status,400,'Bootstrap alone has no fresh native proof')
+  designer=await signIn(settings.OWNER_EMAIL)
+  assert.equal((await post('/api/pane/ownership/transfer',{...input(clients[0]),confirm:''},designer)).status,400)
+  assert.equal((await post('/api/pane/ownership/transfer',{...input(clients[0]),email:'other@example.test'},designer)).status,400)
+  const minted=await(await post('/api/pane/tokens/create',{name:'synthetic-pane-1',scopes:['status:read']},designer)).json()
+  const race=await Promise.all(clients.map(client=>post('/api/pane/ownership/transfer',input(client),designer)))
+  assert.equal(race.filter(r=>r.status===200).length,1);assert.ok(race.filter(r=>r.status!==200).every(r=>[400,401,403,409].includes(r.status)))
+  const changed=await race.find(r=>r.status===200).json(),business=clients.find(c=>c.id===changed.owner)
+  assert.deepEqual(changed.designerRoles,['editor'])
+  assert.equal((await app.request('/api/pane',{headers:{Cookie:designer}})).status,401,'All previous designer sessions are fenced')
+  assert.equal((await app.request('/api/pane',{headers:{Authorization:'Bearer '+minted.token}})).status,401,'Pre-transfer agent tokens are fenced')
+  assert.equal((await app.request('/api/pane',{headers:{Cookie:business.cookie}})).status,401,'Business user must sign in with their new authority')
+  const businessCookie=await signIn(business.email),editor=await signIn(settings.OWNER_EMAIL)
+  const ownerData=await(await app.request('/api/pane',{headers:{Cookie:businessCookie}})).json(),editorData=await(await app.request('/api/pane',{headers:{Cookie:editor}})).json()
+  assert.equal(ownerData.role,'owner');assert.equal(editorData.roleLabel,'editor')
+  assert.equal((await post('/api/pane/prepare',{base:editorData.draft.id,site:{...fixture,description:'Designer draft after handover'}},editor)).status,200)
+  for(const path of ['/api/pane/publish','/api/pane/roles/set','/api/pane/team/revoke'])assert.equal((await post(path,{},editor)).status,403,path)
+  assert.equal(editorData.messages.length,0);assert.equal(editorData.activity,undefined)
+  const history=await(await app.request('/api/pane/activity',{headers:{Cookie:businessCookie}})).json()
+  assert.ok(history.filter(row=>row.subject.startsWith('person:')&&row.actor==='Synthetic designer').length>=2,'Promotion and demotion retain the transfer actor')
+  assert.equal((await post('/api/pane/team/revoke',{operatorId:changed.designer,confirm:'revoke-access'},businessCookie)).status,200)
+  assert.equal((await app.request('/api/pane',{headers:{Cookie:editor}})).status,401,'Revocation takes effect on the next request')
+  assert.equal((await app.db.prepare("SELECT COUNT(*) AS total FROM oa_operators WHERE role='owner' AND status='active'").first()).total,1)
+ }finally{await app.mf.dispose()}
+})
+
+test('person privacy finds three enquiries, exports portable records, atomically erases and fences old account backups',async()=>{
+ const app=await runtime();let mail
+ const native=createOperatorAuth({db:app.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{mail=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+ const post=(path,body,cookie)=>app.request(path,{method:'POST',headers:{Origin:origin,Cookie:cookie??'','Content-Type':'application/json'},body:JSON.stringify(body)})
+ const req=cookie=>new Request(origin+'/auth/invite',{method:'POST',headers:{Origin:origin,Host:new URL(origin).host,Cookie:cookie??''}})
+ const consume=async()=>{const token=new URL(mail.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token');const response=await post('/auth/confirm',{token});assert.equal(response.status,303);return response.headers.get('set-cookie').split(';')[0]}
+ try{
+  let ownerCookie=(await post('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})).headers.get('set-cookie').split(';')[0]
+  await native.requestMagicLink(req(),{email:settings.OWNER_EMAIL});ownerCookie=await consume()
+  await native.invite(req(ownerCookie),{email:'synthetic-pane-person@example.test',displayName:'Synthetic person',role:'member'});const personCookie=await consume()
+  const draft=await(await post('/api/pane/prepare',{site:fixture},ownerCookie)).json();await post('/api/pane/publish',{revision:draft.id},ownerCookie)
+  const ids=[]
+  for(const email of ['synthetic-pane-person@example.test','SYNTHETIC-PANE-PERSON@example.test','synthetic-pane-person@example.test','synthetic-pane-other@example.test']){
+   const id=crypto.randomUUID();ids.push(id)
+   assert.equal((await app.request('/site/contact',{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({idempotency:id,name:'Synthetic person',email,message:'Synthetic private message '+id,'cf-turnstile-response':'synthetic-pane-3'})})).status,303)
+  }
+  await post('/api/pane/messages/reply',{id:ids[0],idempotency:crypto.randomUUID(),subject:'Your enquiry',body:'Synthetic response',confirm:'send-reply'},ownerCookie)
+  const input={email:' SYNTHETIC-PANE-PERSON@example.test '}
+  assert.equal((await post('/api/pane/privacy/find',input,personCookie)).status,403)
+  const found=await(await post('/api/pane/privacy/find',input,ownerCookie)).json()
+  assert.equal(found.messages.length,3);assert.equal(found.replies.length,1);assert.equal(found.accounts.length,1);assert.deepEqual(found.crmDeliveries,[])
+  const exported=await post('/api/pane/privacy/export',input,ownerCookie)
+  assert.equal(exported.headers.get('content-disposition'),'attachment; filename="pane-person.json"')
+  const portable=await exported.json();assert.equal(portable.messages.length,3);assert.doesNotMatch(JSON.stringify(portable),/token_hash|SESSION_SECRET|test-session-key/)
+  const older=await exportData(app.db)
+  assert.equal((await post('/api/pane/privacy/erase',{...input,confirm:''},ownerCookie)).status,400)
+  assert.equal((await app.db.prepare('SELECT COUNT(*) AS total FROM pane_messages').first()).total,4,'Missing confirmation makes no partial deletion')
+  const erased=await post('/api/pane/privacy/erase',{...input,confirm:'erase-person-data'},ownerCookie)
+  assert.equal(erased.status,200,await erased.clone().text());assert.equal((await erased.json()).erasedMessages,3)
+  const after=await(await post('/api/pane/privacy/find',input,ownerCookie)).json()
+  for(const field of ['messages','replies','accounts','externalIdentities','credentials','activity'])assert.equal(after[field].length,0,field)
+  assert.equal((await app.db.prepare('SELECT COUNT(*) AS total FROM pane_messages').first()).total,1,'Other people are preserved')
+  assert.equal((await app.request('/api/pane',{headers:{Cookie:personCookie}})).status,401)
+  assert.equal((await app.db.prepare('SELECT COUNT(*) AS total FROM pane_erased_messages WHERE id IN (?,?,?)').bind(...ids.slice(0,3)).first()).total,3)
+  const later=await exportData(app.db),restored=await runtime(),old=await runtime()
+  try{assert.equal((await restore(restored.db,later)).phase,'complete');await assert.rejects(restore(old.db,older,later),/erased_row|erasure_epoch/)}finally{await restored.mf.dispose();await old.mf.dispose()}
+  assert.equal((await post('/api/pane/privacy/erase',{email:settings.OWNER_EMAIL,confirm:'erase-person-data'},ownerCookie)).status,400,'An active owner account cannot be erased')
+ }finally{await app.mf.dispose()}
+})
+
+test('person erasure includes pending durable enquiries and prevents their recovery delivery',async()=>{
+ const app=await runtime({isolatedLive:true});let mail
+ const native=createOperatorAuth({db:app.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{mail=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+ const post=(path,body,cookie)=>app.request(path,{method:'POST',headers:{Origin:origin,Cookie:cookie??'','Content-Type':'application/json'},body:JSON.stringify(body)})
+ try{
+  await post('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})
+  await native.requestMagicLink(new Request(origin+'/auth/magic-link',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin}}),{email:settings.OWNER_EMAIL})
+  const token=new URL(mail.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token'),cookie=(await post('/auth/confirm',{token})).headers.get('set-cookie').split(';')[0]
+  const draft=await(await post('/api/pane/prepare',{site:fixture},cookie)).json();await post('/api/pane/publish',{revision:draft.id},cookie)
+  const id=crypto.randomUUID(),email='synthetic-pane-pending@example.test'
+  assert.equal((await app.request('/site/contact',{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({idempotency:id,name:'Synthetic visitor',email,message:'Pending personal data','cf-turnstile-response':'synthetic-pane-3'})})).status,303)
+  const found=await(await post('/api/pane/privacy/find',{email},cookie)).json();assert.equal(found.queued.length,1);assert.equal(found.messages.length,0)
+  const erased=await post('/api/pane/privacy/erase',{email,confirm:'erase-person-data'},cookie);assert.equal(erased.status,200,await erased.clone().text())
+  assert.equal((await(await post('/api/pane/privacy/find',{email},cookie)).json()).queued.length,0)
+  await(await app.mf.getWorker()).scheduled({scheduledTime:new Date(),cron:'* * * * *'})
+  assert.equal((await app.db.prepare('SELECT COUNT(*) AS total FROM pane_messages').first()).total,0)
+  assert.ok(await app.db.prepare('SELECT id FROM pane_erased_messages WHERE id=?').bind(id).first())
+ }finally{await app.mf.dispose()}
+})
