@@ -1,3 +1,6 @@
+export { PaneLive } from './pane/outage'
+import { liveCall } from './pane/outage'
+import { activeBanners } from './pane/schedules'
 import { apiIdentity, recordApi, type ApiIdentity } from './pane/api-tokens'
 import { auditedDatabase } from './pane/audit'
 import { operatorAuth } from './auth.server'
@@ -25,8 +28,9 @@ export default withDemo<Bindings, ExportedHandler<Bindings>>({
   async scheduled(controller, env) {
     const bindings={...runtimeBindings(env),DB:auditedDatabase(env.DB,null,'schedule.change')}
     // One failing sweep must not stop the other.
-    const sweeps=await Promise.allSettled([runSchedules(bindings.DB,controller.scheduledTime),runFollowUps(bindings,controller.scheduledTime)])
+    const sweeps=await Promise.allSettled([runSchedules(bindings.DB,controller.scheduledTime),runFollowUps(bindings,controller.scheduledTime),...(env.PANE_LIVE?[liveCall(bindings,'/drain',{})]:[])])
     for(const sweep of sweeps) if(sweep.status==='rejected') throw sweep.reason
+    if(env.PANE_LIVE){const row=await env.DB.prepare('SELECT live FROM pane_state WHERE id=1').first<{live:string}>();if(row)await liveCall(bindings,'/banners',{banners:await activeBanners(env.DB,row.live)})}
   },
   async fetch(request, env, execution) {
     const asset = await staticAssetResponse(request, env)

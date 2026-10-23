@@ -1007,3 +1007,36 @@ test('form protection refuses and separately counts honeypot, per-form bursts an
   assert.match(await contact.text(),/data-turnstile-key="synthetic-pane-1"/)
  }finally{await app.mf.dispose()}
 })
+
+test('published snapshot and queued forms survive missing workspace tables and drain once after recovery',async()=>{
+ const app=await runtime({isolatedLive:true})
+ try{
+  const boot=await app.request('/auth/bootstrap',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})})
+  const cookie=boot.headers.get('set-cookie').split(';')[0]
+  const post=(path,body)=>app.request(path,{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify(body)})
+  const site=structuredClone(fixture)
+  const prepared=await(await post('/api/pane/prepare',{site})).json()
+  assert.equal((await post('/api/pane/publish',{revision:prepared.id})).status,200)
+  // Make the real D1 content and intake tables unavailable after publication.
+  await app.db.prepare('ALTER TABLE pane_revisions RENAME TO synthetic_pane_unavailable_revisions').run()
+  await app.db.prepare('ALTER TABLE pane_messages RENAME TO synthetic_pane_unavailable_messages').run()
+  for(const page of site.pages){
+   const response=await app.request(page.slug==='home'?'/site':'/site/'+page.slug)
+   assert.equal(response.status,200);assert.match(await response.text(),new RegExp(page.title))
+  }
+  assert.equal((await app.request('/sitemap.xml')).status,200)
+  const id=crypto.randomUUID(),send=()=>app.request('/site/contact',{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({idempotency:id,name:'Synthetic visitor',email:'synthetic-pane@example.test',message:'Queued through the outage','cf-turnstile-response':'synthetic-pane-3'})})
+  assert.equal((await send()).status,303);assert.equal((await send()).status,303)
+  assert.equal((await app.db.prepare('SELECT * FROM synthetic_pane_unavailable_messages').all()).results.length,0)
+  await app.db.prepare('ALTER TABLE synthetic_pane_unavailable_revisions RENAME TO pane_revisions').run()
+  await app.db.prepare('ALTER TABLE synthetic_pane_unavailable_messages RENAME TO pane_messages').run()
+  for(let index=0;index<2;index++){
+   const event=await(await app.mf.getWorker()).scheduled({scheduledTime:new Date(),cron:'* * * * *'});assert.equal(event.outcome,'ok')
+   const rows=(await app.db.prepare('SELECT * FROM pane_messages').all()).results
+   assert.equal(rows.length,1);assert.equal(rows[0].id,id);assert.equal(rows[0].message,'Queued through the outage')
+  }
+  assert.equal((await send()).status,303)
+  await(await app.mf.getWorker()).scheduled({scheduledTime:new Date(),cron:'* * * * *'})
+  assert.equal((await app.db.prepare('SELECT * FROM pane_messages').all()).results.length,1)
+ }finally{await app.mf.dispose()}
+})
