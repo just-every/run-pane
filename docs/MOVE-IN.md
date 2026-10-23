@@ -158,7 +158,7 @@ per-type applied counts, text/fields, link destinations and missing internal
 links. It also parses the actual production-rendered page output to check
 visible text, link/button destinations, heading levels, list types/items and
 inline images, and flags old-domain redirects that have not been verified. Semantic heading/list/button/inline-image/formatting fidelity is reported
-as unresolved where the native rich targets are unavailable. A failure stays
+as unresolved where the native rich targets are unavailable. Malformed link and image references, including images with no source, are listed as unresolved exceptions without preventing review of the other content. A failure stays
 visible; it never becomes an invented successful import.
 
 Choose **View report** on the applied job to reopen the report from the exact

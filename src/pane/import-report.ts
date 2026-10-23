@@ -5,7 +5,7 @@ import type { Site } from './model'
 
 export const importKinds = ['page','post','comment','collection-item','event','gallery','media','product','form','author','taxonomy','menu','unsupported'] as const
 export type ImportKind = typeof importKinds[number]
-export type Fidelity = { text: string; links: string[]; headings: string[]; lists: string[]; images: string[]; buttons: string[]; formatting: string[] }
+export type Fidelity = { text: string; links: string[]; headings: string[]; lists: string[]; images: string[]; buttons: string[]; formatting: string[]; unresolved?: string[] }
 export type InventoryItem = { id: string; kind: ImportKind; title: string; oldUrl?: string; targetSlug?: string; state?: string; reason?: string; destination?: string; fidelity?: Fidelity; fields?: Record<string,string> }
 export type ImportDocument = { site: Site | null; items: InventoryItem[]; format: string; origin?: string }
 export type ImportIssue = { id: string; check: string; reason: string }
@@ -33,6 +33,7 @@ export function migrationReport(input: ImportDocument, actual?: Site|null, phase
   if(phase==='applied'){
    const fail=(check:string,reason:string)=>failures.push({id:item.id,check,reason})
    if(target&&item.reason)fail('fidelity',item.reason)
+   for(const reason of item.fidelity?.unresolved??[])fail('source-reference',reason)
    if(target){
     const wanted=planned.get(item.targetSlug!)!, found=observed.get(item.targetSlug!)
     if(!found)fail('inventory','Planned page is absent from the imported draft.')
@@ -70,7 +71,7 @@ export function migrationReport(input: ImportDocument, actual?: Site|null, phase
     }
     const internal=input.origin?url.origin===input.origin:url.origin==='https://source.invalid'
     if(internal){
-     const mapped=input.items.find(candidate=>{if(!candidate.oldUrl)return false;const sourceUrl=new URL(candidate.oldUrl,input.origin??'https://source.invalid');return sourceUrl.origin===url.origin&&sourceUrl.pathname===url.pathname&&sourceUrl.search===url.search})
+     const mapped=input.items.find(candidate=>{if(!candidate.oldUrl||!candidate.targetSlug)return false;const sourceUrl=new URL(candidate.oldUrl,input.origin??'https://source.invalid');return sourceUrl.origin===url.origin&&sourceUrl.pathname===url.pathname&&sourceUrl.search===url.search})
      if(!mapped?.targetSlug||!observed.has(mapped.targetSlug))fail('link','Dangling internal target: '+url.href)
      else if(url.hash)fail('anchor','The target section anchor could not be preserved: '+url.href)
     }

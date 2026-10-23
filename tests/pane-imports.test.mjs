@@ -117,3 +117,24 @@ test('native JSON custom home and separately declared links keep their rendering
  const preview=await f.request('/preview/'+job.report.revision+'/home',{headers:{Cookie:owner}});assert.equal(preview.status,200);const html=await preview.text();assert.match(html,/Literal &lt;script&gt;synthetic-pane-1&lt;\/script&gt; stays text/);assert.doesNotMatch(html,/<script>synthetic-pane-1/)
  await ok(await call('undo',{job:job.id}))
 })
+
+
+test('malformed source references stay visible as exceptions without preventing reviewed import and undo',async()=>{
+ const captured=JSON.parse(await readFile('fixtures/imports/wix.json','utf8'))
+ captured.documents[0].html+='<a href="http://[">Broken link</a><img src="http://[" alt="Broken image"><img alt="Missing source">'
+ const source=JSON.stringify(captured),before=await data(),plan=await ok(await call('dry-run',{source}))
+ assert.deepEqual(await data(),before)
+ const exceptions=plan.report.inventory.filter(item=>item.id.startsWith('document-0-reference-'))
+ assert.equal(exceptions.length,3)
+ assert.ok(exceptions.some(item=>item.reason==='Invalid link URL: http://['))
+ assert.ok(exceptions.some(item=>item.reason==='Invalid image URL: http://['))
+ assert.ok(exceptions.some(item=>item.reason==='Image has no source URL.'))
+ assert.match(plan.report.inventory.find(item=>item.id==='document-0').reason,/Invalid link URL/)
+ const job=await ok(await call('apply',{source,fingerprint:plan.fingerprint}))
+ assert.equal(job.report.counts.page.applied,2)
+ assert.equal(job.report.failures.filter(issue=>issue.id==='document-0'&&issue.check==='source-reference').length,3)
+ assert.equal((await data()).live,before.live)
+ assert.deepEqual((await ok(await call('dry-run',{job:job.id}))).report,job.report)
+ await ok(await call('undo',{job:job.id}))
+ assert.equal((await data()).draft?.id??null,before.draft?.id??null)
+})
