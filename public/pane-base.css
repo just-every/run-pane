@@ -1,6 +1,6 @@
 /* Pane's app (owner pick A, 18 Oct 2026): what every screen shares. White top bar,
    pale aqua worktable, fine ink lines, fuchsia actions, block-brick colours. Tokens
-   come from /site/theme.css through rer-theme.css; nothing here defines a colour token. */
+   come from /site/theme.css through /fonts/fonts.css; nothing here defines a colour token. */
 html { scroll-behavior: smooth; }
 html.rer-themed body.pane { display: block; margin: 0; padding: 0; min-height: 100vh; background: var(--pn-tint); color: var(--pn-ink); font: 400 15px/1.5 var(--pn-font); -webkit-font-smoothing: antialiased; overflow-x: clip; }
 html.rer-themed body.pane-site { background: var(--pn-white); }

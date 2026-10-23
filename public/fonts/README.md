@@ -19,6 +19,12 @@ local files; no third-party font request is made at runtime.
 The root document links `/fonts/fonts.css` once and preloads the display and UI
 Latin files. Native authentication and setup documents use the same head links.
 Controls inherit the UI family. Edition styles choose reading/display/mono roles.
+The same file carries Pane's tokens and the rules for Base's pages (see its header).
+
+The theme, `/rer-theme.css`, repeats every face here for rer's installer, which
+reads only that file: without `font-stretch`, which rer's theme reader refuses
+(Noto Serif Display's own width axis is the range dropped; the other three have
+no width axis), and with Figtree's format given as `woff2`. Change both.
 
 ## Provenance
 

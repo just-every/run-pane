@@ -1,5 +1,8 @@
 /* Pane run site tokens (desk-approved look, 18 Oct 2026): defined once here and
-   read by the homepage, the docs and Base's /run, /contract and not-found pages. */
+   read by the homepage, the docs and Base's /run, /contract and not-found pages,
+   and through /fonts/fonts.css by the app and Base's sign-in, setup and Lobby pages.
+   /rer-theme.css repeats the --rer-* theme tokens below as literals (rer's theme
+   reader takes no var()): change both. */
 :root {
   --pn-ink: #1f0717;
   --pn-plum: #2a0e22;
