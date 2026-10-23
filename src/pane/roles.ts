@@ -28,7 +28,7 @@ export const can=(data:Dashboard,capability:Capability)=>data.capabilities?.incl
 export function permittedDashboard(data:Dashboard,caps:Capability[]):Dashboard{
  return {...data,capabilities:caps,
   ...(caps.includes('pages:read')?{}:{pageRequests:[],draft:null,live:null,revisions:[],approvals:[],schedules:undefined}),
-  ...(caps.includes('inbox:read')?{}:{messages:[],replies:[],assignees:[],replyWindow:{zone:'America/New_York',days:1}}),
+  ...(caps.includes('inbox:read')?{}:{formRejectionCount:0,formRejections:[],messages:[],replies:[],assignees:[],replyWindow:{zone:'America/New_York',days:1}}),
   ...(caps.includes('reports:read')?{}:{visits:[],traffic:{day:[],source:[],referrer:[],device:[],location:[],campaign:[],campaignSource:[],medium:[]},goals:[]}),
   ...(caps.includes('imports:read')?{}:{imports:[]}),
   ...(caps.includes('audit')?{}:{activity:undefined}),

@@ -4,6 +4,8 @@ export type Site = { locale?: import('./locale').LocaleSettings; automations?: i
 export type Revision = { id: string; site: Site; hash: string; created_at: string; actor: string }
 export type Dashboard = {
  pageRequests?: import('./page-review').PageRequest[];
+ formRejectionCount?: number;
+ formRejections?: import('./form-protection').FormRejection[];
  replies: {id:string;message_id:string;subject:string;body:string;status:string;created_at:string}[];
  locale?: string;
  timeZone?: string;

@@ -6,12 +6,12 @@ const {Miniflare,convertV4MiniflareOptions}=require('miniflare')
 const {unstable_splitSqlQuery}=require('wrangler')
 export const origin='http://127.0.0.1:8787'
 export const settings={AUTH_ORIGIN:origin,AUTH_LOCAL:'true',OWNER_EMAIL:'owner@example.test',SESSION_SECRET:'test-session-key-'.repeat(4),SETUP_TOKEN:'test-setup-key-'.repeat(4),MAIL_PROVIDER:'development',MAIL_FROM:'pane@example.test'}
-export async function runtime({bindings={},outboundService,cf}={}) {
+export async function runtime({bindings={},outboundService,cf,turnstile}={}) {
  const config=JSON.parse(await readFile('dist/server/wrangler.json','utf8'))
  const files=[config.main,...(await readdir('dist/server',{recursive:true})).filter(n=>n.endsWith('.js')&&n!==config.main)]
  const modules=files.map(path=>({type:'ESModule',path:resolve('dist/server',path)}))
  modules.unshift({type:'ESModule',path:resolve('dist/server/__test-entry.mjs'),contents:'import app from "./index.js"; export default { async scheduled(controller,env,context) { return app.scheduled(controller,env,context); }, async fetch(request,env,context) { const input=await request.json(); const targetRequest=new Request(input.url,input.init); if(input.cf)Object.defineProperty(targetRequest,"cf",{value:input.cf}); return app.fetch(targetRequest,env,context); } }'})
- const mf=new Miniflare({...convertV4MiniflareOptions({modules,modulesRoot:resolve('dist/server'),compatibilityDate:'2026-09-08',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'pane-test'},bindings:{...settings,...bindings},...(outboundService?{outboundService}:{})})})
+ const mf=new Miniflare({...convertV4MiniflareOptions({modules,modulesRoot:resolve('dist/server'),compatibilityDate:'2026-09-08',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'pane-test'},bindings:{...settings,TURNSTILE_SITE_KEY:'synthetic-pane-1',TURNSTILE_SECRET:'synthetic-pane-2',...bindings},outboundService:async request=>{if(new URL(request.url).hostname==='challenges.cloudflare.com'){const form=await request.formData();return turnstile?turnstile(request,form):Response.json({success:form.get('response')==='synthetic-pane-3',hostname:new URL(bindings.AUTH_ORIGIN??origin).hostname,action:'pane-contact',cdata:'contact'})}if(outboundService)return outboundService(request);throw Error('Unexpected outbound request: '+new URL(request.url).origin)}})})
  let db
  try {
   db=await mf.getD1Database('DB')
