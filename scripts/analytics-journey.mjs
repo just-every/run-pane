@@ -140,6 +140,7 @@ try {
   assert.equal(new URL(quote.url()).search, '', 'The thank-you marker is dropped once the Google goal is sent')
   assert.ok(hits.google.some(hit => hit.en === 'quote_request' && hit.goal === 'Quote request'), 'The form goal reaches Google')
   assert.ok(hits.vane.some(hit => hit.door === '/api/vane/custom' && hit.name === 'Quote request'), 'The form goal reaches Vane')
+  assert.equal(hits.vane.filter(hit=>hit.door==='/api/vane/custom'&&hit.name==='Quote request').length,1,'Verification and the accepted submit produce one Vane form goal')
   const quotes = () => hits.google.filter(hit => hit.en === 'quote_request').length
   assert.equal(quotes(), 1)
   await quote.reload({waitUntil: 'networkidle'}); await quote.waitForTimeout(300)
