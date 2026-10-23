@@ -41,7 +41,7 @@ globalThis.fetch=async(input,init)=>{
  const request=new Request(input,init);
  if(request.url==='https://challenges.cloudflare.com/turnstile/v0/siteverify'){
   const fields=await request.formData();
-  return Response.json({success:fields.get('response')==='synthetic-pane-3',hostname:new URL(env.AUTH_ORIGIN).hostname,action:'pane-contact',cdata:'contact'});
+  return Response.json({success:fields.get('response')==='synthetic-pane-3',hostname:new URL(env.AUTH_ORIGIN).hostname,action:'pane-contact',cdata:'${createHash('sha256').update('contact').digest('hex')}'});
  }
  return nativeFetch(request);
 };
