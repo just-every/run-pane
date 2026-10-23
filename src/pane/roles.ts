@@ -26,7 +26,7 @@ export async function assignRoles(db:D1Database,actorId:string,input:Record<stri
 }
 export const can=(data:Dashboard,capability:Capability)=>data.capabilities?.includes(capability)??(data.role.toLowerCase()==='owner'||data.role.toLowerCase()==='admin')
 export function permittedDashboard(data:Dashboard,caps:Capability[]):Dashboard{
- return {...data,capabilities:caps,
+ return {...data,capabilities:caps,...(caps.includes('team')?{}:{ownershipPeople:undefined,privacyRequest:undefined}),
   ...(caps.includes('pages:read')?{}:{pageRequests:[],draft:null,live:null,revisions:[],approvals:[],schedules:undefined}),
   ...(caps.includes('inbox:read')?{}:{formRejectionCount:0,formRejections:[],messages:[],replies:[],assignees:[],replyWindow:{zone:'America/New_York',days:1}}),
   ...(caps.includes('reports:read')?{}:{visits:[],traffic:{day:[],source:[],referrer:[],device:[],location:[],campaign:[],campaignSource:[],medium:[]},goals:[]}),
@@ -37,7 +37,7 @@ export function permittedDashboard(data:Dashboard,caps:Capability[]):Dashboard{
 export function routeCapability(path:string,method:string):Capability|undefined{
  if(method==='GET')return ({'/api/pane/pages':'pages:read','/api/pane/collections':'pages:read','/api/pane/activity':'audit','/api/pane/activity/export':'audit','/api/pane/roles':'team','/api/pane/tokens':'tokens','/app':'pages:read','/app/inquiries':'inbox:read','/app/moves':'imports:read','/app/search':'pages:write'} as Record<string,Capability>)[path]
  const action=path.replace(/^\/(api\/pane|app)\//,'')
- return ({prepare:'pages:write',autosave:'pages:write',publish:'publish','page-request-review':'pages:write','page-publish':'publish',rollback:'publish',review:'pages:write','import/dry-run':'imports:write','import/apply':'imports:write','import/undo':'imports:write','import/crawl-challenge':'imports:write','import/crawl':'imports:write','messages/update':'inbox:write','messages/reply':'inbox:write','messages/erase':'erase','people/erase':'erase','tokens/create':'tokens','tokens/revoke':'tokens','roles/set':'team','roles/invite':'team'} as Record<string,Capability>)[action]
+ return ({'privacy/find':'erase','privacy/export':'erase','privacy/erase':'erase','policies/generate':'settings:write','ownership/transfer':'team','team/revoke':'team',prepare:'pages:write',autosave:'pages:write',publish:'publish','page-request-review':'pages:write','page-publish':'publish',rollback:'publish',review:'pages:write','import/dry-run':'imports:write','import/apply':'imports:write','import/undo':'imports:write','import/crawl-challenge':'imports:write','import/crawl':'imports:write','messages/update':'inbox:write','messages/reply':'inbox:write','messages/erase':'erase','people/erase':'erase','tokens/create':'tokens','tokens/revoke':'tokens','roles/set':'team','roles/invite':'team'} as Record<string,Capability>)[action]
 }
 
 /** Hold native invitation delivery until its Pane grants are saved. No alternate

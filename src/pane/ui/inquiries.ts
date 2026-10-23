@@ -1,4 +1,5 @@
 // Inquiries: what the live Contact page has sent, newest first, as one stream.
+import { personPrivacy } from './person-privacy'
 import { can } from '../roles'
 import type { Dashboard } from '../model'
 import { inquiryStatuses } from '../followups'
@@ -47,5 +48,5 @@ export function inquiries(data: Dashboard): string {
   const stream = data.messages.length
     ? `<div class="queues">${list('Needs reply', 'queue-open', open, 'Every enquiry has been handled.')}${list('Handled', 'queue-handled', handled, 'Replied, booked, closed and spam enquiries are listed here.')}</div>`
     : `<div class="card empty empty-inbox"><img src="/brand/mark.svg" alt="" width="96" height="70"><strong>Your inbox is clear</strong><p>Messages submitted through the live contact page will appear here.</p></div>`
-  return `<div class="screen-head"><div><h1>Inquiries</h1><p>Messages from your Contact page. Each one lands here and nowhere else.</p></div></div><div class="inquiries-body">${stream}${spam}<aside class="card summary-card" aria-label="Inbox summary"><dl><div><dt>Needs reply</dt><dd>${open.length}</dd></div><div><dt>Overdue</dt><dd>${overdue}</dd></div><div><dt>This week</dt><dd>${recent}</dd></div><div><dt>All messages</dt><dd>${data.messages.length}</dd></div></dl><p class="help">${icon('contact')}<span>From the form at <a href="/site/contact">/site/contact</a>. Pane keeps the latest 100.</span></p></aside></div>`
+  return `<div class="screen-head"><div><h1>Inquiries</h1><p>Messages from your Contact page. Each one lands here and nowhere else.</p></div></div><div class="inquiries-body">${stream}${spam}${personPrivacy(data)}<aside class="card summary-card" aria-label="Inbox summary"><dl><div><dt>Needs reply</dt><dd>${open.length}</dd></div><div><dt>Overdue</dt><dd>${overdue}</dd></div><div><dt>This week</dt><dd>${recent}</dd></div><div><dt>All messages</dt><dd>${data.messages.length}</dd></div></dl><p class="help">${icon('contact')}<span>From the form at <a href="/site/contact">/site/contact</a>. Pane keeps the latest 100.</span></p></aside></div>`
 }

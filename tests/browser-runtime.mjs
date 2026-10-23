@@ -36,13 +36,13 @@ export async function bootstrap(context){
  assert.equal(response.status(),303,'Native bootstrap creates the first browser session')
  ownerCookie=response.headers()['set-cookie'].split(';')[0]
 }
-export async function signIn(page){
+export async function signIn(page,email=settings.OWNER_EMAIL){
  await protect(page.context())
  // The existing auth tests use this network-edge mail fixture too. No cookie or
  // browser profile is copied: the browser consumes and confirms a native link.
  let message
  const auth=createOperatorAuth({db:f.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{message=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
- await auth.requestMagicLink(new Request(origin+'/auth/magic-link',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin}}),{email:settings.OWNER_EMAIL,returnTo:'/app'})
+ await auth.requestMagicLink(new Request(origin+'/auth/magic-link',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin}}),{email,returnTo:'/app'})
  assert.ok(message,'The native sign-in flow issued a link to the test mail edge')
  const link=message.text.match(/http:\/\/[^\s]+/)[0]
  await page.goto(link)
