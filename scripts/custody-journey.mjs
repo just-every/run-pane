@@ -45,7 +45,7 @@ try{
   await page.setViewportSize({width,height:1000});await page.goto(origin+'/app/sites')
   const panel=page.getByRole('region',{name:'Site ownership',exact:true});await panel.scrollIntoViewIfNeeded();await capture(page,'handover-confirm-'+width)
   // Existing shared tooltip: delayed hover and immediate focus on this changed screen.
-  const avatar=page.locator('.avatar[data-tip]').first();await avatar.focus();await page.locator('.pane-tooltip').waitFor();assert.equal(await page.locator('.pane-tooltip').innerText(),'Account and team');await page.keyboard.press('Escape')
+  const avatar=page.locator('.avatar[data-tip]').first();await avatar.hover();await page.waitForTimeout(100);assert.equal(await page.locator('.pane-tooltip').count(),0,'Tooltip waits for the hover delay');await page.locator('.pane-tooltip').waitFor();await page.keyboard.press('Escape');await page.mouse.move(5,500);await avatar.focus();await page.locator('.pane-tooltip').waitFor();assert.equal(await page.locator('.pane-tooltip').innerText(),'Account and team');await page.keyboard.press('Escape')
  }
  const panel=page.getByRole('region',{name:'Site ownership',exact:true})
  await panel.getByLabel('New business owner',{exact:true}).selectOption({label:'Synthetic business owner · synthetic-pane-business@example.test'})
