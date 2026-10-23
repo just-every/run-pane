@@ -69,7 +69,7 @@ export function migrationReport(input: ImportDocument, actual?: Site|null, phase
     }
     const internal=input.origin?url.origin===input.origin:url.origin==='https://source.invalid'
     if(internal){
-     const mapped=input.items.find(candidate=>candidate.oldUrl&&new URL(candidate.oldUrl,input.origin??'https://source.invalid').pathname===url.pathname)
+     const mapped=input.items.find(candidate=>{if(!candidate.oldUrl)return false;const sourceUrl=new URL(candidate.oldUrl,input.origin??'https://source.invalid');return sourceUrl.origin===url.origin&&sourceUrl.pathname===url.pathname&&sourceUrl.search===url.search})
      if(!mapped?.targetSlug||!observed.has(mapped.targetSlug))fail('link','Dangling internal target: '+url.href)
      else if(url.hash)fail('anchor','The target section anchor could not be preserved: '+url.href)
     }

@@ -57,12 +57,12 @@ test('reviewed apply reconciles the stored draft, lists dangling post links and 
 test('documented WXR inventories 100 posts and 50 comments by state while applying only supported unpublished pages',async()=>{
  const wxr=await readFile('fixtures/imports/wordpress.xml','utf8'),plan=await ok(await call('dry-run',{source:wxr})),r=plan.report
  assert.equal(r.counts.post.source,100);assert.equal(r.counts.comment.source,50);assert.equal(r.counts['comment:approved'].source,17);assert.equal(r.counts['comment:pending'].source,17);assert.equal(r.counts['comment:spam'].source,16)
- assert.equal(r.counts.page.planned,2);assert.equal(r.counts.media.source,101);assert.equal(r.counts.author.source,1);assert.equal(r.counts.taxonomy.source,1);assert.equal(r.counts.form.source,1);assert.equal(r.inventory.find(item=>item.kind==='form').destination,'mailto:synthetic-pane-7@example.test')
+ assert.equal(r.counts.page.planned,2);assert.equal(r.counts.media.source,102);assert.equal(r.counts.author.source,1);assert.equal(r.counts.taxonomy.source,1);assert.equal(r.counts.form.source,1);assert.equal(r.inventory.find(item=>item.kind==='form').destination,'mailto:synthetic-pane-7@example.test')
  assert.ok(r.inventory.some(item=>item.kind==='comment'&&item.fields.parent==='1'))
  assert.equal(plan.site.pages[0].body,'Welcome Read About or the guide.');assert.equal(plan.site.pages[1].body,'Our story & studio.')
  assert.deepEqual(plan.site.pages[0].links.map(link=>link.url),['/site/about','https://example.org/guide'])
  const before=await data(),job=await ok(await call('apply',{source:wxr,fingerprint:plan.fingerprint}))
- assert.equal(job.report.counts.page.applied,2);assert.equal(job.report.counts.post.applied,0);assert.equal((await data()).live,before.live)
+ assert.equal(job.report.counts.page.applied,2);assert.equal(job.report.counts.post.applied,0);assert.equal((await data()).live,before.live);assert.equal(job.report.failures.some(issue=>issue.id==='wxr-1'&&issue.reason.startsWith('Dangling internal target:')),false,'An external media path cannot shadow a valid internal page target')
  const preview=await f.request('/preview/'+job.report.revision,{headers:{Cookie:owner}});assert.equal(preview.status,200);assert.match(await preview.text(),/Welcome Read About/)
  await ok(await call('undo',{job:job.id}))
 })
