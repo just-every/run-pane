@@ -321,3 +321,30 @@ slug. Preview and workspace pages never run Turnstile. Each form permits 20
 attempts per minute independently. Honeypot, rate, verification and provider
 outage refusals are counted and reviewed separately in Inquiries. Only form,
 reason and time are retained for a refusal; rejected personal answers are not.
+
+### Published snapshots and queued enquiries
+
+Hosted deployments declare `PANE_LIVE` (the PaneLive SQLite Durable Object) and
+the minute cron in `deploy.json`. Publication copies the approved revision into
+that store. Live page delivery does not depend on D1; an empty snapshot can be
+reconstructed from the installation's approved live D1 revision after restore.
+Validated enquiries receive durable immutable-ID receipts there and drain to
+Inquiries on the next successful scheduled sweep. A D1 outage keeps them queued;
+retries and erasure fences prevent duplicate or resurrected enquiries. The
+confirmation says the message was received, independently of inbox delivery.
+
+Use the owner-only Person privacy request section in Inquiries to find/export
+matched records by email or explicitly erase them. Exports omit credentials.
+Erasure includes pending intake, non-owner account anonymization and the shared
+old-backup checkpoint. Keep the later erasure journal when testing an old archive;
+transfer ownership before requesting erasure of an owner account. Downstream
+services are listed for manual follow-up; no external erasure is sent automatically.
+
+The focused proof journeys are `scripts/outage-journey.mjs` and
+`scripts/custody-journey.mjs`. The separate `scripts/hosted-outage-journey.mjs`
+requires the owner's selected RunEditRun Cloudflare account credentials and an
+existing clean committed build. It creates only its disposable proof environment,
+uses a Turnstile network-edge fake, disconnects the real content/intake tables,
+exercises the native scheduled handler, and removes the resources through the
+deployment kit's ownership checks. Its test HTTP adapter is never part of the
+production Worker entry. Store screenshots and receipts outside the checkout.
