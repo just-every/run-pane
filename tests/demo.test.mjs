@@ -4,7 +4,7 @@ import { runtime, origin, settings } from './runtime.mjs'
 
 test('demo: Ortega Bakery opens lived-in; the draft publishes, a message arrives and an invitation sends nothing',async()=>{
  const outbound=[]
- const f=await runtime({bindings:{RER_DEMO:'1',MAIL_PROVIDER:'resend',MAIL_API_KEY:'test-network-edge'},outboundService:async request=>{outbound.push(request.url);return Response.json({id:'sent'})}})
+ const f=await runtime({bindings:{RER_DEMO:'1',MAIL_PROVIDER:'resend',MAIL_API_KEY:'synthetic-pane-90'},outboundService:async request=>{outbound.push(request.url);return Response.json({id:'sent'})}})
  try {
   const post=(path,body,cookie,type='application/json')=>f.request(path,{method:'POST',headers:{Origin:origin,'Content-Type':type,Cookie:cookie??''},body:type==='application/json'?JSON.stringify(body):new URLSearchParams(body),redirect:'manual'})
   const r=await post('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Owner',returnTo:'/app'});assert.equal(r.status,303,await r.text())
@@ -16,7 +16,8 @@ test('demo: Ortega Bakery opens lived-in; the draft publishes, a message arrives
   assert.ok(d.visits.reduce((sum,v)=>sum+v.count,0)>1000)
   assert.equal((await post('/api/pane/publish',{revision:d.draft.id},owner)).status,200)
   assert.match(await (await f.request('/site/services')).text(),/Tastings Tuesday to Saturday/)
-  assert.equal((await post('/site/contact',{idempotency:crypto.randomUUID(),name:'Ana Silva',email:'ana@example.test',message:'Do you bake sugar-free cakes?',website:''},'','application/x-www-form-urlencoded')).status,303)
+  assert.equal((await post('/site/contact',{'cf-turnstile-response':'synthetic-pane-4',idempotency:crypto.randomUUID(),name:'Synthetic visitor',email:'synthetic-pane@example.test',message:'Invalid verification',website:''},'','application/x-www-form-urlencoded')).status,403,'Demo mode still refuses an invalid provider proof')
+  assert.equal((await post('/site/contact',{'cf-turnstile-response':'synthetic-pane-3',idempotency:crypto.randomUUID(),name:'Ana Silva',email:'ana@example.test',message:'Do you bake sugar-free cakes?',website:''},'','application/x-www-form-urlencoded')).status,303)
   d=await data();assert.equal(d.live.id,d.draft.id);assert.equal(d.messages[0].name,'Ana Silva')
   assert.equal((await post('/auth/invite',{email:'sofia@example.test',displayName:'Sofia Grant',role:'admin',returnTo:'/app'},owner)).status,202)
   assert.deepEqual(outbound,[])

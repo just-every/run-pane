@@ -317,7 +317,7 @@ Worker secret through the deployment secret mechanism. Never put the secret in
 source or client configuration. Published contact forms fail closed if either is
 missing or the provider is unavailable. The widget loads only when Send is
 pressed; it verifies the installation hostname, `pane-contact` action and page
-slug. Preview and workspace pages never run Turnstile. Each form permits 20
+slug through its SHA-256 form binding (including nested paths). Preview and workspace pages never run Turnstile. Each form permits 20
 attempts per minute independently. Honeypot, rate, verification and provider
 outage refusals are counted and reviewed separately in Inquiries. Only form,
 reason and time are retained for a refusal; rejected personal answers are not.

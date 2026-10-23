@@ -1,3 +1,4 @@
+import {createHash} from 'node:crypto'
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
@@ -1042,7 +1043,8 @@ test('US business defaults render Denver hours, currency, phone, address and Sun
 })
 
 test('form protection refuses and separately counts honeypot, per-form bursts and invalid provider proofs',async()=>{
- let answer={success:true,hostname:new URL(origin).hostname,action:'pane-contact',cdata:'contact'},calls=0,unavailable=false
+ const binding=form=>createHash('sha256').update(form).digest('hex')
+ let answer={success:true,hostname:new URL(origin).hostname,action:'pane-contact',cdata:binding('contact')},calls=0,unavailable=false
  const app=await runtime({turnstile:async(_request,fields)=>{
   calls++;assert.equal(fields.get('secret'),'synthetic-pane-2');assert.ok(fields.get('idempotency_key'))
   return unavailable?new Response(null,{status:503}):Response.json(answer)
@@ -1052,24 +1054,24 @@ test('form protection refuses and separately counts honeypot, per-form bursts an
   const cookie=boot.headers.get('set-cookie').split(';')[0]
   assert.equal((await app.request('/setup',{method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})).status,303)
   const post=(path,body)=>app.request(path,{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify(body)})
-  const site=structuredClone(fixture);site.pages.push({...site.pages.find(p=>p.slug==='contact'),slug:'quote',kind:'contact'})
+  const site=structuredClone(fixture);site.pages.push({...site.pages.find(p=>p.slug==='contact'),slug:'requests/quote',kind:'contact'})
   const rev=await(await post('/api/pane/prepare',{site})).json();assert.equal((await post('/api/pane/publish',{revision:rev.id})).status,200)
   const send=(fields={},slug='contact')=>app.request('/site/'+slug,{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({idempotency:crypto.randomUUID(),name:'Synthetic visitor',email:'synthetic-pane@example.test',message:'Private rejected words','cf-turnstile-response':'synthetic-pane-3',...fields})})
   assert.equal((await send({website:'synthetic-pane-4'})).status,403);assert.equal(calls,0)
   for(const proof of [{success:false},{hostname:'elsewhere.example.test'},{action:'other'},{cdata:'quote'}]){
-   answer={success:true,hostname:new URL(origin).hostname,action:'pane-contact',cdata:'contact',...proof}
+   answer={success:true,hostname:new URL(origin).hostname,action:'pane-contact',cdata:binding('contact'),...proof}
    assert.equal((await send()).status,403)
   }
   assert.equal((await send({'cf-turnstile-response':''})).status,403)
   unavailable=true;assert.equal((await send()).status,503);unavailable=false
-  answer={success:true,hostname:new URL(origin).hostname,action:'pane-contact',cdata:'contact'}
+  answer={success:true,hostname:new URL(origin).hostname,action:'pane-contact',cdata:binding('contact')}
   const id=crypto.randomUUID();assert.equal((await send({idempotency:id})).status,303);assert.equal((await send({idempotency:id})).status,303)
   const rows=await app.db.prepare('SELECT * FROM pane_messages').all();assert.equal(rows.results.length,1);assert.equal(rows.results[0].id,id)
   // Each form has an independent bucket. Rejected bot proofs cannot bypass it.
   let status
   for(let index=0;index<20;index++)status=(await send({'cf-turnstile-response':''})).status
   assert.equal(status,429)
-  answer.cdata='quote';assert.equal((await send({},'quote')).status,303)
+  answer.cdata=binding('requests/quote');assert.equal((await send({},'requests/quote')).status,303)
   const rejected=(await app.db.prepare('SELECT * FROM pane_form_rejections').all()).results
   for(const reason of ['honeypot','turnstile','rate','unavailable'])assert.ok(rejected.some(r=>r.reason===reason),reason)
   assert.doesNotMatch(JSON.stringify(rejected),/Private rejected words|synthetic-pane@example.test|synthetic-pane-3/)
