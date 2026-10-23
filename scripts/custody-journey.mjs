@@ -43,7 +43,19 @@ try{
  await client.goto(link);await client.getByRole('button',{name:/Confirm/}).click();await client.waitForURL(url=>url.pathname==='/app')
  for(const width of [1440,390]){
   await page.setViewportSize({width,height:1000});await page.goto(origin+'/app/sites')
-  const panel=page.getByRole('region',{name:'Site ownership',exact:true});await panel.scrollIntoViewIfNeeded();await capture(page,'handover-confirm-'+width)
+  const panel=page.getByRole('region',{name:'Site ownership',exact:true})
+  // Every ownership control remains reachable while scrolling the report grid.
+  for(const control of await panel.locator('select,input:not([type=hidden]),button').all()){
+   await control.scrollIntoViewIfNeeded()
+   assert.equal(await control.evaluate(node=>{
+    const box=node.getBoundingClientRect(),x=box.left+box.width/2,y=box.top+box.height/2
+    const top=document.elementFromPoint(x,y)
+    return node===top||node.contains(top)
+   }),true,'Ownership control must not be covered at '+width+': '+await control.getAttribute('name'))
+  }
+  await panel.getByRole('button',{name:'Transfer ownership',exact:true}).scrollIntoViewIfNeeded()
+  await page.screenshot({path:resolve(folder,'handover-controls-'+width+'.png'),fullPage:false})
+  await capture(page,'handover-confirm-'+width)
   // Existing shared tooltip: delayed hover and immediate focus on this changed screen.
   const avatar=page.locator('.avatar[data-tip]').first();await avatar.hover();await page.waitForTimeout(100);assert.equal(await page.locator('.pane-tooltip').count(),0,'Tooltip waits for the hover delay');await page.locator('.pane-tooltip').waitFor();await page.keyboard.press('Escape');await page.mouse.move(5,500);await avatar.focus();await page.locator('.pane-tooltip').waitFor();assert.equal(await page.locator('.pane-tooltip').innerText(),'Account and team');await page.keyboard.press('Escape')
  }
@@ -60,5 +72,5 @@ try{
  await client.getByRole('button',{name:'Revoke Browser proof owner',exact:true}).click();await client.waitForURL(url=>url.pathname==='/app/sites'&&url.searchParams.has('notice'))
  assert.equal((await context.request.get(origin+'/api/pane')).status(),401)
  for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await page.goto(origin+'/app');assert.equal(new URL(page.url()).pathname,'/signin');await capture(page,'handover-revoked-'+width)}
- console.log('Custody browser journey passed: factual labeled policy drafts, owner editing/publication, three-enquiry person lookup/export/erasure, native ownership handover, designer editor permissions, immediate revocation and tooltips at 1440 and 390.')
+ console.log('Custody browser journey passed: factual labeled policy drafts, owner editing and publication, three-enquiry person lookup, export and erasure, unobstructed native ownership handover, designer editor permissions, immediate revocation and tooltips at 1440 and 390.')
 }finally{await business.close();await browser.close();await fixture.stop()}
