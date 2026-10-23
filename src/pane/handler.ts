@@ -86,8 +86,9 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   if(!routeCapability(path,'POST')||!caps.includes(routeCapability(path,'POST')!))return json({error:'Your role cannot perform this action.'},403)
   if(['privacy/find','privacy/export','privacy/erase'].includes(action)){
    const email=personEmail(input.email)
-   if(action!=='privacy/find')await operatorAuth(env).requireStepUp(request,action==='privacy/export'?'export':'delete')
-   result=env.PANE_LIVE?await liveCall(env,action==='privacy/erase'?'/privacy/erase':'/privacy/find',{email,confirm:input.confirm,actor:{id:actor.id,version:actor.version}}):action==='privacy/erase'?await erasePersonData(env.DB,email,input.confirm,actor):await findPersonData(env.DB,email)
+   const privacyActor:{id:string;version:number;sessionId?:string}={id:actor.id,version:actor.version}
+   if(action!=='privacy/find'){const proof=await operatorAuth(env).requireStepUp(request,action==='privacy/export'?'export':'delete');privacyActor.sessionId=proof.id}
+   result=env.PANE_LIVE?await liveCall(env,action==='privacy/erase'?'/privacy/erase':'/privacy/find',{email,confirm:input.confirm,actor:privacyActor}):action==='privacy/erase'?await erasePersonData(env.DB,email,input.confirm,privacyActor):await findPersonData(env.DB,email)
    if(action==='privacy/export')return new Response(JSON.stringify(result,null,2),{headers:{'content-type':'application/json','content-disposition':'attachment; filename="pane-person.json"','cache-control':'no-store'}})
    if(action==='privacy/find'&&!api){const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps);data.privacyRequest=result as import('./privacy').PersonPrivacy;return document('Person privacy request',workspace(data,'/app/inquiries',''))}
    notice='Person data erased. Backup and replay fences are retained; follow up with the listed downstream services.';back='/app/inquiries'
