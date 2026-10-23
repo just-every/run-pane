@@ -109,7 +109,13 @@ try{
  }
  assert.equal((await query('SELECT COUNT(*) AS total FROM synthetic_pane_unavailable_messages'))[0].total,0)
  await query('ALTER TABLE synthetic_pane_unavailable_revisions RENAME TO pane_revisions; ALTER TABLE synthetic_pane_unavailable_messages RENAME TO pane_messages;');offline=false
- for(let index=0;index<2;index++)assert.equal((await post('/__outage-proof/scheduled',{})).status(),200)
+ result.scheduledAttempts=[]
+ for(let index=0;index<2;index++){
+  phase='native scheduled recovery '+index
+  const deadline=Date.now()+90000;let status
+  do{status=(await post('/__outage-proof/scheduled',{})).status();result.scheduledAttempts.push(status);if(status===404||status===503)await new Promise(resolve=>setTimeout(resolve,2000));else break}while(Date.now()<deadline)
+  assert.equal(status,200,phase)
+ }
  result.recovered=(await query('SELECT COUNT(*) AS total FROM pane_messages'))[0].total;assert.equal(result.recovered,2)
  for(const width of [1440,390]){
   await page.setViewportSize({width,height:1000});await page.goto(origin+'/app/inquiries')
