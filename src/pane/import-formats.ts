@@ -29,6 +29,10 @@ function fillPage(item:InventoryItem,slug:string,body:string,pages:Page[]){
 }
 function finish(format:string,name:string,description:string,pages:Page[],items:InventoryItem[],origin?:string):ImportDocument{
  const site=pages.length?normalizeSite({name,description,pages}):null
+ for(const item of items)if(item.kind==='page'&&item.targetSlug){
+  const lost=['HTML layout and paragraph structure',...(item.fidelity?.links.length?['inline link positions and labels']:[]),...(item.fidelity?.headings.length?['heading levels']:[]),...(item.fidelity?.lists.length?['list structure']:[]),...(item.fidelity?.images.length?['inline images, captions and alt text']:[]),...(item.fidelity?.buttons.length?['button controls']:[]),...(item.fidelity?.formatting.length?['rich formatting']:[])]
+  item.reason='This page maps as plain text. '+lost.join('; ')+' will not be preserved. Review the draft before publishing.'
+ }
  // Only page links with existing destinations are activated. Every other source
  // link remains visible as a fidelity exception; javascript is never executed.
  if(site)for(const item of items.filter(item=>item.targetSlug)){

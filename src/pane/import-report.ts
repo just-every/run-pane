@@ -29,9 +29,10 @@ export function migrationReport(input: ImportDocument, actual?: Site|null, phase
   const target=item.kind==='page'&&item.targetSlug&&planned.has(item.targetSlug)?pagePath(expected!,item.targetSlug):null
   const applied=phase==='applied'&&!!item.targetSlug&&observed.has(item.targetSlug)&&!!target
   const buckets=[counts[item.kind],...(item.kind==='comment'?[counts['comment:'+(['approved','pending','spam'].includes(item.state??'')?item.state:'other')]]:[])]
-  for(const count of buckets){count.source++;if(target)count.planned++;else count.exceptions++;if(applied)count.applied=(count.applied??0)+1}
+  for(const count of buckets){count.source++;if(target)count.planned++;if(!target||item.reason)count.exceptions++;if(applied)count.applied=(count.applied??0)+1}
   if(phase==='applied'){
    const fail=(check:string,reason:string)=>failures.push({id:item.id,check,reason})
+   if(target&&item.reason)fail('fidelity',item.reason)
    if(target){
     const wanted=planned.get(item.targetSlug!)!, found=observed.get(item.targetSlug!)
     if(!found)fail('inventory','Planned page is absent from the imported draft.')

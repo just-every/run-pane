@@ -148,6 +148,8 @@ Source HTML is parsed as data and never executed. Document types/entities are
 refused. No HTTP request, DNS change or old-host cutover occurs during import.
 Unknown site/page fields are named as unsupported rather than silently dropped.
 
+Before apply the report warns explicitly about each HTML page's plain-text mapping and loss of layout, heading/list/button/inline-image structure. Exception counts include partially mapped pages with fidelity warnings as well as wholly unsupported items; they are not subtracted from the planned counts.
+
 Before apply the report shows source, planned and exception counts for every
 content type, comment counts by state, the inventory/URL map, form destinations,
 unfetched media and history left with the old platform. A reviewed map is not
