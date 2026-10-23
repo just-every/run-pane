@@ -39,3 +39,13 @@ Control enabled are excluded. Draft previews are excluded too.
 
 Counts are approximate: reloads can count, bots can count, and blocked scripts
 or rate limiting can omit views. A visit is a page view, not a unique person.
+
+## Connect Vane or Google Analytics
+
+Owners and admins can connect analytics under **Site name and description** on the
+home page: the address and site ID of your Vane installation, a Google Analytics 4
+measurement ID, or both. Publish to turn them on; drafts and previews never load
+them. Vane is cookie-free and counts page views and conversion goals. Google
+Analytics shows visitors a choice, loads only after they choose **Allow
+analytics**, and sends page views and goals. Visitors who send Global Privacy
+Control or Do Not Track get neither. Clear a field and publish to disconnect.

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Connect Vane and Google Analytics 4 from the site settings: Vane counts page views and goals cookie-free; Google loads only after a visitor allows it, never for Global Privacy Control or Do Not Track. Give icon-only controls tooltips.
 - Rebuild the app as the owner-picked phone-first editor: one top bar with the site switcher and Sites, Pages, Inquiries and Moves; the page on a phone with its edit card and not-live card, the desktop preview and the five pages as bricks. Edit one page at a time instead of a pages JSON field.
 - Carry the fuchsia homepage look through the Lobby, sign-in, setup, dev sign-in and the published business site; show app times in the viewer's own zone, US style.
 - Make the demo Ortega Bakery in San Antonio, from the homepage's records, dated back from today at office hours in San Antonio.
