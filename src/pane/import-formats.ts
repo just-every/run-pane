@@ -1,7 +1,6 @@
 import { assertNoCredentials } from '../modules/import-kit/src/provenance/identity.ts'
 import { XMLParser, XMLValidator } from 'fast-xml-parser'
-import { parse } from 'parse5'
-import { htmlFidelity } from './import-html'
+import { htmlFidelity, htmlForms } from './import-html'
 import { normalizeSite } from './content'
 import { normalizePageLinks } from './page-extras'
 import { pagePath, cleanSlug } from './pages'
@@ -55,6 +54,7 @@ function wordpress(source:string):ImportDocument{
   if(kind==='page')fillPage(item,text(entry['wp:post_name']),fidelity.text,pages)
   if(/\[[a-z][\w-]*(?:[\s\]]|\/)/i.test(html))items.push({id:item.id+'-shortcodes',kind:'unsupported',title:item.title,reason:'WordPress shortcodes/plugin blocks are retained as source text, not executed.'})
   items.push(item)
+  for(const [n,action] of htmlForms(html,oldUrl??origin??'https://source.invalid').entries())items.push({id:item.id+'-form-'+n,kind:'form',title:'Form on '+item.title,...(oldUrl?{oldUrl}:{}),destination:action,reason:reasons.form})
   for(const [n,comment] of array(entry['wp:comment']).entries()){
    const state=({'1':'approved','0':'pending',spam:'spam'} as Record<string,string>)[text(comment['wp:comment_approved'])]??'other'
    items.push({id:item.id+'-comment-'+(text(comment['wp:comment_id'])||n),kind:'comment',title:'Comment on '+item.title,state,reason:reasons.comment,fields:{parent:text(comment['wp:comment_parent']),post:item.id,date:text(comment['wp:comment_date_gmt'])}})
@@ -107,14 +107,7 @@ function snapshot(raw:any):ImportDocument {
   }
   items.push(item)
   for(const [n,image] of fidelity.images.entries())items.push({id:item.id+'-image-'+n,kind:'media',title:'Source image',oldUrl:image,reason:reasons.media})
-  const root:any=parse(doc.html)
-  const forms=(node:any)=>{
-   if(node.tagName==='form'){
-    const action=node.attrs?.find((a:any)=>a.name==='action')?.value??url
-    items.push({id:item.id+'-form-'+items.length,kind:'form',title:'Form on '+item.title,oldUrl:url,destination:action,reason:reasons.form})
-   }
-   for(const child of node.childNodes??[])forms(child)
-  };forms(root)
+  for(const [n,action] of htmlForms(doc.html,url).entries())items.push({id:item.id+'-form-'+n,kind:'form',title:'Form on '+item.title,oldUrl:url,destination:action,reason:reasons.form})
  }
  for(const url of new Set([...sitemap,...posts]))if(!seen.has(url))items.push({id:'missing-'+items.length,kind:posts.has(url)?'post':'page',title:url,oldUrl:url,reason:posts.has(url)?'RSS post has no captured HTML; '+reasons.post:'Sitemap URL has no captured HTML.'})
  if(raw.format==='wix-snapshot-v1'){

@@ -22,3 +22,13 @@ export function htmlFidelity(html:string,base:string,contentOnly=false,directPar
  }
  walk(root);result.text=(directParagraphs?(root.childNodes??[]).filter((node:any)=>node.tagName==='p').map(content).join(' '):content(root)).replace(/\s+/g,' ').trim();return result
 }
+
+/** Form destinations are inventory data; no recipient or action is activated. */
+export function htmlForms(html:string,base:string):string[]{
+ const destinations:string[]=[]
+ const walk=(node:any)=>{
+  if(node.tagName==='form')destinations.push(node.attrs?.find((a:any)=>a.name==='action')?.value||base)
+  for(const child of node.childNodes??[])walk(child)
+ }
+ walk(parse(html));return destinations
+}
