@@ -36,6 +36,8 @@ authorization and recorded approval paths as the app:
 
 | Command | Additional arguments | Role |
 | --- | --- | --- |
+| `import-crawl-challenge` | `--input FILE` (source origin and provider) | Native owner or admin session only |
+| `import-crawl` | `--input FILE` (challenge and explicit confirmation) | Native owner or admin session only |
 | `import-plan` | `--input FILE` | Owner or admin |
 | `import-apply` | `--input FILE --fingerprint HASH` | Owner or admin |
 | `import-undo` | `--job ID` | Owner or admin; the job's original operator |
@@ -133,3 +135,13 @@ its activity attribution, including its tokens' IDs, while keeping events. It do
 business content or implement PRIV-002's complete person discovery or older
 account-backup fencing. ct approved the retention/anonymization policy on
 22 Oct; those boundaries keep AUDIT-001 partial. Last-owner protection is preserved.
+
+
+## Explicit published-site capture
+
+The `import-crawl-challenge` and `import-crawl` helper commands use the existing
+native session file. Scoped agent tokens cannot authorize outbound crawling.
+They do not apply content or publish. Follow the [controlled crawl steps](MOVE-IN.md#controlled-published-site-crawls)
+to prove the exact source hostname by DNS and explicitly approve each capture.
+The returned `source` is the exact export text to review and later pass to
+`import-apply`; its `plan.fingerprint` approves only those bytes.

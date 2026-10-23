@@ -36,7 +36,7 @@ async function presentedTokenId(db:D1Database,request:Request){
  return row?.id??null
 }
 export async function recordApi(db:D1Database,identity:ApiIdentity|null,request:Request,status:number){
- const known=['','prepare','autosave','publish','rollback','review','messages/update','messages/reply','messages/erase','people/erase','import/dry-run','import/apply','import/undo','activity','activity/export','tokens','tokens/create','tokens/revoke','pages','collections','roles','roles/set','roles/invite']
+ const known=['','prepare','autosave','publish','rollback','review','messages/update','messages/reply','messages/erase','people/erase','import/dry-run','import/apply','import/undo','import/crawl-challenge','import/crawl','activity','activity/export','tokens','tokens/create','tokens/revoke','pages','collections','roles','roles/set','roles/invite']
  const path=new URL(request.url).pathname,method=request.method
  const route=path==='/api/pane'?'':path.slice('/api/pane/'.length)
  const actor=identity?.operator.id??null

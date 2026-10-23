@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict'
-import {readFile,mkdir} from 'node:fs/promises'
+import {readFile,mkdir,mkdtemp,writeFile,rm} from 'node:fs/promises'
 import {resolve} from 'node:path'
+import {tmpdir} from 'node:os'
+import {execFile} from 'node:child_process'
+import {promisify} from 'node:util'
 import {chromium} from '@playwright/test'
-const fixture=await import('../tests/browser-runtime.mjs')
+const fixture=await import('../tests/import-browser-runtime.mjs')
 const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
 const context=await browser.newContext(),page=await context.newPage(),origin=fixture.origin
 const folder=resolve(process.env.PANE_SCREENSHOTS??'test-results/imports')
@@ -22,8 +25,16 @@ async function tooltip(width,name){
  await page.getByRole('tooltip').waitFor({timeout:1000});await capture(name,width)
  await page.keyboard.press('Escape');assert.equal(await page.getByRole('tooltip').count(),0)
 }
+const scratch=await mkdtemp(resolve(tmpdir(),'synthetic-pane-import-'))
 try{
- await fixture.bootstrap(context)
+ const cookie=await fixture.bootstrap(context)
+ const sessionFile=resolve(scratch,'session')
+ await writeFile(sessionFile,cookie,{mode:0o600})
+ const helper=async(command,input)=>{
+  const inputFile=resolve(scratch,'input.json');await writeFile(inputFile,JSON.stringify(input),{mode:0o600})
+  const result=await promisify(execFile)(process.execPath,['scripts/pane.mjs',command,'--origin',origin,'--session-file',sessionFile,'--input',inputFile],{maxBuffer:2000000})
+  return JSON.parse(result.stdout)
+ }
  await page.goto(origin+'/setup');await page.getByRole('checkbox').check()
  await Promise.all([page.waitForURL('**/app'),page.getByRole('button',{name:'Finish setup'}).click()])
  const starter=JSON.parse(await readFile('fixtures/static-site.json','utf8'))
@@ -74,5 +85,27 @@ try{
   const source=await readFile(`fixtures/imports/${provider}.json`,'utf8'),plan=await post('import/dry-run',{source}),job=await post('import/apply',{source,fingerprint:plan.fingerprint})
   assert.equal(job.report.counts.page.applied,2);assert.ok(job.report.inventory.some(item=>item.reason));await post('import/undo',{job:job.id})
  }
- console.log('Import journey passed at 1440/390: preflight, typed exceptions, fingerprinted unpublished apply, stored fidelity recheck, retained report/undo and hover/keyboard tooltips. Exact-candidate WXR inventory: 100 posts, 50 comments; two native pages applied. Offline provider captures and CSV exception fields reconciled separately.')
-}finally{await context.close();await browser.close();await fixture.stop()}
+ for(const provider of ['wix','webflow','framer','durable']){
+  const challenge=provider==='wix'?await helper('import-crawl-challenge',{origin:'https://synthetic-pane-1.example.com',provider}):await post('import/crawl-challenge',{origin:'https://synthetic-pane-1.example.com',provider})
+  fixture.edge.proof=challenge.record.value
+  const collections=provider==='webflow'||provider==='framer'?JSON.parse(await readFile(`fixtures/imports/${provider}.json`,'utf8')).collections:[]
+  const input={challenge:challenge.challenge,confirm:'crawl-source',collections}
+  const captured=provider==='wix'?await helper('import-crawl',input):await post('import/crawl',input)
+  assert.equal(captured.plan.report.crawl.origin,'https://synthetic-pane-1.example.com')
+  const applied=await post('import/apply',{source:captured.source,fingerprint:captured.plan.fingerprint})
+  assert.equal(applied.report.counts.page.applied,3);assert.equal((await data()).live.id,initial.id)
+  for(const width of [1440,390]){
+   await page.setViewportSize({width,height:1000});await page.goto(origin+'/app/moves')
+   const form=page.locator('form[action="/app/import/dry-run"]').filter({has:page.locator(`input[name="job"][value="${applied.id}"]`)})
+   await Promise.all([page.waitForURL('**/app/import/dry-run'),form.getByRole('button',{name:'View report'}).click()])
+   const proof=page.getByText(/^Published source crawl verified for/)
+   await proof.scrollIntoViewIfNeeded();await proof.waitFor()
+   assert.match(await proof.textContent(),/synthetic-pane-1.example.com/)
+   await page.screenshot({path:resolve(folder,`import-${provider}-verified-crawl-${width}.png`)})
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,'Verified crawl report overflow at '+width)
+   await tooltip(width,`import-${provider}-crawl-tooltip`)
+  }
+  await post('import/undo',{job:applied.id})
+ }
+ console.log('Import journey passed at 1440/390: preflight, typed exceptions, fingerprinted unpublished apply, stored fidelity recheck, retained report/undo and hover/keyboard tooltips. Exact-candidate WXR inventory: 100 posts, 50 comments; two native pages applied. Offline provider captures and CSV exception fields reconciled separately; explicit DNS-verified Wix/Webflow/Framer/Durable captures, retained proof and tooltips pass at both widths.')
+}finally{await context.close();await browser.close();await fixture.stop();await rm(scratch,{recursive:true,force:true})}

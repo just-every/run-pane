@@ -1,15 +1,17 @@
 import {test,before,after} from 'node:test'
 import assert from 'node:assert/strict'
 import {readFile} from 'node:fs/promises'
+import {crawlEdge,sourceOrigin} from './import-crawl-edge.mjs'
 import {runtime,origin,settings} from './runtime.mjs'
 import {createOperatorAuth} from '../src/modules/operator-auth/index.mjs'
 let f,owner,member
+const edge=crawlEdge()
 const source=await readFile('fixtures/imports/migration-report.json','utf8')
 const call=(action,body,cookie=owner)=>f.request('/api/pane/import/'+action,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',Cookie:cookie??''},body:JSON.stringify(body)})
 const ok=async response=>{assert.equal(response.status,200,await response.clone().text());return response.json()}
 const data=async()=>ok(await f.request('/api/pane',{headers:{Cookie:owner}}))
 before(async()=>{
- f=await runtime()
+ f=await runtime({outboundService:edge.fetch})
  const boot=await f.request('/auth/bootstrap',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({token:settings.SETUP_TOKEN,displayName:'synthetic-pane-1'})})
  assert.equal(boot.status,303);owner=boot.headers.get('set-cookie').split(';')[0]
  await f.request('/setup',{method:'POST',headers:{Cookie:owner,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
@@ -137,4 +139,69 @@ test('malformed source references stay visible as exceptions without preventing 
  assert.deepEqual((await ok(await call('dry-run',{job:job.id}))).report,job.report)
  await ok(await call('undo',{job:job.id}))
  assert.equal((await data()).draft?.id??null,before.draft?.id??null)
+})
+
+
+test('a controlled published Wix crawl proves DNS ownership before capture and retains exact-source proof through reviewed apply and undo',async()=>{
+ const before=await data(),outbound=edge.requests.length
+ const challenge=await ok(await call('crawl-challenge',{origin:sourceOrigin,provider:'wix'}))
+ assert.equal(challenge.record.name,'_pane-import.synthetic-pane-1.example.com')
+ assert.equal(edge.requests.length,outbound,'Creating a challenge does not fetch the source')
+ const input={challenge:challenge.challenge,confirm:'crawl-source'}
+ assert.equal((await call('crawl',input)).status,400,'Missing domain control is refused')
+ assert.equal(edge.requests.length,outbound)
+ edge.proof=challenge.record.value
+ const captured=await ok(await call('crawl',input)),plan=captured.plan
+ assert.equal(plan.report.crawl.origin,sourceOrigin)
+ assert.equal(plan.report.inventory.some(item=>item.id==='crawl-authority'),false)
+ assert.equal(plan.report.counts.page.source,4)
+ assert.equal(plan.report.counts.page.planned,3)
+ assert.equal(plan.report.counts.post.source,1)
+ assert.match(plan.report.inventory.find(item=>item.oldUrl===sourceOrigin+'/missing').reason,/HTTP 404/)
+ assert.ok(edge.requests.some(request=>request.url===sourceOrigin+'/discovered'))
+ assert.ok(edge.requests.every(request=>request.method==='GET'&&!request.cookie&&!request.authorization))
+ assert.deepEqual(await data(),before,'Capturing creates no revision or import job')
+ const forged=await ok(await call('dry-run',{source:captured.source+' '}))
+ assert.equal(forged.report.crawl,undefined,'Changing any byte removes the verified receipt')
+ assert.ok(forged.report.inventory.some(item=>item.id==='crawl-authority'))
+ const sourceRequests=edge.requests.length
+ const job=await ok(await call('apply',{source:captured.source,fingerprint:plan.fingerprint}))
+ assert.equal(job.report.counts.page.applied,3)
+ assert.equal(job.report.counts.post.applied,0)
+ assert.equal(job.report.crawl.origin,sourceOrigin)
+ assert.equal((await data()).live,before.live)
+ assert.deepEqual((await ok(await call('dry-run',{job:job.id}))).report,job.report)
+ await ok(await call('undo',{job:job.id}))
+ assert.equal((await data()).draft?.id??null,before.draft?.id??null)
+ assert.equal(edge.requests.length,sourceRequests,'Review, apply, reopen and undo never fetch again')
+ const activity=await ok(await f.request('/api/pane/activity',{headers:{Cookie:owner}}))
+ assert.ok(activity.some(item=>item.action==='import.crawl'&&item.subject==='crawl:'+captured.receipt.hash))
+ assert.ok(activity.some(item=>item.subject==='api:import/crawl'&&item.action==='api.POST.200'))
+})
+
+test('crawl consent and authority refuse unsafe origins, altered challenges, members and scoped tokens before outbound work',async()=>{
+ const before=edge.dnsRequests.length
+ for(const origin of ['http://synthetic-pane-1.example.com','https://127.0.0.1','https://[::1]','https://localhost','https://synthetic-pane-1.internal','https://synthetic-pane-1.example.com:8443','https://synthetic-pane-1.example.com/path','https://user:synthetic-pane-1@synthetic-pane-1.example.com'])assert.equal((await call('crawl-challenge',{origin,provider:'wix'})).status,400,origin)
+ assert.equal((await call('crawl-challenge',{origin:sourceOrigin,provider:'wix'},member)).status,403)
+ assert.equal((await call('crawl-challenge',{origin:sourceOrigin,provider:'wix'},'')).status,401)
+ const challenge=await ok(await call('crawl-challenge',{origin:sourceOrigin,provider:'wix'}))
+ assert.equal((await call('crawl',{challenge:challenge.challenge})).status,400)
+ assert.equal((await call('crawl',{challenge:challenge.challenge+'x',confirm:'crawl-source'})).status,400)
+ assert.equal((await call('crawl',{challenge:challenge.challenge,confirm:'crawl-source'},member)).status,403)
+ const token=await ok(await f.request('/api/pane/tokens/create',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',Cookie:owner},body:JSON.stringify({name:'synthetic-pane-1',scopes:['imports:write']})}))
+ const response=await f.request('/api/pane/import/crawl-challenge',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',Authorization:'Bearer '+token.token},body:JSON.stringify({origin:sourceOrigin,provider:'wix'})})
+ assert.equal(response.status,403)
+ assert.equal(edge.dnsRequests.length,before)
+})
+
+test('controlled crawls refuse private DNS and source redirects without contacting another origin',async()=>{
+ for(const mode of ['private','redirect']){
+  const challenge=await ok(await call('crawl-challenge',{origin:sourceOrigin,provider:'durable'}))
+  edge.proof=challenge.record.value;edge.address=mode==='private'?'127.0.0.1':'93.184.215.14';edge.redirect=mode==='redirect'
+  const before=edge.requests.length,response=await call('crawl',{challenge:challenge.challenge,confirm:'crawl-source'})
+  assert.equal(response.status,400)
+  const error=await response.json();assert.match(error.error,mode==='private'?/public Internet addresses/:/HTTP 302.*redirects are not followed/)
+  assert.equal(edge.requests.length-before,mode==='private'?0:1)
+ }
+ edge.address='93.184.215.14';edge.redirect=false
 })

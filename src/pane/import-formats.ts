@@ -115,7 +115,7 @@ function snapshot(raw:any):ImportDocument {
   for(const [n,image] of fidelity.images.entries())items.push({id:item.id+'-image-'+n,kind:'media',title:'Source image',oldUrl:image,reason:reasons.media})
   for(const [n,action] of htmlForms(doc.html,url).entries())items.push({id:item.id+'-form-'+n,kind:'form',title:'Form on '+item.title,oldUrl:url,destination:action,reason:reasons.form})
  }
- for(const url of new Set([...sitemap,...posts]))if(!seen.has(url))items.push({id:'missing-'+items.length,kind:posts.has(url)?'post':'page',title:url,oldUrl:url,reason:posts.has(url)?'RSS post has no captured HTML; '+reasons.post:'Sitemap URL has no captured HTML.'})
+ for(const url of new Set([...sitemap,...posts]))if(!seen.has(url))items.push({id:'missing-'+items.length,kind:posts.has(url)?'post':'page',title:url,oldUrl:url,reason:(posts.has(url)?'RSS post has no captured HTML; '+reasons.post:'Sitemap URL has no captured HTML.')+(typeof raw.captureFailures?.[url]==='string'?' '+raw.captureFailures[url]:'')})
  if(raw.format==='wix-snapshot-v1'){
   if(raw.sitemap===undefined||raw.rss===undefined)throw Error('A Wix capture needs its published URL sitemap and blog RSS.')
   items.push({id:'crawl-authority',kind:'unsupported',title:'Live crawl and domain-control proof',reason:'This upload is an offline capture. Ownership has not been verified, and the live site has not been crawled.'})

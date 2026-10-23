@@ -12,6 +12,7 @@ import { document, screens, workspace } from './views'
 import { publicPage } from './public-view'
 import { shell } from './ui/shell'
 import { moveReview, moveReport } from './ui/moves'
+import { crawlChallenge, crawlSource } from './import-crawl'
 import { planMoveIn, applyMoveIn, undoMoveIn, readMoveInReport } from './imports'
 import { replyToInquiry } from './inquiry-replies'
 import { updateInquiry } from './followups'
@@ -107,6 +108,13 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    const id=String(input.page??'')
    if(!live || !activePages(revision(live).site).some(page=>(page.id??page.slug)===id))throw Error('Published page not found.')
    await markReviewed(env.DB,id,actor.id,Date.now());result={reviewed:id};notice='Page review recorded.';back='/app/sites'
+  } else if(action==='import/crawl-challenge'||action==='import/crawl') {
+   if(scopes)return json({error:'Use a native owner or admin session to authorize an outbound crawl.'},403)
+   const current=await env.DB.prepare('SELECT version FROM oa_operators WHERE id=?').bind(actor.id).first<{version:number}>()
+   if(!current)throw Error('Active operator required.')
+   const identity={id:actor.id,role:actor.role,version:current.version}
+   if(action==='import/crawl-challenge')result=await crawlChallenge(env,identity,input)
+   else {const captured=await crawlSource(env,identity,input);result={...captured,plan:await planMoveIn(env.DB,actor,captured.source)}}
   } else if(action==='import/dry-run') {
    if(input.job){
     const saved=await readMoveInReport(env.DB,actor,String(input.job))

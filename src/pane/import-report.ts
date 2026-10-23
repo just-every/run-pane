@@ -7,13 +7,13 @@ export const importKinds = ['page','post','comment','collection-item','event','g
 export type ImportKind = typeof importKinds[number]
 export type Fidelity = { text: string; links: string[]; headings: string[]; lists: string[]; images: string[]; buttons: string[]; formatting: string[]; unresolved?: string[] }
 export type InventoryItem = { id: string; kind: ImportKind; title: string; oldUrl?: string; targetSlug?: string; state?: string; reason?: string; destination?: string; fidelity?: Fidelity; fields?: Record<string,string> }
-export type ImportDocument = { site: Site | null; items: InventoryItem[]; format: string; origin?: string }
+export type ImportDocument = { site: Site | null; items: InventoryItem[]; format: string; origin?: string; crawl?: {origin:string;verifiedAt:string} }
 export type ImportIssue = { id: string; check: string; reason: string }
 export type MigrationReport = {
  phase: 'preflight'|'applied'|'undone'; format: string;
  counts: Record<string,{source:number;planned:number;applied:number|null;exceptions:number}>;
  inventory: (InventoryItem & { target: string|null })[]; failures: ImportIssue[];
- history: string[]; ok: boolean; revision?: string
+ history: string[]; ok: boolean; revision?: string; crawl?: {origin:string;verifiedAt:string}
 }
 const normalizeText = (value: string) => value.normalize('NFC').replace(/\s+/g,' ').trim()
 
@@ -99,7 +99,7 @@ export function migrationReport(input: ImportDocument, actual?: Site|null, phase
  return {phase,format:input.format,counts,inventory,failures,history:[
   'Traffic and sales analytics history stays with the old platform; no historical metrics are imported.',
   'Source forms and notification destinations are reported only. No recipient, subscriber or marketing permission is activated.',
-  'Unsupported content and the original export stay in the import history. The old host is unchanged; no cutover or outbound fetch occurs.',
+  input.crawl?'The published source was explicitly crawled after DNS control proof. Applying this retained capture makes no further source request or cutover.':'Unsupported content and the original export stay in the import history. The old host is unchanged; no cutover or outbound fetch occurs.',
   'Old URLs are a reviewed map only. Redirects on the old domain need a separate verified cutover; this import does not change DNS.'
- ],ok:phase==='applied'&&failures.length===0,...(revision?{revision}:{})}
+ ],...(input.crawl?{crawl:input.crawl}:{}),ok:phase==='applied'&&failures.length===0,...(revision?{revision}:{})}
 }

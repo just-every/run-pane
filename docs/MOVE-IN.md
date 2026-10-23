@@ -21,7 +21,7 @@ itself. To remove that imported draft, the operator who applied it can choose
 restore another revision first. An import that has changed since application
 is protected by a conflict refusal. Undo retains its source and journal.
 
-The importer accepts pasted exports, not a website address or an HTML folder.
+The workspace paste importer accepts exports rather than an address or an HTML folder. The authenticated helper can also capture a published site after the explicit DNS proof described below.
 The additional documented WXR and capture formats are described below. For another route, your agent can use
 [the authenticated helper](AGENT.md).
 
@@ -202,5 +202,58 @@ current editor's variable inventory (at least one valid page, no fixed five-page
 requirement), with the existing title/body limits. An inventory-only import with
 no supported pages creates no native page revision. See
 [documented source fixtures](../fixtures/imports/README.md) for boundaries and
-examples. No live crawler, native CMS, original-media storage or arbitrary
-old-domain redirects are supplied by these readers.
+examples. These offline readers supply no network authority, native CMS, original-media storage or arbitrary
+old-domain redirects.
+
+
+## Controlled published-site crawls
+
+A native owner or admin can explicitly capture a Wix, Webflow, Framer or Durable
+published site through the authenticated helper. The adopted conservative default
+is pending ct approval under IMPORT-003/004: scoped tokens and members cannot
+start crawls; only the exact DNS-controlled public HTTPS origin is fetched;
+there is no automatic capture, form submission, media fetch, redirect following,
+DNS write, cutover or publication. Source requests send no installation cookie
+or Authorization header. Cloudflare's public DNS-over-HTTPS resolver checks the
+TXT proof and screens public A/AAAA answers before each source request.
+
+1. Save a private JSON input such as
+   `{"origin":"https://your-old-site.example","provider":"wix"}`. Supported
+   providers are `wix`, `webflow`, `framer` and `durable`.
+2. Run `node scripts/pane.mjs import-crawl-challenge --origin INSTALLATION_ORIGIN --session-file PRIVATE_SESSION --input PRIVATE_INPUT`.
+   Publish the returned TXT record at `_pane-import.SOURCE_HOSTNAME` yourself.
+   No source page has been requested. The challenge binds the exact origin,
+   provider, native operator and account version and expires after 15 minutes.
+3. Save a second private JSON input containing the returned `challenge` and
+   `"confirm":"crawl-source"`. For Wix, `/blog-feed.xml` is the default RSS
+   path; set `rssPath` to another same-origin path if needed. Webflow/Framer
+   inputs may also include the named `collections` CSV exports documented above.
+4. Run `node scripts/pane.mjs import-crawl --origin INSTALLATION_ORIGIN --session-file PRIVATE_SESSION --input PRIVATE_INPUT`.
+   The server checks the DNS proof before any source page request. It reads
+   `/sitemap.xml` (including up to ten child sitemaps), the Wix RSS, and HTML
+   pages discovered through same-origin links. No source script runs.
+5. Read `plan.report`, save the returned `source` string as an export file,
+   preview its mapped pages, and apply only with `plan.fingerprint` through the
+   existing `import-apply` command. A crawl itself creates no revision/import job.
+   An ordinary `import-plan` of those exact bytes returns the same reviewed plan.
+6. Undo through the normal unpublished-draft door. The retained report keeps
+   the exact actor-bound capture receipt, including after undo. It does not
+   authorize any future network request; another capture needs another explicit
+   confirmation and a still-valid proof. Remove the temporary DNS TXT record
+   when finished. Pane never changes it for you.
+
+Captures stop at 100 discovered URLs, 120 source requests, a 45-second crawl
+window, 100 KB per HTML page and the import's 512,000-byte source limit. A source
+that exceeds the URL/map/export limits is refused. Unfetched individual pages,
+HTTP failures, denied redirects and oversized pages remain in the inventory
+with reasons. RSS contributes every post URL even if its HTML cannot be captured.
+Native posts/comments/collections, responsive media and live old-URL redirects
+remain explicit exceptions, so these import clauses stay partial.
+
+The receipt is bound to the captured bytes' SHA-256 and the operator, held in
+`pane_import_crawls`, and included in installation archives. It contains public
+source-origin/provider/time metadata and no DNS challenge or session credential.
+The owner-readable audit records the explicit capture using its opaque hash.
+An uploaded capture with changed bytes or invented provenance cannot inherit a
+verified receipt. No live provider/sandbox receipt is claimed by the synthetic
+DNS/source-network fixtures.

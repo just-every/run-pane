@@ -1,21 +1,29 @@
 import type { D1Database } from '../modules/import-kit/src/d1/types.ts'
 import { planD1Import, createD1ImportJob, applyD1ImportBatches, undoD1Import, readD1ImportOriginals, readD1ImportJob } from '../modules/import-kit/src/d1/index.ts'
+import { sha256 } from '../modules/import-kit/src/provenance/identity.ts'
 import { moveInSource } from './import-source'
 import { moveInContext, type ImportActor } from './import-authority'
 import { migrationReport } from './import-report'
 import type { Site } from './model'
 import { Buffer } from 'node:buffer'
 
+async function sourceWithReceipt(db:D1Database,source:string,actor:string) {
+ const input=await moveInSource(source,actor)
+ const receipt=await db.prepare('SELECT origin,verified_at FROM pane_import_crawls WHERE hash=? AND actor=?').bind(sha256(source),actor).first<{origin:string;verified_at:string}>()
+ if(receipt){input.document.crawl={origin:receipt.origin,verifiedAt:receipt.verified_at};input.document.items=input.document.items.filter(item=>item.id!=='crawl-authority')}
+ return input
+}
+
 /** SELECT-only dry run. The complete Base plan carries the reviewed fingerprint. */
 export async function planMoveIn(db: D1Database, actor: ImportActor, source: string) {
   const context = await moveInContext(db, actor)
-  const input = await moveInSource(source, actor.id)
+  const input = await sourceWithReceipt(db,source,actor.id)
   return {...await planD1Import(input.source, input.mapping, context), site: input.document.site, report: migrationReport(input.document)}
 }
 
 export async function applyMoveIn(db: D1Database, actor: ImportActor, source: string, reviewedFingerprint: string) {
   const context = await moveInContext(db, actor)
-  const input = await moveInSource(source, actor.id)
+  const input = await sourceWithReceipt(db,source,actor.id)
   const plan = await planD1Import(input.source, input.mapping, context)
   const reviewed = { ...context, reviewedFingerprint }
   const job = await createD1ImportJob(plan, reviewed)
@@ -42,7 +50,7 @@ export async function readMoveInReport(db:D1Database,actor:ImportActor,id:string
  const original=originals.find(item=>item.kind==='artifact')
  if(!original||original.original.status!=='retained')throw Error('Import source is unavailable after erasure.')
  const source=Buffer.from(original.original.base64,'base64').toString('utf8')
- const input=await moveInSource(source,actor.id)
+ const input=await sourceWithReceipt(db,source,actor.id)
  const row=await db.prepare('SELECT site FROM pane_revisions WHERE id=?').bind(input.targetId).first<{site:string}>()
  return {id, state:job.state, fingerprint:job.fingerprint, report:migrationReport(input.document,row?JSON.parse(row.site) as Site:null,job.state==='undone'?'undone':'applied',input.targetId)}
 }
