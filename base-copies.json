@@ -1307,6 +1307,15 @@
       },
       "modes": {
         "src/server.dev.ts": "100644"
+      },
+      "adapted": {
+        "src/server.dev.ts": "4280971d7c0295b8a88c3e1179048efcbbe14f30"
+      },
+      "acknowledged": {
+        "src/server.dev.ts": {
+          "sha256": "c4fba9631b327c9ae96258c70f0101ecffa38adba8736b9c10b5f5c3426ca6d8",
+          "mode": "100644"
+        }
       }
     },
     {
