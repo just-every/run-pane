@@ -28,7 +28,7 @@ await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0
 export const origin = 'http://127.0.0.1:' + server.address().port
 f = await runtime({bindings: {AUTH_ORIGIN: origin},isolatedLive:process.env.PANE_LIVE_FIXTURE==='1'})
 export async function protect(context){
- await context.route('https://challenges.cloudflare.com/turnstile/v0/api.js**',route=>route.fulfill({contentType:'application/javascript',body:`window.turnstile={render(slot,options){if(!/^[a-f0-9]{64}$/.test(options.cData))return options['error-callback']();options.callback('synthetic-pane-3')}}`}))
+ await context.route('https://challenges.cloudflare.com/turnstile/v0/api.js**',route=>route.fulfill({contentType:'application/javascript',body:`window.turnstile={render(slot,options){if(!/^[a-f0-9]{64}$/.test(options.cData))return options['error-callback']();options.callback('synthetic-pane-3:'+options.cData)}}`}))
 }
 export async function bootstrap(context){
  await protect(context)
