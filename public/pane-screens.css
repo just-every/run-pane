@@ -41,7 +41,8 @@
 .rer-themed .pane .revision-card p { font-size: 13px; }
 .pane .decisions { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .pane .decisions li { padding: 3px 10px; border-radius: 999px; background: var(--pn-tint); color: var(--pn-ink); font-size: 12px; font-weight: 600; }
-.pane .visits-card { position: sticky; top: 76px; }
+/* Reports share the grid with later tools; keep them in flow so no control is covered. */
+.pane .visits-card { position: static; }
 .pane .visits-card .help { margin: -6px 0 12px; }
 .pane .visit-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .pane .visit-list li { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 10px; font-size: 14px; }
@@ -122,3 +123,9 @@
 .pane .search-checks h3 { margin-bottom: 8px; }
 .pane .search-checks small { font-weight: 400; }
 .pane .search-checks li { margin: 8px 0; }
+
+/* Long admitted-user names and emails must fit the existing ownership card. */
+.pane [aria-label="Site ownership"], .pane [aria-label="Site ownership"] :is(form,label,select,input) { min-width: 0; max-width: 100%; box-sizing: border-box; }
+.pane [aria-label="Site ownership"] { overflow-wrap: anywhere; }
+.pane [aria-label="Site ownership"] select, .pane [aria-label="Site ownership"] input[type=email] { width: 100%; }
+.pane [aria-label="Site ownership"] button { max-width: 100%; white-space: normal; }

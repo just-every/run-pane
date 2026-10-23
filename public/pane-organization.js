@@ -10,7 +10,7 @@ for (const organizer of document.querySelectorAll('[data-page-organization]')) {
  const form = organizer.closest('form')
  const savedSlugs = new Map(state.pages.map(page => [page.id, page.slug]))
  const text = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]))
- const cleanSlug = value => value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 120).replace(/^-+|-+$/g, '')
+ const cleanSlug = value => value.split('/').map(part=>part.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')).filter(Boolean).join('/').slice(0,240).replace(/[-/]+$/g,'')
  const activePages = () => state.pages.filter(page => !page.deleted)
  const announce = message => { status.textContent = message }
 
@@ -58,7 +58,7 @@ for (const organizer of document.querySelectorAll('[data-page-organization]')) {
    <div class="page-organization-row-head"><strong>${text(pageLabel)}</strong>${page.deleted ? '<span class="page-organization-deleted">Deleted</span>' : ''}${savedSlug !== undefined && !page.deleted ? `<a href="/app?page=${encodeURIComponent(savedSlug)}">Open saved page</a>` : ''}</div>
    <div class="page-organization-fields">
    <label>Title<input data-page-field="title" value="${text(page.title)}" maxlength="120"${page.deleted ? ' disabled' : ' required'}></label>
-   <label>Address<input data-page-field="slug" value="${text(page.slug)}" pattern="[a-z0-9]+(-[a-z0-9]+)*" maxlength="120" autocomplete="off" autocapitalize="none" spellcheck="false"${page.deleted ? ' disabled' : ' required'}></label>
+   <label>Address<input data-page-field="slug" value="${text(page.slug)}" pattern="[a-z0-9]+(-[a-z0-9]+)*(\\x2f[a-z0-9]+(-[a-z0-9]+)*)*" maxlength="240" autocomplete="off" autocapitalize="none" spellcheck="false"${page.deleted ? ' disabled' : ' required'}></label>
    <label>Folder<input data-page-field="folder" value="${text(page.folder)}" list="${text(folderOptions.id)}" maxlength="120" autocomplete="off"${page.deleted ? ' disabled' : ''}></label>
    </div>
    <div class="page-organization-row-actions">${page.deleted ? `<button type="button" class="secondary small" data-page-action="restore" aria-label="Restore ${text(pageLabel)}">Restore page</button>` : `<label class="page-organization-check"><input type="checkbox" data-page-field="hidden"${page.hidden ? ' checked' : ''}>Hidden from menus</label>
@@ -81,7 +81,7 @@ for (const organizer of document.querySelectorAll('[data-page-organization]')) {
   let slug = address, suffix = 2
   while (state.pages.some(page => page.slug === slug)) {
    const ending = `-${suffix++}`
-   slug = address.slice(0, 120 - ending.length).replace(/-+$/g, '') + ending
+   slug = address.slice(0, 240 - ending.length).replace(/[-/]+$/g, '') + ending
   }
   const page = { id: crypto.randomUUID(), slug, title }
   state.pages.push(page)

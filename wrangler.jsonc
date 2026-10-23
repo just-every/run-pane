@@ -6,13 +6,33 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
-  "triggers": {"crons": ["* * * * *"]},
+  "triggers": {
+    "crons": [
+      "* * * * *"
+    ]
+  },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "foundation",
       "database_id": "local-foundation-only",
       "migrations_dir": "migrations/core"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "PANE_LIVE",
+        "class_name": "PaneLive"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "pane-live-v1",
+      "new_sqlite_classes": [
+        "PaneLive"
+      ]
     }
   ]
 }

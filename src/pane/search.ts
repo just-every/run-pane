@@ -1,3 +1,4 @@
+import { liveSnapshot } from './outage'
 import { capabilities } from './roles'
 import { activePages, homeSlug, pagePath } from './pages'
 import { operatorAuth, runtimeBindings, type Bindings } from '../auth.server'
@@ -8,6 +9,7 @@ import { escape } from './ui/kit'
 import { searchView } from './search-view'
 
 async function liveRevision(env: Bindings): Promise<Revision | null> {
+ if(env.PANE_LIVE)return liveSnapshot(env)
  const row = await env.DB.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first()
  return row ? revision(row) : null
 }

@@ -19,7 +19,7 @@ try {
  const revision=(await prepared.json()).id
  assert.equal((await context.request.post(origin+'/api/pane/publish',{headers:{Origin:origin},data:{revision}})).status(),200)
  const messageId=crypto.randomUUID()
- await context.request.post(origin+'/site/contact',{headers:{Origin:origin},form:{idempotency:messageId,name:'Synthetic enquirer',email:'synthetic-pane-1@example.test',message:'Synthetic enquiry',website:''}})
+ await context.request.post(origin+'/site/contact',{headers:{Origin:origin},form:{'cf-turnstile-response':'synthetic-pane-3',idempotency:messageId,name:'Synthetic enquirer',email:'synthetic-pane-1@example.test',message:'Synthetic enquiry',website:''}})
  const people={}
  for(const role of ['editor','inbox','reporting']){
   const link=await fixture.invitePerson(context,{email:'synthetic-pane-'+role+'@example.test',displayName:'Synthetic '+role,roles:[role]})

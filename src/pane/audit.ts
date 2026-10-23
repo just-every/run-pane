@@ -1,3 +1,5 @@
+import { wireDatabase } from '@runeditrun/rer/internal/modules/d1-transport/index.mjs'
+import { erasureStatements,invalidateTransfersStatements } from '@runeditrun/rer/internal/modules/portability/journal.mjs'
 /** Request-local attribution is installed and removed inside each D1 transaction.
  * Triggers therefore record the successful change atomically, without modifying
  * Base copies or allowing concurrent requests to borrow another actor. */
@@ -43,7 +45,9 @@ export async function erasePerson(db:D1Database,id:string,confirm:unknown) {
  if(confirm!=='erase-person')throw Error('Explicit erase-person confirmation required.')
  const person=await db.prepare("SELECT id FROM oa_operators WHERE id=? AND role!='owner'").bind(id).first()
  if(!person)throw Error('Choose a non-owner person.')
+ const wire=wireDatabase(db)
  await db.batch([
+  ...await erasureStatements(wire,'rer_portability_state',{id:1}),...await invalidateTransfersStatements(wire),
   db.prepare(`UPDATE pane_audit_context SET valid=CASE WHEN EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND role!='owner')
    AND EXISTS(SELECT 1 FROM oa_operators WHERE id=pane_audit_context.actor AND role='owner' AND status='active') THEN 1 ELSE 0 END WHERE id=1`).bind(id),
   db.prepare('INSERT OR IGNORE INTO pane_anonymized_people(id) VALUES(?)').bind(id),

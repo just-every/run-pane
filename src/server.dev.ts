@@ -1,3 +1,4 @@
+export { PaneLive } from './pane/outage'
 // Local-only Worker entry. vite.config.ts loads it only for `vite dev`; the
 // deployed main stays src/server.ts, and `rer build` refuses any output that
 // contains the dev layer. It adds dev sign-in, personas and the Dev title and name suffix.

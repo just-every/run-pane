@@ -163,8 +163,10 @@ test('PRIV-004: current Pane workspace, preview, live, search and not-found docu
   assert.equal(response.headers.get('referrer-policy'), 'same-origin', path)
   assert.equal(response.headers.get('permissions-policy'), 'camera=(), microphone=(), geolocation=()', path)
   const csp = response.headers.get('content-security-policy')
-  for (const directive of ["default-src 'none'", "script-src 'self'", "connect-src 'self'", "form-action 'self'", "base-uri 'none'", "frame-ancestors 'none'"]) assert.ok(csp.split(';').map(s => s.trim()).includes(directive), path + ': ' + directive)
-  assert.doesNotMatch(csp, /https?:|unsafe-eval|\*/, path + ': no external hosts or wildcard sources')
+  const challenge=path==='/site/contact'?' https://challenges.cloudflare.com':''
+  for (const directive of ["default-src 'none'", "script-src 'self'"+challenge, "connect-src 'self'"+challenge, "form-action 'self'", "base-uri 'none'", "frame-ancestors 'none'",...(challenge?['frame-src https://challenges.cloudflare.com']:[])]) assert.ok(csp.split(';').map(s => s.trim()).includes(directive), path + ': ' + directive)
+  assert.deepEqual(csp.match(/https?:\/\/[^ ;]+/g)??[],challenge?Array(3).fill('https://challenges.cloudflare.com'):[],path+': only the mandatory contact verifier may add an external host')
+  assert.doesNotMatch(csp, /unsafe-|\*/, path + ': no unsafe or wildcard sources')
  }
 })
 

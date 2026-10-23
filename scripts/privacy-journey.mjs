@@ -10,6 +10,7 @@ const browser = await chromium.launch({headless: true, args: ['--use-mock-keycha
 const context = await browser.newContext(), page = await context.newPage()
 const origin = fixture.origin
 const site = JSON.parse(await readFile('fixtures/static-site.json', 'utf8'))
+site.pages.push({slug:'requests/quote',kind:'contact',title:'Request a quote',body:'Tell us about your project.'})
 async function capture(name) {
  await page.screenshot({path: resolve(folder, name + '.png'), fullPage: true})
  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 2), false, name + ' overflow')
@@ -36,7 +37,8 @@ try {
   await page.getByText('External embed', {exact: true}).click()
   await page.getByLabel('Embed title', {exact: true}).fill('A look inside our workshop')
   await page.getByLabel('Embed URL', {exact: true}).fill('https://www.youtube-nocookie.com/embed/synthetic-pane-' + width)
-  await page.waitForFunction(() => document.querySelector('[data-save-status]').textContent === 'Draft saved. Not published.')
+  await page.waitForFunction(() => /Draft saved|Draft not saved|Complete the required|Conflict:/.test(document.querySelector('[data-save-status]').textContent))
+  assert.equal(await page.locator('[data-save-status]').innerText(),'Draft saved. Not published.',JSON.stringify(await page.locator('input:invalid,textarea:invalid,select:invalid').evaluateAll(nodes=>nodes.map(node=>({name:node.name,message:node.validationMessage})))))
   await page.reload()
   await page.getByText('External embed', {exact: true}).click()
   await capture('embed-editor-' + width)
@@ -74,6 +76,27 @@ try {
   assert.equal(await page.locator('iframe').count(), 0)
   await capture('embed-gpc-' + width)
   await context.setExtraHTTPHeaders({})
+ }
+ // The spam review and the real contact form use the same first-party controls at both widths.
+ for(const width of [1440,390]){
+  await page.setViewportSize({width,height:1000});await page.goto(origin+'/site/contact')
+  await page.getByLabel('Your name',{exact:true}).fill('Synthetic visitor')
+  await page.getByLabel('Email address',{exact:true}).fill('synthetic-pane@example.test')
+  await page.getByLabel('Message',{exact:true}).fill('A normal verified enquiry')
+  await capture('spam-contact-'+width)
+  await Promise.all([page.waitForURL(url=>url.searchParams.has('sent')),page.getByRole('button',{name:'Send message'}).click()])
+  await page.goto(origin+'/site/requests/quote')
+  await page.getByLabel('Your name',{exact:true}).fill('Synthetic nested visitor')
+  await page.getByLabel('Email address',{exact:true}).fill('synthetic-pane-nested@example.test')
+  await page.getByLabel('Message',{exact:true}).fill('A verified nested quote request')
+  await capture('spam-nested-form-'+width)
+  await Promise.all([page.waitForURL(url=>url.searchParams.has('sent')),page.getByRole('button',{name:'Send message'}).click()])
+  const refused=await context.request.post(origin+'/site/contact',{headers:{Origin:origin},form:{idempotency:crypto.randomUUID(),name:'Synthetic visitor',email:'synthetic-pane@example.test',message:'Rejected words',website:'synthetic-pane-4'}})
+  assert.equal(refused.status(),403)
+  await page.goto(origin+'/app/inquiries');await page.getByRole('region',{name:'Spam protection review'}).scrollIntoViewIfNeeded()
+  assert.match(await page.getByRole('region',{name:'Spam protection review'}).innerText(),/honeypot/)
+  assert.equal(await page.locator('button,a').evaluateAll(nodes=>nodes.filter(n=>!n.textContent.trim()&&n.querySelector('svg')&&!n.dataset.tip).length),0,'Every icon-only control has a tooltip')
+  await capture('spam-review-'+width)
  }
  console.log('Privacy browser journey passed: owner revision approval, page-only CSP, inert previews, consent, GPC, opaque sandbox and API refusal at 1440 and 390.')
 } finally { await browser.close(); if (ownsFixture) await fixture.stop() }
