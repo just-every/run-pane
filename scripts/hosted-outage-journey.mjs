@@ -57,8 +57,8 @@ export default {
 await writeFile(wrapperPath,wrapper);await writeFile(configPath,JSON.stringify({...config,main:wrapperName}))
 const inputs={...process.env,OWNER_EMAIL:'synthetic-pane-proof@example.test',SESSION_SECRET:randomBytes(48).toString('base64url'),SETUP_TOKEN:randomBytes(48).toString('base64url'),MAIL_API_KEY:'synthetic-pane-4'}
 const command=verb=>ownerCommand([verb,'--declaration',declarationPath,'--environment',environment,'--product','','--state',statePath],inputs,{cwd:root,fetch:network,notice:()=>{}})
-let browser,state,dbId,offline=false,proofError,cleanupError
-const result={journey:'Hosted outage journey',sourceSha:sha,adapterSha256:createHash('sha256').update(wrapper).digest('hex'),providerEdge:'synthetic Turnstile verification',livePages:[],viewports:[1440,390],accepted:0,recovered:0,removed:false}
+let browser,state,dbId,offline=false,proofError,cleanupError,phase='deploy'
+const result={journey:'Hosted outage journey',sourceSha:sha,adapterSha256:createHash('sha256').update(wrapper).digest('hex'),providerEdge:'synthetic Turnstile verification',livePages:[],viewports:[1440,390],accepted:0,recovered:0,removed:false,assetResponses:[]}
 async function query(sql){
  const response=await network('https://api.cloudflare.com/client/v4/accounts/'+process.env.CLOUDFLARE_ACCOUNT_ID+'/d1/database/'+dbId+'/query',{method:'POST',headers:{Authorization:'Bearer '+process.env.CLOUDFLARE_API_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({sql})})
  const body=await response.json();assert.equal(response.status,200);assert.equal(body.success,true);return body.result[0].results
@@ -70,6 +70,7 @@ try{
  const origin=state.receipt.origin
  browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic'],...(process.env.HTTPS_PROXY?{proxy:{server:process.env.HTTPS_PROXY}}:{})})
  const context=await browser.newContext(),page=await context.newPage()
+ page.on('response',response=>{const url=new URL(response.url());if(url.origin===origin&&/\.(css|js|woff2)$/.test(url.pathname))result.assetResponses.push({path:url.pathname,status:response.status(),type:response.headers()['content-type']??''})})
  await context.route('https://challenges.cloudflare.com/turnstile/v0/api.js**',route=>route.fulfill({contentType:'application/javascript',body:"window.turnstile={render(slot,options){options.callback('synthetic-pane-3')}}"}))
  const post=(path,data)=>context.request.post(origin+path,{headers:{Origin:origin},data,maxRedirects:0})
  const boot=await post('/auth/bootstrap',{token:inputs.SETUP_TOKEN,displayName:'Synthetic hosted owner'});assert.equal(boot.status(),303)
@@ -81,12 +82,15 @@ try{
  for(const width of [1440,390]){
   await page.setViewportSize({width,height:1000})
   for(const item of site.pages){
+   phase='live '+item.slug+' at '+width
    const response=await page.goto(origin+(item.slug==='home'?'/site':'/site/'+item.slug))
-   assert.equal(response.status(),200);assert.equal(await page.getByRole('heading',{name:item.title,exact:true}).count(),1)
+   await page.screenshot({path:resolve(folder,'hosted-outage-'+item.slug+'-'+width+'.png'),fullPage:true})
+   assert.equal(response.status(),200,phase+' HTTP status');assert.equal(await page.getByRole('heading',{name:item.title,exact:true}).count(),1,phase+' heading')
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false)
    await page.screenshot({path:resolve(folder,'hosted-outage-'+item.slug+'-'+width+'.png'),fullPage:true})
    if(width===1440)result.livePages.push(item.slug)
   }
+  phase='form at '+width
   await page.getByLabel('Your name',{exact:true}).fill('Synthetic outage '+width)
   await page.getByLabel('Email address',{exact:true}).fill('synthetic-pane-outage@example.test')
   await page.getByLabel('Message',{exact:true}).fill('Hosted durable enquiry '+width)
@@ -112,7 +116,9 @@ finally{
  }catch(error){cleanupError=error}
  await writeFile(configPath,configBytes);await rm(wrapperPath,{force:true})
  await proxy?.close()
- result.status=proofError||cleanupError?'failed':'success'
+ result.status=proofError||cleanupError?'failed':'success';result.phase=phase
+ if(proofError&&typeof proofError.actual==='number')result.actual=proofError.actual
+ if(proofError&&typeof proofError.expected==='number')result.expected=proofError.expected
  if(proofError){result.failure=proofError.message.split('\n')[0];result.providerFailure=providerFailure(proofError,text=>['CLOUDFLARE_API_TOKEN','CLOUDFLARE_ACCOUNT_ID','SESSION_SECRET','SETUP_TOKEN','MAIL_API_KEY'].reduce((clean,key)=>inputs[key]?clean.split(inputs[key]).join('[REDACTED]'):clean,String(text)))}
  if(cleanupError)result.cleanupFailure=cleanupError.message.split('\n')[0]
  await writeFile(resolve(folder,'receipt.json'),JSON.stringify(result,null,2)+'\n')
