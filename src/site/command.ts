@@ -10,8 +10,8 @@ export function commandGroups(words: string[]): string[][] {
   return words.length > 2 && isPathArgument(last) ? [words.slice(0, -1), [last]] : [words]
 }
 
-/** Base's /run marks each inline command word as a code-word span; regroup them so the command keeps together. */
+/** Base's /run marks words or groups as code-word spans; regroup their words so the command keeps together. */
 export const keepCommands = (html: string): string => html.replace(/<code>((?:<span class="code-word">[^<]*<\/span> ?)+)<\/code>/g, (_match, body: string) => {
-  const words = [...body.matchAll(/<span class="code-word">([^<]*)<\/span>/g)].map(match => match[1])
+  const words = [...body.matchAll(/<span class="code-word">([^<]*)<\/span>/g)].flatMap(match => match[1].split(/\s+/))
   return `<code>${commandGroups(words).map(group => `<span class="pn-cmd">${group.join(' ')}</span>`).join(' ')}</code>`
 })
