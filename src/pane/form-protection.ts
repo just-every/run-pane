@@ -1,7 +1,9 @@
+import { liveCall } from './outage'
 import type { Bindings } from '../auth.server'
 export type FormRejection = {id:string;form:string;reason:string;created_at:string}
-export async function rejectForm(db:D1Database,form:string,reason:FormRejection['reason']) {
- await db.prepare('INSERT INTO pane_form_rejections(id,form,reason,created_at) VALUES(?,?,?,?)').bind(crypto.randomUUID(),form,reason,new Date().toISOString()).run()
+export async function rejectForm(env:Bindings,form:string,reason:FormRejection['reason']) {
+ if(env.PANE_LIVE)await liveCall(env,'/reject',{form,reason})
+ else await env.DB.prepare('INSERT INTO pane_form_rejections(id,form,reason,created_at) VALUES(?,?,?,?)').bind(crypto.randomUUID(),form,reason,new Date().toISOString()).run()
  const unavailable=reason==='unavailable'
  return Response.json({error:unavailable?'Message not sent. Verification is unavailable; please try again later.':reason==='rate'?'Message not sent. Please try again in a minute.':'Message not sent. Spam verification failed; please try again.'},{status:unavailable?503:reason==='rate'?429:403,headers:{'cache-control':'no-store'}})
 }

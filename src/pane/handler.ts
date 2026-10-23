@@ -1,4 +1,5 @@
 import { requestPageReview, publishPage } from './page-review'
+import { liveCall } from './outage'
 import { capabilities, permittedDashboard, routeCapability, assignRoles, inviteRoles } from './roles'
 import { apiIdentity, createToken } from './api-tokens'
 import { activity, erasePerson } from './audit'
@@ -67,6 +68,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   }
   if(request.method==='GET') {
    const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps)
+   if(env.PANE_LIVE&&['owner','admin'].includes(actor.role)){const review=await env.PANE_LIVE.get(env.PANE_LIVE.idFromName('published-site')).fetch('https://pane.internal/review');Object.assign(data,await review.json())}
    if(api&&path!=='/api/pane')return json({error:'Not found.'},404)
    if(api)return json(scopes?{role:actor.role,draft:data.draft?{id:data.draft.id}:null,live:data.live?{id:data.live.id}:null}:{...data,activity:undefined})
    if(!screens[path])return json({error:'Not found.'},404)
@@ -105,7 +107,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   } else if(action==='page-publish') {
    result=await publishPage(env.DB,actor.id,String(input.base??''),String(input.page??''),String(input.request??''));notice='Selected page published. Other drafts are kept.';back='/app?page='+encodeURIComponent(String(input.slug??''))
   } else if(action==='publish'||action==='rollback') {
-   result=await publish(env.DB,actor.id,String(input.revision),action)
+   result=env.PANE_LIVE?await liveCall(env,'/publish',{actor:actor.id,id:String(input.revision),action}):await publish(env.DB,actor.id,String(input.revision),action)
    notice=action==='publish'?'Published. Your approval is recorded.':'Rolled back. Your approval is recorded.'
    if(action==='rollback')back='/app/sites'
   } else if(action==='review') {
