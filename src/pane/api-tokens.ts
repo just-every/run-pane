@@ -39,8 +39,10 @@ export async function recordApi(db:D1Database,identity:ApiIdentity|null,request:
  const known=['','prepare','autosave','publish','rollback','review','messages/update','messages/reply','messages/erase','people/erase','import/dry-run','import/apply','import/undo','import/crawl-challenge','import/crawl','activity','activity/export','tokens','tokens/create','tokens/revoke','pages','collections','roles','roles/set','roles/invite']
  const path=new URL(request.url).pathname,method=request.method
  const route=path==='/api/pane'?'':path.slice('/api/pane/'.length)
- const actor=identity?.operator.id??null
+ const actor=identity?.operator.id??null,agent=identity?.tokenId??await presentedTokenId(db,request)
+ // A caller with neither a session nor a stored token has nothing to attribute, so it never grows the log.
+ if(!actor&&!agent)return
  await db.prepare(`INSERT INTO pane_activity(actor,action,subject,created_at,agent) VALUES(
   CASE WHEN ? IN (SELECT id FROM pane_anonymized_people) THEN NULL ELSE ? END,?,?,?,?)`)
-  .bind(actor,actor,'api.'+(method==='GET'?'GET':method==='POST'?'POST':'OTHER')+'.'+status,'api:'+(known.includes(route)?route||'status':'unknown'),new Date().toISOString(),identity?.tokenId??await presentedTokenId(db,request)).run()
+  .bind(actor,actor,'api.'+(method==='GET'?'GET':method==='POST'?'POST':'OTHER')+'.'+status,'api:'+(known.includes(route)?route||'status':'unknown'),new Date().toISOString(),agent).run()
 }

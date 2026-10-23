@@ -801,6 +801,21 @@ test('scoped agent tokens intersect native authority and audit allowed, denied, 
  }finally{await app.mf.dispose()}
 })
 
+test('API calls without a recognized credential add nothing to the activity log',async()=>{
+ const app=await runtime()
+ try {
+  const cookie=(await app.request('/auth/bootstrap',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})})).headers.get('set-cookie').split(';')[0]
+  const log=async()=> (await app.request('/api/pane/activity',{headers:{Cookie:cookie}})).json()
+  const before=await log()
+  for(const headers of [{},{Cookie:'synthetic-pane-1=0'},{Authorization:'Bearer '+'synthetic-pane-2'.padEnd(43,'0')},{Authorization:'synthetic-pane-3'}])
+   for(let i=0;i<5;i++)assert.equal((await app.request('/api/pane',{headers})).status,401)
+  assert.equal((await app.request('/api/pane/prepare',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({site:fixture})})).status,401)
+  const after=await log()
+  assert.deepEqual(after.slice(0,before.length),before)
+  assert.deepEqual(after.slice(before.length).map(row=>[row.action,row.subject,row.actor]),[['api.GET.200','api:activity','Synthetic owner']],'Only the owner\'s own read is added')
+ } finally {await app.mf.dispose()}
+})
+
 test('the real helper uses an authorized admin private session file for status, prepare and import and refuses publication',async()=>{
  const {createServer}=await import('node:http'),{spawn}=await import('node:child_process')
  const {mkdtemp,writeFile,chmod,rm}=await import('node:fs/promises'),{tmpdir}=await import('node:os'),{join}=await import('node:path')
