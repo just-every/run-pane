@@ -53,17 +53,17 @@ test('ACCESS-002: mutations require the canonical origin; accepted contact is du
    const response=await f.request(prefix+action,{method:'POST',headers:{Cookie:owner,'Content-Type':'application/json',...originHeader},body:JSON.stringify({site:fixture,revision:first.id,id:crypto.randomUUID(),source:JSON.stringify(fixture)})})
    assert.equal(response.status,403,prefix+action)
   }
-  assert.equal((await f.request('/site/contact',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',...originHeader},body:new URLSearchParams({idempotency:crypto.randomUUID(),name:'Avery',email:'avery@example.test',message:'A cross-origin enquiry'})})).status,403)
+  assert.equal((await f.request('/site/contact',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',...originHeader},body:new URLSearchParams({'cf-turnstile-response':'synthetic-pane-3',idempotency:crypto.randomUUID(),name:'Avery',email:'avery@example.test',message:'A cross-origin enquiry'})})).status,403)
   assert.equal((await f.request('/site/visit',{method:'POST',headers:{'Content-Type':'application/json',...originHeader},body:JSON.stringify({path:'home'})})).status,403)
  }
  // A matching Origin on an alternate hostname must not redefine the installation.
  for(const headerOrigin of [foreign,origin]){
-  assert.equal((await f.request(foreign+'/site/contact',{method:'POST',headers:{Origin:headerOrigin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({idempotency:crypto.randomUUID(),name:'Avery',email:'avery@example.test',message:'An alternate-host enquiry'})})).status,403)
+  assert.equal((await f.request(foreign+'/site/contact',{method:'POST',headers:{Origin:headerOrigin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({'cf-turnstile-response':'synthetic-pane-3',idempotency:crypto.randomUUID(),name:'Avery',email:'avery@example.test',message:'An alternate-host enquiry'})})).status,403)
   assert.equal((await f.request(foreign+'/site/visit',{method:'POST',headers:{Origin:headerOrigin,'Content-Type':'application/json'},body:JSON.stringify({path:'home'})})).status,403)
  }
  assert.deepEqual(await data(),before,'Rejected mutations must not change revisions, approvals, imports, inbox or visits')
  contactId=crypto.randomUUID()
- const body=new URLSearchParams({idempotency:contactId,name:'Avery <script>',email:'avery@example.test',message:'Can you cater our opening?',website:''})
+ const body=new URLSearchParams({'cf-turnstile-response':'synthetic-pane-3',idempotency:contactId,name:'Avery <script>',email:'avery@example.test',message:'Can you cater our opening?',website:''})
  const send=()=>f.request('/site/contact',{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body,redirect:'manual'})
  assert.equal((await send()).status,303);assert.equal((await send()).status,303)
  const d=await data();assert.equal(d.messages.length,1);assert.equal(d.messages[0].message,'Can you cater our opening?')
@@ -136,7 +136,7 @@ test('owner erasure removes personal data and prevents submission replay',async(
  assert.equal((await json('/api/pane/messages/erase',{id:contactId},admin)).status,403)
  assert.equal((await json('/api/pane/messages/erase',{id:contactId})).status,200)
  assert.equal((await data()).messages.length,0)
- await f.request('/site/contact',{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({idempotency:contactId,name:'Avery',email:'avery@example.test',message:'Replay'})})
+ await f.request('/site/contact',{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({'cf-turnstile-response':'synthetic-pane-3',idempotency:contactId,name:'Avery',email:'avery@example.test',message:'Replay'})})
  assert.equal((await data()).messages.length,0)
  laterArchive=await exportData(f.db)
 })
@@ -169,7 +169,7 @@ test('an approved form acknowledgment reaches the provider once with owner wordi
  let cookie = ''
  const call = (path, body, extra = {}) => app.request(hosted + path, {method: 'POST', headers: {Cookie: cookie, Origin: hosted, 'Content-Type': 'application/json', ...extra}, body: JSON.stringify(body)})
  const dashboard = async () => (await app.request(hosted + '/api/pane', {headers: {Cookie: cookie}})).json()
- const submit = (id, email = 'avery@example.test') => app.request(hosted + '/site/contact', {method: 'POST', headers: {Origin: hosted, 'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({idempotency: id, name: 'Avery', email, message: 'Visitor text must stay in the inbox.'})})
+ const submit = (id, email = 'avery@example.test') => app.request(hosted + '/site/contact', {method: 'POST', headers: {Origin: hosted, 'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({'cf-turnstile-response':'synthetic-pane-3',idempotency: id, name: 'Avery', email, message: 'Visitor text must stay in the inbox.'})})
  const prepare = async site => {const r = await call('/api/pane/prepare', {site}); assert.equal(r.status, 200); return r.json()}
  try {
   const signed = await call('/auth/bootstrap', {token: settings.SETUP_TOKEN, displayName: 'Acknowledgment owner'})
@@ -232,7 +232,7 @@ test('an approved form acknowledgment reaches the provider once with owner wordi
  const localDraft = await (await json('/api/pane/prepare', {site: localSite})).json()
  await json('/api/pane/publish', {revision: localDraft.id})
  const localId = crypto.randomUUID()
- await f.request('/site/contact', {method: 'POST', headers: {Origin: origin, 'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({idempotency: localId, name: 'Avery', email: 'avery@example.test', message: 'Local proof'})})
+ await f.request('/site/contact', {method: 'POST', headers: {Origin: origin, 'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({'cf-turnstile-response':'synthetic-pane-3',idempotency: localId, name: 'Avery', email: 'avery@example.test', message: 'Local proof'})})
  assert.equal((await data()).messages.find(message => message.id === localId).acknowledgment_status, 'suppressed')
 })
 
@@ -327,7 +327,7 @@ test('conversion goals count quote-form submissions and phone clicks by page, ch
  const dashboard = async () => (await app.request('/api/pane', {headers: {Cookie: cookie}})).json()
  const visit = (body, headers = {}) => app.request('/site/visit', {method: 'POST', headers: {Origin: origin, 'Content-Type': 'application/json', ...headers}, body: JSON.stringify({path: 'contact', ...body})})
  const tap = (body, headers = {}) => app.request('/site/visit/goal', {method: 'POST', headers: {Origin: origin, 'Content-Type': 'application/json', ...headers}, body: JSON.stringify({path: 'home', goal: 'phone-calls', ...body})})
- const submit = (fields, headers = {}) => app.request('/site/contact', {method: 'POST', headers: {Origin: origin, 'Content-Type': 'application/x-www-form-urlencoded', ...headers}, body: new URLSearchParams({name: 'Synthetic Pane', email: 'synthetic-pane@example.test', message: 'Quote please', website: '', ...fields}), redirect: 'manual'})
+ const submit = (fields, headers = {}) => app.request('/site/contact', {method: 'POST', headers: {Origin: origin, 'Content-Type': 'application/x-www-form-urlencoded', ...headers}, body: new URLSearchParams({'cf-turnstile-response':'synthetic-pane-3',name: 'Synthetic Pane', email: 'synthetic-pane@example.test', message: 'Quote please', website: '', ...fields}), redirect: 'manual'})
  const goal = (data, id) => data.goals.find(item => item.id === id)
  try {
   cookie = (await post('/auth/bootstrap', {token: settings.SETUP_TOKEN, displayName: 'Goal owner'})).headers.get('set-cookie').split(';')[0]
@@ -361,7 +361,7 @@ test('conversion goals count quote-form submissions and phone clicks by page, ch
   }
   assert.equal((await submit({idempotency: crypto.randomUUID(), attribution: JSON.stringify({campaign: 'synthetic-pane-2', campaignTagged: true})})).status, 303)
   assert.equal((await submit({idempotency: crypto.randomUUID(), attribution: '{broken'})).status, 303)
-  assert.equal((await submit({idempotency: crypto.randomUUID(), website: 'synthetic-pane-3', attribution})).status, 303, 'Honeypot visits are discarded')
+  assert.equal((await submit({idempotency: crypto.randomUUID(), website: 'synthetic-pane-3', attribution})).status, 403, 'Honeypot visits are explicitly refused')
   const private_ = await submit({idempotency: crypto.randomUUID(), attribution}, {'Sec-GPC': '1'})
   assert.equal(private_.status, 303)
   let data = await dashboard()
@@ -425,8 +425,8 @@ test('connected Vane and Google Analytics 4 render only on live pages, widen the
    assert.match(html, /<script src="\/pane-analytics\.js" data-ga4="G-SYNTH12345" defer><\/script>/, path)
    assert.match(html, /data-analytics-consent aria-label="Analytics choices" hidden>/, 'The choice starts hidden and nothing from Google is in the markup')
    assert.doesNotMatch(html, /googletagmanager|google-analytics/)
-   assert.match(policy(page), /script-src 'self' https:\/\/vane\.example\.test https:\/\/www\.googletagmanager\.com;/)
-   assert.match(policy(page), /connect-src 'self' https:\/\/vane\.example\.test https:\/\/\*\.google-analytics\.com /)
+   assert.equal(policy(page).split('; ').find(part=>part.startsWith('script-src')),"script-src 'self' "+(path==='/site/contact'?'https://challenges.cloudflare.com ':'')+'https://vane.example.test https://www.googletagmanager.com')
+   assert.equal(policy(page).split('; ').find(part=>part.startsWith('connect-src')),"connect-src 'self' "+(path==='/site/contact'?'https://challenges.cloudflare.com ':'')+'https://vane.example.test https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com')
    assert.match(policy(page), /img-src 'self' https:\/\/\*\.google-analytics\.com/)
    assert.equal(page.headers.get('set-cookie'), null)
   }
@@ -455,7 +455,7 @@ test('enquiries carry an owner, status and follow-up time; unanswered ones are r
  const call = (path, body, who = 'owner') => app.request(hosted + path, {method: 'POST', headers: {Cookie: cookies[who] ?? '', Origin: hosted, 'Content-Type': 'application/json'}, body: JSON.stringify(body)})
  const state = async () => (await app.request(hosted + '/api/pane', {headers: {Cookie: cookies.owner}})).json()
  const tick = async time => assert.equal((await (await app.mf.getWorker()).scheduled({scheduledTime: new Date(time), cron: '* * * * *'})).outcome, 'ok')
- const submit = name => app.request(hosted + '/site/contact', {method: 'POST', headers: {Origin: hosted, 'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({idempotency: crypto.randomUUID(), name, email: 'synthetic-pane@example.test', message: 'Private visitor words for ' + name})})
+ const submit = name => app.request(hosted + '/site/contact', {method: 'POST', headers: {Origin: hosted, 'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({'cf-turnstile-response':'synthetic-pane-3',idempotency: crypto.randomUUID(), name, email: 'synthetic-pane@example.test', message: 'Private visitor words for ' + name})})
  const find = async name => (await state()).messages.find(message => message.name === name)
  const memberId = async () => (await app.db.prepare("SELECT id FROM oa_operators WHERE role='member'").first()).id
  const recipients = () => mails.map(mail => mail.personalizations[0].to[0].email)
@@ -687,7 +687,7 @@ test('activity records successful existing changes atomically and exports ordere
   const person=(await app.db.prepare("SELECT id FROM oa_operators WHERE role='member'").first()).id
   assert.equal((await call('/auth/operator/role',{operatorId:person,role:'admin'})).status,200)
   const id=crypto.randomUUID()
-  await app.request('/site/contact',{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({idempotency:id,name:'synthetic-pane-2',email:'synthetic-pane-2@example.test',message:'synthetic-pane-3',website:''})})
+  await app.request('/site/contact',{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({'cf-turnstile-response':'synthetic-pane-3',idempotency:id,name:'synthetic-pane-2',email:'synthetic-pane-2@example.test',message:'synthetic-pane-3',website:''})})
   assert.equal((await call('/api/pane/messages/update',{id,status:'closed'})).status,200)
   assert.equal((await call('/api/pane/messages/erase',{id})).status,200)
   const rows=await (await get('/api/pane/activity')).json()
@@ -838,7 +838,7 @@ test('composable Pane roles are invited natively and enforced across workspace, 
   await app.request(hosted+'/setup',{method:'POST',headers:{Cookie:ownerCookie,Origin:hosted,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
   const prepared=await (await call('/api/pane/prepare',{site:fixture})).json();await call('/api/pane/publish',{revision:prepared.id})
   const id=crypto.randomUUID()
-  await app.request(hosted+'/site/contact',{method:'POST',headers:{Origin:hosted,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({idempotency:id,name:'Synthetic enquirer',email:'synthetic-pane-19@example.test',message:'synthetic-pane-20'})})
+  await app.request(hosted+'/site/contact',{method:'POST',headers:{Origin:hosted,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({'cf-turnstile-response':'synthetic-pane-3',idempotency:id,name:'Synthetic enquirer',email:'synthetic-pane-19@example.test',message:'synthetic-pane-20'})})
   const matrix=[
    {roles:['editor'],pages:true,edit:true},
    {roles:['author']},
@@ -910,7 +910,7 @@ test('explicit enquiry replies are retained, delivered once at the provider edge
  try{
   cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})).headers.get('set-cookie').split(';')[0]
   const revision=await (await call('/api/pane/prepare',{site:fixture})).json();await call('/api/pane/publish',{revision:revision.id})
-  const id=crypto.randomUUID();await app.request(hosted+'/site/contact',{method:'POST',headers:{Origin:hosted,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({idempotency:id,name:'Synthetic enquirer',email:'synthetic-pane-51@example.test',message:'synthetic-pane-52'})})
+  const id=crypto.randomUUID();await app.request(hosted+'/site/contact',{method:'POST',headers:{Origin:hosted,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({'cf-turnstile-response':'synthetic-pane-3',idempotency:id,name:'Synthetic enquirer',email:'synthetic-pane-51@example.test',message:'synthetic-pane-52'})})
   const input={id,idempotency:crypto.randomUUID(),subject:'Synthetic reply',body:'synthetic-pane-53',confirm:'send-reply'}
   assert.equal((await call('/api/pane/messages/reply',{...input,confirm:''})).status,400);assert.equal(deliveries.length,0)
   const results=await Promise.all([call('/api/pane/messages/reply',input),call('/api/pane/messages/reply',input)])
@@ -965,5 +965,45 @@ test('native connection approval, callback, settings and unlink produce owner-at
   assert.ok(connections.length>=2);assert.ok(connections.every(row=>row.actor==='Synthetic connection owner'))
   assert.ok(history.some(row=>row.action==='settings.change'&&row.actor==='Synthetic connection owner'))
   assert.doesNotMatch(JSON.stringify(history),/synthetic-pane-70|synthetic-pane-71|private_key|client_assertion|test-session-key/)
+ }finally{await app.mf.dispose()}
+})
+
+test('form protection refuses and separately counts honeypot, per-form bursts and invalid provider proofs',async()=>{
+ let answer={success:true,hostname:new URL(origin).hostname,action:'pane-contact',cdata:'contact'},calls=0,unavailable=false
+ const app=await runtime({turnstile:async(_request,fields)=>{
+  calls++;assert.equal(fields.get('secret'),'synthetic-pane-2');assert.ok(fields.get('idempotency_key'))
+  return unavailable?new Response(null,{status:503}):Response.json(answer)
+ }})
+ try{
+  const boot=await app.request('/auth/bootstrap',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({token:settings.SETUP_TOKEN,displayName:'Synthetic designer'})})
+  const cookie=boot.headers.get('set-cookie').split(';')[0]
+  assert.equal((await app.request('/setup',{method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})).status,303)
+  const post=(path,body)=>app.request(path,{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify(body)})
+  const site=structuredClone(fixture);site.pages.push({...site.pages.find(p=>p.slug==='contact'),slug:'quote',kind:'contact'})
+  const rev=await(await post('/api/pane/prepare',{site})).json();assert.equal((await post('/api/pane/publish',{revision:rev.id})).status,200)
+  const send=(fields={},slug='contact')=>app.request('/site/'+slug,{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({idempotency:crypto.randomUUID(),name:'Synthetic visitor',email:'synthetic-pane@example.test',message:'Private rejected words','cf-turnstile-response':'synthetic-pane-3',...fields})})
+  assert.equal((await send({website:'synthetic-pane-4'})).status,403);assert.equal(calls,0)
+  for(const proof of [{success:false},{hostname:'elsewhere.example.test'},{action:'other'},{cdata:'quote'}]){
+   answer={success:true,hostname:new URL(origin).hostname,action:'pane-contact',cdata:'contact',...proof}
+   assert.equal((await send()).status,403)
+  }
+  assert.equal((await send({'cf-turnstile-response':''})).status,403)
+  unavailable=true;assert.equal((await send()).status,503);unavailable=false
+  answer={success:true,hostname:new URL(origin).hostname,action:'pane-contact',cdata:'contact'}
+  const id=crypto.randomUUID();assert.equal((await send({idempotency:id})).status,303);assert.equal((await send({idempotency:id})).status,303)
+  const rows=await app.db.prepare('SELECT * FROM pane_messages').all();assert.equal(rows.results.length,1);assert.equal(rows.results[0].id,id)
+  // Each form has an independent bucket. Rejected bot proofs cannot bypass it.
+  let status
+  for(let index=0;index<20;index++)status=(await send({'cf-turnstile-response':''})).status
+  assert.equal(status,429)
+  answer.cdata='quote';assert.equal((await send({},'quote')).status,303)
+  const rejected=(await app.db.prepare('SELECT * FROM pane_form_rejections').all()).results
+  for(const reason of ['honeypot','turnstile','rate','unavailable'])assert.ok(rejected.some(r=>r.reason===reason),reason)
+  assert.doesNotMatch(JSON.stringify(rejected),/Private rejected words|synthetic-pane@example.test|synthetic-pane-3/)
+  const review=await(await app.request('/app/inquiries',{headers:{Cookie:cookie}})).text()
+  assert.match(review,/Spam protection review/);assert.match(review,/honeypot/);assert.match(review,/turnstile/)
+  assert.equal((await app.request('/api/pane')).status,401)
+  const contact=await app.request('/site/contact');assert.match(contact.headers.get('content-security-policy'),/frame-src https:\/\/challenges.cloudflare.com/)
+  assert.match(await contact.text(),/data-turnstile-key="synthetic-pane-1"/)
  }finally{await app.mf.dispose()}
 })

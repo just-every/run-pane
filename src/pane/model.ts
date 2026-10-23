@@ -3,6 +3,8 @@ export type Page = { id?: string; folder?: string; deleted?: boolean; kind?: 'co
 export type Site = { automations?: import('./schedules').Automations; name: string; description: string; pages: Page[]; home?: string; notFound?: string; folders?: string[]; redirects?: import('./redirects').Redirect[]; redirectOffers?: import('./redirects').RedirectOffer[]; navigation?: import('./navigation').Navigation; socials?: Partial<Record<import('./navigation').SocialNetwork, string>>; robots?: string; analyticsCampaigns?: string[]; analytics?: import('./analytics').Analytics; goals?: import('./goals').Goal[]; responseDays?: number }
 export type Revision = { id: string; site: Site; hash: string; created_at: string; actor: string }
 export type Dashboard = {
+ formRejectionCount?: number;
+ formRejections?: import('./form-protection').FormRejection[];
  replies: {id:string;message_id:string;subject:string;body:string;status:string;created_at:string}[];
  timeZone?: string;
  roleLabel?: string;

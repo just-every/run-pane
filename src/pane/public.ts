@@ -1,3 +1,4 @@
+import { rejectForm, verifyForm } from './form-protection'
 import { activeBanners } from './schedules'
 import { escape } from './ui/kit'
 import { activePages, homeSlug, pagePath } from './pages'
@@ -55,10 +56,12 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
  if((page?.kind==='contact'||(page && slug==='contact'))&&request.method==='POST') {
   if(Number(request.headers.get('content-length')??0)>100000)return json({error:'Message too large.'},413)
   const f=await request.formData(),name=String(f.get('name')??'').trim(),email=String(f.get('email')??'').trim(),message=String(f.get('message')??'').trim(),id=String(f.get('idempotency')??'')
-  if(String(f.get('website')??''))return new Response(null,{status:303,headers:{location:pagePath(site,slug)+'?sent=1'}})
+  if(String(f.get('website')??''))return rejectForm(env.DB,slug,'honeypot')
   if(!/^[a-f0-9-]{36}$/.test(id)||!name||name.length>120||!/^\S+@\S+\.\S+$/.test(email)||email.length>254||!message||message.length>5000)return json({error:'Enter a name, valid email and message up to 5,000 characters.'},400)
   // Pencil's immutable original receipt: retries cannot replace an earlier answer.
-  if(await limited(env.DB,'contact',20))return json({error:'Please try again in a minute.'},429)
+  if(await limited(env.DB,'contact:'+slug,20))return rejectForm(env.DB,slug,'rate')
+  const verification=await verifyForm(env,String(f.get('cf-turnstile-response')??''),id,slug)
+  if(verification!=='verified')return rejectForm(env.DB,slug,verification)
   const acknowledgment=page?.acknowledgment,received=Date.now()
   const stored=await env.DB.prepare('INSERT OR IGNORE INTO pane_messages(id,name,email,message,created_at,acknowledgment,acknowledgment_status,follow_up_at) SELECT ?,?,?,?,?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM pane_erased_messages WHERE id=?)').bind(id,name,email,message,new Date(received).toISOString(),acknowledgment ? JSON.stringify(acknowledgment) : null,acknowledgment ? 'pending' : 'not_requested',followUpDue(site,received),id).run()
   // A goal counts once per stored message, from the submitting page view's own attribution; never for opt-outs.
@@ -83,12 +86,17 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
  if(!page) {
   const missing=site.notFound && activePages(site).find(page=>page.slug===site.notFound)
   if(!missing)return notFound()
-  const response=await document(site.name,announcements+publicPage(site,missing.slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request)),'site',missing.embed ? embedOrigin(missing.embed) : undefined,optedOut(request) ? undefined : site.analytics)
+  const response=await document(site.name,announcements+publicPage(site,missing.slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY),'site',missing.embed ? embedOrigin(missing.embed) : undefined,optedOut(request) ? undefined : site.analytics)
   const headers=new Headers(response.headers);headers.set('x-robots-tag','noindex, nofollow')
   return new Response(request.method==='HEAD'?null:response.body,{status:404,headers})
  }
  const notice=(page.kind==='contact'||slug==='contact')&&url.searchParams.has('sent')?'<div class="public-site public-sent"><div class="public-shell"><p class="notice" role="status">Thank you. Your message is in the business inbox.</p></div></div>':''
  const embed=page.embed
- const response=await document(site.name,announcements+notice+publicPage(site,slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request)),'site',embed ? embedOrigin(embed) : undefined,optedOut(request) ? undefined : site.analytics)
+ const response=await document(site.name,announcements+notice+publicPage(site,slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY),'site',embed ? embedOrigin(embed) : undefined,optedOut(request) ? undefined : site.analytics)
+ if(page.kind==='contact'||slug==='contact'){
+  const headers=new Headers(response.headers),policy=headers.get('content-security-policy')!
+  headers.set('content-security-policy',policy.replace("script-src 'self'","script-src 'self' https://challenges.cloudflare.com").replace("connect-src 'self'","connect-src 'self' https://challenges.cloudflare.com")+(embed?' https://challenges.cloudflare.com':'; frame-src https://challenges.cloudflare.com'))
+  return new Response(request.method==='HEAD'?null:response.body,{status:response.status,headers})
+ }
  return request.method==='HEAD' ? new Response(null,{status:response.status,headers:response.headers}) : response
 }

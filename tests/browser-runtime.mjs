@@ -27,12 +27,17 @@ const server=createServer(async(req,res)=>{
 await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve)})
 export const origin = 'http://127.0.0.1:' + server.address().port
 f = await runtime({bindings: {AUTH_ORIGIN: origin}})
+export async function protect(context){
+ await context.route('https://challenges.cloudflare.com/turnstile/v0/api.js**',route=>route.fulfill({contentType:'application/javascript',body:`window.turnstile={render(slot,options){options.callback('synthetic-pane-3')}}`}))
+}
 export async function bootstrap(context){
+ await protect(context)
  const response=await context.request.post(origin+'/auth/bootstrap',{headers:{Origin:origin},data:{token:settings.SETUP_TOKEN,displayName:'Browser proof owner'},maxRedirects:0})
  assert.equal(response.status(),303,'Native bootstrap creates the first browser session')
  ownerCookie=response.headers()['set-cookie'].split(';')[0]
 }
 export async function signIn(page){
+ await protect(page.context())
  // The existing auth tests use this network-edge mail fixture too. No cookie or
  // browser profile is copied: the browser consumes and confirms a native link.
  let message

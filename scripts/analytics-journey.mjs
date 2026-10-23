@@ -36,6 +36,7 @@ async function capture(target, name, options = {}) {
 const unnamed = target => target.evaluate(() => [...document.querySelectorAll('button, a[href], summary, [role="button"]')].filter(element => element.checkVisibility() && !element.dataset.tip && !([...element.querySelectorAll('.visually-hidden')].reduce((text, hidden) => text.replace(hidden.textContent, ''), element.textContent).trim())).map(element => element.outerHTML.slice(0, 120)))
 async function visitorFor(width, {gpc = false, saved} = {}) {
  const visitor = await browser.newContext({viewport: {width, height: 900}, ...(gpc ? {extraHTTPHeaders: {'Sec-GPC': '1'}} : {})})
+ await fixture.protect(visitor)
  const hits = {vane: [], google: [], tag: [], loader: 0}
  if (gpc) await visitor.addInitScript(() => Object.defineProperty(navigator, 'globalPrivacyControl', {value: true}))
  if (saved) await visitor.addInitScript(choice => localStorage.setItem('pane:consent:analytics', choice), saved)

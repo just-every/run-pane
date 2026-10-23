@@ -308,3 +308,16 @@ requires its absence readback. It removes the test installation and its data.
 It needs the same Cloudflare account and token used for that test deployment.
 `node scripts/health-browser-journey.mjs` checks local health and the installed
 404 at 1440 and 390; set `PANE_HEALTH_ORIGIN` to check a hosted test installation.
+
+### Contact form verification
+
+Configure a Cloudflare Turnstile widget restricted to the installation hostname.
+Set `TURNSTILE_SITE_KEY` as a public Worker variable and `TURNSTILE_SECRET` as a
+Worker secret through the deployment secret mechanism. Never put the secret in
+source or client configuration. Published contact forms fail closed if either is
+missing or the provider is unavailable. The widget loads only when Send is
+pressed; it verifies the installation hostname, `pane-contact` action and page
+slug. Preview and workspace pages never run Turnstile. Each form permits 20
+attempts per minute independently. Honeypot, rate, verification and provider
+outage refusals are counted and reviewed separately in Inquiries. Only form,
+reason and time are retained for a refusal; rejected personal answers are not.
