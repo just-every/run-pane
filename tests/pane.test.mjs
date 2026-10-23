@@ -1008,6 +1008,13 @@ test('native connection approval, callback, settings and unlink produce owner-at
  }finally{await app.mf.dispose()}
 })
 
+test('an oversized connection callback is refused before its whole body is read',async()=>{
+ const stream={head:'{"interface":"oidc-provider@1","code":"synthetic-pane-72","padding":"',chunk:'synthetic-pane-73'.padEnd(1024,'0'),count:1024,tail:'"}'}
+ const response=await f.request('/.well-known/rer-link/callback',{method:'POST',headers:{'Content-Type':'application/json'},stream})
+ assert.equal(response.status,413)
+ const read=Number(response.headers.get('x-test-body-read'));assert.ok(read<64*1024,`Read ${read} bytes of a 1 MiB body`)
+})
+
 test('starter layouts and duplicates retain editable content and shared published styles',async()=>{
  const initial=await (await json('/api/pane/prepare',{site:fixture})).json()
  const layouts=['landing','service','team','menu','pricing','faq','location']

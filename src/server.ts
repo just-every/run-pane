@@ -24,6 +24,19 @@ import { seedDemo } from './demo'
 const api = new Hono<{ Bindings: Bindings }>()
 api.get('/health', (context) => context.json({ status: 'ok', ...deploymentHealth(context.env) }))
 
+// Base's link handlers refuse an input body over 8 KiB.
+const linkInputLimit = 8192
+/** A link callback body, read once and no further than the limit; a longer body keeps only what was read. */
+async function linkCallbackBody(request: Request) {
+  const reader = request.body?.getReader(), chunks: Uint8Array[] = []
+  let length = 0
+  while (reader && length <= linkInputLimit) { const next = await reader.read(); if (next.done) break; chunks.push(next.value); length += next.value.byteLength }
+  if (length > linkInputLimit) await reader?.cancel()
+  const body = new Uint8Array(length); let offset = 0
+  for (const chunk of chunks) { body.set(chunk, offset); offset += chunk.byteLength }
+  return body
+}
+
 export default withDemo<Bindings, ExportedHandler<Bindings>>({
   async scheduled(controller, env) {
     const bindings={...runtimeBindings(env),DB:auditedDatabase(env.DB,null,'schedule.change')}
@@ -43,8 +56,11 @@ export default withDemo<Bindings, ExportedHandler<Bindings>>({
     // A link callback acts on its persisted, transaction-fenced owner approval,
     // rather than on a provider cookie or caller-supplied person identity.
     if(path==='/.well-known/rer-link/callback'&&request.method==='POST'){
-      try{
-        const input=await request.clone().json() as {interface?:string}
+      // Base reads these same bytes, and refuses them as too large past its limit.
+      const body=await linkCallbackBody(request)
+      request=new Request(request,{body}) as typeof request
+      if(body.byteLength<=linkInputLimit)try{
+        const input=JSON.parse(new TextDecoder().decode(body)) as {interface?:string}
         const pending=await env.DB.prepare('SELECT approved_by FROM rer_dependency_pending WHERE interface=?').bind(input.interface??'oidc-provider@1').first<{approved_by:string}>()
         if(pending&&pending.approved_by!=='setup')actor=pending.approved_by
       }catch{}
