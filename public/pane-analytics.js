@@ -9,11 +9,22 @@ const eventName = name => {
  const base = name.normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'goal'
  return (/^[a-z]/.test(base) ? base : 'goal_' + base).slice(0, 40)
 }
+// Google's tag sends queued events seconds later, and a form post replaces the page first, so a goal form's
+// Google event is sent from the thank-you view (?sent) the stored message returns to. Vane gets it on submit.
+const formGoals = JSON.parse(document.querySelector('script[data-goals]')?.dataset.goals ?? '[]').filter(goal => goal.type === 'form').map(goal => goal.name)
+const toGoogle = name => { if (loaded && !window['ga-disable-' + ga4]) window.gtag('event', eventName(name), {goal_name: name}) }
 addEventListener('pane:goal', event => {
  const name = event.detail.name
  try { window.vane?.(name) } catch {}
- if (loaded && !window['ga-disable-' + ga4]) window.gtag('event', eventName(name), {goal_name: name, transport_type: 'beacon'})
+ if (!formGoals.includes(name)) toGoogle(name)
 })
+function thanks() {
+ const params = new URLSearchParams(location.search)
+ if (!params.has('sent')) return
+ formGoals.forEach(toGoogle)
+ params.delete('sent')
+ history.replaceState(history.state, '', location.pathname + (params.toString() ? '?' + params : '') + location.hash)
+}
 function clearCookies() {
  const parts = location.hostname.split('.')
  for (const pair of document.cookie.split('; ')) {
@@ -33,6 +44,7 @@ function allow() {
  window.gtag('consent', 'default', {analytics_storage: 'granted', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied'})
  window.gtag('js', new Date())
  window.gtag('config', ga4, {allow_google_signals: false, allow_ad_personalization_signals: false})
+ thanks()
  const tag = document.createElement('script')
  tag.async = true
  tag.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(ga4)

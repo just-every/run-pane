@@ -23,9 +23,11 @@ const ping=(en,extra={})=>navigator.sendBeacon('https://www.google-analytics.com
 const handle=args=>{
  if(args[0]==='consent')Object.assign(consent,args[2])
  else if(args[0]==='config'){Object.assign(config,args[2]);document.cookie='_ga=GA1.1.synthetic-pane-1; path=/';document.cookie='_ga_'+id.slice(2)+'=GS1.1.synthetic-pane-2; path=/';if(!window['ga-disable-'+id])ping('page_view',{signals:String(config.allow_google_signals)})}
- else if(args[0]==='event'&&!window['ga-disable-'+id])ping(args[1],{goal:args[2]?.goal_name,transport:args[2]?.transport_type})}
-for(const args of window.dataLayer)handle(args)
-const push=window.dataLayer.push.bind(window.dataLayer);window.dataLayer.push=(...items)=>{items.forEach(handle);return push(...items)}})()`
+ else if(args[0]==='event'&&!window['ga-disable-'+id]){ping(args[1],{goal:args[2]?.goal_name})}}
+// Like Google's tag, queued commands reach the network later, so a page that navigates at once loses them.
+const later=args=>setTimeout(()=>handle(args),50)
+for(const args of window.dataLayer)later(args)
+const push=window.dataLayer.push.bind(window.dataLayer);window.dataLayer.push=(...items)=>{items.forEach(later);return push(...items)}})()`
 async function capture(target, name, options = {}) {
  await target.screenshot({path: resolve(folder, name + '.png'), ...options})
  assert.equal(await target.evaluate(() => document.documentElement.scrollWidth > innerWidth + 2), false, name + ' overflow')
@@ -134,8 +136,13 @@ try {
   await quote.goto(origin + '/site/contact', {waitUntil: 'networkidle'})
   await sendQuote(quote)
   await quote.waitForTimeout(300)
+  assert.equal(new URL(quote.url()).search, '', 'The thank-you marker is dropped once the Google goal is sent')
   assert.ok(hits.google.some(hit => hit.en === 'quote_request' && hit.goal === 'Quote request'), 'The form goal reaches Google')
   assert.ok(hits.vane.some(hit => hit.door === '/api/vane/custom' && hit.name === 'Quote request'), 'The form goal reaches Vane')
+  const quotes = () => hits.google.filter(hit => hit.en === 'quote_request').length
+  assert.equal(quotes(), 1)
+  await quote.reload({waitUntil: 'networkidle'}); await quote.waitForTimeout(300)
+  assert.equal(quotes(), 1, 'Reloading the thank-you page does not repeat the goal')
   assert.ok((await visitor.cookies()).some(cookie => cookie.name === '_ga'), 'The allowed tag set its analytics cookie')
   await tab.getByRole('button', {name: 'No thanks'}).click()
   assert.deepEqual((await visitor.cookies()).filter(cookie => cookie.name.startsWith('_ga')), [], 'Withdrawing consent clears the analytics cookies')
