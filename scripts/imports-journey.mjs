@@ -57,6 +57,16 @@ try{
  // The committed exact-candidate scale journey exercises the documented WXR
  // acceptance inventory; unsupported posts/comments remain explicit exceptions.
  const wxr=await readFile('fixtures/imports/wordpress.xml','utf8')
+ for(const width of [1440,390]){
+  await page.setViewportSize({width,height:1000});await page.goto(origin+'/app/moves')
+  await page.getByLabel('Source JSON',{exact:true}).fill(wxr)
+  await Promise.all([page.waitForURL('**/app/import/dry-run'),page.getByRole('button',{name:'Check import'}).click()])
+  const warning=page.getByText(/^This page maps as plain text\./).first()
+  await warning.scrollIntoViewIfNeeded();assert.match(await warning.textContent(),/heading levels/)
+  assert.equal((await data()).draft.id,initial.id,'Rich-page preflight still makes no writes')
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,'WXR preflight overflow at '+width)
+  await page.screenshot({path:resolve(folder,`import-rich-preflight-warning-${width}.png`)})
+ }
  const plan=await post('import/dry-run',{source:wxr});assert.equal(plan.report.counts.post.source,100);assert.equal(plan.report.counts.comment.source,50)
  const applied=await post('import/apply',{source:wxr,fingerprint:plan.fingerprint});assert.equal(applied.report.counts.page.applied,2);assert.equal(applied.report.counts.post.applied,0)
  await post('import/undo',{job:applied.id})
