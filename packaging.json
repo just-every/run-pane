@@ -54,8 +54,7 @@
         "INSTALLATION_KEY_PREVIOUS"
       ],
       "providerEffects": [
-        "outbound-mail",
-        "outbound-webhooks"
+        "outbound-mail"
       ],
       "mail": {
         "providers": [

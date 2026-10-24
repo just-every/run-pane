@@ -210,7 +210,7 @@
       "executable": false
     },
     "management/integration/deployment-spec.json": {
-      "sha256": "661196aeafbda13e008de1ac6f813bb25cdb83549c609fb4ecf5526fdd6bc2f1",
+      "sha256": "55ac54b273136e73f6b5efa1da67ce3b8e7d476992d9ff8d226660e89a34df3c",
       "executable": false
     },
     "migrations/core/0001_owner.sql": {
@@ -358,7 +358,7 @@
       "executable": false
     },
     "packaging.json": {
-      "sha256": "a8f7dc9433adf207332b6c8b14be9f6135de9e01dcd46508c5fda9597944631c",
+      "sha256": "122d4757ed47f76c137952b148cc15c48fe8cb83a2f2dd4c85539b26b4188a1a",
       "executable": false
     },
     "pnpm-lock.yaml": {
@@ -926,7 +926,7 @@
       "executable": false
     },
     "scripts/delivery/base/packaging.json": {
-      "sha256": "a8f7dc9433adf207332b6c8b14be9f6135de9e01dcd46508c5fda9597944631c",
+      "sha256": "122d4757ed47f76c137952b148cc15c48fe8cb83a2f2dd4c85539b26b4188a1a",
       "executable": false
     },
     "scripts/delivery/base/paths.mjs": {
