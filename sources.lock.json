@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "parent": null,
   "edition": "just-every/run-pane",
-  "manifest": "08baa515ad57c8c0267167932e3fc10aa1f23a4849455134d8384262e66dc550",
+  "manifest": "b912b27498715d9415d9aa4640731a93d1c5502b369b8523b27a8ca2bb287f55",
   "toolchain": {
     "id": "runeditrun/edition-authoring",
     "version": "1.1.0",
@@ -15,7 +15,8 @@
         "kind": "local",
         "paths": [
           "src/mail.server.mjs",
-          "scripts/delivery/base/setup-manifest.mjs"
+          "scripts/delivery/base/setup-manifest.mjs",
+          "src/auth.server.ts"
         ],
         "origin": {
           "repository": "https://github.com/runeditrun/base",
@@ -23,7 +24,8 @@
           "path": ".",
           "paths": [
             "foundation/template/src/mail.server.mjs",
-            "modules/delivery-producer/setup-manifest.mjs"
+            "modules/delivery-producer/setup-manifest.mjs",
+            "foundation/template/src/auth.server.ts"
           ]
         },
         "mappings": [
@@ -34,13 +36,17 @@
           {
             "path": "scripts/delivery/base/setup-manifest.mjs",
             "originPath": "modules/delivery-producer/setup-manifest.mjs"
+          },
+          {
+            "path": "src/auth.server.ts",
+            "originPath": "foundation/template/src/auth.server.ts"
           }
         ]
       },
       "baseline": {
-        "key": "32456b24fb981f4c23088dc83ddd368914d02b64b72fb794c8ff6a6195145839",
-        "digest": "11323f636dc850153967a1ca75454cea43f93f29009db0f9344a107796dd81a9",
-        "sha256": "e11a6e5b80864fb2a920d26390b0c1600a12fb24da06e5ce019e60ab8c25543f"
+        "key": "a8cf40741c25890f72b46222e331882984568a94192f30262a88140a676882f4",
+        "digest": "3351d4b4032b146f5f5ef151ef74d39620f5edea9482f0db699268a7266e4278",
+        "sha256": "aac4962485a9ae12d1923cfd15b053e9e1b73da2a8da3c5a61ec6e3b16f62772"
       }
     },
     {
@@ -84,7 +90,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "22bbef1bc11ca99e2afb7b7eda8e645619d85d405fcb4e279a2ea4ddb659920e",
+      "sha256": "d96e913553fd7ea92d7f7b9c2d9cc4e8bbd20707644ab1bb025dd5a215960a69",
       "executable": false
     },
     "AGENTS.md": {
@@ -108,7 +114,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "5a613dee1fcbee96b7d7517c46cdd51a40050e51be99d0ff8ee3e99e209db7e1",
+      "sha256": "6afa4b271d9c65b7938f9dc38140e25be568ebd9f80a2f02713f46db9b4e2d0f",
       "executable": false
     },
     "deploy-demo.json": {
@@ -156,7 +162,7 @@
       "executable": false
     },
     "edition.json": {
-      "sha256": "08baa515ad57c8c0267167932e3fc10aa1f23a4849455134d8384262e66dc550",
+      "sha256": "b912b27498715d9415d9aa4640731a93d1c5502b369b8523b27a8ca2bb287f55",
       "executable": false
     },
     "fixtures/imports/durable.json": {

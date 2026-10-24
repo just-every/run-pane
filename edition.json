@@ -13,7 +13,8 @@
         "kind": "local",
         "paths": [
           "src/mail.server.mjs",
-          "scripts/delivery/base/setup-manifest.mjs"
+          "scripts/delivery/base/setup-manifest.mjs",
+          "src/auth.server.ts"
         ],
         "origin": {
           "repository": "https://github.com/runeditrun/base",
@@ -21,7 +22,8 @@
           "path": ".",
           "paths": [
             "foundation/template/src/mail.server.mjs",
-            "modules/delivery-producer/setup-manifest.mjs"
+            "modules/delivery-producer/setup-manifest.mjs",
+            "foundation/template/src/auth.server.ts"
           ]
         },
         "mappings": [
@@ -32,6 +34,10 @@
           {
             "path": "scripts/delivery/base/setup-manifest.mjs",
             "originPath": "modules/delivery-producer/setup-manifest.mjs"
+          },
+          {
+            "path": "src/auth.server.ts",
+            "originPath": "foundation/template/src/auth.server.ts"
           }
         ]
       }
