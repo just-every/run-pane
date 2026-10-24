@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile, mkdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { chromium } from '@playwright/test'
+const lobbyOnly=process.argv.includes('--lobby-only')
 const fixtureRuntime=process.env.PANE_BROWSER_FIXTURE?await import('../tests/browser-runtime.mjs'):null
 const log=fixtureRuntime?'':await readFile(process.env.PANE_LAUNCH_LOG,'utf8'),entry=fixtureRuntime?fixtureRuntime.origin+'/setup':log.match(/RER_OPEN\s+(https?:\/\/\S+)/)?.[1]
 if(!entry)throw Error('Launch log has no private RER_OPEN link; rer dev must finish first.')
@@ -22,6 +23,30 @@ async function capture(name) {
    }))
    assert.match(face.body, /Figtree/, `LOBBY-001: ${name} renders the shared typeface at ${width}`)
    assert.ok(face.loaded && face.local, `LOBBY-001: ${name} loads its self-hosted font at ${width}`)
+  }
+  if (['installed-lobby','signin','setup','empty-workspace'].includes(name)) {
+   const colors = await page.evaluate(() => {
+    const root = getComputedStyle(document.documentElement)
+    return ['--pn-fuchsia', '--pn-action'].map(name => root.getPropertyValue(name).trim())
+   })
+   assert.deepEqual(colors, ['#f5026f', '#e8176e'], `Shared Lobby and workspace theme: ${name} fuchsia at ${width}`)
+   const unnamed = await page.locator('button, a[href], summary, [role="button"]').evaluateAll(nodes => nodes.filter(node => node.checkVisibility() && !node.dataset.tip && ![...node.querySelectorAll('.visually-hidden')].reduce((text, hidden) => text.replace(hidden.textContent, ''), node.textContent).trim()).map(node => node.outerHTML.slice(0, 120)))
+   assert.deepEqual(unnamed, [], `${name} icon-only controls have tooltips at ${width}`)
+   if (name === 'empty-workspace') {
+    const skip = page.locator('a[href="#main"]')
+    await skip.focus(); await page.keyboard.press('Enter')
+    assert.equal(new URL(page.url()).hash, '#main', `Workspace anchor is operable at ${width}`)
+    assert.equal(await page.locator('#main').count(), 1)
+    const avatar = page.locator('.avatar[data-tip]').first()
+    await page.mouse.move(5, 500); await avatar.hover(); await page.waitForTimeout(100)
+    assert.equal(await page.getByRole('tooltip').count(), 0, 'Tooltip waits for hover delay')
+    await page.getByRole('tooltip').waitFor()
+    assert.equal(await page.getByRole('tooltip').innerText(), 'Account and team')
+    await page.keyboard.press('Escape'); await page.mouse.move(5, 500)
+    await page.keyboard.press('Tab'); await avatar.focus()
+    assert.equal(await page.getByRole('tooltip').innerText(), 'Account and team', 'Tooltip appears on keyboard focus')
+    await page.keyboard.press('Escape')
+   }
   }
   await page.screenshot({path:resolve(folder,`${name}-${width}.png`),fullPage:true})
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2)
@@ -50,6 +75,8 @@ try {
   assert.deepEqual(await theme(),sharedTheme,'LOBBY-001: setup shares Lobby theme');await capture('setup');await page.getByRole('checkbox').check();await submit(page.getByRole('button',{name:'Finish setup'}))
  }
  assert.deepEqual(await theme(),sharedTheme,'LOBBY-001: workspace shares Lobby theme');assert.equal(await page.locator('a[href="#main"]').count(),1);assert.equal(await page.locator('#main').count(),1);await capture('empty-workspace')
+ console.log('Shared Lobby and workspace theme passed: installed Lobby, sign-in, setup, workspace anchors, self-hosted Figtree, fuchsia, no overflow and icon tooltips at 1440 and 390.')
+ if (!lobbyOnly) {
  await page.goto(origin+'/site');await capture('not-published');await page.goto(origin+'/app')
  await page.getByLabel('Site name',{exact:true}).fill(fixture.name)
  await page.getByLabel('Description',{exact:true}).fill(fixture.description)
@@ -83,4 +110,5 @@ try {
  await submit(page.getByRole('button',{name:'Undo import'}),'/app/moves');await capture('import-undone')
  await page.goto(origin+'/app/inquiries');await page.getByText('Erase personal data',{exact:true}).click();await submit(page.getByRole('button',{name:'Permanently erase message'}),'/app/inquiries');await capture('message-erased')
  console.log('Browser journey passed: sign-in, setup, five-page prepare/preview/publish, contact, visits, change, rollback, reviewed move-in/undo, erasure at 1440 and 390.')
-} catch(error) {await capture('journey-failure');throw error} finally {await browser.close()}
+ }
+} catch(error) {await capture('journey-failure');throw error} finally {await browser.close();if(lobbyOnly)await fixtureRuntime?.stop()}
