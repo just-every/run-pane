@@ -11,7 +11,14 @@ export function interlude(): string {
 </section>`
 }
 
-const START = 'npx -y @runeditrun/rer dev just-every/run-pane'
+// The one start line every Run Edit Run page shows (the Copy button copies it), and the alternative for people who already have Node.
+const START = 'curl -fsSL https://runeditrun.com/install.sh | sh -s -- dev just-every/run-pane'
+const ALTERNATIVE = 'Already have Node 22 or later? npx -y @runeditrun/rer dev just-every/run-pane'
+// Words stay whole when a line wraps, and the installer's `install.sh | sh` stays together.
+const words = (line: string) => line.split(/(\S*install\.sh \| sh|\S+)/).map(part => {
+  const pipe = /^(.*\/)(install\.sh \| sh)$/.exec(part)
+  return pipe ? `<span class="pn-nb">${pipe[1]}</span><wbr><span class="pn-nb">${pipe[2]}</span>` : part.trim() ? `<span class="pn-nb">${part}</span>` : part
+}).join('')
 
 export function owning(): string {
   return `<section class="pn-sec pn-own" aria-labelledby="pn-own-title">
@@ -39,8 +46,9 @@ export function owning(): string {
     </div>
     <div class="pn-term" aria-label="Start Pane on your computer">
       <div class="pn-term-dots" aria-hidden="true"><i></i><i></i><i></i></div>
-      <pre><code><span class="pn-term-prompt" aria-hidden="true">$ </span>npx -y @runeditrun/rer dev <span class="pn-nb">just-every/run-pane</span>
-<span class="pn-term-note"># clones, installs and starts Pane on your computer</span></code></pre>
+      <pre><code><span class="pn-term-prompt" aria-hidden="true">$ </span>${words(START)}
+<span class="pn-term-note"># ${words('installs rer, then gets and starts Pane on your computer')}</span>
+<span class="pn-term-note"># ${words(ALTERNATIVE)}</span></code></pre>
       <button class="pn-copy" type="button" data-copy="${START}">Copy</button>
     </div>
   </div>

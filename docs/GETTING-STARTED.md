@@ -6,23 +6,24 @@ your workspace is at the address your terminal prints.
 
 ## Start Pane
 
-Install rer, then start Pane. These are the two lines on the
+This line installs rer, then starts Pane. It is the line on the
 [Run page](https://run-pane.com/run):
 
 ```sh
-curl -fsSL https://runeditrun.com/install.sh | sh
-rer dev just-every/run-pane
+curl -fsSL https://runeditrun.com/install.sh | sh -s -- dev just-every/run-pane
 ```
 
-The installer brings its own Node when you have no Node 22 or later. If it ends
-with a line to run, run it before the second line. With Node 22 or later
-already installed, one line does both:
+Git is required; rer brings Node and pnpm. The installer brings its own Node
+when you have no Node 22 or later; if it prints a line that puts rer on your
+PATH, run that line too. With Node 22 or later already installed, this line
+does the same:
 
 ```sh
 npx -y @runeditrun/rer dev just-every/run-pane
 ```
 
-To start it again later, run `cd run-pane && rer dev`.
+To start it again later, run the same line from the same folder, or
+`cd run-pane && rer dev`.
 
 Pane pins Node 22.20.0 and pnpm 10.12.4. rer selects those versions without
 changing your global Node installation. Supported computers are macOS, Linux
