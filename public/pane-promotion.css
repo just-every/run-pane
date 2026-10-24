@@ -1,0 +1,7 @@
+.public-promotion { box-sizing: border-box; width: min(32rem, calc(100% - 2rem)); max-height: calc(100dvh - 4rem); overflow: auto; padding: 1.5rem; border: 1px solid var(--pn-line); border-radius: 1rem; background: var(--pn-white); color: var(--pn-ink); font: inherit; }
+.public-promotion::backdrop { background: rgb(0 0 0 / 35%); }
+.public-promotion h2 { font-size: 1.5rem; margin: 1rem 0; }
+.public-promotion p { white-space: pre-line; }
+.public-promotion [data-promotion-close] { display: block; margin-left: auto; }
+@media (max-width: 767px) { .public-promotion { margin: auto auto 1rem; max-height: 50dvh; padding: 1rem; } }
+.pane .public-promotion { overflow-wrap: anywhere; }

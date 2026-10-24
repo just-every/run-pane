@@ -1,3 +1,4 @@
+import { promotionMarkup } from './promotions'
 import { liveCall, liveSnapshot } from './outage'
 import { rejectForm, verifyForm } from './form-protection'
 import { activeBanners } from './schedules'
@@ -122,7 +123,7 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
  }
  const notice=(page.kind==='contact'||slug==='contact')&&url.searchParams.has('sent')?'<div class="public-site public-sent"><div class="public-shell"><p class="notice" role="status">Thank you. Your message has been received.</p></div></div>':''
  const embed=page.embed
- const response=await document(site.name,announcements+notice+publicPage(site,slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY),'site',embed ? embedOrigin(embed) : undefined,optedOut(request) ? undefined : site.analytics,site.locale?.locale)
+ const response=await document(site.name,announcements+notice+publicPage(site,slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY)+promotionMarkup(site,slug),'site',embed ? embedOrigin(embed) : undefined,optedOut(request) ? undefined : site.analytics,site.locale?.locale)
  if(page.kind==='contact'||slug==='contact'){
   const headers=new Headers(response.headers),policy=headers.get('content-security-policy')!
   headers.set('content-security-policy',policy.replace("script-src 'self'","script-src 'self' https://challenges.cloudflare.com").replace("connect-src 'self'","connect-src 'self' https://challenges.cloudflare.com")+(embed?' https://challenges.cloudflare.com':'; frame-src https://challenges.cloudflare.com'))

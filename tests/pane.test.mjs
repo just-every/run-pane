@@ -1291,3 +1291,27 @@ test('person erasure includes pending durable enquiries and prevents their recov
   assert.ok(await app.db.prepare('SELECT id FROM pane_erased_messages WHERE id=?').bind(id).first())
  }finally{await app.mf.dispose()}
 })
+
+test('published promotions target selected pages while invalid settings and unauthorized changes stay fenced',async()=>{
+ const app=await runtime()
+ const post=(path,body,cookie='')=>app.request(path,{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify(body)})
+ try {
+  const boot=await post('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic promotion owner'}),cookie=boot.headers.get('set-cookie').split(';')[0]
+  const site=structuredClone(fixture)
+  site.promotion={title:'Studio news',text:'Read our latest news.',pages:['home','about'],days:7,delay:10,scroll:50,exit:true,link:'/site/contact',label:'Contact us',start:'2026-11-01T08:00',end:'2026-11-02T08:00'}
+  const clean=await(await post('/api/pane/prepare',{site:fixture},cookie)).json();await post('/api/pane/publish',{revision:clean.id},cookie)
+  const prepared=await post('/api/pane/prepare',{site},cookie);assert.equal(prepared.status,200,await prepared.clone().text());const draft=await prepared.json()
+  assert.doesNotMatch(await(await app.request('/site')).text(),/data-promotion=/,'Drafts do not activate a promotion')
+  assert.doesNotMatch(await(await app.request('/preview/'+draft.id+'/home',{headers:{Cookie:cookie}})).text(),/data-promotion=/,'Previews do not execute promotions')
+  assert.equal((await post('/api/pane/publish',{revision:draft.id},cookie)).status,200)
+  for(const path of ['/site','/site/about']) {
+   const html=await(await app.request(path)).text();assert.match(html,/data-promotion=/);assert.match(html,/aria-labelledby="promotion-title"/);assert.match(html,/data-promotion-close>Close/)
+  }
+  for(const path of ['/site/contact','/site/search','/site/unknown'])assert.doesNotMatch(await(await app.request(path)).text(),/data-promotion=/,path)
+  for(const patch of [{pages:['missing']},{days:0},{delay:0},{scroll:101},{delay:undefined,scroll:undefined,exit:false},{link:'https://elsewhere.invalid'},{start:'2026-11-01T01:30'},{end:'2026-10-01T08:00'}]) {
+   const result=await post('/api/pane/prepare',{site:{...site,promotion:{...site.promotion,...patch}}},cookie);assert.equal(result.status,400,JSON.stringify(patch))
+  }
+  assert.equal((await post('/api/pane/prepare',{site})).status,401)
+  assert.equal((await app.request('/api/pane/prepare',{method:'POST',headers:{Origin:'https://elsewhere.invalid',Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify({site})})).status,403)
+ } finally {await app.mf.dispose()}
+})
