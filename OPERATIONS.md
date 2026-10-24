@@ -72,3 +72,23 @@ health.
 The Worker cron runs each minute through `src/server.ts`. The Pages editor's Schedules controls use the business's US IANA time zone. Publish approves the exact revision's holiday/promotion windows and quarterly page-review rule; draft rules never run. Sites shows the last platform check, actual transitions, overdue unapproved drafts and outstanding stale-page reviews. Mark reviewed records the signed-in owner/admin and clears that page's reminders.
 
 A page is stale when neither its published content nor its recorded review changed since the previous quarterly occurrence. Reminder recurrence preserves local time across daylight saving; nonexistent or repeated dates are rejected on entry. A later recurring occurrence that crosses a clock gap or repetition is flagged in schedule event history for correction instead of choosing an offset. Banners use plain escaped text; reminders stay in the workspace. The schedule clock, execution history, active banners and page reviews are included in native exports.
+
+## Hosted delivery
+
+Build with `pnpm run build`, then write the source deployment specification with
+`pnpm delivery:spec`. `pnpm check:deployment-spec` checks freshness against the
+real emitted Worker configuration and the seed-owned `packaging.json` policy.
+Package with `node scripts/delivery/base/cli.mjs package --config packaging.json
+--output rer-package`; artifact generation uses the same CLI with `artifact`.
+These commands prepare source and payloads without deploying or releasing.
+
+Managed hosting supplies the RER mail relay URL, sender and private installation
+credential. Assisted hosting exposes the selected RER, Resend, SendGrid or
+Cloudflare provider setup fields. Development and demo delivery stay suppressed.
+Configure production mail through setup; keep private values outside source.
+
+The native archive covers the resources declared by the portability adapter.
+The independent live snapshot and pending enquiry receipts in `PANE_LIVE` are
+not covered by that archive. Preserve their storage separately before recovery;
+never discard pending receipts during a cutover. See the descriptor recovery
+operation for the empty-target restore and verification sequence.

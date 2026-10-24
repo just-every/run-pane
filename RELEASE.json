@@ -1,0 +1,7 @@
+{
+  "version": "0.1.0",
+  "publicReleaseNotes": "Prepare Pane for hosted installation with a verified deployment descriptor, explicit email provider setup and traceable Base sources. Preserve the existing project identity and brand mark.",
+  "migrations": [],
+  "breaking": false,
+  "agentUpdateInstructions": "Install frozen dependencies, build Pane and check the deployment specification before hosting. Supply private mail provider inputs through setup. This metadata prepares the first native release; no tag has been created."
+}

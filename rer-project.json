@@ -1,7 +1,27 @@
 {
   "schema": 1,
   "projectId": "just-every/run-pane",
-  "name": "pane",
+  "name": "Pane",
   "sourceRepository": "https://github.com/just-every/run-pane",
-  "license": "MIT"
+  "license": "MIT",
+  "deployment": {
+    "target": "cloudflare-workers",
+    "artifactFile": "rer-worker-artifact.json"
+  },
+  "operations": {
+    "setup": "pnpm install --frozen-lockfile && pnpm exec rer install",
+    "build": "pnpm run build",
+    "verify": "pnpm run verify && pnpm exec rer check --profile first-party && pnpm check:deployment-spec && node scripts/edition-authoring/cli.mjs check && node scripts/edition-authoring/cli.mjs verify-base --offline",
+    "artifact": "node scripts/delivery/base/cli.mjs artifact --config packaging.json",
+    "recovery": "Follow OPERATIONS.md: retain the exact source, private settings and a native export; restore only into empty resources, run owner setup, re-export and compare supported data, then verify the live revision, inbox and owner sign-in before switching traffic. Preserve applied migration names and bytes. Durable live snapshots and pending enquiry receipts require separate custody; do not claim native archive coverage for them."
+  },
+  "verification": {
+    "migrationDirectories": [
+      "migrations/core"
+    ]
+  },
+  "setup": {
+    "path": "rer-setup.json",
+    "sha256": "2b0c96ded9f5d61e4267a863a0b90e779ba9f46e127a8527342a7cb8872ce6f8"
+  }
 }

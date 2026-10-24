@@ -9,14 +9,7 @@
     "record": "Immutable five-page website snapshot"
   },
   "description": "Five business pages with approved publishing, a contact inbox, cookie-free visit counts and revision rollback.",
-  "capabilities": [
-    {
-      "id": "http-dispatch",
-      "clauses": [
-        "HTTP-001"
-      ]
-    }
-  ],
+  "capabilities": [],
   "nonGoals": [
     "Shop and bookings",
     "Domain sales",
@@ -83,5 +76,10 @@
       "operator-auth",
       "owner-claim"
     ]
-  }
+  },
+  "replaces": [
+    "Squarespace",
+    "Wix",
+    "WordPress.com"
+  ]
 }
