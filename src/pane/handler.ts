@@ -1,3 +1,4 @@
+import {canvasEditor} from './ui/canvas'
 import { parseImportDocument } from './import-formats'
 import { createComponent } from './components'
 import { normalizeForms, privateFile } from './forms'
@@ -78,6 +79,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   if(request.method==='GET') {
    const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps)
    if(env.PANE_LIVE&&owner){const review=await env.PANE_LIVE.get(env.PANE_LIVE.idFromName('published-site')).fetch('https://pane.internal/review');Object.assign(data,await review.json())}
+   if(path==='/app/canvas')return document('Visual canvas',canvasEditor(data,url.searchParams.get('page')??''),'site')
    if(api&&path!=='/api/pane')return json({error:'Not found.'},404)
    if(api)return json(scopes?{role:actor.role,draft:data.draft?{id:data.draft.id}:null,live:data.live?{id:data.live.id}:null}:{...data,activity:undefined})
    if(!screens[path])return json({error:'Not found.'},404)

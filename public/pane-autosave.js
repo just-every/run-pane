@@ -49,7 +49,7 @@ for (const form of document.querySelectorAll('form[data-autosave]')) {
      blocked = true; latest = result.latest; conflict.hidden = false
      const slug = form.elements.slug?.value
      const other = latest?.site.pages.find(page => page.slug === slug)
-     form.querySelector('[data-latest]').textContent = form.querySelector('[name=structure]') ? JSON.stringify(latest?.site, null, 2) : other ? [latest.site.name, latest.site.description, other.title, other.body].join('\n\n') : JSON.stringify(latest?.site, null, 2)
+     form.querySelector('[data-latest]').textContent = form.querySelector('[name=structure], [name=sections]') ? JSON.stringify(latest?.site, null, 2) : other ? [latest.site.name, latest.site.description, other.title, other.body].join('\n\n') : JSON.stringify(latest?.site, null, 2)
      status.textContent = 'Conflict: your changes have not replaced the newer draft. Compare both versions.'
      return
     }

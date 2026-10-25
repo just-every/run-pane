@@ -8,7 +8,7 @@ import {runtime,settings} from './runtime.mjs'
 import {createOperatorAuth} from '../src/modules/operator-auth/index.mjs'
 let f, ownerCookie
 const assets=resolve('dist/client')
-const types={'.css':'text/css','.js':'text/javascript','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp','.ico':'image/x-icon','.woff2':'font/woff2','.woff':'font/woff','.json':'application/json','.webmanifest':'application/manifest+json'}
+const types={'.css':'text/css','.js':'text/javascript','.mjs':'text/javascript','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp','.ico':'image/x-icon','.woff2':'font/woff2','.woff':'font/woff','.json':'application/json','.webmanifest':'application/manifest+json'}
 const server=createServer(async(req,res)=>{
  try {
   const url=new URL(req.url,origin),file=resolve(assets,'.'+decodeURIComponent(url.pathname))

@@ -16,7 +16,7 @@ export function pageChange(draft: Page, live: Page | undefined): PageChange {
   const removed = Math.max(0, before.length - after.length), title = draft.title !== live.title
   const search = JSON.stringify(normalizeSearch(draft.search ?? {})) !== JSON.stringify(normalizeSearch(live.search ?? {}))
   const embed = JSON.stringify(draft.embed) !== JSON.stringify(live.embed)
-  const structure = JSON.stringify([draft.slug,draft.folder,draft.hidden,draft.deleted,draft.searchBox,draft.links,draft.layout,draft.business,draft.access,draft.formId]) !== JSON.stringify([live.slug,live.folder,live.hidden,live.deleted,live.searchBox,live.links,live.layout,live.business,live.access,live.formId])
+  const structure = JSON.stringify([draft.slug,draft.folder,draft.hidden,draft.deleted,draft.searchBox,draft.links,draft.layout,draft.business,draft.access,draft.formId,draft.sections,draft.customCode]) !== JSON.stringify([live.slug,live.folder,live.hidden,live.deleted,live.searchBox,live.links,live.layout,live.business,live.access,live.formId,live.sections,live.customCode])
   const acknowledgment = JSON.stringify(draft.acknowledgment) !== JSON.stringify(live.acknowledgment)
   return { structure,search, embed, acknowledgment, analytics: false, changed: structure || acknowledgment || embed || search || title || removed > 0 || marks.some(mark => mark !== 'same'), title, marks, removed }
 }

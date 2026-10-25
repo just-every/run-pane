@@ -17,7 +17,8 @@ export async function document(title: string, body: string, kind: 'app' | 'site'
   const frame = await themeFrame({ href: '/rer-theme.css', productName: branding.name, accentColor: branding.primaryColor })
   const extra = analyticsSources(analytics)
   const hashes = codeSource ? await codeHashes(codeSource) : []
-  const styleHashes = codeSource ? await codeHashes(codeSource,'style') : []
+  const layoutStyles=[...body.matchAll(/<style data-pane-layout>([\s\S]*?)<\/style>/g)].map(match=>'<style>'+match[1]+'</style>').join('')
+  const styleHashes = [...(codeSource ? await codeHashes(codeSource,'style') : []),...(layoutStyles?await codeHashes(layoutStyles,'style'):[])]
   const sources = (list: string[]) => list.length ? ' ' + list.join(' ') : ''
   const policy = extra.image.length ? frame.policy.replace("img-src 'self'", `img-src 'self'${sources(extra.image)}`) : frame.policy
   const pageTitle = kind === 'site' ? title : `${title} · ${branding.name}`
@@ -30,7 +31,7 @@ export async function document(title: string, body: string, kind: 'app' | 'site'
       'x-content-type-options': 'nosniff',
       'x-frame-options': 'DENY',
       'permissions-policy': permissionsPolicy,
-      'content-security-policy': `default-src 'none'; script-src 'self'${sources([...extra.script,...hashes])}; connect-src 'self'${sources(extra.connect)}; form-action 'self'; base-uri 'none'; frame-ancestors 'none'; ${codeSource ? policy.replace("style-src 'self'","style-src 'self'"+sources(styleHashes)) : policy}${embedOrigin || codeSource ? `; frame-src ${codeSource ? "about: " : ''}${embedOrigin??''}` : ''}`,
+      'content-security-policy': `default-src 'none'; script-src 'self'${sources([...extra.script,...hashes])}; connect-src 'self'${sources(extra.connect)}; form-action 'self'; base-uri 'none'; frame-ancestors 'none'; ${styleHashes.length ? policy.replace("style-src 'self'","style-src 'self'"+sources(styleHashes)) : policy}${embedOrigin || codeSource ? `; frame-src ${codeSource ? "about: " : ''}${embedOrigin??''}` : ''}`,
     },
   })
 }

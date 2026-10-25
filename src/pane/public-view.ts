@@ -1,3 +1,4 @@
+import {layoutCss,layoutMarkup} from '../../public/pane-layout.mjs'
 import { customCodeMarkup } from './custom-code'
 import { formMarkup, typedForm, type FormState } from './forms'
 import { businessMarkup } from './locale'
@@ -29,7 +30,7 @@ export function publicPage(site: Site, slug: string, mode: 'live' | 'preview' | 
    const url=new URL(href,'https://destination.invalid'),target=site.pages.find(candidate=>pagePath(site,candidate.slug)===url.pathname)
    return target?pageUrl(target.slug)+url.search+(mode==='frame'&&url.hash?'#pn-imported-'+url.hash.slice(1):url.hash):href
   }}) : (page ? paragraphs(page.body) : []).map(paragraph => `<p>${escape(paragraph)}</p>`).join('')
-  if(page?.sections)body=page.sections.map(section=>`<section data-section="${escape(section.id)}"${section.component?` data-component="${escape(section.component)}"`:''}>${section.blocks.map(block=>`<p>${escape(block.text)}</p>`).join('')}</section>`).join('')
+  if(page?.sections)body=`<style data-pane-layout>${layoutCss(page.sections)}</style>${layoutMarkup(page.sections)}`
   if (page?.layout && !page.importedHtml) body = paragraphs(page.body).map(paragraph => {
    const [heading,...lines] = paragraph.split('\n'), text = lines.map(line=>`<p>${escape(line)}</p>`).join('')
    return page.layout === 'faq' ? `<details><summary>${escape(heading)}</summary>${text}</details>` : `<section><h2>${escape(heading)}</h2>${text}</section>`

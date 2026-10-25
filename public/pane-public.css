@@ -92,3 +92,5 @@
 /* Preserved semantic imports keep long source text inside the native page. */
 .pane .public-content { overflow-wrap: anywhere; }
 .pane .public-content pre { max-width: 100%; white-space: pre-wrap; }
+
+.pane [data-section] [data-block]{white-space:pre-wrap;overflow-wrap:anywhere}

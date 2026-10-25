@@ -120,7 +120,9 @@ export async function siteFromForm(db: D1Database, input: Record<string, unknown
   const title = changed(`page.${slug}.title`,original?.title) ? field(`page.${slug}.title`) : page.title
   const visibility = input[`page.${slug}.hidden`]
   const hidden = visibility !== undefined && visibility !== (original?.hidden ? 'yes':'no') ? visibility === 'yes' : page.hidden
-  return {...page,customCode:input.slug===page.slug?codeFromForm(input,page.customCode,'code.page.'):page.customCode,title,hidden,formId:input[`page.${slug}.formId`]!==undefined?(String(input[`page.${slug}.formId`])||undefined):page.formId,business:businessFromForm(input,page),body: field(`page.${slug}.body`,page.body),
+  const canvas=input.pageId===pageId(page)&&typeof input.sections==='string'?normalizeSections(JSON.parse(input.sections)):undefined
+  if(canvas&&page.sections?.some(section=>section.component))throw Error('Detach reusable components before editing their local layout.')
+  return {...page,customCode:input.slug===page.slug?codeFromForm(input,page.customCode,'code.page.'):page.customCode,title,hidden,formId:input[`page.${slug}.formId`]!==undefined?(String(input[`page.${slug}.formId`])||undefined):page.formId,business:businessFromForm(input,page),body:canvas?sectionText(canvas):field(`page.${slug}.body`,page.body),...(canvas?{sections:canvas,layout:undefined}:{}),
    acknowledgment: input[`page.${slug}.acknowledgment.enabled`] !== undefined ? (input[`page.${slug}.acknowledgment.enabled`] === 'on' ? {subject: field(`page.${slug}.acknowledgment.subject`),text: field(`page.${slug}.acknowledgment.text`),responseTime: field(`page.${slug}.acknowledgment.responseTime`)} : undefined) : page.acknowledgment,
    embed: input[`page.${slug}.embed.url`] !== undefined ? (field(`page.${slug}.embed.url`)?.trim() ? {url:field(`page.${slug}.embed.url`),title:field(`page.${slug}.embed.title`)} : undefined) : page.embed,
    searchBox: input[`page.${slug}.searchBox`] !== undefined ? input[`page.${slug}.searchBox`] === 'yes' : page.searchBox,

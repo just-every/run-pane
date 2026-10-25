@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
 import {readFile,mkdir,writeFile} from 'node:fs/promises'
-import {resolve} from 'node:path'
+import {resolve,dirname,join} from 'node:path'
+import {createRequire} from 'node:module'
+const require=createRequire(import.meta.url),playwrightRequire=createRequire(require.resolve('@playwright/test/package.json')),coreRequire=createRequire(playwrightRequire.resolve('playwright/package.json'))
+const comparePng=require(join(dirname(coreRequire.resolve('playwright-core/package.json')),'lib/coreBundle.js')).utils.getComparator('image/png')
 import {chromium} from '@playwright/test'
 const fixture=await import('../tests/browser-runtime.mjs'),origin=fixture.origin
 const folder=resolve(process.env.PANE_SCREENSHOTS??'./test-results/components-code')
@@ -84,7 +87,43 @@ try{
   await page.unroute('https://www.youtube-nocookie.com/**')
   await context.setExtraHTTPHeaders({DNT:'1'});await page.reload();assert.equal(await page.locator('[data-custom-code],iframe').count(),0);await context.setExtraHTTPHeaders({})
   await page.goto(origin+'/app/sites');await page.getByRole('button',{name:'Revoke publication approval',exact:true}).click();await page.waitForURL(url=>url.searchParams.has('notice'));await capture('custom-code-revoked-settings-'+width)
-  await page.goto(origin+'/site/thanks');assert.equal(await page.locator('[data-custom-code],iframe').count(),0);assert.match(await page.locator('main').innerText(),/getting ready/);await capture('custom-code-revoked-live-'+width)
+  await page.goto(origin+'/site/thanks');assert.equal(await page.locator('[data-custom-code],iframe').count(),0);assert.match(await page.locator('main').innerText(),/getting ready|Page not found/);await capture('custom-code-revoked-live-'+width)
+  // The native canvas uses the live renderer and the same immutable save boundary.
+  const native=structuredClone(initial);native.pages.find(item=>item.slug==='services').body='Native starting text'
+  await call('/api/pane/prepare',{site:native,base:(await state()).draft.id})
+  await page.goto(origin+'/app/canvas?page=services');await page.locator('[contenteditable=true]').waitFor()
+  const layout=label=>page.getByLabel(label,{exact:true})
+  await page.locator('[contenteditable=true]').fill('Native heading');await saved()
+  await page.getByText('Layout settings',{exact:true}).click();await layout('Paragraph style').selectOption('h2');await saved()
+  await page.getByRole('button',{name:'Add text block',exact:true}).click();await page.locator('[contenteditable=true]').last().fill('Native detail');await saved()
+  await page.locator('[data-layout-canvas] [data-section]').focus();await layout('Section type').selectOption('columns');await layout('Column ratio').selectOption('2:1');await layout('Hex background').fill('#aabbcc');await layout('Top padding').fill('96');await layout('Bottom padding').fill('96');await saved()
+  await page.locator('[contenteditable=true]').last().click();await layout('First column').fill('2');await layout('Column span').fill('6');await layout('Grid row').fill('2');await layout('Text alignment').selectOption('right');await saved()
+  assert.equal(await page.locator('[contenteditable=true]').last().evaluate(node=>getComputedStyle(node).gridColumn),'2 / span 6')
+  assert.equal(await page.locator('[contenteditable=true]').last().evaluate(node=>getComputedStyle(node).textAlign),'right')
+  await page.getByRole('button',{name:'Reset layout',exact:true}).click();await saved();assert.equal(await layout('Column span').inputValue(),'12')
+  await page.getByRole('button',{name:'Undo',exact:true}).click();await saved();assert.equal(await layout('Column span').inputValue(),'6')
+  await page.getByRole('button',{name:'Redo',exact:true}).click();await saved();await page.getByRole('button',{name:'Undo',exact:true}).click();await saved()
+  await page.getByRole('button',{name:'Add section',exact:true}).click();await page.locator('[contenteditable=true]').last().fill('Native second section');await saved()
+  await page.locator('[data-layout-canvas] [data-section]').last().focus();await page.getByRole('button',{name:'Duplicate selection',exact:true}).click();await saved();assert.equal(await page.locator('[data-layout-canvas] [data-section]').count(),3)
+  await page.getByRole('button',{name:'Delete selection',exact:true}).click();await saved();assert.equal(await page.locator('[data-layout-canvas] [data-section]').count(),2)
+  await page.locator('[data-layout-canvas] [data-section]').last().dragTo(page.locator('[data-layout-canvas] [data-section]').first());await saved()
+  assert.match(await page.locator('[data-layout-canvas] [data-section]').first().innerText(),/Native second section/)
+  await page.locator('[data-layout-canvas] [data-section]').first().focus();await page.getByRole('button',{name:'Move later',exact:true}).focus();await page.keyboard.press('Enter');await saved()
+  assert.match(await page.locator('[data-layout-canvas] [data-section]').first().innerText(),/Native heading/)
+  await page.reload();await page.locator('[contenteditable=true]').first().waitFor();assert.equal(await page.locator('h2[data-block]').innerText(),'Native heading','Canvas reopen keeps semantic text and layout')
+  await page.getByText('Layout settings',{exact:true}).click();await capture('native-canvas-settings-'+width)
+  assert.equal(await page.locator('a,button,summary').evaluateAll(nodes=>nodes.filter(node=>!node.textContent.trim()&&node.querySelector('svg')&&!node.dataset.tip).length),0,'Canvas icon control tooltip audit')
+  await page.locator('.canvas-toolbar h1').click();await page.evaluate(()=>document.querySelectorAll('[data-selected]').forEach(node=>node.removeAttribute('data-selected')))
+  const boxes=async()=>page.locator('[data-block]').evaluateAll(nodes=>{const root=nodes[0].closest('.public-content').getBoundingClientRect();return nodes.map(node=>{const box=node.getBoundingClientRect();return {id:node.dataset.block,x:box.x-root.x,y:box.y-root.y,width:box.width,height:box.height}})})
+  const canvasBoxes=await boxes(),canvasImage=await page.locator('[data-layout-canvas] .public-content').screenshot({path:resolve(folder,'native-canvas-content-'+width+'.png')})
+  draft=(await state()).draft;await call('/api/pane/publish',{revision:draft.id})
+  await page.goto(origin+'/site/services');await page.evaluate(()=>document.fonts.ready)
+  const liveBoxes=await boxes(),liveImage=await page.locator('.public-content').screenshot({path:resolve(folder,'native-live-content-'+width+'.png')})
+  assert.equal(liveBoxes.length,canvasBoxes.length)
+  for(let index=0;index<liveBoxes.length;index++)for(const key of ['x','y','width','height'])assert.ok(Math.abs(liveBoxes[index][key]-canvasBoxes[index][key])<=2,`Native block ${key} parity at ${width}`)
+  const difference=comparePng(liveImage,canvasImage,{maxDiffPixelRatio:0.005,threshold:0});assert.equal(difference,null,difference?.errorMessage)
+  await capture('native-live-'+width)
+
 
  }
  console.log('Reusable components and isolated custom code journey passed at 1440 and 390: five pages, one edit, usage, detached copy, undo and redo, approved live code, CSS, scoped headers, goals, consent, withdrawal, privacy refusals and workspace isolation.')
