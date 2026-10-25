@@ -94,3 +94,9 @@
 .pane .public-content pre { max-width: 100%; white-space: pre-wrap; }
 
 .pane [data-section] [data-block]{white-space:pre-wrap;overflow-wrap:anywhere}
+
+/* Semantic rich text uses the shared canvas and live typography. */
+.public-content .pane-p-large{font-size:1.25em}
+.public-content .pane-p-small{font-size:max(13px,.875em)}
+.public-content [data-block] :is(ul,ol){padding-inline-start:1.5em}
+.public-content [data-block] pre{white-space:pre-wrap;overflow-wrap:anywhere}

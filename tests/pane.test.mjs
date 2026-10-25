@@ -1790,3 +1790,36 @@ test('custom code requires owner authoring and approved immutable live revisions
  }finally{await app.mf.dispose()}
  }
 })
+
+
+test('rich section text keeps semantic formatting and nested lists through immutable publication and rollback',async()=>{
+ const app=await runtime();let cookie
+ const call=(path,body)=>app.request(path,{method:'POST',headers:{Cookie:cookie??'',Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)})
+ const leaf=text=>({tag:'text',text}),element=(tag,...children)=>({tag,children})
+ try{
+  cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})).headers.get('set-cookie').split(';')[0]
+  const site=structuredClone(fixture),page=site.pages.find(page=>page.slug==='services')
+  const content=[element('h2',leaf('Workshop heading')),element('p',element('strong',leaf('Bold')),leaf(' '),element('em',leaf('italic')),leaf(' '),element('u',leaf('underline')),leaf(' '),element('s',leaf('strike'))),element('ul',element('li',leaf('Outer bullet'),element('ul',element('li',leaf('Nested bullet'))))),element('ol',element('li',leaf('Outer number'),element('ol',element('li',leaf('Nested number')))))]
+  page.body='Workshop heading\nBold italic underline strike\n\nOuter bullet\nNested bullet\n\n\nOuter number\nNested number'
+  page.sections=[{id:'synthetic-pane-rich-section',blocks:[{id:'synthetic-pane-rich-block',kind:'text',format:'div',text:page.body,content,align:'justify'}]}]
+  const response=await call('/api/pane/prepare',{site,base:''});assert.equal(response.status,200,await response.clone().text())
+  const first=await response.json();assert.deepEqual(first.site.pages.find(page=>page.slug==='services').sections[0].blocks[0].content,content)
+  assert.equal((await call('/api/pane/publish',{revision:first.id})).status,200)
+  const html=await (await app.request('/site/services')).text()
+  for(const fragment of ['<h2>Workshop heading</h2>','<strong>Bold</strong>','<em>italic</em>','<u>underline</u>','<s>strike</s>','<ul><li>Outer bullet<ul><li>Nested bullet</li></ul></li></ul>','<ol><li>Outer number<ol><li>Nested number</li></ol></li></ol>','text-align:justify'])assert.ok(html.includes(fragment),fragment)
+  assert.match(await (await app.request('/site/search?q=Nested%20bullet')).text(),/href="\/site\/services"/)
+  const invalidCases=[
+   block=>block.content[0].tag='script',
+   block=>block.content[0].onclick='alert(1)',
+   block=>block.content[1].children[0].children[0].text='Unindexed hidden content',
+   block=>block.content[2].children[0].children[1].children[0].children.push(element('ul',element('li',leaf('Too deep')))),
+   block=>block.content[0].children=[element('ul',element('li',leaf('Invalid heading child')))],
+  ]
+  for(const mutate of invalidCases){const invalid=structuredClone(first.site);mutate(invalid.pages.find(page=>page.slug==='services').sections[0].blocks[0]);assert.equal((await call('/api/pane/prepare',{site:invalid,base:first.id})).status,400)}
+  const changed=structuredClone(first.site),changedPage=changed.pages.find(page=>page.slug==='services');changedPage.sections[0].blocks[0].content=[leaf('Later text')];changedPage.sections[0].blocks[0].text=changedPage.body='Later text'
+  const next=await call('/api/pane/prepare',{site:changed,base:first.id});assert.equal(next.status,200);const second=await next.json()
+  assert.equal((await call('/api/pane/publish',{revision:second.id})).status,200)
+  assert.equal((await call('/api/pane/rollback',{revision:first.id})).status,200)
+  assert.ok((await (await app.request('/site/services')).text()).includes('<strong>Bold</strong>'))
+ }finally{await app.mf.dispose()}
+})

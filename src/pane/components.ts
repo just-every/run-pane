@@ -33,7 +33,7 @@ export function createComponent(site:Site,slug:string,sectionId:string,name:stri
  return {...site,components:[...(site.components??[]),{id,name,section:copy}],pages:site.pages.map(item=>item===page?{...page,sections:(page.sections??[section]).map(item=>item===section?{...section,component:id}:item)}:item)}
 }
 export function componentsFromForm(site:Site,input:Record<string,unknown>):Site {
- const components=site.components?.map(component=>({...component,section:{...component.section,blocks:component.section.blocks.map(block=>({...block,text:typeof input['component.'+component.id+'.'+block.id]==='string'?String(input['component.'+component.id+'.'+block.id]):block.text}))}}))
+ const components=site.components?.map(component=>({...component,section:{...component.section,blocks:component.section.blocks.map(block=>{const value=input['component.'+component.id+'.'+block.id];if(typeof value!=='string'||value===block.text)return block;const copy={...block,text:value};delete copy.content;return copy})}}))
  const pages=site.pages.map(page=>{
   let sections=page.sections
   for(const component of components??[]){
