@@ -784,7 +784,9 @@ test('explicit person erasure preserves anonymous ordered activity through archi
    assert.doesNotMatch(JSON.stringify(history),/Synthetic administrator|synthetic-pane-4@example/)
    const exported=await restored.request('/api/pane/activity/export',{headers:{Cookie:ownerSession}})
    assert.match(exported.headers.get('content-disposition'),/attachment/)
-   assert.deepEqual(await exported.json(),history,'Restored owner export matches the chronological log')
+   const exportedRows=await exported.json()
+   assert.deepEqual(exportedRows.slice(0,history.length),history,'Restored owner export preserves the chronological log')
+   assert.deepEqual(exportedRows.slice(history.length).map(({action,subject,actor})=>({action,subject,actor})),[{action:'api.GET.200',subject:'api:activity',actor:'Synthetic owner'}],'Reading the log appends only its own metadata event')
    for(const path of ['/api/pane/activity','/api/pane/activity/export']){
     assert.equal((await restored.request(path)).status,401)
     assert.equal((await restored.request(path,{headers:{Cookie:adminCookie}})).status,401)
