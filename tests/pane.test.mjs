@@ -740,7 +740,7 @@ test('explicit person erasure preserves anonymous ordered activity through archi
   const adminCookie=(await call('/auth/confirm',{token},'')).headers.get('set-cookie').split(';')[0]
   const person=(await app.db.prepare("SELECT id FROM oa_operators WHERE role='admin'").first()).id
   const draft=await (await call('/api/pane/prepare',{site:fixture},adminCookie)).json()
-  assert.equal((await app.request('/api/pane/activity',{headers:{Cookie:adminCookie}})).status,403)
+  for(const path of ['/api/pane/activity','/api/pane/activity/export'])assert.equal((await app.request(path,{headers:{Cookie:adminCookie}})).status,403,'Even an active admin cannot read or export the owner log')
   const issued=await (await call('/api/pane/tokens/create',{name:'synthetic-pane-6',operatorId:person,scopes:['pages:read']})).json()
   assert.equal((await call('/api/pane/tokens/revoke',{id:issued.id})).status,200)
   const presented={headers:{Authorization:'Bearer '+issued.token}}
