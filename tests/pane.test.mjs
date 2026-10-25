@@ -1665,14 +1665,17 @@ test('section drafts preserve validated layout and reading text through publicat
   cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})).headers.get('set-cookie').split(';')[0]
   const site=structuredClone(fixture),page=site.pages.find(page=>page.slug==='services')
   page.body='Synthetic section heading\n\nSynthetic section detail'
-  page.sections=[{id:'synthetic-pane-section',kind:'columns',ratio:'2:1',background:'#AABBCC',paddingTop:96,blocks:[{id:'synthetic-pane-block-1',kind:'text',text:'Synthetic section heading',column:2,span:6,align:'right'},{id:'synthetic-pane-block-2',kind:'text',text:'Synthetic section detail',column:8,span:5,row:2}]}]
+  page.sections=[{id:'synthetic-pane-section',kind:'columns',ratio:'2:1',background:'#AABBCC',paddingTop:96,blocks:[{id:'synthetic-pane-block-1',kind:'text',text:'Synthetic section heading',format:'h2',column:2,span:6,align:'right'},{id:'synthetic-pane-block-2',kind:'text',text:'Synthetic section detail',column:8,span:5,row:2}]}]
   const prepared=await call('/api/pane/prepare',{site,base:''});assert.equal(prepared.status,200,await prepared.clone().text())
   const first=await prepared.json(),stored=first.site.pages.find(page=>page.slug==='services')
   assert.equal(stored.sections[0].ratio,'2:1');assert.equal(stored.sections[0].background,'#aabbcc')
   assert.deepEqual(stored.sections[0].blocks.map(({column,span,row,align})=>({column,span,row,align})),[{column:2,span:6,row:1,align:'right'},{column:8,span:5,row:2,align:'left'}])
   assert.equal((await app.request('/api/pane/pages',{headers:{Cookie:cookie}})).status,200)
   assert.equal((await call('/api/pane/publish',{revision:first.id})).status,200)
-  assert.match(await (await app.request('/site/services')).text(),/Synthetic section heading/)
+  const rendered=await app.request('/site/services'),renderedHtml=await rendered.text()
+  assert.match(renderedHtml,/<h2 data-block="synthetic-pane-block-1">Synthetic section heading<\/h2>/)
+  assert.match(renderedHtml,/grid-column:2\/span 6/)
+  assert.match(rendered.headers.get('content-security-policy'),/style-src 'self'.*'sha256-/)
   assert.match(await (await app.request('/site/search?q=Synthetic%20section%20detail')).text(),/href="\/site\/services"/)
   const changed=structuredClone(first.site);changed.pages.find(page=>page.slug==='services').sections[0].paddingTop=120
   const secondResponse=await call('/api/pane/prepare',{site:changed,base:first.id});assert.equal(secondResponse.status,200)
@@ -1766,7 +1769,7 @@ test('custom code requires owner authoring and approved immutable live revisions
   const next=await call('/api/pane/prepare',{site:changed,base:prepared.id});assert.equal(next.status,200)
   const replacement=await next.json()
   assert.notEqual(replacement.id,prepared.id,'A code edit creates a new immutable version')
-  assert.deepEqual((await app.db.prepare('SELECT site FROM pane_revisions WHERE id=?').bind(prepared.id).first()).site,JSON.stringify(prepared.site),'Published source bytes never change')
+  assert.deepEqual((await (await app.request('/api/pane',{headers:{Cookie:cookie}})).json()).revisions.find(row=>row.id===prepared.id).site,prepared.site,'Published source bytes never change')
   assert.doesNotMatch(await (await app.request('/site/contact')).text(),/Unapproved replacement/)
   assert.equal((await call('/api/pane/rollback',{revision:replacement.id})).status,400,'Every changed code version needs a new approval')
   assert.equal((await call('/api/pane/publish',{revision:replacement.id})).status,200)

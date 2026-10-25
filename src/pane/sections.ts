@@ -39,7 +39,7 @@ export function normalizeSections(value: unknown): Section[] | undefined {
   const id = identity(section.id)
   if(section.component !== undefined && (typeof section.component !== 'string' || !/^[a-zA-Z0-9_-]{1,80}$/.test(section.component)))throw Error('Invalid component reference.')
   if (!Array.isArray(section.blocks) || !section.blocks.length || section.blocks.length > 100) throw Error('Provide between 1 and 100 blocks per section.')
-  if (section.background !== undefined && (typeof section.background !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(section.background))) throw Error('Use a six-digit hex section background.')
+  if (section.background !== undefined && (typeof section.background !== 'string' || !/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(section.background))) throw Error('Use a hex section background with 3, 4, 6 or 8 digits.')
   const blocks = section.blocks.map(raw => {
    const block = object(raw)
    if (Object.keys(block).some(key => !['id','kind','text','column','span','row','order','align','vertical','format'].includes(key))) throw Error('Unsupported block field.')
