@@ -1,3 +1,5 @@
+import { parseImportDocument } from './import-formats'
+import { createComponent } from './components'
 import { normalizeForms, privateFile } from './forms'
 import { accessFromForm } from './access'
 import { changeRejected } from './rejected-content'
@@ -90,7 +92,15 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   const action=api?path.slice('/api/pane/'.length):path.slice('/app/'.length)
   let result:unknown,notice='Saved.',back='/app'
   if(!routeCapability(path,'POST')||!caps.includes(routeCapability(path,'POST')!))return json({error:'Your role cannot perform this action.'},403)
-  if(action==='forms'){
+  if((!owner||scopes)&&['import/dry-run','import/apply'].includes(action)&&input.source){
+   const imported=parseImportDocument(typeof input.source==='string'?input.source:JSON.stringify(input.source)).site
+   if(imported?.customCode||imported?.pages.some(page=>page.customCode))return json({error:'Only a native owner authors custom code, including imports.'},403)
+  }
+  if(action==='component-create'){
+   const row=await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
+   if(!row)throw Error('Prepare a site first.')
+   result=await prepare(env.DB,actor.id,createComponent(revision(row).site,String(input.slug),String(input.section),String(input.componentName)),String(input.base??''));notice='Reusable section saved.';back='/app?page='+encodeURIComponent(String(input.slug))
+  }else if(action==='forms'){
    if(!owner||scopes)return json({error:'Native owner only.'},403)
    const row=await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
    if(!row)throw Error('Prepare a site first.')
@@ -135,6 +145,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    const proposed=normalizeSite(input.site??await siteFromForm(env.DB,input))
    const currentAccess=await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
    const previousAccess=currentAccess?revision(currentAccess).site:null
+   if((!owner||scopes)&&(JSON.stringify(proposed.customCode??null)!==JSON.stringify(previousAccess?.customCode??null)||proposed.pages.some(page=>JSON.stringify(page.customCode??null)!==JSON.stringify(previousAccess?.pages.find(old=>(old.id??old.slug)===(page.id??page.slug))?.customCode??null))))return json({error:'Only the owner authors custom code.'},403)
    if(!owner&&(JSON.stringify(proposed.forms??null)!==JSON.stringify(previousAccess?.forms??null)||JSON.stringify(proposed.access??null)!==JSON.stringify(previousAccess?.access??null)||proposed.pages.some(page=>JSON.stringify(page.access??null)!==JSON.stringify(previousAccess?.pages.find(old=>(old.id??old.slug)===(page.id??page.slug))?.access??null))))return json({error:'Only the owner changes access.'},403)
    if(!caps.includes('settings:write')){
     const latest=await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()

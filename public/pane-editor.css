@@ -277,3 +277,8 @@
 .pane [data-schedule-settings] :is(input, select) { min-width: 0; max-width: 100%; }
 .pane [data-schedule-settings] select { width: 100%; }
 .rer-themed .pane [data-schedule-settings] label:has(> input) { grid-template-columns: minmax(0, 1fr); }
+
+/* Code settings remain readable inside the existing phone edit card. */
+.pane .custom-code-settings { min-width: 0; }
+.pane .custom-code-settings code { white-space: normal; overflow-wrap: anywhere; }
+.pane .custom-code-settings :is(input, textarea, select) { min-width: 0; max-width: 100%; }

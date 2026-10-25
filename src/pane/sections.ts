@@ -5,7 +5,7 @@ export type TextBlock = {
  align: 'left' | 'center' | 'right'; vertical: 'start' | 'center' | 'end';
 }
 export type Section = {
- id: string; kind: 'text' | 'columns'; ratio: '1:1' | '1:2' | '2:1' | '1:1:1';
+ id: string; component?: string; kind: 'text' | 'columns'; ratio: '1:1' | '1:2' | '2:1' | '1:1:1';
  gap: number; paddingTop: number; paddingBottom: number;
  background?: string; blocks: TextBlock[];
 }
@@ -35,8 +35,9 @@ export function normalizeSections(value: unknown): Section[] | undefined {
  let characters = 0
  return value.map(raw => {
   const section = object(raw)
-  if (Object.keys(section).some(key => !['id','kind','ratio','gap','paddingTop','paddingBottom','background','blocks'].includes(key))) throw Error('Unsupported section field.')
+  if (Object.keys(section).some(key => !['id','component','kind','ratio','gap','paddingTop','paddingBottom','background','blocks'].includes(key))) throw Error('Unsupported section field.')
   const id = identity(section.id)
+  if(section.component !== undefined && (typeof section.component !== 'string' || !/^[a-zA-Z0-9_-]{1,80}$/.test(section.component)))throw Error('Invalid component reference.')
   if (!Array.isArray(section.blocks) || !section.blocks.length || section.blocks.length > 100) throw Error('Provide between 1 and 100 blocks per section.')
   if (section.background !== undefined && (typeof section.background !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(section.background))) throw Error('Use a six-digit hex section background.')
   const blocks = section.blocks.map(raw => {
@@ -50,7 +51,7 @@ export function normalizeSections(value: unknown): Section[] | undefined {
    if (column + span > 13) throw Error('A block must fit the twelve-column grid.')
    return {id:identity(block.id),kind:'text' as const,text,column,span,row:number(block.row,1,100,1),order:number(block.order,0,100,0),align:choice(block.align,['left','center','right'] as const,'left'),vertical:choice(block.vertical,['start','center','end'] as const,'start')}
   })
-  return {id,kind:choice(section.kind,['text','columns'] as const,'text'),ratio:choice(section.ratio,['1:1','1:2','2:1','1:1:1'] as const,'1:1'),gap:number(section.gap,0,160,24),paddingTop:number(section.paddingTop,0,240,32),paddingBottom:number(section.paddingBottom,0,240,32),...(section.background === undefined ? {} : {background:String(section.background).toLowerCase()}),blocks}
+  return {id,...(section.component ? {component:String(section.component)} : {}),kind:choice(section.kind,['text','columns'] as const,'text'),ratio:choice(section.ratio,['1:1','1:2','2:1','1:1:1'] as const,'1:1'),gap:number(section.gap,0,160,24),paddingTop:number(section.paddingTop,0,240,32),paddingBottom:number(section.paddingBottom,0,240,32),...(section.background === undefined ? {} : {background:String(section.background).toLowerCase()}),blocks}
  })
 }
 /** Canonical reading order is the stored order, independent of visual overlap. */

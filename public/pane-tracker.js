@@ -15,7 +15,7 @@ if (navigator.doNotTrack !== '1' && !navigator.globalPrivacyControl) {
  if (document.referrer) { try { referrerHost = new URL(document.referrer).hostname } catch {} }
  const attribution = {referrerHost,campaign,campaignTagged:params.has('utm_campaign'),utm_source,utm_medium}
  const send = (url, body) => fetch(url, {method:'POST',credentials:'omit',keepalive:true,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).catch(()=>{})
- const raise = goal => window.dispatchEvent(new CustomEvent('pane:goal', {detail:{name:goal.name}}))
+ const raise = goal => window.dispatchEvent(new CustomEvent('pane:goal', {detail:{name:goal.name,value:1}}))
  send('/site/visit', {path,...attribution})
  // A submitted contact form carries this view's attribution; the server counts the stored message.
  document.addEventListener('submit', event => {

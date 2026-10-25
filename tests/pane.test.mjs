@@ -1699,3 +1699,70 @@ test('section drafts preserve validated layout and reading text through publicat
   assert.equal((await dashboard()).revisions.length,before,'Invalid section drafts never create revisions')
  }finally{await app.mf.dispose()}
 })
+
+test('reusable section references propagate across five immutable pages and detached copies remain independent',async()=>{
+ const app=await runtime();let cookie
+ const call=(path,body)=>app.request(path,{method:'POST',headers:{Cookie:cookie??'',Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)})
+ const dashboard=async()=> (await app.request('/api/pane',{headers:{Cookie:cookie}})).json()
+ try{
+  cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic component owner'})).headers.get('set-cookie').split(';')[0]
+  const initial=await (await call('/api/pane/prepare',{site:fixture,base:''})).json()
+  const created=await call('/api/pane/component-create',{base:initial.id,slug:'home',section:'body',componentName:'Announcement'});assert.equal(created.status,200,await created.clone().text())
+  const first=await created.json(),component=first.site.components[0]
+  let site=structuredClone(first.site)
+  for(const page of site.pages.slice(1))page.sections=[{...component.section,id:'synthetic-pane-'+page.slug,component:component.id}]
+  const placed=await (await call('/api/pane/prepare',{site,base:first.id})).json()
+  site=structuredClone(placed.site);site.components[0].section.blocks[0].text='Synthetic announcement changed once'
+  const changed=await call('/api/pane/prepare',{site,base:placed.id});assert.equal(changed.status,200,await changed.clone().text());const second=await changed.json()
+  for(const page of second.site.pages){
+   assert.equal(page.body,'Synthetic announcement changed once')
+   assert.match(await (await app.request('/preview/'+second.id+'/'+page.slug,{headers:{Cookie:cookie}})).text(),/Synthetic announcement changed once/)
+  }
+  assert.deepEqual((await dashboard()).revisions.find(row=>row.id===placed.id).site,placed.site)
+  site=structuredClone(second.site);delete site.pages[4].sections[0].component
+  const detached=await (await call('/api/pane/prepare',{site,base:second.id})).json()
+  site=structuredClone(detached.site);site.components[0].section.blocks[0].text='Synthetic next announcement'
+  const third=await (await call('/api/pane/prepare',{site,base:detached.id})).json()
+  assert.equal(third.site.pages[4].body,'Synthetic announcement changed once')
+  for(const page of third.site.pages.slice(0,4))assert.equal(page.body,'Synthetic next announcement')
+  assert.equal((await call('/api/pane/prepare',{site:second.site,base:second.id})).status,409)
+  assert.equal((await call('/api/pane/publish',{revision:third.id})).status,200)
+  assert.match(await (await app.request('/site/contact')).text(),/Synthetic announcement changed once/)
+  const invalid=structuredClone(third.site);invalid.components=[]
+  assert.equal((await call('/api/pane/prepare',{site:invalid,base:third.id})).status,400)
+  assert.equal((await call('/api/pane/rollback',{revision:placed.id})).status,400,'An unpublished component snapshot cannot bypass approval')
+ }finally{await app.mf.dispose()}
+})
+
+test('custom code requires owner authoring and approved immutable live revisions while previews and privacy refusals stay inert',async()=>{
+ const app=await runtime();let cookie
+ const call=(path,body)=>app.request(path,{method:'POST',headers:{Cookie:cookie??'',Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)})
+ try{
+  cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic code owner'})).headers.get('set-cookie').split(';')[0]
+  const site=structuredClone(fixture);site.customCode={css:'.proof { color: rgb(120, 20, 60) }',html:'<p class="proof">Synthetic embed</p>',header:'<meta name="synthetic-verification" content="synthetic-pane-1">',footer:'<script>window.syntheticFooter=true</script>'};site.pages[4].customCode={header:'<script>window.syntheticThankYou=true</script>'}
+  const response=await call('/api/pane/prepare',{site,base:''});assert.equal(response.status,200,await response.clone().text());const prepared=await response.json()
+  const preview=await app.request('/preview/'+prepared.id+'/contact',{headers:{Cookie:cookie}})
+  assert.doesNotMatch(await preview.text(),/data-custom-code|pane-custom-code.js|syntheticThankYou/)
+  assert.doesNotMatch(preview.headers.get('content-security-policy'),/unsafe-inline/)
+  assert.equal((await call('/api/pane/publish',{revision:prepared.id})).status,200)
+  const live=await app.request('/site/contact'),html=await live.text()
+  assert.match(html,/data-custom-code/);assert.match(html,/syntheticThankYou/)
+  assert.match(live.headers.get('content-security-policy'),/script-src 'self'.*'sha256-/)
+  const home=await app.request('/site');assert.doesNotMatch(await home.text(),/syntheticThankYou/)
+  for(const headers of [{'Sec-GPC':'1'},{DNT:'1'}]){
+   const quiet=await app.request('/site/contact',{headers});assert.doesNotMatch(await quiet.text(),/data-custom-code|pane-custom-code.js|syntheticThankYou/)
+   assert.doesNotMatch(quiet.headers.get('content-security-policy'),/unsafe-inline|frame-src 'self'/)
+  }
+  let mail;const auth=createOperatorAuth({db:app.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{mail=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+  await auth.invite(new Request(origin+'/auth/invite',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin,Cookie:cookie}}),{email:'synthetic-pane-code-admin@example.test',displayName:'Synthetic admin',role:'admin'})
+  const token=new URL(mail.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token')
+  const adminCookie=(await call('/auth/confirm',{token})).headers.get('set-cookie').split(';')[0]
+  const changed=structuredClone(prepared.site);changed.customCode.html='<p>Unapproved replacement</p>'
+  const denied=await app.request('/api/pane/prepare',{method:'POST',headers:{Cookie:adminCookie,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({site:changed,base:prepared.id})})
+  assert.equal(denied.status,403)
+  const imported=await app.request('/api/pane/import/dry-run',{method:'POST',headers:{Cookie:adminCookie,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({source:JSON.stringify({...changed,schemaVersion:1})})});assert.equal(imported.status,403,'Imports cannot bypass owner-only custom code authoring')
+  for(const css of ['@import "https://external.invalid/x.css";', '.proof { background: url(/api/pane) }', '.proof { background: image-set("https://external.invalid/x.png" 1x) }', '.proof { color: \\72 ed }']){const unsafe=structuredClone(changed);unsafe.customCode.css=css;assert.equal((await call('/api/pane/prepare',{site:unsafe,base:prepared.id})).status,400,'Resource-loading CSS stays denied')}
+  const next=await call('/api/pane/prepare',{site:changed,base:prepared.id});assert.equal(next.status,200)
+  assert.doesNotMatch(await (await app.request('/site/contact')).text(),/Unapproved replacement/)
+ }finally{await app.mf.dispose()}
+})

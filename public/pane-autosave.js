@@ -28,7 +28,7 @@ for (const form of document.querySelectorAll('form[data-autosave]')) {
    const note = bar.querySelector('[data-publication-note]')
    if (note) note.textContent = 'Draft saved. The owner approves publication.'
   }
-  for (const field of document.querySelectorAll('form[action="/app/page-request-review"] input[name=base]')) field.value = revision.id
+  for (const field of document.querySelectorAll('form[action="/app/page-request-review"] input[name=base],form[action="/app/component-create"] input[name=base]')) field.value = revision.id
   for (const action of document.querySelectorAll('form[action="/app/page-publish"]')) action.hidden = true
   // Publication and preview actions must follow the saved draft, never a stale revision.
   for (const field of document.querySelectorAll('form[action="/app/publish"] input[name=revision]')) field.value = revision.id

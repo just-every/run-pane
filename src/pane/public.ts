@@ -1,3 +1,4 @@
+import { customCodeSource, codeConfirmation } from './custom-code'
 import { typedForm,validateForm,boundedForm,uploadStatements,type Upload } from './forms'
 import { accessResponse, pageRules } from './access'
 import { promotionMarkup } from './promotions'
@@ -112,7 +113,7 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   if(env.PANE_LIVE){
    let attribution:unknown={};try{const text=String(f.get('attribution')??'');if(text.length<=2000)attribution=JSON.parse(text||'{}')}catch{}
    await liveCall(env,'/accept',{id,name,email,message,received:new Date(received).toISOString(),acknowledgment:acknowledgment??null,followUp:followUpDue(site,received),goals:optedOut(request)?[]:(site.goals??[]).filter(goal=>goal.type==='form'&&goal.page===slug).map(goal=>({id:goal.id,page:slug})),dimensions:visitDimensions(request,attribution,site.analyticsCampaigns),uploads})
-   return new Response(null,{status:303,headers:{location:form?.redirect??(pagePath(site,slug)+'?sent=1')}})
+   return new Response(null,{status:303,headers:{location:codeConfirmation(site,slug,form?.redirect)}})
   }
   const messageStatement=env.DB.prepare('INSERT OR IGNORE INTO pane_messages(id,name,email,message,created_at,acknowledgment,acknowledgment_status,follow_up_at) SELECT ?,?,?,?,?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM pane_erased_messages WHERE id=?)').bind(id,name,email,message,new Date(received).toISOString(),acknowledgment ? JSON.stringify(acknowledgment) : null,acknowledgment ? 'pending' : 'not_requested',followUpDue(site,received),id)
   const [stored]=await env.DB.batch([messageStatement,...uploadStatements(env.DB,id,message,uploads)])
@@ -125,7 +126,7 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
    for(const goal of goals) await recordGoal(env.DB,goal.id,slug,dimensions)
   }
   await deliverAcknowledgment(env,id)
-  return new Response(null,{status:303,headers:{location:form?.redirect??(pagePath(site,slug)+'?sent=1')}})
+  return new Response(null,{status:303,headers:{location:codeConfirmation(site,slug,form?.redirect)}})
  }
  if(!['GET','HEAD'].includes(request.method))return json({error:'Method not allowed.'},405)
  const banners=snapshot?snapshot.banners??[]:await activeBanners(env.DB,String(row.id))
@@ -139,16 +140,16 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   const missing=site.notFound && activePages(site).find(page=>page.slug===site.notFound)
   if(!missing)return notFound()
   const missingGate=await accessResponse(request,env,site,missing);if(missingGate)return missingGate
-  const response=await document(site.name,announcements+publicPage(site,missing.slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY),'site',missing.embed ? embedOrigin(missing.embed) : undefined,optedOut(request) ? undefined : site.analytics,site.locale?.locale)
+  const response=await document(site.name,announcements+publicPage(site,missing.slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY),'site',missing.embed ? embedOrigin(missing.embed) : undefined,optedOut(request) ? undefined : site.analytics,site.locale?.locale,optedOut(request)?'':customCodeSource(site,missing))
   const headers=new Headers(response.headers);headers.set('x-robots-tag','noindex, nofollow')
   return new Response(request.method==='HEAD'?null:response.body,{status:404,headers})
  }
  const notice=(form||page.kind==='contact'||slug==='contact')&&url.searchParams.has('sent')?'<div class="public-site public-sent"><div class="public-shell"><p class="notice" role="status">'+escape(form?.confirmation??'Thank you. Your message has been received.')+'</p></div></div>':''
  const embed=page.embed
- const response=await document(site.name,announcements+notice+publicPage(site,slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY)+promotionMarkup(site,slug),'site',embed ? embedOrigin(embed) : undefined,optedOut(request) ? undefined : site.analytics,site.locale?.locale)
+ const response=await document(site.name,announcements+notice+publicPage(site,slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY)+promotionMarkup(site,slug),'site',embed ? embedOrigin(embed) : undefined,optedOut(request) ? undefined : site.analytics,site.locale?.locale,optedOut(request)?'':customCodeSource(site,page!))
  if(form||page.kind==='contact'||slug==='contact'){
   const headers=new Headers(response.headers);headers.set('vary','Cookie');headers.set('cache-control','private, no-store');const policy=headers.get('content-security-policy')!
-  headers.set('content-security-policy',policy.replace("script-src 'self'","script-src 'self' https://challenges.cloudflare.com").replace("connect-src 'self'","connect-src 'self' https://challenges.cloudflare.com")+(embed?' https://challenges.cloudflare.com':'; frame-src https://challenges.cloudflare.com'))
+  headers.set('content-security-policy',policy.replace("script-src 'self'","script-src 'self' https://challenges.cloudflare.com").replace("connect-src 'self'","connect-src 'self' https://challenges.cloudflare.com")+(embed||(!optedOut(request)&&(site.customCode||page.customCode))?' https://challenges.cloudflare.com':'; frame-src https://challenges.cloudflare.com'))
   return new Response(request.method==='HEAD'?null:response.body,{status:response.status,headers})
  }
  const privateHeaders=new Headers(response.headers);privateHeaders.set('cache-control','private, no-store');privateHeaders.set('vary','Cookie')

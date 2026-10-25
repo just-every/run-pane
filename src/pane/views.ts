@@ -1,3 +1,4 @@
+import { codeHashes } from './custom-code'
 import { permissionsPolicy } from './document-security'
 import { analyticsSources, type Analytics } from './analytics'
 import { fontHead } from '../base/font-head'
@@ -12,9 +13,11 @@ import { moves } from './ui/moves'
 import { shell, type Tab } from './ui/shell'
 import { sites } from './ui/sites'
 
-export async function document(title: string, body: string, kind: 'app' | 'site' = 'app', embedOrigin?: string, analytics?: Analytics, locale = 'en-US'): Promise<Response> {
+export async function document(title: string, body: string, kind: 'app' | 'site' = 'app', embedOrigin?: string, analytics?: Analytics, locale = 'en-US', codeSource = ''): Promise<Response> {
   const frame = await themeFrame({ href: '/rer-theme.css', productName: branding.name, accentColor: branding.primaryColor })
   const extra = analyticsSources(analytics)
+  const hashes = codeSource ? await codeHashes(codeSource) : []
+  const styleHashes = codeSource ? await codeHashes(codeSource,'style') : []
   const sources = (list: string[]) => list.length ? ' ' + list.join(' ') : ''
   const policy = extra.image.length ? frame.policy.replace("img-src 'self'", `img-src 'self'${sources(extra.image)}`) : frame.policy
   const pageTitle = kind === 'site' ? title : `${title} · ${branding.name}`
@@ -27,7 +30,7 @@ export async function document(title: string, body: string, kind: 'app' | 'site'
       'x-content-type-options': 'nosniff',
       'x-frame-options': 'DENY',
       'permissions-policy': permissionsPolicy,
-      'content-security-policy': `default-src 'none'; script-src 'self'${sources(extra.script)}; connect-src 'self'${sources(extra.connect)}; form-action 'self'; base-uri 'none'; frame-ancestors 'none'; ${policy}${embedOrigin ? `; frame-src ${embedOrigin}` : ''}`,
+      'content-security-policy': `default-src 'none'; script-src 'self'${sources([...extra.script,...hashes])}; connect-src 'self'${sources(extra.connect)}; form-action 'self'; base-uri 'none'; frame-ancestors 'none'; ${codeSource ? policy.replace("style-src 'self'","style-src 'self'"+sources(styleHashes)) : policy}${embedOrigin || codeSource ? `; frame-src ${codeSource ? "'self' " : ''}${embedOrigin??''}` : ''}`,
     },
   })
 }

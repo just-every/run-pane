@@ -59,11 +59,12 @@ const banner = document.querySelector('[data-analytics-consent]')
 if (ga4 && banner && !quiet) {
  const status = banner.querySelector('[data-analytics-status]')
  const choose = (choice, remember) => {
-  if (remember) { try { localStorage.setItem(key, choice) } catch {} }
+  if (remember) { try { localStorage.setItem(key, choice) } catch {}; dispatchEvent(new CustomEvent('pane:consent',{detail:{choice,source:'analytics'}})) }
   banner.dataset.choice = choice
   if (choice === 'allow') { allow(); status.textContent = 'Google Analytics is on. You can turn it off below.' }
   else { deny(); status.textContent = 'Google Analytics is off. Nothing from Google loads on this website.' }
  }
+ addEventListener('pane:consent',event=>{if(event.detail.source!=='analytics')choose(event.detail.choice,false)})
  banner.querySelector('[data-analytics-allow]').addEventListener('click', () => choose('allow', true))
  banner.querySelector('[data-analytics-deny]').addEventListener('click', () => choose('deny', true))
  let saved = null
