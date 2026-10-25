@@ -14,6 +14,8 @@ export async function findPersonData(db:D1Database,email:string,queued:QueuedEnq
  const accounts=(await db.prepare('SELECT id,email,display_name,role,status,version,created_at FROM oa_operators WHERE lower(trim(email))=? ORDER BY id').bind(email).all<Record<string,any>>()).results
  const ids=JSON.stringify(messages.map(message=>message.id)),people=JSON.stringify(accounts.map(account=>account.id))
  const replies=(await db.prepare('SELECT id,message_id,subject,body,status,created_at FROM pane_inquiry_replies WHERE message_id IN (SELECT value FROM json_each(?)) ORDER BY created_at,id').bind(ids).all<Record<string,any>>()).results
+ const files=(await db.prepare('SELECT * FROM pane_files WHERE message_id IN (SELECT value FROM json_each(?)) ORDER BY id').bind(ids).all()).results
+ const fileChunks=(await db.prepare('SELECT * FROM pane_file_chunks WHERE file_id IN (SELECT id FROM pane_files WHERE message_id IN (SELECT value FROM json_each(?))) ORDER BY file_id,position').bind(ids).all()).results
  const activity=(await db.prepare('SELECT sequence,action,subject,created_at FROM pane_activity WHERE actor IN (SELECT value FROM json_each(?)) ORDER BY sequence').bind(people).all()).results
  const roles=(await db.prepare('SELECT operator_id,roles,changed_at FROM pane_roles WHERE operator_id IN (SELECT value FROM json_each(?))').bind(people).all()).results
  const externalIdentities=(await db.prepare('SELECT operator_id,issuer,subject FROM oa_external_identities WHERE operator_id IN (SELECT value FROM json_each(?))').bind(people).all()).results
@@ -23,7 +25,7 @@ export async function findPersonData(db:D1Database,email:string,queued:QueuedEnq
  const nativeCredentials=(await db.prepare('SELECT id,operator_id,kind,expires_at,revoked_at FROM oa_credentials WHERE operator_id IN (SELECT value FROM json_each(?))').bind(people).all()).results
  const pending=queued.filter(message=>message.email.trim().toLowerCase()===email)
  const downstream=messages.flatMap(message=>message.acknowledgment_provider?[{service:String(message.acknowledgment_provider),kind:'acknowledgment',messageId:message.id,status:message.acknowledgment_status,receipt:message.acknowledgment_provider_id??null}]:[])
- return {version:1,email,rejected,messages,replies,queued:pending,accounts,roles,externalIdentities,credentials,sessions,signInLinks,nativeCredentials,activity,downstream,crmDeliveries:[],notHeld:['Analytics and embed choices are browser-local and are not associated with an email address.','No file, comment, subscriber or CRM storage door exists in this installation.'],retainedAfterErasure:['Value-free message replay receipts and portability tombstones.','Anonymized account placeholder and activity metadata.'],canErase:!accounts.some(account=>account.role==='owner')}
+ return {version:1,email,rejected,messages,files,fileChunks,replies,queued:pending,accounts,roles,externalIdentities,credentials,sessions,signInLinks,nativeCredentials,activity,downstream,crmDeliveries:[],notHeld:['Analytics and embed choices are browser-local and are not associated with an email address.','No comment, subscriber or CRM storage door exists in this installation.'],retainedAfterErasure:['Value-free message replay receipts and portability tombstones.','Anonymized account placeholder and activity metadata.'],canErase:!accounts.some(account=>account.role==='owner')}
 }
 export type PersonPrivacy=Awaited<ReturnType<typeof findPersonData>>
 /** All current rows are one guarded D1 batch. A concurrent new record aborts the
@@ -49,6 +51,8 @@ export async function erasePersonData(db:D1Database,email:string,confirm:unknown
    THEN 1 ELSE 0 END WHERE id=1`).bind(actor.id,actor.version,actor.sessionId??'',actor.id,Date.now(),email,email,found.rejected.length,email,JSON.stringify(found.rejected.map(row=>row.id)),email,found.messages.length,email,ids,ids,found.replies.length,email,found.accounts.length,JSON.stringify(found.accounts)),
  ]
  for(const id of messageIds)statements.push(...await erasureStatements(wire,'pane_messages',{id}),wire.prepare('INSERT OR IGNORE INTO pane_erased_messages(id,created_at) VALUES(?,?)').bind(id,new Date(now).toISOString()))
+ for(const file of found.files)statements.push(...await erasureStatements(wire,'pane_files',{id:file.id}))
+ for(const chunk of found.fileChunks)statements.push(...await erasureStatements(wire,'pane_file_chunks',{id:chunk.id}))
  for(const reply of found.replies)statements.push(...await erasureStatements(wire,'pane_inquiry_replies',{id:reply.id}))
  // A retained anonymized account/activity row cannot carry a row tombstone: the
  // shared redaction checkpoint refuses older archives while newer ones restore.

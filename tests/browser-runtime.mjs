@@ -16,9 +16,9 @@ const server=createServer(async(req,res)=>{
    try {const bytes=await readFile(file);res.writeHead(200,{'content-type':types[extname(file)]??'application/octet-stream'});res.end(req.method==='HEAD'?undefined:bytes);return}catch(error){if(!['ENOENT','EISDIR'].includes(error.code))throw error}
   }
   const chunks=[];for await(const chunk of req)chunks.push(chunk)
-  const body=Buffer.concat(chunks).toString('utf8')
+  const body=Buffer.concat(chunks)
   const {host,...headers}=req.headers // runtime() supplies the target Host exactly once.
-  const response=await f.request(url.href,{method:req.method,headers,...(body?{body}:{})})
+  const response=await f.request(url.href,{method:req.method,headers,...(body.length?{body}:{})})
   response.headers.forEach((value,key)=>{if(!['content-length','transfer-encoding','connection','set-cookie'].includes(key))res.setHeader(key,value)})
   const cookies=response.headers.getSetCookie();if(cookies.length)res.setHeader('set-cookie',cookies)
   res.writeHead(response.status);res.end(req.method==='HEAD'?undefined:Buffer.from(await response.arrayBuffer()))

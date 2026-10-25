@@ -8,7 +8,7 @@ export async function expireRejected(db:D1Database,now=Date.now()){
 /** Unavailable workspace storage must never cause rejected answers to be kept elsewhere. */
 export async function retainRejected(env:Bindings,form:string,reason:string,fields:FormData){
  const id=String(fields.get('idempotency')??''),name=String(fields.get('name')??'').trim(),email=String(fields.get('email')??'').trim(),message=String(fields.get('message')??'').trim()
- if(!/^[a-f0-9-]{36}$/.test(id)||!name||name.length>120||!/^\S+@\S+\.\S+$/.test(email)||email.length>254||!message||message.length>5000)return
+ if(!/^[a-f0-9-]{36}$/.test(id)||!name||name.length>120||(email!==''&&!/^\S+@\S+\.\S+$/.test(email))||email.length>254||!message||message.length>5000)return
  const received=Date.now()
  try{
   await expireRejected(env.DB)

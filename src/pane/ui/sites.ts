@@ -1,3 +1,5 @@
+import { formSettings } from './form-settings'
+import { accessSettings } from './access-settings'
 import { siteTools } from './site-tools'
 import { can } from '../roles'
 import { activityView } from './activity'
@@ -59,5 +61,5 @@ function visits(data: Dashboard): string {
 export function sites(data: Dashboard): string {
   const role = data.role.toLowerCase(), owner = role === 'owner', canPreview = can(data,'pages:write')
   if(!can(data,'pages:read'))return `<h1>Reports</h1>${visits(data)}${goalsView(data.goals,slug=>slug)}${trafficView(data.traffic)}`
-  return `<div class="sites-top">${tile(data, owner, canPreview)}${stateCards(data)}</div>${scheduleStatus(data)}${canPreview && data.draft ? searchCheckView(data.draft.site) : ''}<div class="sites-body"><section class="history" id="history" aria-labelledby="history-title"><h2 id="history-title">Every revision, kept</h2><p class="help">Preview saved revisions. The owner can restore one that was live before; each decision is recorded on its revision.</p>${ribbon(data, owner, canPreview)}</section>${can(data,'reports:read')?`${visits(data)}${goalsView(data.goals, slug => (data.live ?? data.draft)?.site.pages.find(page => page.slug === slug)?.title ?? slug)}${trafficView(data.traffic)}`:''}${siteTools(data)}${activityView(data)}</div>`
+  return `<div class="sites-top">${tile(data, owner, canPreview)}${stateCards(data)}</div>${scheduleStatus(data)}${canPreview && data.draft ? searchCheckView(data.draft.site) : ''}<div class="sites-body"><section class="history" id="history" aria-labelledby="history-title"><h2 id="history-title">Every revision, kept</h2><p class="help">Preview saved revisions. The owner can restore one that was live before; each decision is recorded on its revision.</p>${ribbon(data, owner, canPreview)}</section>${can(data,'reports:read')?`${visits(data)}${goalsView(data.goals, slug => (data.live ?? data.draft)?.site.pages.find(page => page.slug === slug)?.title ?? slug)}${trafficView(data.traffic)}`:''}${formSettings(data)}${accessSettings(data)}${siteTools(data)}${activityView(data)}</div>`
 }

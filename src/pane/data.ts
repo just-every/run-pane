@@ -18,6 +18,7 @@ export async function dashboardData(db:D1Database,name:string,role:string,operat
   trafficBreakdowns(db),
   db.prepare('SELECT id,message_id,subject,body,status,created_at FROM pane_inquiry_replies ORDER BY created_at,id').all<import('./model').Dashboard['replies'][number]>(),
  ])
+ for(const message of messages.results)message.files=(await db.prepare('SELECT id,name,size FROM pane_files WHERE message_id=? ORDER BY id').bind(message.id).all()).results
  const revisions = revs.results.map(revision)
  const liveRevision = live ? revision(live) : null
  const schedules = await scheduleOverview(db,revisions[0]??null,liveRevision)

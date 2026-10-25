@@ -1,3 +1,4 @@
+import { isProtected } from './access'
 import { liveSnapshot } from './outage'
 import { capabilities } from './roles'
 import { activePages, homeSlug, pagePath } from './pages'
@@ -23,7 +24,7 @@ export async function searchResponse(request: Request, original: Bindings): Prom
   if (!['GET', 'HEAD'].includes(request.method)) return text('Method not allowed.', 'text/plain', 405)
   const live = await liveRevision(env)
   if (!live) return text('Website not published.', 'text/plain', 404)
-  const body = path === '/robots.txt' ? (live.site.robots ?? 'User-agent: *\nAllow: /site\n') + `\nSitemap: ${origin}/sitemap.xml\n` : `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${activePages(live.site).filter(page => !page.hidden && page.slug!==live.site.notFound && !page.search?.noindex).map(page => `<url><loc>${escape(origin + pagePath(live.site,page.slug))}</loc><lastmod>${escape(live.created_at)}</lastmod></url>`).join('')}</urlset>`
+  const body = path === '/robots.txt' ? (live.site.robots ?? 'User-agent: *\nAllow: /site\n') + `\nSitemap: ${origin}/sitemap.xml\n` : `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${activePages(live.site).filter(page => !isProtected(live.site,page) && !page.hidden && page.slug!==live.site.notFound && !page.search?.noindex).map(page => `<url><loc>${escape(origin + pagePath(live.site,page.slug))}</loc><lastmod>${escape(live.created_at)}</lastmod></url>`).join('')}</urlset>`
   return text(request.method === 'HEAD' ? '' : body, path === '/robots.txt' ? 'text/plain; charset=utf-8' : 'application/xml; charset=utf-8')
  }
  if (request.method === 'POST' && (url.origin !== origin || request.headers.get('Origin') !== origin)) return text('Same-origin request required.', 'text/plain', 403)
@@ -63,7 +64,8 @@ export async function searchMetadata(request: Request, response: Response, origi
  const page = activePages(draft.site).find(page => page.slug === (preview ? decodeURIComponent(parts.slice(3).join('/')) || homeSlug(draft.site) : decodeURIComponent(parts.slice(2).join('/')) || homeSlug(draft.site)))
  if (!page) return response
  const search = page.search ?? {}, canonical = search.canonical || new URL(pagePath(draft.site,page.slug), original.AUTH_ORIGIN).href
- const noindex = preview || url.origin !== new URL(env.AUTH_ORIGIN).origin || !!original.RER_DEV_ORIGIN || search.noindex
+ if(!preview&&response.headers.get('x-robots-tag')?.includes('noindex'))return response
+ const noindex = isProtected(draft.site,page) || preview || url.origin !== new URL(env.AUTH_ORIGIN).origin || !!original.RER_DEV_ORIGIN || search.noindex
  const headers = new Headers(response.headers)
  if (noindex) headers.set('x-robots-tag', 'noindex, nofollow')
  const title = search.title || draft.site.name

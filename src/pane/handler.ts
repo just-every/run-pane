@@ -1,3 +1,5 @@
+import { normalizeForms, privateFile } from './forms'
+import { accessFromForm } from './access'
 import { changeRejected } from './rejected-content'
 import { requestPageReview, publishPage } from './page-review'
 import { findPersonData,erasePersonData,personEmail } from './privacy'
@@ -47,6 +49,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
     path==='/api/pane/prepare'||path==='/api/pane/autosave'?'draft:write':path.startsWith('/api/pane/import/')?'imports:write':undefined
    if(!required||!scopes.includes(required))return json({error:'Token scope refused.'},403)
   }
+  if(request.method==='GET'&&(path.startsWith('/app/files/')||path.startsWith('/api/pane/files/')))return privateFile(env.DB,decodeURIComponent(path.split('/').at(-1)!))
   if(request.method==='GET'&&path==='/api/pane/roles')return json((await env.DB.prepare('SELECT o.id,o.display_name,o.role,o.status,r.roles FROM oa_operators o LEFT JOIN pane_roles r ON r.operator_id=o.id ORDER BY o.created_at,o.id').all()).results)
   if(request.method==='GET'&&path==='/api/pane/tokens'){
    if(!owner)return json({error:'Owner only.'},403)
@@ -81,11 +84,26 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   }
   if(request.method!=='POST')return json({error:'Method not allowed.'},405)
   if(Number(request.headers.get('content-length')??0)>1200000)return json({error:'Input exceeds 1.2 MB.'},413)
-  const input:Record<string,any>=request.headers.get('content-type')?.includes('application/json')?await request.json():Object.fromEntries(await request.formData())
+  const formData=request.headers.get('content-type')?.includes('application/json')?null:await request.formData()
+  const input:Record<string,any>=formData?Object.fromEntries(formData):await request.json()
+  if(formData&&path==='/app/access')input.members=formData.getAll('members')
   const action=api?path.slice('/api/pane/'.length):path.slice('/app/'.length)
   let result:unknown,notice='Saved.',back='/app'
   if(!routeCapability(path,'POST')||!caps.includes(routeCapability(path,'POST')!))return json({error:'Your role cannot perform this action.'},403)
-  if(action.startsWith('spam/')){
+  if(action==='forms'){
+   if(!owner||scopes)return json({error:'Native owner only.'},403)
+   const row=await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
+   if(!row)throw Error('Prepare a site first.')
+   const site=revision(row).site,id=String(input.formId||crypto.randomUUID())
+   const form=normalizeForms([{id,name:input.formName,submit:input.submitLabel,confirmation:input.confirmation,redirect:input.redirect||undefined,fields:JSON.parse(String(input.fields))}])![0]
+   result=await prepare(env.DB,actor.id,{...site,forms:[...(site.forms??[]).filter(form=>form.id!==id),form]},String(input.base??''));notice='Form draft saved. Choose its page placements, then publish.';back='/app/sites'
+  }else if(action==='access'){
+   if(!owner||scopes)return json({error:'Native owner only.'},403)
+   const row=await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
+   if(!row)throw Error('Prepare a site first.')
+   const form=await accessFromForm(revision(row).site,input)
+   result=await prepare(env.DB,actor.id,form,String(input.base??''));notice='Access draft saved. Publish to apply it.';back='/app/sites'
+  }else if(action.startsWith('spam/')){
    if(!owner)return json({error:'Owner only.'},403)
    result=await changeRejected(env.DB,action.slice(5),input);notice='Spam review updated.';back='/app/inquiries'
   }else if(['privacy/find','privacy/export','privacy/erase'].includes(action)){
@@ -115,6 +133,9 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    await env.DB.prepare('UPDATE pane_api_tokens SET revoked_at=COALESCE(revoked_at,?) WHERE id=?').bind(Date.now(),String(input.id??'')).run();result={revoked:true}
   } else if(action==='prepare'||action==='autosave') {
    const proposed=normalizeSite(input.site??await siteFromForm(env.DB,input))
+   const currentAccess=await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
+   const previousAccess=currentAccess?revision(currentAccess).site:null
+   if(!owner&&(JSON.stringify(proposed.forms??null)!==JSON.stringify(previousAccess?.forms??null)||JSON.stringify(proposed.access??null)!==JSON.stringify(previousAccess?.access??null)||proposed.pages.some(page=>JSON.stringify(page.access??null)!==JSON.stringify(previousAccess?.pages.find(old=>(old.id??old.slug)===(page.id??page.slug))?.access??null))))return json({error:'Only the owner changes access.'},403)
    if(!caps.includes('settings:write')){
     const latest=await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
     const current=latest?revision(latest).site:null
@@ -173,7 +194,13 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   } else if(action==='messages/erase') {
    const id=String(input.id??'')
    const wire=wireDatabase(env.DB)
+   const files=(await env.DB.prepare('SELECT id FROM pane_files WHERE message_id=?').bind(id).all<{id:string}>()).results
+   const chunks=(await env.DB.prepare('SELECT id FROM pane_file_chunks WHERE file_id IN (SELECT id FROM pane_files WHERE message_id=?)').bind(id).all<{id:string}>()).results
+   const fileFences=[]
+   for(const file of files)fileFences.push(...await erasureStatements(wire,'pane_files',{id:file.id}))
+   for(const chunk of chunks)fileFences.push(...await erasureStatements(wire,'pane_file_chunks',{id:chunk.id}))
    await wire.batch([
+    ...fileFences,
     ...await erasureStatements(wire,'pane_messages',{id}),
     ...await invalidateTransfersStatements(wire),
     wire.prepare('INSERT OR IGNORE INTO pane_erased_messages(id,created_at) VALUES(?,?)').bind(id,new Date().toISOString()),

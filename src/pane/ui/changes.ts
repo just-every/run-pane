@@ -16,14 +16,14 @@ export function pageChange(draft: Page, live: Page | undefined): PageChange {
   const removed = Math.max(0, before.length - after.length), title = draft.title !== live.title
   const search = JSON.stringify(normalizeSearch(draft.search ?? {})) !== JSON.stringify(normalizeSearch(live.search ?? {}))
   const embed = JSON.stringify(draft.embed) !== JSON.stringify(live.embed)
-  const structure = JSON.stringify([draft.slug,draft.folder,draft.hidden,draft.deleted,draft.searchBox,draft.links,draft.layout,draft.business]) !== JSON.stringify([live.slug,live.folder,live.hidden,live.deleted,live.searchBox,live.links,live.layout,live.business])
+  const structure = JSON.stringify([draft.slug,draft.folder,draft.hidden,draft.deleted,draft.searchBox,draft.links,draft.layout,draft.business,draft.access,draft.formId]) !== JSON.stringify([live.slug,live.folder,live.hidden,live.deleted,live.searchBox,live.links,live.layout,live.business,live.access,live.formId])
   const acknowledgment = JSON.stringify(draft.acknowledgment) !== JSON.stringify(live.acknowledgment)
   return { structure,search, embed, acknowledgment, analytics: false, changed: structure || acknowledgment || embed || search || title || removed > 0 || marks.some(mark => mark !== 'same'), title, marks, removed }
 }
 
 /** Every page's change, keyed by slug; all unchanged when the draft is the live site. */
 export function siteChanges(draft: Site | undefined, live: Site | undefined, same: boolean): Record<string, PageChange> {
-  return Object.fromEntries((draft?.pages ?? []).map(page => [page.slug, {...pageChange(page, same ? page : live?.pages.find(candidate => (candidate.id ?? candidate.slug) === (page.id ?? page.slug))), ...(page.slug === homeSlug(draft!) && !same && JSON.stringify([draft?.locale,draft?.navigation,draft?.socials,draft?.home,draft?.notFound,draft?.folders,draft?.redirects,draft?.pages.map(p=>p.id ?? p.slug)]) !== JSON.stringify([live?.locale,live?.navigation,live?.socials,live?.home,live?.notFound,live?.folders,live?.redirects,live?.pages.map(p=>p.id ?? p.slug)]) ? {structure:true,changed:true} : {}), ...(page.slug === homeSlug(draft!) && JSON.stringify(draft?.analyticsCampaigns ?? []) !== JSON.stringify(live?.analyticsCampaigns ?? []) ? {analytics: true, changed: true} : {})}]))
+  return Object.fromEntries((draft?.pages ?? []).map(page => [page.slug, {...pageChange(page, same ? page : live?.pages.find(candidate => (candidate.id ?? candidate.slug) === (page.id ?? page.slug))), ...(page.slug === homeSlug(draft!) && !same && JSON.stringify([draft?.forms,draft?.access,draft?.locale,draft?.navigation,draft?.socials,draft?.home,draft?.notFound,draft?.folders,draft?.redirects,draft?.pages.map(p=>p.id ?? p.slug)]) !== JSON.stringify([live?.forms,live?.access,live?.locale,live?.navigation,live?.socials,live?.home,live?.notFound,live?.folders,live?.redirects,live?.pages.map(p=>p.id ?? p.slug)]) ? {structure:true,changed:true} : {}), ...(page.slug === homeSlug(draft!) && JSON.stringify(draft?.analyticsCampaigns ?? []) !== JSON.stringify(live?.analyticsCampaigns ?? []) ? {analytics: true, changed: true} : {})}]))
 }
 
 /** "the title and 2 paragraphs": what one page's change touches, for a sentence. */

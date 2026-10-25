@@ -1,3 +1,4 @@
+import { uploadStatements,type Upload } from './forms'
 import { findPersonData,erasePersonData } from './privacy'
 import { DurableObject } from 'cloudflare:workers'
 import type { Bindings } from '../auth.server'
@@ -8,7 +9,7 @@ import { deliverAcknowledgment } from './acknowledgment'
 import { recordGoal } from './goal-data'
 import type { VisitDimensions } from './visit-dimensions'
 import type { FormRejection } from './form-protection'
-export type QueuedEnquiry={id:string;name:string;email:string;message:string;received:string;acknowledgment:unknown;followUp:number;goals:{id:string;page:string}[];dimensions:VisitDimensions}
+export type QueuedEnquiry={uploads?:Omit<Upload,'chunks'>[];id:string;name:string;email:string;message:string;received:string;acknowledgment:unknown;followUp:number;goals:{id:string;page:string}[];dimensions:VisitDimensions}
 export function liveStore(env:Bindings){if(!env.PANE_LIVE)throw Error('Live storage is not configured.');return env.PANE_LIVE.get(env.PANE_LIVE.idFromName('published-site'))}
 export async function liveSnapshot(env:Bindings):Promise<(Revision&{banners?:{text:string}[]})|null>{
  const response=await liveStore(env).fetch('https://pane.internal/live')
@@ -42,9 +43,9 @@ export class PaneLive extends DurableObject<Bindings>{
   if(path==='/privacy/find'||path==='/privacy/erase')return this.ctx.blockConcurrencyWhile(async()=>{
    const queued=[...(await storage.list<QueuedEnquiry>({prefix:'message:'})).values()]
    const db=auditedDatabase(this.env.DB,input.actor.id,'privacy.erasure')
-   if(path==='/privacy/find')return Response.json(await findPersonData(db,input.email,queued))
+   if(path==='/privacy/find'){const found=await findPersonData(db,input.email,queued);const pendingFiles=await Promise.all(queued.filter(message=>message.email.trim().toLowerCase()===input.email).flatMap(message=>(message.uploads??[]).map(async file=>({...file,chunks:[...(await storage.list<string>({prefix:'file:'+file.id+':'})).entries()].sort(([a],[b])=>Number(a.split(':').at(-1))-Number(b.split(':').at(-1))).map(([,value])=>value)}))));return Response.json({...found,pendingFiles})}
    const result=await erasePersonData(db,input.email,input.confirm,input.actor,queued)
-   for(const message of queued)if(message.email.trim().toLowerCase()===input.email)await storage.delete('message:'+message.id)
+   for(const message of queued)if(message.email.trim().toLowerCase()===input.email){await storage.delete('message:'+message.id);for(const file of message.uploads??[])for(const chunk of (await storage.list({prefix:'file:'+file.id+':'})).keys())await storage.delete(chunk)}
    return Response.json(result)
   })
   if(path==='/publish')return this.ctx.blockConcurrencyWhile(async()=>{
@@ -74,9 +75,11 @@ export class PaneLive extends DurableObject<Bindings>{
    return Response.json({counted:true})
   }
   if(path==='/accept'){
-   const message=input as QueuedEnquiry
+   const files=(input.uploads??[]) as Upload[]
+   const message={...input,uploads:files.map(({chunks,...file})=>file)} as QueuedEnquiry
    await storage.transaction(async tx=>{
     if(!await tx.get('receipt:'+message.id)){
+     for(const file of files)for(const [index,data] of file.chunks.entries())await tx.put('file:'+file.id+':'+index,data)
      await tx.put('message:'+message.id,message)
      await tx.put('receipt:'+message.id,true)
     }
@@ -87,11 +90,14 @@ export class PaneLive extends DurableObject<Bindings>{
    const queued=await storage.list<QueuedEnquiry>({prefix:'message:',limit:100})
    const db=auditedDatabase(this.env.DB,null,'enquiry.delivery')
    for(const [key,message] of queued){
-    const stored=await db.prepare('INSERT OR IGNORE INTO pane_messages(id,name,email,message,created_at,acknowledgment,acknowledgment_status,follow_up_at) SELECT ?,?,?,?,?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM pane_erased_messages WHERE id=?)').bind(message.id,message.name,message.email,message.message,message.received,message.acknowledgment?JSON.stringify(message.acknowledgment):null,message.acknowledgment?'pending':'not_requested',message.followUp,message.id).run()
+    const uploads=await Promise.all((message.uploads??[]).map(async file=>({...file,chunks:[...(await storage.list<string>({prefix:'file:'+file.id+':'})).entries()].sort(([a],[b])=>Number(a.split(':').at(-1))-Number(b.split(':').at(-1))).map(([,value])=>value)})))
+    const statement=db.prepare('INSERT OR IGNORE INTO pane_messages(id,name,email,message,created_at,acknowledgment,acknowledgment_status,follow_up_at) SELECT ?,?,?,?,?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM pane_erased_messages WHERE id=?)').bind(message.id,message.name,message.email,message.message,message.received,message.acknowledgment?JSON.stringify(message.acknowledgment):null,message.acknowledgment?'pending':'not_requested',message.followUp,message.id)
+    const [stored]=await db.batch([statement,...uploadStatements(db,message.id,message.message,uploads)])
     if(stored.meta.changes)for(const goal of message.goals)await recordGoal(db,goal.id,goal.page,message.dimensions)
     await deliverAcknowledgment({...this.env,DB:db},message.id)
     // D1 primary-key and erasure fences make a crash before this deletion safe.
     await storage.delete(key)
+    for(const file of message.uploads??[])for(const chunk of (await storage.list({prefix:'file:'+file.id+':'})).keys())await storage.delete(chunk)
    }
    // Per-minute counters are operational state; keep only the current window.
    const current='rate:'+new Date().toISOString().slice(0,16)

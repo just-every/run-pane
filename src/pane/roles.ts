@@ -36,10 +36,11 @@ export function permittedDashboard(data:Dashboard,caps:Capability[]):Dashboard{
  }
 }
 export function routeCapability(path:string,method:string):Capability|undefined{
+ if(method==='GET'&&(path.startsWith('/app/files/')||path.startsWith('/api/pane/files/')))return 'inbox:read'
  if(method==='GET')return ({'/api/pane/pages':'pages:read','/api/pane/collections':'pages:read','/api/pane/activity':'audit','/api/pane/activity/export':'audit','/api/pane/roles':'team','/api/pane/tokens':'tokens','/app':'pages:read','/app/inquiries':'inbox:read','/app/moves':'imports:read','/app/search':'pages:write'} as Record<string,Capability>)[path]
  const action=path.replace(/^\/(api\/pane|app)\//,'')
  if((path.startsWith('/app/spam/')||path.startsWith('/api/pane/spam/'))&&['settings','rescue','purge','hold','release'].includes(action.slice(5)))return 'erase'
- return ({'privacy/find':'erase','privacy/export':'erase','privacy/erase':'erase','policies/generate':'settings:write','ownership/transfer':'team','team/revoke':'team',prepare:'pages:write',autosave:'pages:write',publish:'publish','page-request-review':'pages:write','page-publish':'publish',rollback:'publish',review:'pages:write','import/dry-run':'imports:write','import/apply':'imports:write','import/undo':'imports:write','import/crawl-challenge':'imports:write','import/crawl':'imports:write','messages/update':'inbox:write','messages/reply':'inbox:write','messages/erase':'erase','people/erase':'erase','tokens/create':'tokens','tokens/revoke':'tokens','roles/set':'team','roles/invite':'team'} as Record<string,Capability>)[action]
+ return ({forms:'settings:write',access:'settings:write','privacy/find':'erase','privacy/export':'erase','privacy/erase':'erase','policies/generate':'settings:write','ownership/transfer':'team','team/revoke':'team',prepare:'pages:write',autosave:'pages:write',publish:'publish','page-request-review':'pages:write','page-publish':'publish',rollback:'publish',review:'pages:write','import/dry-run':'imports:write','import/apply':'imports:write','import/undo':'imports:write','import/crawl-challenge':'imports:write','import/crawl':'imports:write','messages/update':'inbox:write','messages/reply':'inbox:write','messages/erase':'erase','people/erase':'erase','tokens/create':'tokens','tokens/revoke':'tokens','roles/set':'team','roles/invite':'team'} as Record<string,Capability>)[action]
 }
 
 /** Hold native invitation delivery until its Pane grants are saved. No alternate

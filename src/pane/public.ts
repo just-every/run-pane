@@ -1,3 +1,5 @@
+import { typedForm,validateForm,boundedForm,uploadStatements,type Upload } from './forms'
+import { accessResponse, pageRules } from './access'
 import { promotionMarkup } from './promotions'
 import { liveCall, liveSnapshot } from './outage'
 import { rejectForm, verifyForm } from './form-protection'
@@ -57,6 +59,10 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
  if(!row) return document('Website not published','<div class="public-site"><div class="public-shell"><main class="public-main" id="main"><h1>This website is getting ready</h1><p>The business has not published its first version.</p></main></div></div>','site')
  const site=snapshot?snapshot.site:revision(row).site
  if (!slug) slug=homeSlug(site)!
+ const selectedPage=activePages(site).find(page=>page.slug===slug)
+ const gate=await accessResponse(request,env,site,selectedPage)
+ if(gate)return gate
+ if(request.method==='POST'&&url.searchParams.has('unlock'))return new Response(null,{status:303,headers:{location:path,'cache-control':'private, no-store'}})
  const redirect=site.redirects?.find(redirect=>redirect.from===path)
  if (redirect && ['GET','HEAD'].includes(request.method)) return new Response(null,{status:redirect.status,headers:{location:redirect.to,'cache-control':'no-store'}})
  const page=activePages(site).find(page=>page.slug===slug)
@@ -78,11 +84,25 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   await recordGoal(env.DB,goal.id,body.path,visitDimensions(request,body,site.analyticsCampaigns))
   return new Response(null,{status:204})
  }
- if((page?.kind==='contact'||(page && slug==='contact'))&&request.method==='POST') {
-  if(Number(request.headers.get('content-length')??0)>100000)return json({error:'Message too large.'},413)
-  const f=await request.formData(),name=String(f.get('name')??'').trim(),email=String(f.get('email')??'').trim(),message=String(f.get('message')??'').trim(),id=String(f.get('idempotency')??'')
+ const form=typedForm(site,slug)
+ if((form||page?.kind==='contact'||(page && slug==='contact'))&&request.method==='POST') {
+  if(!form&&Number(request.headers.get('content-length')??0)>100000)return json({error:'Message too large.'},413)
+  let f:FormData
+  try{f=form?await boundedForm(request):await request.formData()}catch{return json({error:'Submission exceeds 6 MB or has invalid form data.'},413)}
+  const id=String(f.get('idempotency')??'')
+  let name=String(f.get('name')??'').trim(),email=String(f.get('email')??'').trim(),message=String(f.get('message')??'').trim(),uploads:Upload[]=[]
+  if(form){
+   if(!/^[a-f0-9-]{36}$/.test(id))return json({error:'Invalid submission receipt.'},400)
+   const checked=await validateForm(form,f,id)
+   if(Object.keys(checked.state.errors).length){
+    const response=await document(site.name,publicPage(site,slug,'live',false,true,env.TURNSTILE_SITE_KEY,checked.state),'site')
+    const headers=new Headers(response.headers);headers.set('content-security-policy',headers.get('content-security-policy')!.replace("script-src 'self'","script-src 'self' https://challenges.cloudflare.com").replace("connect-src 'self'","connect-src 'self' https://challenges.cloudflare.com")+'; frame-src https://challenges.cloudflare.com');headers.set('x-robots-tag','noindex, nofollow');headers.set('cache-control','private, no-store')
+    return new Response(response.body,{status:400,headers})
+   }
+   ({name,email,message,uploads}=checked);f.set('name',name);f.set('email',email);f.set('message',message)
+  }
   if(String(f.get('website')??''))return rejectForm(env,slug,'honeypot',f)
-  if(!/^[a-f0-9-]{36}$/.test(id)||!name||name.length>120||!/^\S+@\S+\.\S+$/.test(email)||email.length>254||!message||message.length>5000)return json({error:'Enter a name, valid email and message up to 5,000 characters.'},400)
+  if(!form&&(!/^[a-f0-9-]{36}$/.test(id)||!name||name.length>120||!/^\S+@\S+\.\S+$/.test(email)||email.length>254||!message||message.length>5000))return json({error:'Enter a name, valid email and message up to 5,000 characters.'},400)
   // Pencil's immutable original receipt: retries cannot replace an earlier answer, and spend no quota.
   const sender=await visitor(request,env.SESSION_SECRET)
   if(env.PANE_LIVE?(await liveCall(env,'/rate',{form:slug,visitor:sender,id})).limited:await contactLimited(env.DB,slug,sender,id))return rejectForm(env,slug,'rate',f)
@@ -91,10 +111,11 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   const acknowledgment=page?.acknowledgment,received=Date.now()
   if(env.PANE_LIVE){
    let attribution:unknown={};try{const text=String(f.get('attribution')??'');if(text.length<=2000)attribution=JSON.parse(text||'{}')}catch{}
-   await liveCall(env,'/accept',{id,name,email,message,received:new Date(received).toISOString(),acknowledgment:acknowledgment??null,followUp:followUpDue(site,received),goals:optedOut(request)?[]:(site.goals??[]).filter(goal=>goal.type==='form'&&goal.page===slug).map(goal=>({id:goal.id,page:slug})),dimensions:visitDimensions(request,attribution,site.analyticsCampaigns)})
-   return new Response(null,{status:303,headers:{location:pagePath(site,slug)+'?sent=1'}})
+   await liveCall(env,'/accept',{id,name,email,message,received:new Date(received).toISOString(),acknowledgment:acknowledgment??null,followUp:followUpDue(site,received),goals:optedOut(request)?[]:(site.goals??[]).filter(goal=>goal.type==='form'&&goal.page===slug).map(goal=>({id:goal.id,page:slug})),dimensions:visitDimensions(request,attribution,site.analyticsCampaigns),uploads})
+   return new Response(null,{status:303,headers:{location:form?.redirect??(pagePath(site,slug)+'?sent=1')}})
   }
-  const stored=await env.DB.prepare('INSERT OR IGNORE INTO pane_messages(id,name,email,message,created_at,acknowledgment,acknowledgment_status,follow_up_at) SELECT ?,?,?,?,?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM pane_erased_messages WHERE id=?)').bind(id,name,email,message,new Date(received).toISOString(),acknowledgment ? JSON.stringify(acknowledgment) : null,acknowledgment ? 'pending' : 'not_requested',followUpDue(site,received),id).run()
+  const messageStatement=env.DB.prepare('INSERT OR IGNORE INTO pane_messages(id,name,email,message,created_at,acknowledgment,acknowledgment_status,follow_up_at) SELECT ?,?,?,?,?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM pane_erased_messages WHERE id=?)').bind(id,name,email,message,new Date(received).toISOString(),acknowledgment ? JSON.stringify(acknowledgment) : null,acknowledgment ? 'pending' : 'not_requested',followUpDue(site,received),id)
+  const [stored]=await env.DB.batch([messageStatement,...uploadStatements(env.DB,id,message,uploads)])
   // A goal counts once per stored message, from the submitting page view's own attribution; never for opt-outs.
   const goals=optedOut(request)||!stored.meta.changes ? [] : (site.goals??[]).filter(goal=>goal.type==='form'&&goal.page===slug)
   if(goals.length) {
@@ -104,30 +125,32 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
    for(const goal of goals) await recordGoal(env.DB,goal.id,slug,dimensions)
   }
   await deliverAcknowledgment(env,id)
-  return new Response(null,{status:303,headers:{location:pagePath(site,slug)+'?sent=1'}})
+  return new Response(null,{status:303,headers:{location:form?.redirect??(pagePath(site,slug)+'?sent=1')}})
  }
  if(!['GET','HEAD'].includes(request.method))return json({error:'Method not allowed.'},405)
  const banners=snapshot?snapshot.banners??[]:await activeBanners(env.DB,String(row.id))
  const announcements=banners.length ? `<div class="public-site"><aside class="public-shell public-announcements" aria-label="Announcements">${banners.map(banner=>`<p class="notice">${escape(banner.text)}</p>`).join('')}</aside></div>` : ''
  if(slug==='search') {
   const query=url.searchParams.get('q')??''
-  const response=await document(`Search · ${site.name}`,announcements+siteSearch(site,query),'site',undefined,undefined,site.locale?.locale)
+  const response=await document(`Search · ${site.name}`,announcements+siteSearch({...site,pages:site.pages.filter(page=>!pageRules(site,page).length)},query),'site',undefined,undefined,site.locale?.locale)
   return query.length > 200 ? new Response(response.body,{status:400,headers:response.headers}) : response
  }
  if(!page) {
   const missing=site.notFound && activePages(site).find(page=>page.slug===site.notFound)
   if(!missing)return notFound()
+  const missingGate=await accessResponse(request,env,site,missing);if(missingGate)return missingGate
   const response=await document(site.name,announcements+publicPage(site,missing.slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY),'site',missing.embed ? embedOrigin(missing.embed) : undefined,optedOut(request) ? undefined : site.analytics,site.locale?.locale)
   const headers=new Headers(response.headers);headers.set('x-robots-tag','noindex, nofollow')
   return new Response(request.method==='HEAD'?null:response.body,{status:404,headers})
  }
- const notice=(page.kind==='contact'||slug==='contact')&&url.searchParams.has('sent')?'<div class="public-site public-sent"><div class="public-shell"><p class="notice" role="status">Thank you. Your message has been received.</p></div></div>':''
+ const notice=(form||page.kind==='contact'||slug==='contact')&&url.searchParams.has('sent')?'<div class="public-site public-sent"><div class="public-shell"><p class="notice" role="status">'+escape(form?.confirmation??'Thank you. Your message has been received.')+'</p></div></div>':''
  const embed=page.embed
  const response=await document(site.name,announcements+notice+publicPage(site,slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY)+promotionMarkup(site,slug),'site',embed ? embedOrigin(embed) : undefined,optedOut(request) ? undefined : site.analytics,site.locale?.locale)
- if(page.kind==='contact'||slug==='contact'){
-  const headers=new Headers(response.headers),policy=headers.get('content-security-policy')!
+ if(form||page.kind==='contact'||slug==='contact'){
+  const headers=new Headers(response.headers);headers.set('vary','Cookie');headers.set('cache-control','private, no-store');const policy=headers.get('content-security-policy')!
   headers.set('content-security-policy',policy.replace("script-src 'self'","script-src 'self' https://challenges.cloudflare.com").replace("connect-src 'self'","connect-src 'self' https://challenges.cloudflare.com")+(embed?' https://challenges.cloudflare.com':'; frame-src https://challenges.cloudflare.com'))
   return new Response(request.method==='HEAD'?null:response.body,{status:response.status,headers})
  }
- return request.method==='HEAD' ? new Response(null,{status:response.status,headers:response.headers}) : response
+ const privateHeaders=new Headers(response.headers);privateHeaders.set('cache-control','private, no-store');privateHeaders.set('vary','Cookie')
+ return new Response(request.method==='HEAD'?null:response.body,{status:response.status,headers:privateHeaders})
 }

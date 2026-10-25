@@ -1447,3 +1447,162 @@ test('rejected answers join person export and atomic erasure while legal holds r
   const later=await exportData(app.db),old=await runtime();try{await assert.rejects(restore(old.db,older,later),/erased_row|erasure_epoch/)}finally{await old.mf.dispose()}
  }finally{await app.mf.dispose()}
 })
+
+async function gatedFixture(){
+ const app=await runtime(),call=(path,body,cookie='')=>app.request(path,{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify(body)})
+ const signed=await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Access owner'}),cookie=signed.headers.get('set-cookie').split(';')[0]
+ await app.request('/setup',{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
+ const site=structuredClone(fixture);site.folders=['Private','Members'];site.pages.find(p=>p.slug==='about').folder='Private';site.pages.find(p=>p.slug==='services').folder='Members'
+ const prepared=await call('/api/pane/prepare',{site},cookie);assert.equal(prepared.status,200);let draft=await prepared.json()
+ const save=async(extra={})=>{
+  const body=new URLSearchParams({base:draft.id,gateMode:'open',gateTitle:'Opening soon',gateMessage:'We are getting ready.',...Object.fromEntries(site.pages.map((_,i)=>['page.'+i+'.mode','public'])),'folder.0.mode':'password','folder.0.password':'synthetic-pane-42','folder.1.mode':'members',...extra})
+  const response=await app.request('/app/access',{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/x-www-form-urlencoded'},body});assert.equal(response.status,303,await response.text())
+  draft=(await (await app.request('/api/pane',{headers:{Cookie:cookie}})).json()).draft
+  assert.equal((await call('/api/pane/publish',{revision:draft.id},cookie)).status,200)
+  return draft
+ }
+ return {app,call,cookie,save,get draft(){return draft}}
+}
+test('page and folder gates require passwords or explicitly admitted active native members without leaking through discovery',async()=>{
+ const proof=await gatedFixture(),{app,call,cookie}=proof
+ try{
+  let message
+  const auth=createOperatorAuth({db:app.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{message=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+  await auth.invite(new Request(origin+'/auth/invite',{method:'POST',headers:{Origin:origin,Host:new URL(origin).host,Cookie:cookie}}),{email:'synthetic-pane-44@example.test',displayName:'Admitted reader',role:'member'})
+  const token=new URL(message.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token'),signed=await call('/auth/confirm',{token}),memberCookie=signed.headers.get('set-cookie').split(';')[0]
+  const person=await app.db.prepare('SELECT id FROM oa_operators WHERE email=?').bind('synthetic-pane-44@example.test').first()
+  await proof.save({members:person.id,'page.3.mode':'password','page.3.password':'synthetic-pane-43'})
+  for(const path of ['/site/about','/site/hours','/site/services']){
+   const locked=await app.request(path);assert.match(locked.headers.get('cache-control'),/private, no-store/);assert.match(locked.headers.get('x-robots-tag'),/noindex/)
+   const html=await locked.text();assert.ok(!html.includes(fixture.pages.find(p=>path.endsWith('/'+p.slug)).body))
+   assert.ok(!(await (await app.request(path,{method:'HEAD'})).text()).length)
+  }
+  const unlock=async(password)=>app.request('/site/about?unlock=1',{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({password})})
+  assert.equal((await unlock('wrong')).status,403)
+  const opened=await unlock('synthetic-pane-42');assert.equal(opened.status,303)
+  const passwordCookie=opened.headers.get('set-cookie').split(';')[0];assert.match(opened.headers.get('set-cookie'),/HttpOnly; SameSite=Strict/)
+  const privatePage=await app.request('/site/about',{headers:{Cookie:passwordCookie}});assert.match(await privatePage.text(),new RegExp(fixture.pages.find(p=>p.slug==='about').body));assert.match(privatePage.headers.get('cache-control'),/private, no-store/);assert.equal(privatePage.headers.get('vary'),'Cookie')
+  assert.ok(!(await (await app.request('/site/about')).text()).includes(fixture.pages.find(p=>p.slug==='about').body),'Another visitor never receives an opened response')
+  assert.equal((await app.request('/site/services')).status,403)
+  assert.match(await (await app.request('/site/services',{headers:{Cookie:memberCookie}})).text(),new RegExp(fixture.pages.find(p=>p.slug==='services').body))
+  assert.equal((await app.request('/site/services',{headers:{Cookie:cookie}})).status,403,'Owner is not automatically a site member')
+  const sitemap=await (await app.request('/sitemap.xml')).text();for(const path of ['about','services','hours'])assert.ok(!sitemap.includes('/site/'+path))
+  const search=await (await app.request('/site/search?q='+encodeURIComponent(fixture.pages.find(p=>p.slug==='about').body.split(' ')[0]))).text();assert.ok(!search.includes('<a href="/site/about">'))
+  assert.equal((await app.request('/site/about?unlock=1',{method:'POST',headers:{Origin:'https://foreign.invalid'},body:'password=synthetic-pane-42'})).status,403)
+  assert.equal((await call('/api/pane/roles/set',{operatorId:person.id,roles:['editor']},cookie)).status,200)
+  const unauthorized=structuredClone(proof.draft.site);unauthorized.access.mode='coming-soon'
+  assert.equal((await call('/api/pane/prepare',{site:unauthorized},memberCookie)).status,403,'An editor cannot change admission or gates')
+  assert.equal((await call('/api/pane/access',{},memberCookie)).status,403)
+  await app.db.prepare("UPDATE oa_operators SET status='inactive' WHERE id=?").bind(person.id).run()
+  assert.equal((await app.request('/site/services',{headers:{Cookie:memberCookie}})).status,403,'Native revocation applies on the next request')
+  const proposed=structuredClone(proof.draft.site);proposed.access.mode='coming-soon'
+  assert.equal((await call('/api/pane/prepare',{site:proposed},memberCookie)).status,401)
+  await proof.save({'folder.0.password':'synthetic-pane-45'})
+  assert.ok(!(await (await app.request('/site/about',{headers:{Cookie:passwordCookie}})).text()).includes(fixture.pages.find(p=>p.slug==='about').body),'Password rotation invalidates old proofs')
+ }finally{await app.mf.dispose()}
+})
+test('coming-soon and site password gates cover every live URL while previews and disabling restore the published site',async()=>{
+ const proof=await gatedFixture(),{app,cookie}=proof
+ try{
+  await proof.save({gateMode:'coming-soon',sitePassword:'synthetic-pane-46'})
+  for(const path of ['/site','/site/about','/site/search?q=secret','/site/unknown/route','/site/visit']){
+   const response=await app.request(path);assert.equal(response.status,200);assert.match(response.headers.get('x-robots-tag'),/noindex/);assert.match(await response.text(),/Opening soon/)
+  }
+  assert.ok(!(await (await app.request('/sitemap.xml')).text()).includes('<loc>'))
+  const preview=await app.request('/preview/'+proof.draft.id+'/home',{headers:{Cookie:cookie}});assert.equal(preview.status,200);assert.match(await preview.text(),/Draft preview/)
+  const opened=await app.request('/site?unlock=1',{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:'password=synthetic-pane-46'})
+  assert.equal(opened.status,303);assert.match(await (await app.request('/site',{headers:{Cookie:opened.headers.get('set-cookie').split(';')[0]}})).text(),new RegExp(fixture.pages[0].body))
+  assert.equal((await app.request('/site/services',{headers:{Cookie:opened.headers.get('set-cookie').split(';')[0]}})).status,403,'A site password never bypasses a member-only folder')
+  await proof.save({gateMode:'password',sitePassword:'synthetic-pane-47'})
+  assert.match(await (await app.request('/site/contact')).text(),/Opening soon/)
+  await proof.save({gateMode:'open','folder.0.mode':'public','folder.1.mode':'public'})
+  assert.match(await (await app.request('/site')).text(),new RegExp(fixture.pages[0].body));assert.match(await (await app.request('/site/about')).text(),new RegExp(fixture.pages[1].body))
+ }finally{await app.mf.dispose()}
+})
+
+const quoteDefinition={id:'synthetic-pane-60',name:'Request a quote',submit:'Send quote',confirmation:'Your quote request is safely received.',fields:[
+ {key:'name',type:'text',label:'Your name',help:'',placeholder:'',required:true},
+ {key:'email',type:'email',label:'Email address',help:'We reply here.',placeholder:'',required:true},
+ {key:'phone',type:'phone',label:'US phone',help:'Use the number where we can reach you.',placeholder:'312 555 0123',required:true},
+ {key:'address',type:'address',label:'Project address',help:'',placeholder:'',required:false},
+ {key:'service',type:'choice',label:'Service',help:'',placeholder:'',required:true,options:['Repair','New furniture']},
+ {key:'date',type:'date',label:'Preferred date',help:'',placeholder:'',required:false},
+ {key:'consent',type:'consent',label:'You may contact me about this request.',help:'',placeholder:'',required:true},
+ {key:'message',type:'text',label:'Project details',help:'',placeholder:'',required:true},
+ {key:'file',type:'file',label:'Project PDF',help:'Private project information.',placeholder:'',required:false},
+]}
+async function formFixture(options){
+ const app=await runtime(options),call=(path,body,cookie='')=>app.request(path,{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify(body)})
+ const signed=await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Forms owner'}),cookie=signed.headers.get('set-cookie').split(';')[0]
+ await app.request('/setup',{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
+ const site=structuredClone(fixture);site.forms=[structuredClone(quoteDefinition)];site.pages[1].formId=quoteDefinition.id;site.pages[4].formId=quoteDefinition.id
+ const draft=await (await call('/api/pane/prepare',{site},cookie)).json();assert.ok(draft.id)
+ assert.equal((await call('/api/pane/publish',{revision:draft.id},cookie)).status,200)
+ const submit=(slug='contact',changes={},file,id=crypto.randomUUID(),proof=true)=>{
+  const fields=new FormData();for(const [key,value] of Object.entries({idempotency:id,name:'Synthetic visitor',email:'synthetic-pane-61@example.test',phone:'312 555 0123',address:'Workshop',service:'Repair',date:'2030-06-20',consent:'yes',message:'Please repair my chair.',...changes}))fields.set(key,value)
+  if(proof)fields.set('cf-turnstile-response','synthetic-pane-3:'+createHash('sha256').update(slug).digest('hex'))
+  if(file)fields.set('file',file,'project.pdf')
+  return app.request('/site/'+slug,{method:'POST',headers:{Origin:origin},body:fields})
+ }
+ return {app,call,cookie,site,draft,submit}
+}
+test('reusable typed forms preserve invalid answers, enforce every field type, accept a private five MB PDF and refuse unsafe files through public doors',async()=>{
+ const {app,cookie,submit}=await formFixture()
+ try{
+  for(const slug of ['about','contact']){const html=await (await app.request('/site/'+slug)).text();assert.match(html,/Request a quote/);assert.match(html,/aria-describedby="field-phone-help"/);assert.match(html,/name="phone" required aria-required="true"/)}
+  const invalid=await submit('contact',{phone:'',email:'bad-email'});assert.equal(invalid.status,400);const html=await invalid.text()
+  assert.match(html,/id="field-phone"[^>]*aria-describedby="field-phone-help field-phone-error"[^>]*aria-invalid="true"/);assert.match(html,/Enter a valid email address/);assert.match(html,/value="Synthetic visitor"/);assert.match(html,/Please repair my chair/);assert.match(html,/role="alert"/)
+  for(const changes of [{phone:'111'}, {date:'2030-02-30'}, {service:'Unknown'}, {consent:'no'}])assert.equal((await submit('about',changes)).status,400)
+  const pdf=new Uint8Array(5*1024*1024);pdf.set(new TextEncoder().encode('%PDF-1.7\nsynthetic-pane-62'));pdf.fill(32,32)
+  const id=crypto.randomUUID(),accepted=await submit('about',{},new File([pdf],'project.pdf',{type:'application/pdf'}),id);assert.equal(accepted.status,303,await accepted.text())
+  const dashboard=await (await app.request('/api/pane',{headers:{Cookie:cookie}})).json(),message=dashboard.messages.find(message=>message.id===id),file=message.files[0]
+  assert.equal(file.size,pdf.length);assert.match(message.message,/US phone: 312 555 0123/)
+  assert.equal((await app.request('/app/files/'+file.id)).status,303)
+  assert.equal((await app.request('/api/pane/files/'+file.id)).status,401)
+  const downloaded=await app.request('/app/files/'+file.id,{headers:{Cookie:cookie}});assert.equal(downloaded.status,200);assert.match(downloaded.headers.get('cache-control'),/private, no-store/);assert.match(downloaded.headers.get('content-disposition'),/attachment/);assert.deepEqual(new Uint8Array(await downloaded.arrayBuffer()),pdf)
+  const confirmation=await app.request(accepted.headers.get('location'));assert.match(await confirmation.text(),/Your quote request is safely received/)
+  assert.equal((await submit('about',{},new File([new Uint8Array(5*1024*1024+1)],'project.pdf',{type:'application/pdf'}))).status,400)
+  assert.equal((await submit('contact',{},new File(['not a PDF'],'project.pdf',{type:'application/pdf'}))).status,400)
+  assert.equal((await submit('contact',{},new File(['%PDF-fake'],'project.pdf',{type:'text/plain'}))).status,400)
+  assert.equal((await submit('contact',{website:'spam'})).status,403)
+  assert.equal((await submit('contact',{},undefined,crypto.randomUUID(),false)).status,403)
+  assert.equal((await app.db.prepare('SELECT COUNT(*) AS n FROM pane_files').first()).n,1)
+  assert.equal((await app.request('/site/contact',{method:'POST',headers:{Origin:'https://foreign.invalid'},body:new FormData()})).status,403)
+ }finally{await app.mf.dispose()}
+})
+test('private uploads join native archive restore and person export and erasure without replaying old files',async()=>{
+ const {app,call,cookie,submit}=await formFixture()
+ try{
+  const id=crypto.randomUUID(),file=new File(['%PDF-1.7\nsynthetic-pane-63'],'project.pdf',{type:'application/pdf'})
+  assert.equal((await submit('contact',{},file,id)).status,303)
+  const archive=await exportData(app.db),destination=await runtime()
+  try{assert.equal((await restore(destination.db,archive)).phase,'complete');assert.equal((await destination.db.prepare('SELECT COUNT(*) AS n FROM pane_files').first()).n,1);const chunk=await destination.db.prepare('SELECT data FROM pane_file_chunks').first();assert.match(Buffer.from(chunk.data,'base64').toString(),/synthetic-pane-63/)}finally{await destination.mf.dispose()}
+  const found=await call('/api/pane/privacy/find',{email:'synthetic-pane-61@example.test'},cookie);assert.equal(found.status,200);const record=await found.json();assert.equal(record.files.length,1);assert.ok(record.fileChunks.length)
+  let nativeMail
+  const native=createOperatorAuth({db:app.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{nativeMail=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+  await native.requestMagicLink(new Request(origin+'/auth/magic-link',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin}}),{email:settings.OWNER_EMAIL})
+  const token=new URL(nativeMail.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token'),confirmed=await call('/auth/confirm',{token}),freshCookie=confirmed.headers.get('set-cookie').split(';')[0]
+  const erased=await call('/api/pane/privacy/erase',{email:'synthetic-pane-61@example.test',confirm:'erase-person-data'},freshCookie);assert.equal(erased.status,200,await erased.text())
+  assert.equal((await app.db.prepare('SELECT COUNT(*) AS n FROM pane_files').first()).n,0);assert.equal((await app.db.prepare('SELECT COUNT(*) AS n FROM pane_file_chunks').first()).n,0)
+  assert.equal((await app.request('/app/files/'+record.files[0].id,{headers:{Cookie:cookie}})).status,404)
+  await submit('contact',{},file,id);assert.equal((await app.db.prepare('SELECT COUNT(*) AS n FROM pane_files').first()).n,0)
+  const later=await exportData(app.db),empty=await runtime()
+  try{await assert.rejects(restore(empty.db,archive,later),/erased_row|erasure_epoch/)}finally{await empty.mf.dispose()}
+ }finally{await app.mf.dispose()}
+})
+test('durable typed intake retains private upload chunks through workspace outage and drains once after recovery',async()=>{
+ const {app,cookie,submit}=await formFixture({isolatedLive:true})
+ try{
+  await app.db.prepare('ALTER TABLE pane_messages RENAME TO synthetic_unavailable_messages').run()
+  const pdf=new Uint8Array(5*1024*1024);pdf.set(new TextEncoder().encode('%PDF-1.7\nsynthetic-pane-64'));pdf.fill(32,32)
+  const id=crypto.randomUUID(),file=new File([pdf],'project.pdf',{type:'application/pdf'})
+  assert.equal((await submit('contact',{},file,id)).status,303)
+  assert.equal((await app.request('/site/about')).status,200)
+  await app.db.prepare('ALTER TABLE synthetic_unavailable_messages RENAME TO pane_messages').run()
+  const worker=await app.mf.getWorker();assert.equal((await worker.scheduled({scheduledTime:new Date('2030-06-20T12:00:00Z'),cron:'* * * * *'})).outcome,'ok')
+  const dashboard=await (await app.request('/api/pane',{headers:{Cookie:cookie}})).json(),receipt=dashboard.messages.find(message=>message.id===id);assert.equal(receipt.files.length,1)
+  const response=await app.request('/app/files/'+receipt.files[0].id,{headers:{Cookie:cookie}});assert.deepEqual(new Uint8Array(await response.arrayBuffer()),pdf)
+  await submit('contact',{},file,id);await worker.scheduled({scheduledTime:new Date('2030-06-20T12:01:00Z'),cron:'* * * * *'})
+  assert.equal((await app.db.prepare('SELECT COUNT(*) AS n FROM pane_files').first()).n,1)
+ }finally{await app.mf.dispose()}
+})
