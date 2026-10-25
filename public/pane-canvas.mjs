@@ -1,3 +1,4 @@
+import {syncReadingOrder} from './pane-reading-order.mjs'
 import {readImage} from './pane-image.mjs'
 import {richText,richMarkup} from './pane-rich.mjs'
 import {layoutRules,layoutMarkup} from './pane-layout.mjs'
@@ -8,8 +9,9 @@ const current=()=>sections.find(section=>section.id===sectionId)??sections[0]
 const block=()=>current().blocks.find(block=>block.id===blockId)
 const device=form.querySelector('[data-layout-device]')
 const isPhone=()=>device.value==='390'
-const mobileSectionFields=['paddingTop','paddingBottom','height']
+const mobileSectionFields=['gap','paddingTop','paddingBottom','height']
 const mobileBlockFields=['column','span','row','order','align','vertical']
+function arrangeSection(section){section.phone={gap:section.gap,paddingTop:section.paddingTop,paddingBottom:section.paddingBottom,height:section.height??'auto',...section.phone}}
 const mobileBlock=(section,item)=>({column:1,span:12,row:section.blocks.indexOf(item)+1,order:item.order,align:item.align,vertical:item.vertical,...item.phone})
 const identity=()=>crypto.randomUUID()
 const newBlock=()=>({id:identity(),kind:'text',text:'New text',column:1,span:12,row:1,order:0,align:'left',vertical:'start'})
@@ -38,7 +40,7 @@ function render(){
  for(const section of content.querySelectorAll('[data-section]')){section.draggable=true;section.tabIndex=0;section.setAttribute('aria-label','Section '+(sections.findIndex(item=>item.id===section.dataset.section)+1))}
  for(const node of content.querySelectorAll('[data-image-block]')){node.tabIndex=0;node.setAttribute('aria-label','Image block')}
  for(const node of content.querySelectorAll('[data-block]:not([data-image-block])')){node.contentEditable='true';node.draggable=true;node.setAttribute('role','textbox');node.setAttribute('aria-label','Block text');node.setAttribute('aria-multiline','true')}
- settings()
+ syncReadingOrder(content);settings()
 }
 function commit(redraw=true){field.value=JSON.stringify(sections);field.dispatchEvent(new Event('input',{bubbles:true}));if(redraw)render()}
 canvas.addEventListener('click',event=>{const section=event.target.closest('[data-section]');if(!section)return;sectionId=section.dataset.section;blockId=event.target.closest('[data-block]')?.dataset.block;settings()})
@@ -141,7 +143,7 @@ form.addEventListener('click',event=>{
 form.addEventListener('input',event=>{
  const key=event.target.dataset.layoutField;if(!key)return
  let target=key==='hidden'?(block()??current()):sectionFields.includes(key)?current():block();if(!target)return
- if(isPhone()){if(key==='hidden'||sectionFields.includes(key)){target.phone??={};target=target.phone}else{target.phone=mobileBlock(current(),target);target=target.phone}}
+ if(isPhone()){arrangeSection(current());if(key==='hidden'||sectionFields.includes(key)){target.phone??={};target=target.phone}else{target.phone=mobileBlock(current(),target);target=target.phone}}
  const value=event.target.value
  if(!event.target.checkValidity())return
  if(key==='format'&&target.format==='div'&&target.content){
@@ -173,7 +175,7 @@ form.addEventListener('click',event=>{
  if(action==='delete'){if(items.length===1){form.querySelector('[data-layout-selection]').textContent='Keep at least one section and one text block.';return}items.splice(index,1);sectionId=sections[0].id;blockId=undefined}
  if(isPhone()&&(action==='up'||action==='down')){
   if(!selected){form.querySelector('[data-layout-selection]').textContent='Select a block to arrange its phone order.';return}
-  const sorted=[...section.blocks].sort((a,b)=>mobileBlock(section,a).row-mobileBlock(section,b).row),at=sorted.indexOf(selected),destination=Math.max(0,Math.min(sorted.length-1,at+(action==='up'?-1:1)))
+  arrangeSection(section);const sorted=[...section.blocks].sort((a,b)=>mobileBlock(section,a).row-mobileBlock(section,b).row),at=sorted.indexOf(selected),destination=Math.max(0,Math.min(sorted.length-1,at+(action==='up'?-1:1)))
   sorted.splice(at,1);sorted.splice(destination,0,selected);sorted.forEach((item,index)=>item.phone={...mobileBlock(section,item),row:index+1});commit();return
  }
  if(action==='up'||action==='down'){const destination=Math.max(0,Math.min(items.length-1,index+(action==='up'?-1:1)));items.splice(index,1);items.splice(destination,0,selected??section);if(selected)items.forEach((block,index)=>block.row=index+1)}
@@ -189,7 +191,7 @@ canvas.addEventListener('drop',event=>{
  if(isPhone()){
   const next=event.target.closest('[data-block]')?.dataset.block
   if(!dragged.block||from!==to||!next)return
-  const sorted=[...to.blocks].sort((a,b)=>mobileBlock(to,a).row-mobileBlock(to,b).row),moved=sorted.find(item=>item.id===dragged.block),targetBlock=sorted.find(item=>item.id===next)
+  arrangeSection(to);const sorted=[...to.blocks].sort((a,b)=>mobileBlock(to,a).row-mobileBlock(to,b).row),moved=sorted.find(item=>item.id===dragged.block),targetBlock=sorted.find(item=>item.id===next)
   if(moved===targetBlock)return
   sorted.splice(sorted.indexOf(moved),1);sorted.splice(sorted.indexOf(targetBlock),0,moved);sorted.forEach((item,index)=>item.phone={...mobileBlock(to,item),row:index+1});sectionId=to.id;blockId=moved.id;dragged=undefined;commit();return
  }
@@ -211,7 +213,7 @@ for(const input of form.querySelectorAll('[data-image-alt],[data-image-decorativ
  image.alt=image.decorative?'':form.querySelector('[data-image-alt]').value
  selected.text=image.alt;commit()
 })
-device.addEventListener('change',()=>{const sheet=document.querySelector('style[data-pane-layout]').sheet;while(sheet.cssRules.length)sheet.deleteRule(0);if(device.value!=='fit')sheet.insertRule(`[data-layout-canvas]{width:${Number(device.value)}px}`,0);settings()})
+device.addEventListener('change',()=>{const sheet=document.querySelector('style[data-pane-layout]').sheet;while(sheet.cssRules.length)sheet.deleteRule(0);if(device.value!=='fit')sheet.insertRule(`[data-layout-canvas]{width:${Number(device.value)}px}`,0);syncReadingOrder(content);settings()})
 // Active links belong to the live page; the editing surface keeps selection local.
 canvas.addEventListener('click',event=>{if(event.target.closest('a'))event.preventDefault()})
 render()

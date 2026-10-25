@@ -10,7 +10,7 @@ export type TextBlock = {
  align: 'left' | 'center' | 'right' | 'justify'; vertical: 'start' | 'center' | 'end';
 }
 export type Section = {
- phone?: {paddingTop?:number;paddingBottom?:number;height?:Section['height'];hidden?:boolean};
+ phone?: {gap?:number;paddingTop?:number;paddingBottom?:number;height?:Section['height'];hidden?:boolean};
  id: string; component?: string; kind: 'text' | 'columns'; ratio: '1:1' | '1:2' | '2:1' | '1:1:1';
  gap: number; paddingTop: number; paddingBottom: number;
  height?: 'auto'|'small'|'medium'|'large'|'full'; background?: string; blocks: TextBlock[];
@@ -32,14 +32,14 @@ const choice = <T extends string>(value: unknown, values: readonly T[], fallback
 function phone(value:unknown, block:boolean):Record<string,unknown>|undefined {
  if(value===undefined)return undefined
  const source=object(value),result:Record<string,unknown>={}
- const allowed=block?['column','span','row','order','align','vertical','hidden']:['paddingTop','paddingBottom','height','hidden']
+ const allowed=block?['column','span','row','order','align','vertical','hidden']:['gap','paddingTop','paddingBottom','height','hidden']
  if(Object.keys(source).some(key=>!allowed.includes(key)))throw Error('Unsupported phone layout field.')
  for(const [key,value] of Object.entries(source)) {
   if(key==='hidden'){if(typeof value!=='boolean')throw Error('Phone visibility must be explicit.');result[key]=value}
   else if(key==='height')result[key]=choice(value,['auto','small','medium','large','full'] as const,'auto')
   else if(key==='align')result[key]=choice(value,['left','center','right','justify'] as const,'left')
   else if(key==='vertical')result[key]=choice(value,['start','center','end'] as const,'start')
-  else result[key]=number(value,['column','span','row'].includes(key)?1:0,['column','span'].includes(key)?12:key==='row'||key==='order'?100:240,0)
+  else result[key]=number(value,['column','span','row'].includes(key)?1:0,['column','span'].includes(key)?12:key==='row'||key==='order'?100:key==='gap'?160:240,0)
  }
  if(block&&Number(result.column??1)+Number(result.span??12)>13)throw Error('A phone block must fit the twelve-column grid.')
  return result
