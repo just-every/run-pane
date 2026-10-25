@@ -1398,7 +1398,7 @@
       },
       "acknowledged": {
         "src/modules/import-kit/README.md": {
-          "sha256": "d3d4c882ed3cdd6a0f8b17a1e2a36c67f0a6adf5b758a14e67d3ad3c3dbc45a9",
+          "sha256": "1f8069d41883f9e9989ee66bcaac0a28a181483a42c3cd3be5263a4714233795",
           "mode": "100644"
         }
       }
@@ -1546,7 +1546,7 @@
       },
       "acknowledged": {
         "src/modules/mail/README.md": {
-          "sha256": "d551371533cff8c966d239d65636e8c7776b202750777b16b56a0086e24dc77e",
+          "sha256": "00154803c5caf2fa952b4b1a26f849dc44fd9fbbc23db18a5715eb592f63fef9",
           "mode": "100644"
         }
       }
