@@ -136,7 +136,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "2e345ebb041de54afc9f42e7622284606467891def109ef4c2e3620ebeae6320",
+      "sha256": "bd790b97ac7325998fd749d8ddb014d2351b1d851b6c1f7f5abc900fad2eb8c1",
       "executable": false
     },
     "AGENTS.md": {
@@ -160,7 +160,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "a67f226363e6862b4daa4b5755a5bd2e09d4655cd15af833292ee74dad2f6231",
+      "sha256": "5a4081f947964af7eab7c2a97361e44e73eb64f7415129cde76ee40d10f0ef44",
       "executable": false
     },
     "deploy-demo.json": {
@@ -936,7 +936,7 @@
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
-      "sha256": "75f1c717597d4d29c8218dfd7bd6607e2ec2960aa5593cd8d7c95a4b71719045",
+      "sha256": "0734628f5a634971c6a06cdab1772fdd4241b5b756582c67241390ffb443d36e",
       "executable": false
     },
     "scripts/custody-journey.mjs": {
@@ -3132,7 +3132,7 @@
       "executable": false
     },
     "src/pane/handler.ts": {
-      "sha256": "ea73ffcbd284d53c7b2876bcba5af39c0106dd70c5b7cd52c7cb26b34d2e52fe",
+      "sha256": "693734240e1442c426c706a9220ab8c8eb21c9f5fb13f7c52baba1bbd359f0f1",
       "executable": false
     },
     "src/pane/import-authority.ts": {
