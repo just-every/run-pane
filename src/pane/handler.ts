@@ -1,3 +1,4 @@
+import { changeRejected } from './rejected-content'
 import { requestPageReview, publishPage } from './page-review'
 import { findPersonData,erasePersonData,personEmail } from './privacy'
 import { policyStarters } from './policies'
@@ -71,7 +72,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   }
   if(request.method==='GET') {
    const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps)
-   if(env.PANE_LIVE&&['owner','admin'].includes(actor.role)){const review=await env.PANE_LIVE.get(env.PANE_LIVE.idFromName('published-site')).fetch('https://pane.internal/review');Object.assign(data,await review.json())}
+   if(env.PANE_LIVE&&owner){const review=await env.PANE_LIVE.get(env.PANE_LIVE.idFromName('published-site')).fetch('https://pane.internal/review');Object.assign(data,await review.json())}
    if(api&&path!=='/api/pane')return json({error:'Not found.'},404)
    if(api)return json(scopes?{role:actor.role,draft:data.draft?{id:data.draft.id}:null,live:data.live?{id:data.live.id}:null}:{...data,activity:undefined})
    if(!screens[path])return json({error:'Not found.'},404)
@@ -84,7 +85,10 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   const action=api?path.slice('/api/pane/'.length):path.slice('/app/'.length)
   let result:unknown,notice='Saved.',back='/app'
   if(!routeCapability(path,'POST')||!caps.includes(routeCapability(path,'POST')!))return json({error:'Your role cannot perform this action.'},403)
-  if(['privacy/find','privacy/export','privacy/erase'].includes(action)){
+  if(action.startsWith('spam/')){
+   if(!owner)return json({error:'Owner only.'},403)
+   result=await changeRejected(env.DB,action.slice(5),input);notice='Spam review updated.';back='/app/inquiries'
+  }else if(['privacy/find','privacy/export','privacy/erase'].includes(action)){
    const email=personEmail(input.email)
    const privacyActor:{id:string;version:number;sessionId?:string}={id:actor.id,version:actor.version}
    if(action!=='privacy/find'){const proof=await operatorAuth(env).requireStepUp(request,action==='privacy/export'?'export':'delete');privacyActor.sessionId=proof.id}

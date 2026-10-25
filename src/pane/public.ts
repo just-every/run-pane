@@ -81,13 +81,13 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
  if((page?.kind==='contact'||(page && slug==='contact'))&&request.method==='POST') {
   if(Number(request.headers.get('content-length')??0)>100000)return json({error:'Message too large.'},413)
   const f=await request.formData(),name=String(f.get('name')??'').trim(),email=String(f.get('email')??'').trim(),message=String(f.get('message')??'').trim(),id=String(f.get('idempotency')??'')
-  if(String(f.get('website')??''))return rejectForm(env,slug,'honeypot')
+  if(String(f.get('website')??''))return rejectForm(env,slug,'honeypot',f)
   if(!/^[a-f0-9-]{36}$/.test(id)||!name||name.length>120||!/^\S+@\S+\.\S+$/.test(email)||email.length>254||!message||message.length>5000)return json({error:'Enter a name, valid email and message up to 5,000 characters.'},400)
   // Pencil's immutable original receipt: retries cannot replace an earlier answer, and spend no quota.
   const sender=await visitor(request,env.SESSION_SECRET)
-  if(env.PANE_LIVE?(await liveCall(env,'/rate',{form:slug,visitor:sender,id})).limited:await contactLimited(env.DB,slug,sender,id))return rejectForm(env,slug,'rate')
+  if(env.PANE_LIVE?(await liveCall(env,'/rate',{form:slug,visitor:sender,id})).limited:await contactLimited(env.DB,slug,sender,id))return rejectForm(env,slug,'rate',f)
   const verification=await verifyForm(env,String(f.get('cf-turnstile-response')??''),id,slug)
-  if(verification!=='verified')return rejectForm(env,slug,verification)
+  if(verification!=='verified')return rejectForm(env,slug,verification,f)
   const acknowledgment=page?.acknowledgment,received=Date.now()
   if(env.PANE_LIVE){
    let attribution:unknown={};try{const text=String(f.get('attribution')??'');if(text.length<=2000)attribution=JSON.parse(text||'{}')}catch{}

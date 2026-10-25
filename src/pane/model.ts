@@ -3,6 +3,8 @@ export type Page = { policyStarter?: import('./policies').PolicyKind; business?:
 export type Site = { promotion?: import('./promotions').Promotion; locale?: import('./locale').LocaleSettings; automations?: import('./schedules').Automations; name: string; description: string; pages: Page[]; home?: string; notFound?: string; folders?: string[]; redirects?: import('./redirects').Redirect[]; redirectOffers?: import('./redirects').RedirectOffer[]; navigation?: import('./navigation').Navigation; socials?: Partial<Record<import('./navigation').SocialNetwork, string>>; robots?: string; analyticsCampaigns?: string[]; analytics?: import('./analytics').Analytics; goals?: import('./goals').Goal[]; responseDays?: number }
 export type Revision = { id: string; site: Site; hash: string; created_at: string; actor: string }
 export type Dashboard = {
+ rejectedContent?: import('./rejected-content').RejectedContent[];
+ spamRetention?: boolean;
  pageRequests?: import('./page-review').PageRequest[];
  privacyRequest?: import('./privacy').PersonPrivacy;
  ownershipPeople?: {id:string;name:string;email:string}[];

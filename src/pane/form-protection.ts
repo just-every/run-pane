@@ -1,11 +1,13 @@
 import { fetchDemoRead } from '../modules/demo/index.mjs'
 import { liveCall } from './outage'
+import { retainRejected } from './rejected-content'
 import type { Bindings } from '../auth.server'
 export async function formBinding(form:string){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(form))),byte=>byte.toString(16).padStart(2,'0')).join('')}
 export type FormRejection = {id:string;form:string;reason:string;created_at:string}
-export async function rejectForm(env:Bindings,form:string,reason:FormRejection['reason']) {
+export async function rejectForm(env:Bindings,form:string,reason:FormRejection['reason'],fields?:FormData) {
  if(env.PANE_LIVE)await liveCall(env,'/reject',{form,reason})
  else await env.DB.prepare('INSERT INTO pane_form_rejections(id,form,reason,created_at) VALUES(?,?,?,?)').bind(crypto.randomUUID(),form,reason,new Date().toISOString()).run()
+ if(fields)await retainRejected(env,form,reason,fields)
  const unavailable=reason==='unavailable'
  return Response.json({error:unavailable?'Message not sent. Verification is unavailable; please try again later.':reason==='rate'?'Message not sent. Please try again in a minute.':'Message not sent. Spam verification failed; please try again.'},{status:unavailable?503:reason==='rate'?429:403,headers:{'cache-control':'no-store'}})
 }
