@@ -104,3 +104,9 @@
 .pane [data-image-block] img{display:block;max-width:100%;width:100%;height:auto}.pane [data-image-block]{align-self:start}
 /* Published form actions use the existing darker brand token for AA contrast. */
 .rer-themed .pane .public-site .contact-form button{background:var(--pn-fuchsia-deep);border-color:var(--pn-fuchsia-deep)}
+
+/* Paragraph alignment stays semantic and obeys the document CSP. */
+.public-content [data-block] [data-text-align="left"]{text-align:left}
+.public-content [data-block] [data-text-align="center"]{text-align:center}
+.public-content [data-block] [data-text-align="right"]{text-align:right}
+.public-content [data-block] [data-text-align="justify"]{text-align:justify}

@@ -131,7 +131,9 @@ try{
    await richBlock.focus();await page.keyboard.press('Home')
    for(let index=0;index<start;index++)await page.keyboard.press('ArrowRight')
    for(let index=0;index<length;index++)await page.keyboard.press('Shift+ArrowRight')
-   await page.getByRole('button',{name:label,exact:true}).click();await saved()
+   const control=page.getByRole('button',{name:label,exact:true})
+   if(label==='Italic'){await control.focus();await page.keyboard.press('Enter')}else await control.click()
+   await saved()
   }
   await mark(0,4,'Bold');await mark(5,6,'Italic');await mark(12,9,'Underline');await mark(22,6,'Strikethrough')
   await page.getByText('Layout settings',{exact:true}).click()
@@ -164,6 +166,12 @@ try{
   await documentBlock.locator('h3').click();await page.getByText('Layout settings',{exact:true}).click()
   await layout('Paragraph style').selectOption('h4');await saved();await documentBlock.locator('h4').waitFor()
   await documentBlock.locator('h4').click();await layout('Paragraph style').selectOption('h3');await saved();await documentBlock.locator('h3').waitFor()
+  for(const [selector,alignment] of [['h3','center'],['p','right'],['ul > li','left'],['ol > li','justify']]){
+   await documentBlock.locator(selector).first().click({position:{x:5,y:5}});await layout('Text alignment').selectOption(alignment);await saved()
+   assert.equal(await documentBlock.locator(selector).first().evaluate(node=>getComputedStyle(node).textAlign),alignment)
+  }
+  await page.reload();await page.locator('[contenteditable=true]').last().locator('h3').waitFor()
+  for(const [selector,alignment] of [['h3','center'],['p','right'],['ul > li','left'],['ol > li','justify']])assert.equal(await page.locator('[contenteditable=true]').last().locator(selector).first().evaluate(node=>getComputedStyle(node).textAlign),alignment,'Independent paragraph alignment survives reopening')
   await page.getByText('Layout settings',{exact:true}).click()
   await page.locator('[contenteditable=true]').last().click()
   await page.getByRole('button',{name:'Add text block',exact:true}).click()
@@ -199,6 +207,7 @@ try{
   for(const [tag,text] of [['strong','Bold'],['em','italic'],['u','underline'],['s','strike']])assert.equal(await page.locator('[data-block] '+tag).filter({hasText:new RegExp('^'+text+'$')}).innerText(),text)
   for(const tag of ['h1','h2','h3','h4','blockquote','pre'])assert.ok(await page.locator(tag+'[data-block]').count())
   assert.equal(await page.locator('ul ul li').filter({hasText:/^Nested bullet$/}).innerText(),'Nested bullet');assert.equal(await page.locator('ol ol li').innerText(),'Nested number')
+  for(const [tag,alignment] of [['h3','center'],['p','right'],['li','left'],['li','justify']])assert.ok(await page.locator(`[data-block] ${tag}[data-text-align="${alignment}"]`).count(),'Published paragraph alignment')
   assert.equal(await page.locator('.pane-p-large').count(),1);assert.equal(await page.locator('.pane-p-small').count(),1)
   await capture('native-live-'+width)
   console.log('Native canvas geometry, pixel parity and conflict safety passed at '+width+'.')

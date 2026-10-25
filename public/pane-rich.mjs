@@ -8,5 +8,5 @@ export const richMarkup=nodes=>nodes.map(node=>{
  if(node.tag==='text')return escape(node.text)
  const tag=['p-large','p-small'].includes(node.tag)?'p':node.tag
  if(tag==='br')return '<br>'
- return `<${tag}${tag!==node.tag?` class="pane-${node.tag}"`:''}>${richMarkup(node.children)}</${tag}>`
+ return `<${tag}${node.align?` data-text-align="${escape(node.align)}"`:''}${tag!==node.tag?` class="pane-${node.tag}"`:''}>${richMarkup(node.children)}</${tag}>`
 }).join('')

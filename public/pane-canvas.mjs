@@ -3,7 +3,7 @@ import {readImage} from './pane-image.mjs'
 import {richText,richMarkup} from './pane-rich.mjs'
 import {layoutRules,layoutMarkup} from './pane-layout.mjs'
 const editor=document.querySelector('[data-layout-editor]'),form=editor.querySelector('form'),field=form.querySelector('[data-layout-state]'),canvas=editor.querySelector('[data-layout-canvas]'),content=canvas.querySelector('.public-content')
-let sections=JSON.parse(field.value),sectionId=sections[0].id,blockId,dragged
+let sections=JSON.parse(field.value),sectionId=sections[0].id,blockId,dragged,selection
 const sectionFields=['kind','ratio','gap','paddingTop','paddingBottom','height','background'],numeric=['gap','paddingTop','paddingBottom','column','span','row','order']
 const current=()=>sections.find(section=>section.id===sectionId)??sections[0]
 const block=()=>current().blocks.find(block=>block.id===blockId)
@@ -15,6 +15,12 @@ function arrangeSection(section){section.phone={gap:section.gap,paddingTop:secti
 const mobileBlock=(section,item)=>({column:1,span:12,row:section.blocks.indexOf(item)+1,order:item.order,align:item.align,vertical:item.vertical,...item.phone})
 const identity=()=>crypto.randomUUID()
 const newBlock=()=>({id:identity(),kind:'text',text:'New text',column:1,span:12,row:1,order:0,align:'left',vertical:'start'})
+function selectedParagraph(node){
+ const range=selection&&node?.contains(selection.commonAncestorContainer)?selection:null
+ const anchor=range?.startContainer,element=anchor?.nodeType===1?anchor:anchor?.parentElement
+ const paragraph=element?.closest('p,h1,h2,h3,h4,blockquote,pre,li')
+ return paragraph&&paragraph!==node&&node.contains(paragraph)?paragraph:null
+}
 function settings(){
  const image=block()?.image,panel=form.querySelector('[data-image-settings]');panel.hidden=!image
  if(image){form.querySelector('[data-image-alt]').value=image.alt??'';form.querySelector('[data-image-decorative]').checked=image.decorative;form.querySelector('[data-image-alt]').disabled=image.decorative;form.querySelector('[data-image-status]').textContent=!image.decorative&&!image.alt?.trim()?'Add alternative text or mark this image decorative before publishing.':'Image description is ready.'}
@@ -25,12 +31,12 @@ function settings(){
   const phoneKey=key==='hidden'||(sectionFields.includes(key)?mobileSectionFields:mobileBlockFields).includes(key)
   input.disabled=!target||(key==='format'&&target?.kind==='image')||(key==='hidden'&&!isPhone())||(isPhone()&&!phoneKey)
   const value=isPhone()&&target&&phoneKey?(sectionFields.includes(key)?{...target,...target.phone}:key==='hidden'?{...target,...target.phone}:mobileBlock(current(),target))[key]:target?.[key]
-  if(key==='hidden')input.checked=!!(block()??current()).phone?.hidden;else input.value=value??({height:'auto',background:'',format:'p'}[key]??'')
+  if(key==='hidden')input.checked=!!(block()??current()).phone?.hidden;else input.value=(key==='align'&&block()?.format==='div'?selectedParagraph(canvas.querySelector(`[data-block="${blockId}"]`))?.dataset.textAlign:undefined)??value??({height:'auto',background:'',format:'p'}[key]??'')
  }
  for(const button of form.querySelectorAll('[data-text-command]'))button.disabled=block()?.kind==='image'
  for(const item of sections){const node=canvas.querySelector(`[data-section="${item.id}"]`);node?.toggleAttribute('data-phone-override',!!item.phone);for(const text of item.blocks)canvas.querySelector(`[data-block="${text.id}"]`)?.toggleAttribute('data-phone-override',!!text.phone)}
  form.querySelector('[data-device-status]').textContent=isPhone()?'Phone settings are independent. Outlined selections with a phone override keep their layout when desktop changes.':'Desktop and tablet use desktop settings. Phone overrides are preserved.'
- form.querySelector('[data-layout-selection]').textContent=((block()??current()).phone?'Phone override · ':'')+(blockId?'Text block selected. Edit text on the page or change its layout.':'Section selected. Drag it or use Move earlier and Move later.')
+ form.querySelector('[data-layout-selection]').textContent=((block()??current()).phone?'Phone override · ':'')+(blockId?(block()?.format==='div'?'Text block selected. Place the caret in a paragraph to align it independently.':'Text block selected. Edit text on the page or change its layout.'):'Section selected. Drag it or use Move earlier and Move later.')
 }
 function render(){
  const style=content.querySelector('style[data-pane-layout]'),sheet=style.sheet
@@ -86,7 +92,8 @@ function readRich(root){
   if(tag!=='li'&&tag!=='ul'&&tag!=='ol'&&children.some(child=>blocks.has(child.tag))){
    return children.flatMap(child=>blocks.has(child.tag)?[child]:inline.has(tag)||blocks.has(tag)?[{tag,children:[child]}]:[child])
   }
-  return inline.has(tag)||blocks.has(tag)?[{tag,children}]:children
+  const align=node.dataset?.textAlign
+  return inline.has(tag)||blocks.has(tag)?[{tag,children,...(['p','p-large','p-small','h1','h2','h3','h4','blockquote','pre','li'].includes(tag)&&['left','center','right','justify'].includes(align)?{align}:{})}]:children
  }
  return [...root.childNodes].flatMap(read)
 }
@@ -128,15 +135,21 @@ canvas.addEventListener('paste',event=>{
  record(node)
  form.querySelector('[data-layout-selection]').textContent='Pasted text styles kept. Links and media are not supported yet.'
 })
-let selection
 // Pointer activation must not replace the selected text with a toolbar caret.
 // Keyboard activation restores the same saved range after focusing its block.
 form.addEventListener('pointerdown',event=>{
  if(event.target.closest('[data-text-command]'))event.preventDefault()
 })
-document.addEventListener('selectionchange',()=>{const current=window.getSelection();if(current?.rangeCount&&canvas.contains(current.getRangeAt(0).commonAncestorContainer))selection=current.getRangeAt(0).cloneRange()})
-canvas.addEventListener('keyup',()=>{selection=window.getSelection()?.rangeCount?window.getSelection().getRangeAt(0).cloneRange():undefined})
-canvas.addEventListener('mouseup',()=>{selection=window.getSelection()?.rangeCount?window.getSelection().getRangeAt(0).cloneRange():undefined})
+function rememberSelection(){
+ const current=window.getSelection()
+ if(!current?.rangeCount||!canvas.contains(current.getRangeAt(0).commonAncestorContainer))return
+ selection=current.getRangeAt(0).cloneRange()
+ const node=canvas.querySelector(`[data-block="${blockId}"]`),paragraph=selectedParagraph(node)
+ if(paragraph&&!isPhone())form.querySelector('[data-layout-field="align"]').value=paragraph.dataset.textAlign??block()?.align??'left'
+}
+document.addEventListener('selectionchange',rememberSelection)
+canvas.addEventListener('keyup',rememberSelection)
+canvas.addEventListener('mouseup',rememberSelection)
 form.addEventListener('click',event=>{
  const command=event.target.dataset.textCommand;if(!command||!block()||block().kind!=='text')return
  let node=canvas.querySelector(`[data-block="${blockId}"]`)
@@ -154,6 +167,10 @@ form.addEventListener('input',event=>{
  if(isPhone()){arrangeSection(current());if(key==='hidden'||sectionFields.includes(key)){target.phone??={};target=target.phone}else{target.phone=mobileBlock(current(),target);target=target.phone}}
  const value=event.target.value
  if(!event.target.checkValidity())return
+ if(key==='align'&&!isPhone()&&target.format==='div'){
+  const node=canvas.querySelector(`[data-block="${blockId}"]`),paragraph=selectedParagraph(node)
+  if(paragraph){paragraph.dataset.textAlign=value;record(node);settings();return}
+ }
  if(key==='format'&&target.format==='div'&&target.content){
   if(value==='div')return
   const node=canvas.querySelector(`[data-block="${blockId}"]`);node.focus()

@@ -1,7 +1,7 @@
 import {normalizeImage,type ImageContent} from './images'
 import {richText} from '../../public/pane-rich.mjs'
 /** Revision data for the first native section door. Media and visual controls follow. */
-export type RichNode = {tag:'text';text:string} | {tag:'p'|'p-large'|'p-small'|'h1'|'h2'|'h3'|'h4'|'blockquote'|'pre'|'ul'|'ol'|'li'|'strong'|'em'|'u'|'s'|'br';children:RichNode[]}
+export type RichNode = {tag:'text';text:string} | {tag:'p'|'p-large'|'p-small'|'h1'|'h2'|'h3'|'h4'|'blockquote'|'pre'|'ul'|'ol'|'li'|'strong'|'em'|'u'|'s'|'br';children:RichNode[];align?:'left'|'center'|'right'|'justify'}
 export type PhoneBlock = {column?:number;span?:number;row?:number;order?:number;align?:TextBlock['align'];vertical?:TextBlock['vertical'];hidden?:boolean}
 export type TextBlock = {
  phone?: PhoneBlock;
@@ -58,12 +58,14 @@ function normalizeRich(value:unknown, document:boolean):RichNode[] {
     if(Object.keys(node).some(key=>!['tag','text'].includes(key))||typeof node.text!=='string')throw Error('Invalid rich text leaf.')
     return {tag:'text',text:node.text.normalize('NFC')} as RichNode
    }
-   if(Object.keys(node).some(key=>!['tag','children'].includes(key)))throw Error('Unsupported rich text field.')
+   const paragraph=['p','p-large','p-small','h1','h2','h3','h4','blockquote','pre','li'].includes(node.tag)
+   if(Object.keys(node).some(key=>!['tag','children',...(paragraph?['align']:[])].includes(key)))throw Error('Unsupported rich text field.')
+   const align=node.align===undefined?undefined:choice(node.align,['left','center','right','justify'] as const,'left')
    const list=node.tag==='ul'||node.tag==='ol'
    if(list&&lists>=2)throw Error('Lists support one level of nesting.')
    const children=walk(node.children,list?['li']:node.tag==='li'?[...inline,'ul','ol']:inline,depth+1,lists+(list?1:0))
    if(node.tag==='br'&&children.length)throw Error('A line break has no children.')
-   return {tag:node.tag,children} as RichNode
+   return {tag:node.tag,children,...(align?{align}:{})} as RichNode
   })
  }
  return walk(value,document?[...blocks,...inline]:inline,0,0)

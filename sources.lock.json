@@ -540,7 +540,7 @@
       "executable": false
     },
     "public/pane-canvas.mjs": {
-      "sha256": "9133f024db0521e90540a3aef3024ca8a378af3de49fd84bb4034f42f81e7b82",
+      "sha256": "cfaccaa3e37fed7595b28b0e808f1b1411ddb6f604263da66d882edede23d2a5",
       "executable": false
     },
     "public/pane-custom-code.js": {
@@ -584,7 +584,7 @@
       "executable": false
     },
     "public/pane-public.css": {
-      "sha256": "5c2823bac6fa50f8d8973f1f087b617c67102ae3b29ddd431a4ebec63f7dea50",
+      "sha256": "a6f18bc722b6e427c7ee8df7a8d57453a876682cf9953d7abf65842f80395c21",
       "executable": false
     },
     "public/pane-reading-order.mjs": {
@@ -600,7 +600,7 @@
       "executable": false
     },
     "public/pane-rich.mjs": {
-      "sha256": "c81d343e4bb62339443f3f52b851a6f9656288e687e3b20bacd62e74fff22571",
+      "sha256": "f0a093e313231f77a19a3e8c96d738c1a2b4c8ff6e9c25456df9bf2c02316a7d",
       "executable": false
     },
     "public/pane-screens.css": {
@@ -972,7 +972,7 @@
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
-      "sha256": "59b73707f5b5cebc9b50a91bc44196e617ebaebf71e7e5ef97411661c0adbe40",
+      "sha256": "765d44d80516e7d61abf49b2468f82f0bec7cdffbdc7d80fa38f3cfa0b8e0ef4",
       "executable": false
     },
     "scripts/custody-journey.mjs": {
@@ -3316,7 +3316,7 @@
       "executable": false
     },
     "src/pane/sections.ts": {
-      "sha256": "b2a7515c727a18986f85f089cf99f2607cb3c806ec9e93ba1201b64f65780b17",
+      "sha256": "ec81698ce87acb8ce6e5e4e3e2432f1a500e8a75fd1d42143649173d16c73cb1",
       "executable": false
     },
     "src/pane/site-search.ts": {
@@ -3600,7 +3600,7 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "1403f60c93147839d4059c5fe7714a25c87262c4d570c50737797ae606b9ce76",
+      "sha256": "0a0c6a67ee7cbb9c4592112b01f9ff7201801c62bebe48238ee0fa804addacc6",
       "executable": false
     },
     "tests/runtime.mjs": {

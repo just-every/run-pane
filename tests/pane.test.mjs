@@ -1805,16 +1805,19 @@ test('rich section text keeps semantic formatting and nested lists through immut
   cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})).headers.get('set-cookie').split(';')[0]
   const site=structuredClone(fixture),page=site.pages.find(page=>page.slug==='services')
   const content=[element('h2',leaf('Workshop heading')),element('p',element('strong',leaf('Bold')),leaf(' '),element('em',leaf('italic')),leaf(' '),element('u',leaf('underline')),leaf(' '),element('s',leaf('strike'))),element('ul',element('li',leaf('Outer bullet'),element('ul',element('li',leaf('Nested bullet'))))),element('ol',element('li',leaf('Outer number'),element('ol',element('li',leaf('Nested number')))))]
+  content[0].align='center';content[1].align='right';content[2].children[0].align='left';content[3].children[0].align='justify'
   page.body='Workshop heading\nBold italic underline strike\n\nOuter bullet\nNested bullet\n\n\nOuter number\nNested number'
   page.sections=[{id:'synthetic-pane-rich-section',blocks:[{id:'synthetic-pane-rich-block',kind:'text',format:'div',text:page.body,content,align:'justify'}]}]
   const response=await call('/api/pane/prepare',{site,base:''});assert.equal(response.status,200,await response.clone().text())
   const first=await response.json();assert.deepEqual(first.site.pages.find(page=>page.slug==='services').sections[0].blocks[0].content,content)
   assert.equal((await call('/api/pane/publish',{revision:first.id})).status,200)
   const html=await (await app.request('/site/services')).text()
-  for(const fragment of ['<h2>Workshop heading</h2>','<strong>Bold</strong>','<em>italic</em>','<u>underline</u>','<s>strike</s>','<ul><li>Outer bullet<ul><li>Nested bullet</li></ul></li></ul>','<ol><li>Outer number<ol><li>Nested number</li></ol></li></ol>','text-align:justify'])assert.ok(html.includes(fragment),fragment)
+  for(const fragment of ['<h2 data-text-align="center">Workshop heading</h2>','<p data-text-align="right">','<li data-text-align="left">','<li data-text-align="justify">','<strong>Bold</strong>','<em>italic</em>','<u>underline</u>','<s>strike</s>','<ul><li data-text-align="left">Outer bullet<ul><li>Nested bullet</li></ul></li></ul>','<ol><li data-text-align="justify">Outer number<ol><li>Nested number</li></ol></li></ol>','text-align:justify'])assert.ok(html.includes(fragment),fragment)
   assert.match(await (await app.request('/site/search?q=Nested%20bullet')).text(),/href="\/site\/services"/)
   const invalidCases=[
    block=>block.content[0].tag='script',
+   block=>block.content[0].align='arbitrary',
+   block=>block.content[1].children[0].align='left',
    block=>block.content[0].onclick='alert(1)',
    block=>block.content[1].children[0].children[0].text='Unindexed hidden content',
    block=>block.content[2].children[0].children[1].children[0].children.push(element('ul',element('li',leaf('Too deep')))),
