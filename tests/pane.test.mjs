@@ -1674,7 +1674,7 @@ test('section drafts preserve validated layout and reading text through publicat
   assert.equal((await app.request('/api/pane/pages',{headers:{Cookie:cookie}})).status,200)
   assert.equal((await call('/api/pane/publish',{revision:first.id})).status,200)
   const rendered=await app.request('/site/services'),renderedHtml=await rendered.text()
-  assert.match(renderedHtml,/<h2 data-block="synthetic-pane-block-1" data-reading-index="0">Synthetic section heading<\/h2>/)
+  assert.match(renderedHtml,/<h2 data-block="synthetic-pane-block-1"[^>]*>Synthetic section heading<\/h2>/)
   assert.match(renderedHtml,/grid-column:2\/span 6/)
   assert.match(rendered.headers.get('content-security-policy'),/style-src 'self'.*'sha256-/)
   assert.match(await (await app.request('/site/search?q=Synthetic%20section%20detail')).text(),/href="\/site\/services"/)

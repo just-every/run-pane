@@ -3600,7 +3600,7 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "bd878eec5e1470b36cf5d7ffd1977528abab85a5075aad19f30ef5b981ec37a2",
+      "sha256": "1403f60c93147839d4059c5fe7714a25c87262c4d570c50737797ae606b9ce76",
       "executable": false
     },
     "tests/runtime.mjs": {
