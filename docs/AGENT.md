@@ -145,3 +145,36 @@ They do not apply content or publish. Follow the [controlled crawl steps](MOVE-I
 to prove the exact source hostname by DNS and explicitly approve each capture.
 The returned `source` is the exact export text to review and later pass to
 `import-apply`; its `plan.fingerprint` approves only those bytes.
+
+## Section draft data (partial foundation)
+
+A page supplied to the existing `prepare` door may carry `sections`. This
+currently stores layout intent only; the page still renders its `body` as
+paragraphs. There is no visual section editor yet. Do not treat these fields
+as a finished visual layout or media feature.
+
+Each section has a unique `id`, `kind` (`text` or `columns`), `ratio`
+(`1:1`, `1:2`, `2:1`, `1:1:1`), integer `gap` (0–160), integer
+`paddingTop` and `paddingBottom` (0–240), an optional six-digit hex
+`background`, and a nonempty `blocks` array. Each text block has a unique
+`id`, `kind: "text"`, nonempty `text`, `column` (1–12), `span` (1–12,
+ending within the grid), `row` (1–100), overlap `order` (0–100),
+`align` (`left`, `center`, `right`) and `vertical` (`start`, `center`,
+`end`). Omitted geometry uses column 1, span 12, row 1, order 0, left
+and start alignment; section spacing defaults to 24 and 32 pixels.
+
+Identities must be unique across the page and contain only ASCII letters,
+digits, underscores and hyphens (at most 80 characters). A page permits up
+to 100 sections and 100 blocks per section, with at most 20,000 text
+characters in total. Unknown fields and unsupported block kinds are refused.
+Sections cannot coexist with imported HTML or a starter layout.
+
+The page `body` must equal the trimmed, NFC-normalized block texts joined
+with a blank line in stored reading order. This keeps current rendering,
+search and export truthful while the shared layout renderer is unfinished.
+Change both together; editing only the plain-text body is refused rather
+than silently discarding section structure. Keep the existing identities
+when editing. Use the current revision `base` with the authenticated prepare
+API to detect concurrent edits; a 409 returns the latest full snapshot for
+comparison. Publication still requires owner approval, and rollback restores
+section data with the rest of the immutable revision.

@@ -1609,3 +1609,46 @@ test('durable typed intake retains private upload chunks through workspace outag
   assert.equal((await app.db.prepare('SELECT COUNT(*) AS n FROM pane_files').first()).n,1)
  }finally{await app.mf.dispose()}
 })
+
+test('section drafts preserve validated layout and reading text through publication, conflict and rollback',async()=>{
+ const app=await runtime();let cookie
+ const call=(path,body)=>app.request(path,{method:'POST',headers:{Cookie:cookie??'',Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)})
+ const dashboard=async()=> (await app.request('/api/pane',{headers:{Cookie:cookie}})).json()
+ try {
+  cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})).headers.get('set-cookie').split(';')[0]
+  const site=structuredClone(fixture),page=site.pages.find(page=>page.slug==='services')
+  page.body='Synthetic section heading\n\nSynthetic section detail'
+  page.sections=[{id:'synthetic-pane-section',kind:'columns',ratio:'2:1',background:'#AABBCC',paddingTop:96,blocks:[{id:'synthetic-pane-block-1',kind:'text',text:'Synthetic section heading',column:2,span:6,align:'right'},{id:'synthetic-pane-block-2',kind:'text',text:'Synthetic section detail',column:8,span:5,row:2}]}]
+  const prepared=await call('/api/pane/prepare',{site,base:''});assert.equal(prepared.status,200,await prepared.clone().text())
+  const first=await prepared.json(),stored=first.site.pages.find(page=>page.slug==='services')
+  assert.equal(stored.sections[0].ratio,'2:1');assert.equal(stored.sections[0].background,'#aabbcc')
+  assert.deepEqual(stored.sections[0].blocks.map(({column,span,row,align})=>({column,span,row,align})),[{column:2,span:6,row:1,align:'right'},{column:8,span:5,row:2,align:'left'}])
+  assert.equal((await app.request('/api/pane/pages',{headers:{Cookie:cookie}})).status,200)
+  assert.equal((await call('/api/pane/publish',{revision:first.id})).status,200)
+  assert.match(await (await app.request('/site/services')).text(),/Synthetic section heading/)
+  assert.match(await (await app.request('/site/search?q=Synthetic%20section%20detail')).text(),/href="\/site\/services"/)
+  const changed=structuredClone(first.site);changed.pages.find(page=>page.slug==='services').sections[0].paddingTop=120
+  const secondResponse=await call('/api/pane/prepare',{site:changed,base:first.id});assert.equal(secondResponse.status,200)
+  const second=await secondResponse.json()
+  const conflict=await call('/api/pane/prepare',{site:first.site,base:first.id});assert.equal(conflict.status,409)
+  assert.equal((await conflict.json()).latest.site.pages.find(page=>page.slug==='services').sections[0].paddingTop,120)
+  assert.equal((await call('/api/pane/publish',{revision:second.id})).status,200)
+  assert.equal((await call('/api/pane/rollback',{revision:first.id})).status,200)
+  assert.deepEqual((await dashboard()).live.site.pages.find(page=>page.slug==='services').sections,stored.sections)
+  const before=(await dashboard()).revisions.length
+  for(const mutate of [
+   p=>p.sections[0].blocks[0].span=12,
+   p=>p.sections[0].blocks[1].id=p.sections[0].blocks[0].id,
+   p=>p.sections[0].background='url(https://invalid.example)',
+   p=>p.sections[0].blocks[0].kind='html',
+   p=>p.sections[0].blocks[0].text='Unindexed hidden text',
+   p=>p.sections[0].blocks[0].column=2.5,
+   p=>p.sections[0].blocks[0].style='position:fixed',
+   p=>p.importedHtml='<p>Synthetic section heading</p><p>Synthetic section detail</p>',
+  ]) {
+   const invalid=structuredClone(first.site);mutate(invalid.pages.find(page=>page.slug==='services'))
+   assert.equal((await call('/api/pane/prepare',{site:invalid,base:second.id})).status,400)
+  }
+  assert.equal((await dashboard()).revisions.length,before,'Invalid section drafts never create revisions')
+ }finally{await app.mf.dispose()}
+})
