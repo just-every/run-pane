@@ -17,7 +17,7 @@ import { wireDatabase } from '@runeditrun/rer/internal/modules/d1-transport/inde
 import { erasureStatements, invalidateTransfersStatements } from '@runeditrun/rer/internal/modules/portability/journal.mjs'
 import { operatorAuth, runtimeBindings, type Bindings } from '../auth.server'
 import { dashboardData } from './data'
-import { prepare, DraftConflict, publish, revision, normalizeSite, siteFromForm } from './content'
+import { prepare, DraftConflict, revokePublication, publish, revision, normalizeSite, siteFromForm } from './content'
 import { document, screens, workspace } from './views'
 import { publicPage } from './public-view'
 import { shell } from './ui/shell'
@@ -161,6 +161,9 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    result=await requestPageReview(env.DB,actor.id,String(input.base??''),String(input.page??''));notice='Page sent for review.';back='/app?page='+encodeURIComponent(String(input.slug??''))
   } else if(action==='page-publish') {
    result=await publishPage(env.DB,actor.id,String(input.base??''),String(input.page??''),String(input.request??''));notice='Selected page published. Other drafts are kept.';back='/app?page='+encodeURIComponent(String(input.slug??''))
+  } else if(action==='publication-revoke') {
+   result=env.PANE_LIVE?await liveCall(env,'/revoke',{actor:actor.id,id:String(input.revision),confirm:input.confirm}):await revokePublication(env.DB,actor.id,String(input.revision),input.confirm)
+   notice='Approval revoked. The published site is down.';back='/app/sites'
   } else if(action==='publish'||action==='rollback') {
    result=env.PANE_LIVE?await liveCall(env,'/publish',{actor:actor.id,id:String(input.revision),action}):await publish(env.DB,actor.id,String(input.revision),action)
    notice=action==='publish'?'Published. Your approval is recorded.':'Rolled back. Your approval is recorded.'

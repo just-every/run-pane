@@ -3,7 +3,7 @@ import { findPersonData,erasePersonData } from './privacy'
 import { DurableObject } from 'cloudflare:workers'
 import type { Bindings } from '../auth.server'
 import type { Revision } from './model'
-import { publish } from './content'
+import { publish, revokePublication } from './content'
 import { auditedDatabase } from './audit'
 import { deliverAcknowledgment } from './acknowledgment'
 import { recordGoal } from './goal-data'
@@ -46,6 +46,12 @@ export class PaneLive extends DurableObject<Bindings>{
    if(path==='/privacy/find'){const found=await findPersonData(db,input.email,queued);const pendingFiles=await Promise.all(queued.filter(message=>message.email.trim().toLowerCase()===input.email).flatMap(message=>(message.uploads??[]).map(async file=>({...file,chunks:[...(await storage.list<string>({prefix:'file:'+file.id+':'})).entries()].sort(([a],[b])=>Number(a.split(':').at(-1))-Number(b.split(':').at(-1))).map(([,value])=>value)}))));return Response.json({...found,pendingFiles})}
    const result=await erasePersonData(db,input.email,input.confirm,input.actor,queued)
    for(const message of queued)if(message.email.trim().toLowerCase()===input.email){await storage.delete('message:'+message.id);for(const file of message.uploads??[])for(const chunk of (await storage.list({prefix:'file:'+file.id+':'})).keys())await storage.delete(chunk)}
+   return Response.json(result)
+  })
+  if(path==='/revoke')return this.ctx.blockConcurrencyWhile(async()=>{
+   const result=await revokePublication(auditedDatabase(this.env.DB,input.actor,'workspace.change'),input.actor,input.id,input.confirm)
+   const live=await storage.get<Revision>('live')
+   if(live?.id===input.id)await storage.delete('live')
    return Response.json(result)
   })
   if(path==='/publish')return this.ctx.blockConcurrencyWhile(async()=>{

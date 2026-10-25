@@ -100,6 +100,7 @@ export async function prepare(db: D1Database, actor: string, value: unknown, exp
 export async function publish(db:D1Database,actor:string,id:string,action:'publish'|'rollback') {
  const row = await db.prepare('SELECT * FROM pane_revisions WHERE id=?').bind(id).first()
  if (!row) throw new Error('Revision not found.')
+ if(await db.prepare('SELECT 1 FROM pane_revoked_revisions WHERE revision=?').bind(id).first())throw Error('Revoked revision needs a new draft and approval.')
  if (action === 'rollback' && !await db.prepare('SELECT 1 FROM pane_approvals WHERE revision=? LIMIT 1').bind(id).first()) throw new Error('Only a revision that was live before can be restored. Approve and publish this draft instead.')
  await db.batch(approvalStatements(db, { id: crypto.randomUUID(), action, revision: id, actor, created_at: new Date().toISOString() }))
  return revision(row)
@@ -126,4 +127,12 @@ export async function siteFromForm(db: D1Database, input: Record<string, unknown
    ...(input[`page.${slug}.links`] !== undefined ? {links:pageLinksFromText(String(input[`page.${slug}.links`]))} : {}),
   }
  })}),input))
+}
+
+/** Owner revocation retains the approval history and takes down the live snapshot. */
+export async function revokePublication(db:D1Database,actor:string,id:string,confirm:unknown) {
+ if(confirm!=='revoke-publication')throw Error('Confirm taking the published site down.')
+ if(!await db.prepare('SELECT 1 FROM pane_approvals WHERE revision=?').bind(id).first())throw Error('Choose an approved revision.')
+ await db.prepare('INSERT OR IGNORE INTO pane_revoked_revisions(revision,actor,created_at) VALUES(?,?,?)').bind(id,actor,new Date().toISOString()).run()
+ return {revoked:id}
 }

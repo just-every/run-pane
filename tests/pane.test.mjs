@@ -1735,7 +1735,8 @@ test('reusable section references propagate across five immutable pages and deta
 })
 
 test('custom code requires owner authoring and approved immutable live revisions while previews and privacy refusals stay inert',async()=>{
- const app=await runtime();let cookie
+ for(const isolatedLive of [false,true]){
+ const app=await runtime({isolatedLive});let cookie
  const call=(path,body)=>app.request(path,{method:'POST',headers:{Cookie:cookie??'',Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)})
  try{
   cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic code owner'})).headers.get('set-cookie').split(';')[0]
@@ -1763,6 +1764,26 @@ test('custom code requires owner authoring and approved immutable live revisions
   const imported=await app.request('/api/pane/import/dry-run',{method:'POST',headers:{Cookie:adminCookie,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({source:JSON.stringify({...changed,schemaVersion:1})})});assert.equal(imported.status,403,'Imports cannot bypass owner-only custom code authoring')
   for(const css of ['@import "https://external.invalid/x.css";', '.proof { background: url(/api/pane) }', '.proof { background: image-set("https://external.invalid/x.png" 1x) }', '.proof { color: \\72 ed }']){const unsafe=structuredClone(changed);unsafe.customCode.css=css;assert.equal((await call('/api/pane/prepare',{site:unsafe,base:prepared.id})).status,400,'Resource-loading CSS stays denied')}
   const next=await call('/api/pane/prepare',{site:changed,base:prepared.id});assert.equal(next.status,200)
+  const replacement=await next.json()
+  assert.notEqual(replacement.id,prepared.id,'A code edit creates a new immutable version')
+  assert.deepEqual((await app.db.prepare('SELECT site FROM pane_revisions WHERE id=?').bind(prepared.id).first()).site,JSON.stringify(prepared.site),'Published source bytes never change')
   assert.doesNotMatch(await (await app.request('/site/contact')).text(),/Unapproved replacement/)
+  assert.equal((await call('/api/pane/rollback',{revision:replacement.id})).status,400,'Every changed code version needs a new approval')
+  assert.equal((await call('/api/pane/publish',{revision:replacement.id})).status,200)
+  assert.match(await (await app.request('/site/contact')).text(),/Unapproved replacement/)
+  const revoke={revision:replacement.id,confirm:'revoke-publication'}
+  assert.equal((await app.request('/api/pane/publication-revoke',{method:'POST',headers:{Cookie:adminCookie,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(revoke)})).status,403)
+  assert.equal((await call('/api/pane/publication-revoke',{revision:replacement.id})).status,400)
+  assert.match(await (await app.request('/site/contact')).text(),/Unapproved replacement/)
+  assert.equal((await call('/api/pane/publication-revoke',revoke)).status,200)
+  for(const path of ['/site','/site/contact','/site/search'])assert.doesNotMatch(await (await app.request(path)).text(),/data-custom-code|Unapproved replacement|Synthetic embed/,'Revoked approval takes every live door down on the next request')
+  assert.equal((await call('/api/pane/publish',{revision:replacement.id})).status,400,'A revoked version cannot be republished')
+  assert.equal((await call('/api/pane/rollback',{revision:replacement.id})).status,400,'Rollback cannot revive revoked code')
+  const events=await (await app.request('/api/pane/activity',{headers:{Cookie:cookie}})).json()
+  assert.ok(events.some(event=>event.action==='publication.revoke'&&event.subject==='revision:'+replacement.id),'Revocation is retained in the owner activity log')
+  const renewed=await (await call('/api/pane/prepare',{site:replacement.site,base:replacement.id})).json()
+  assert.equal((await call('/api/pane/publish',{revision:renewed.id})).status,200,'A new draft requires explicit approval after revocation')
+
  }finally{await app.mf.dispose()}
+ }
 })
