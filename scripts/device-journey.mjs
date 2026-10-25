@@ -3,7 +3,7 @@ import {mkdir,writeFile} from 'node:fs/promises'
 import {resolve} from 'node:path'
 import {chromium} from '@playwright/test'
 const fixture=await import('../tests/browser-runtime.mjs'),origin=fixture.origin
-const folder=resolve(process.env.PANE_SCREENSHOTS??'test-results/devices')
+const folder=resolve(process.env.PANE_SCREENSHOTS??'./test-results/devices')
 await mkdir(folder,{recursive:true})
 const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
 const context=await browser.newContext(),page=await context.newPage()

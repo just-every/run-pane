@@ -5,7 +5,7 @@ import {createRequire} from 'node:module'
 import {chromium} from '@playwright/test'
 const require=createRequire(import.meta.url),axe=await readFile(require.resolve('axe-core/axe.min.js'),'utf8')
 const fixture=await import('../tests/browser-runtime.mjs'),origin=fixture.origin
-const folder=resolve(process.env.PANE_SCREENSHOTS??'test-results/accessibility')
+const folder=resolve(process.env.PANE_SCREENSHOTS??'./test-results/accessibility')
 await mkdir(folder,{recursive:true})
 const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
 const context=await browser.newContext(),page=await context.newPage()
