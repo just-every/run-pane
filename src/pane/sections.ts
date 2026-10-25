@@ -1,12 +1,15 @@
 import {richText} from '../../public/pane-rich.mjs'
 /** Revision data for the first native section door. Media and visual controls follow. */
 export type RichNode = {tag:'text';text:string} | {tag:'p'|'p-large'|'p-small'|'h1'|'h2'|'h3'|'h4'|'blockquote'|'pre'|'ul'|'ol'|'li'|'strong'|'em'|'u'|'s'|'br';children:RichNode[]}
+export type PhoneBlock = {column?:number;span?:number;row?:number;order?:number;align?:TextBlock['align'];vertical?:TextBlock['vertical'];hidden?:boolean}
 export type TextBlock = {
+ phone?: PhoneBlock;
  id: string; kind: 'text'; text: string; format?: 'p'|'h1'|'h2'|'h3'|'h4'|'blockquote'|'pre'|'p-large'|'p-small'|'div'; content?: RichNode[];
  column: number; span: number; row: number; order: number;
  align: 'left' | 'center' | 'right' | 'justify'; vertical: 'start' | 'center' | 'end';
 }
 export type Section = {
+ phone?: {paddingTop?:number;paddingBottom?:number;height?:Section['height'];hidden?:boolean};
  id: string; component?: string; kind: 'text' | 'columns'; ratio: '1:1' | '1:2' | '2:1' | '1:1:1';
  gap: number; paddingTop: number; paddingBottom: number;
  height?: 'auto'|'small'|'medium'|'large'|'full'; background?: string; blocks: TextBlock[];
@@ -24,6 +27,21 @@ const choice = <T extends string>(value: unknown, values: readonly T[], fallback
  if (value === undefined) return fallback
  if (!values.includes(value as T)) throw Error('Unsupported section layout value.')
  return value as T
+}
+function phone(value:unknown, block:boolean):Record<string,unknown>|undefined {
+ if(value===undefined)return undefined
+ const source=object(value),result:Record<string,unknown>={}
+ const allowed=block?['column','span','row','order','align','vertical','hidden']:['paddingTop','paddingBottom','height','hidden']
+ if(Object.keys(source).some(key=>!allowed.includes(key)))throw Error('Unsupported phone layout field.')
+ for(const [key,value] of Object.entries(source)) {
+  if(key==='hidden'){if(typeof value!=='boolean')throw Error('Phone visibility must be explicit.');result[key]=value}
+  else if(key==='height')result[key]=choice(value,['auto','small','medium','large','full'] as const,'auto')
+  else if(key==='align')result[key]=choice(value,['left','center','right','justify'] as const,'left')
+  else if(key==='vertical')result[key]=choice(value,['start','center','end'] as const,'start')
+  else result[key]=number(value,['column','span','row'].includes(key)?1:0,['column','span'].includes(key)?12:key==='row'||key==='order'?100:240,0)
+ }
+ if(block&&Number(result.column??1)+Number(result.span??12)>13)throw Error('A phone block must fit the twelve-column grid.')
+ return result
 }
 /** Validate the tree rather than accepting author HTML or CSS. */
 function normalizeRich(value:unknown, document:boolean):RichNode[] {
@@ -61,14 +79,14 @@ export function normalizeSections(value: unknown): Section[] | undefined {
  let characters = 0
  return value.map(raw => {
   const section = object(raw)
-  if (Object.keys(section).some(key => !['id','component','kind','ratio','gap','paddingTop','paddingBottom','background','height','blocks'].includes(key))) throw Error('Unsupported section field.')
+  if (Object.keys(section).some(key => !['phone','id','component','kind','ratio','gap','paddingTop','paddingBottom','background','height','blocks'].includes(key))) throw Error('Unsupported section field.')
   const id = identity(section.id)
   if(section.component !== undefined && (typeof section.component !== 'string' || !/^[a-zA-Z0-9_-]{1,80}$/.test(section.component)))throw Error('Invalid component reference.')
   if (!Array.isArray(section.blocks) || !section.blocks.length || section.blocks.length > 100) throw Error('Provide between 1 and 100 blocks per section.')
   if (section.background !== undefined && (typeof section.background !== 'string' || !/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(section.background))) throw Error('Use a hex section background with 3, 4, 6 or 8 digits.')
   const blocks = section.blocks.map(raw => {
    const block = object(raw)
-   if (Object.keys(block).some(key => !['id','kind','text','column','span','row','order','align','vertical','format','content'].includes(key))) throw Error('Unsupported block field.')
+   if (Object.keys(block).some(key => !['phone','id','kind','text','column','span','row','order','align','vertical','format','content'].includes(key))) throw Error('Unsupported block field.')
    if (block.kind !== 'text' || typeof block.text !== 'string' || !block.text.trim()) throw Error('Only nonempty text blocks are supported by this section door.')
    const content=block.content===undefined?undefined:normalizeRich(block.content,block.format==='div')
    const text = block.text.normalize('NFC').trim()
@@ -77,9 +95,9 @@ export function normalizeSections(value: unknown): Section[] | undefined {
    if (characters > 20000) throw Error('Section text exceeds 20,000 characters.')
    const column = number(block.column,1,12,1), span = number(block.span,1,12,12)
    if (column + span > 13) throw Error('A block must fit the twelve-column grid.')
-   return {id:identity(block.id),kind:'text' as const,...(content?{content}:{}),...(block.format===undefined?{}:{format:choice(block.format,['p','h1','h2','h3','h4','blockquote','pre','p-large','p-small','div'] as const,'p')}),text,column,span,row:number(block.row,1,100,1),order:number(block.order,0,100,0),align:choice(block.align,['left','center','right','justify'] as const,'left'),vertical:choice(block.vertical,['start','center','end'] as const,'start')}
+   return {...(block.phone===undefined?{}:{phone:phone(block.phone,true)}),id:identity(block.id),kind:'text' as const,...(content?{content}:{}),...(block.format===undefined?{}:{format:choice(block.format,['p','h1','h2','h3','h4','blockquote','pre','p-large','p-small','div'] as const,'p')}),text,column,span,row:number(block.row,1,100,1),order:number(block.order,0,100,0),align:choice(block.align,['left','center','right','justify'] as const,'left'),vertical:choice(block.vertical,['start','center','end'] as const,'start')}
   })
-  return {id,...(section.height===undefined?{}:{height:choice(section.height,['auto','small','medium','large','full'] as const,'auto')}),...(section.component ? {component:String(section.component)} : {}),kind:choice(section.kind,['text','columns'] as const,'text'),ratio:choice(section.ratio,['1:1','1:2','2:1','1:1:1'] as const,'1:1'),gap:number(section.gap,0,160,24),paddingTop:number(section.paddingTop,0,240,32),paddingBottom:number(section.paddingBottom,0,240,32),...(section.background === undefined ? {} : {background:String(section.background).toLowerCase()}),blocks}
+  return {id,...(section.phone===undefined?{}:{phone:phone(section.phone,false)}),...(section.height===undefined?{}:{height:choice(section.height,['auto','small','medium','large','full'] as const,'auto')}),...(section.component ? {component:String(section.component)} : {}),kind:choice(section.kind,['text','columns'] as const,'text'),ratio:choice(section.ratio,['1:1','1:2','2:1','1:1:1'] as const,'1:1'),gap:number(section.gap,0,160,24),paddingTop:number(section.paddingTop,0,240,32),paddingBottom:number(section.paddingBottom,0,240,32),...(section.background === undefined ? {} : {background:String(section.background).toLowerCase()}),blocks}
  })
 }
 /** Canonical reading order is the stored order, independent of visual overlap. */

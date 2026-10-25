@@ -1,25 +1,35 @@
 import {richText,richMarkup} from './pane-rich.mjs'
-import {layoutCss,layoutMarkup} from './pane-layout.mjs'
+import {layoutRules,layoutMarkup} from './pane-layout.mjs'
 const editor=document.querySelector('[data-layout-editor]'),form=editor.querySelector('form'),field=form.querySelector('[data-layout-state]'),canvas=editor.querySelector('[data-layout-canvas]'),content=canvas.querySelector('.public-content')
 let sections=JSON.parse(field.value),sectionId=sections[0].id,blockId,dragged
 const sectionFields=['kind','ratio','gap','paddingTop','paddingBottom','height','background'],numeric=['gap','paddingTop','paddingBottom','column','span','row','order']
 const current=()=>sections.find(section=>section.id===sectionId)??sections[0]
 const block=()=>current().blocks.find(block=>block.id===blockId)
+const device=form.querySelector('[data-layout-device]')
+const isPhone=()=>device.value==='390'
+const mobileSectionFields=['paddingTop','paddingBottom','height']
+const mobileBlockFields=['column','span','row','order','align','vertical']
+const mobileBlock=(section,item)=>({column:1,span:12,row:section.blocks.indexOf(item)+1,order:item.order,align:item.align,vertical:item.vertical,...item.phone})
 const identity=()=>crypto.randomUUID()
 const newBlock=()=>({id:identity(),kind:'text',text:'New text',column:1,span:12,row:1,order:0,align:'left',vertical:'start'})
 function settings(){
  for(const node of canvas.querySelectorAll('[data-selected]'))node.removeAttribute('data-selected')
  canvas.querySelector(blockId?`[data-block="${blockId}"]`:`[data-section="${sectionId}"]`)?.setAttribute('data-selected','')
  for(const input of form.querySelectorAll('[data-layout-field]')){
-  const key=input.dataset.layoutField,target=sectionFields.includes(key)?current():block()
-  input.disabled=!target;input.value=target?.[key]??({height:'auto',background:'',format:'p'}[key]??'')
+  const key=input.dataset.layoutField,target=key==='hidden'?(block()??current()):sectionFields.includes(key)?current():block()
+  const phoneKey=key==='hidden'||(sectionFields.includes(key)?mobileSectionFields:mobileBlockFields).includes(key)
+  input.disabled=!target||(key==='hidden'&&!isPhone())||(isPhone()&&!phoneKey)
+  const value=isPhone()&&target&&phoneKey?(sectionFields.includes(key)?{...target,...target.phone}:key==='hidden'?{...target,...target.phone}:mobileBlock(current(),target))[key]:target?.[key]
+  if(key==='hidden')input.checked=!!(block()??current()).phone?.hidden;else input.value=value??({height:'auto',background:'',format:'p'}[key]??'')
  }
- form.querySelector('[data-layout-selection]').textContent=blockId?'Text block selected. Edit text on the page or change its layout.':'Section selected. Drag it or use Move earlier and Move later.'
+ for(const item of sections){const node=canvas.querySelector(`[data-section="${item.id}"]`);node?.toggleAttribute('data-phone-override',!!item.phone);for(const text of item.blocks)canvas.querySelector(`[data-block="${text.id}"]`)?.toggleAttribute('data-phone-override',!!text.phone)}
+ form.querySelector('[data-device-status]').textContent=isPhone()?'Phone settings are independent. Outlined selections with a phone override keep their layout when desktop changes.':'Desktop and tablet use desktop settings. Phone overrides are preserved.'
+ form.querySelector('[data-layout-selection]').textContent=((block()??current()).phone?'Phone override · ':'')+(blockId?'Text block selected. Edit text on the page or change its layout.':'Section selected. Drag it or use Move earlier and Move later.')
 }
 function render(){
  const style=content.querySelector('style[data-pane-layout]'),sheet=style.sheet
  while(sheet.cssRules.length)sheet.deleteRule(0)
- for(const rule of layoutCss(sections).match(/[^}]+}/g)??[])sheet.insertRule(rule,sheet.cssRules.length)
+ for(const rule of layoutRules(sections))sheet.insertRule(rule,sheet.cssRules.length)
  for(const node of [...content.children])if(node!==style)node.remove()
  content.insertAdjacentHTML('beforeend',layoutMarkup(sections))
  for(const section of content.querySelectorAll('[data-section]')){section.draggable=true;section.tabIndex=0;section.setAttribute('aria-label','Section '+(sections.findIndex(item=>item.id===section.dataset.section)+1))}
@@ -125,7 +135,8 @@ form.addEventListener('click',event=>{
 })
 form.addEventListener('input',event=>{
  const key=event.target.dataset.layoutField;if(!key)return
- const target=sectionFields.includes(key)?current():block();if(!target)return
+ let target=key==='hidden'?(block()??current()):sectionFields.includes(key)?current():block();if(!target)return
+ if(isPhone()){if(key==='hidden'||sectionFields.includes(key)){target.phone??={};target=target.phone}else{target.phone=mobileBlock(current(),target);target=target.phone}}
  const value=event.target.value
  if(!event.target.checkValidity())return
  if(key==='format'&&target.format==='div'&&target.content){
@@ -139,7 +150,7 @@ form.addEventListener('input',event=>{
   }
   record(node);render();return
  }
- if(key==='background'&&!value)delete target.background;else target[key]=numeric.includes(key)?Number(value):value
+ if(key==='background'&&!value)delete target.background;else target[key]=key==='hidden'?event.target.checked:numeric.includes(key)?Number(value):value
  if(key==='column')target.span=Math.min(target.span,13-target.column)
  if(key==='span')target.column=Math.min(target.column,13-target.span)
  if(key==='ratio'&&current().kind==='columns'){
@@ -155,7 +166,13 @@ form.addEventListener('click',event=>{
  if(action==='add-block'){const added=newBlock();added.row=Math.max(...section.blocks.map(block=>block.row))+1;section.blocks.push(added);blockId=added.id}
  if(action==='duplicate'){const copy=structuredClone(selected??section);copy.id=identity();if(selected)copy.row=Math.max(...section.blocks.map(block=>block.row))+1;if(!selected)copy.blocks=copy.blocks.map(block=>({...block,id:identity()}));items.splice(index+1,0,copy);if(selected)blockId=copy.id;else sectionId=copy.id}
  if(action==='delete'){if(items.length===1){form.querySelector('[data-layout-selection]').textContent='Keep at least one section and one text block.';return}items.splice(index,1);sectionId=sections[0].id;blockId=undefined}
+ if(isPhone()&&(action==='up'||action==='down')){
+  if(!selected){form.querySelector('[data-layout-selection]').textContent='Select a block to arrange its phone order.';return}
+  const sorted=[...section.blocks].sort((a,b)=>mobileBlock(section,a).row-mobileBlock(section,b).row),at=sorted.indexOf(selected),destination=Math.max(0,Math.min(sorted.length-1,at+(action==='up'?-1:1)))
+  sorted.splice(at,1);sorted.splice(destination,0,selected);sorted.forEach((item,index)=>item.phone={...mobileBlock(section,item),row:index+1});commit();return
+ }
  if(action==='up'||action==='down'){const destination=Math.max(0,Math.min(items.length-1,index+(action==='up'?-1:1)));items.splice(index,1);items.splice(destination,0,selected??section);if(selected)items.forEach((block,index)=>block.row=index+1)}
+ if(action==='reset'&&isPhone()){delete (selected??section).phone;commit();return}
  if(action==='reset'){if(selected)Object.assign(selected,{column:1,span:12,row:1,order:0,align:'left',vertical:'start'});else{Object.assign(section,{kind:'text',ratio:'1:1',gap:24,paddingTop:32,paddingBottom:32,height:'auto'});delete section.background}}
  commit()
 })
@@ -164,11 +181,19 @@ canvas.addEventListener('dragover',event=>{if(event.target.closest('[data-sectio
 canvas.addEventListener('drop',event=>{
  event.preventDefault();const target=event.target.closest('[data-section]');if(!target||!dragged)return
  const from=sections.find(section=>section.id===dragged.section),to=sections.find(section=>section.id===target.dataset.section)
+ if(isPhone()){
+  const next=event.target.closest('[data-block]')?.dataset.block
+  if(!dragged.block||from!==to||!next)return
+  const sorted=[...to.blocks].sort((a,b)=>mobileBlock(to,a).row-mobileBlock(to,b).row),moved=sorted.find(item=>item.id===dragged.block),targetBlock=sorted.find(item=>item.id===next)
+  if(moved===targetBlock)return
+  sorted.splice(sorted.indexOf(moved),1);sorted.splice(sorted.indexOf(targetBlock),0,moved);sorted.forEach((item,index)=>item.phone={...mobileBlock(to,item),row:index+1});sectionId=to.id;blockId=moved.id;dragged=undefined;commit();return
+ }
  if(dragged.block){if(from!==to&&from.blocks.length===1)return;const moved=from.blocks.find(block=>block.id===dragged.block),next=event.target.closest('[data-block]')?.dataset.block;if(next===moved.id)return;from.blocks.splice(from.blocks.indexOf(moved),1);const index=to.blocks.findIndex(block=>block.id===next);to.blocks.splice(index<0?to.blocks.length:index,0,moved);to.blocks.forEach((block,index)=>block.row=index+1);sectionId=to.id;blockId=moved.id}
  else{sections.splice(sections.indexOf(from),1);sections.splice(sections.indexOf(to),0,from);sectionId=from.id;blockId=undefined}
  dragged=undefined;commit()
 })
 form.addEventListener('draftrestore',()=>{sections=JSON.parse(field.value);if(!sections.some(section=>section.id===sectionId))sectionId=sections[0].id;if(!current().blocks.some(block=>block.id===blockId))blockId=undefined;render()})
+device.addEventListener('change',()=>{const sheet=document.querySelector('[data-canvas-device-style]').sheet;while(sheet.cssRules.length)sheet.deleteRule(0);if(device.value!=='fit')sheet.insertRule(`[data-layout-canvas]{width:${Number(device.value)}px}`,0);settings()})
 // Active links belong to the live page; the editing surface keeps selection local.
 canvas.addEventListener('click',event=>{if(event.target.closest('a'))event.preventDefault()})
 render()

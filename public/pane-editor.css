@@ -290,3 +290,5 @@
 .pane .canvas-rich-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .pane .canvas-rich-tools legend{margin-bottom:8px;font-size:14px}
 .pane .canvas-rich-tools button{flex:0 0 auto;max-width:100%}
+
+.pane .canvas-scroll{max-width:100%;overflow:auto}.pane [data-layout-canvas]{min-width:0;margin-inline:auto}.pane .canvas-devices{display:grid;gap:8px;margin-bottom:16px;max-width:36rem}.pane .canvas-devices select{min-height:44px}.pane [data-layout-canvas] [data-phone-override]{outline:2px dotted var(--pn-action);outline-offset:2px}.pane [data-layout-canvas] [data-selected]{outline-style:dashed}

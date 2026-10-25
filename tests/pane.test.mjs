@@ -1665,9 +1665,10 @@ test('section drafts preserve validated layout and reading text through publicat
   cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})).headers.get('set-cookie').split(';')[0]
   const site=structuredClone(fixture),page=site.pages.find(page=>page.slug==='services')
   page.body='Synthetic section heading\n\nSynthetic section detail'
-  page.sections=[{id:'synthetic-pane-section',kind:'columns',ratio:'2:1',background:'#AABBCC',paddingTop:96,blocks:[{id:'synthetic-pane-block-1',kind:'text',text:'Synthetic section heading',format:'h2',column:2,span:6,align:'right'},{id:'synthetic-pane-block-2',kind:'text',text:'Synthetic section detail',column:8,span:5,row:2}]}]
+  page.sections=[{id:'synthetic-pane-section',kind:'columns',ratio:'2:1',background:'#AABBCC',phone:{paddingTop:12,paddingBottom:16,height:'medium',hidden:false},paddingTop:96,blocks:[{id:'synthetic-pane-block-1',kind:'text',text:'Synthetic section heading',phone:{column:2,span:8,row:2,hidden:false},format:'h2',column:2,span:6,align:'right'},{id:'synthetic-pane-block-2',kind:'text',text:'Synthetic section detail',column:8,span:5,row:2}]}]
   const prepared=await call('/api/pane/prepare',{site,base:''});assert.equal(prepared.status,200,await prepared.clone().text())
   const first=await prepared.json(),stored=first.site.pages.find(page=>page.slug==='services')
+  assert.deepEqual(stored.sections[0].phone,{paddingTop:12,paddingBottom:16,height:'medium',hidden:false});assert.deepEqual(stored.sections[0].blocks[0].phone,{column:2,span:8,row:2,hidden:false})
   assert.equal(stored.sections[0].ratio,'2:1');assert.equal(stored.sections[0].background,'#aabbcc')
   assert.deepEqual(stored.sections[0].blocks.map(({column,span,row,align})=>({column,span,row,align})),[{column:2,span:6,row:1,align:'right'},{column:8,span:5,row:2,align:'left'}])
   assert.equal((await app.request('/api/pane/pages',{headers:{Cookie:cookie}})).status,200)
@@ -1688,6 +1689,10 @@ test('section drafts preserve validated layout and reading text through publicat
   const before=(await dashboard()).revisions.length
   for(const mutate of [
    p=>p.sections[0].blocks[0].span=12,
+   p=>p.sections[0].phone.hidden='yes',
+   p=>p.sections[0].blocks[0].phone.span=12,
+   p=>p.sections[0].phone.paddingTop=-1,
+   p=>p.sections[0].phone.style='display:none',
    p=>p.sections[0].blocks[1].id=p.sections[0].blocks[0].id,
    p=>p.sections[0].background='url(https://invalid.example)',
    p=>p.sections[0].blocks[0].kind='html',
