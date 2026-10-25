@@ -1210,7 +1210,7 @@ test('policy starters name actual services, remain editable drafts and require o
   const generated=await(await post('/api/pane/policies/generate',{base:draft.id})).json()
   assert.equal(generated.site.pages.length,site.pages.length+3)
   const privacy=generated.site.pages.find(p=>p.slug==='privacy-policy')
-  for(const name of ['Google Analytics 4 (GA4)','Vane','Cloudflare Turnstile','name, email address and message','not legal advice'])assert.ok(privacy.body.includes(name),name)
+  for(const name of ['Google Analytics 4 (GA4)','Vane','Cloudflare Turnstile','name, email address and message','not legal advice','Rejected form content retention is off by default','30 days','legal hold','excluded from installation archives'])assert.ok(privacy.body.includes(name),name)
   assert.doesNotMatch(privacy.body,/HubSpot|Orbit|Meta Pixel|Mailchimp/,'Unconnected services are never invented')
   assert.equal((await app.request('/site/privacy-policy')).status,404)
   const edited=await(await post('/api/pane/prepare',{base:generated.id,site:{...generated.site,pages:generated.site.pages.map(p=>p.slug==='privacy-policy'?{...p,body:p.body+'\n\nContact our business at the studio.'}:p)}})).json()
