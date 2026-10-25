@@ -1,4 +1,4 @@
-import {createHash} from 'node:crypto'
+import {createHash,createHmac} from 'node:crypto'
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
@@ -1482,6 +1482,9 @@ test('page and folder gates require passwords or explicitly admitted active nati
   const opened=await unlock('synthetic-pane-42');assert.equal(opened.status,303)
   const passwordCookie=opened.headers.get('set-cookie').split(';')[0];assert.match(opened.headers.get('set-cookie'),/HttpOnly; SameSite=Strict/)
   const privatePage=await app.request('/site/about',{headers:{Cookie:passwordCookie}});assert.match(await privatePage.text(),new RegExp(fixture.pages.find(p=>p.slug==='about').body));assert.match(privatePage.headers.get('cache-control'),/private, no-store/);assert.equal(privatePage.headers.get('vary'),'Cookie')
+  const expired=Date.now()-1000,rule=proof.draft.site.access.folders.Private,signature=createHmac('sha256',settings.SESSION_SECRET).update('pane-access:'+JSON.stringify(rule)+':'+expired).digest('hex')
+  const expiredCookie=passwordCookie.split('=')[0]+'='+expired+'.'+signature
+  assert.ok(!(await (await app.request('/site/about',{headers:{Cookie:expiredCookie}})).text()).includes(fixture.pages.find(p=>p.slug==='about').body),'A correctly signed but expired password proof is refused by the server')
   assert.ok(!(await (await app.request('/site/about')).text()).includes(fixture.pages.find(p=>p.slug==='about').body),'Another visitor never receives an opened response')
   assert.equal((await app.request('/site/services')).status,403)
   assert.match(await (await app.request('/site/services',{headers:{Cookie:memberCookie}})).text(),new RegExp(fixture.pages.find(p=>p.slug==='services').body))

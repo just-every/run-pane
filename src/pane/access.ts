@@ -30,9 +30,9 @@ export function normalizeAccess(value:SiteAccess|undefined):SiteAccess|undefined
 }
 export function pageRules(site:Site,page?:Page):AccessRule[]{return [page?.folder?site.access?.folders[page.folder]:undefined,page?.access].filter((rule):rule is AccessRule=>!!rule)}
 export function isProtected(site:Site,page:Page){return site.access?.mode&&site.access.mode!=='open'||pageRules(site,page).length>0}
-async function proof(rule:AccessRule,env:Bindings){
+async function proof(rule:AccessRule,env:Bindings,expires:number){
  const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(env.SESSION_SECRET),{name:'HMAC',hash:'SHA-256'},false,['sign'])
- return hex(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode('pane-access:'+JSON.stringify(rule))))
+ return hex(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode('pane-access:'+JSON.stringify(rule)+':'+expires)))
 }
 export async function accessResponse(request:Request,env:Bindings,site:Site,page?:Page):Promise<Response|null>{
  const global=site.access?.mode!=='open'&&site.access?.mode!==undefined
@@ -56,9 +56,11 @@ export async function accessResponse(request:Request,env:Bindings,site:Site,page
    }
    if(memberAllowed)continue
   }else if(rule?.mode==='password'){
-   const token=await proof(rule,env),name='pane_access_'+rule.salt
-   if(cookies.split(';').some(cookie=>cookie.trim()===name+'='+token))continue
+   const name='pane_access_'+rule.salt,present=cookies.split(';').map(cookie=>cookie.trim()).find(cookie=>cookie.startsWith(name+'='))?.slice(name.length+1)??''
+   const signed=/^(\d{13})\.([a-f0-9]{64})$/.exec(present),now=Date.now(),expires=signed?Number(signed[1]):0
+   if(signed&&expires>now&&expires<=now+3600000&&signed[2]===await proof(rule,env,expires))continue
    if(input&&await passwordHash(String(input.get('password')??'').slice(0,201),rule.salt)===rule.hash){
+    const expires=Date.now()+3600000,token=expires+'.'+await proof(rule,env,expires)
     return new Response(null,{status:303,headers:{location:new URL(request.url).pathname,'cache-control':'private, no-store','set-cookie':`${name}=${token}; Path=/site; HttpOnly; SameSite=Strict; Max-Age=3600${new URL(request.url).protocol==='https:'?'; Secure':''}`}})
    }
   }

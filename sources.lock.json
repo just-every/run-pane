@@ -3044,7 +3044,7 @@
       "executable": false
     },
     "src/pane/access.ts": {
-      "sha256": "ef7aad2de4c8f2a118a13ce8e3f8b74b3a78893772c0558dd317a9b25f620f7d",
+      "sha256": "47384df6cf1b48d1cc79a2f52cf7db3fcd8e91cdddd9377dace54e6dbb0cd341",
       "executable": false
     },
     "src/pane/acknowledgment.ts": {
@@ -3516,7 +3516,7 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "8f30aee00498e6aa366e87246f8ef6542acee2efd8f827e04e85bf4d0aff5a10",
+      "sha256": "9540cc51ea54ee3d9b7e634abc655d7c4f4d0fa9af915b52e680cf11d592a9d1",
       "executable": false
     },
     "tests/runtime.mjs": {
