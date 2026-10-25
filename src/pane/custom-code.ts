@@ -16,13 +16,18 @@ export function normalizeCode(value:unknown):CustomCode|undefined {
  }
  return Object.keys(code).length?code:undefined
 }
+export const codeRelay="addEventListener('message',event=>{if(event.source===parent&&event.data?.type==='pane:goal')document.querySelector('iframe').contentWindow.postMessage(event.data,'*')})"
+export function customCodeWrapper(source:string):string {
+ const policy="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; frame-src about:; form-action 'none'; base-uri 'none'"
+ return `<!doctype html><meta http-equiv="Content-Security-Policy" content="${escape(policy)}"><script>${codeRelay}</script><iframe title="Isolated owner code" sandbox="allow-scripts" referrerpolicy="no-referrer" width="100%" height="100%" frameborder="0" srcdoc="${escape(source)}"></iframe>`
+}
 export const codePolicy="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'"
 export function customCodeMarkup(site:Site,page:Page,live:boolean,quiet:boolean):string {
  if(!site.customCode&&!page.customCode)return ''
  if(!live)return '<p>Custom code is disabled in workspace and draft previews.</p>'
  if(quiet)return '<p>Custom code is off for this privacy choice.</p>'
  const source=customCodeSource(site,page)
- return `<section class="external-embed" data-custom-code data-source="${escape(source)}" data-thank-goals="${escape(JSON.stringify(thankGoals(site,page)))}" data-page="${escape(page.slug)}" data-css="${escape(customCss(site,page))}" data-verifications="${escape(JSON.stringify(verificationTags(site,page)))}" aria-label="Custom code choices"><p data-code-status role="status">Third-party custom code stays off until you allow analytics. You can withdraw in this session.</p><div data-code-frame></div><div class="form-actions"><button type="button" data-code-allow>Allow custom code</button><button type="button" class="secondary" data-code-deny>Keep custom code off</button></div></section><script src="/pane-custom-code.js" defer></script>`
+ return `<section class="external-embed" data-custom-code data-source="${escape(customCodeWrapper(source))}" data-thank-goals="${escape(JSON.stringify(thankGoals(site,page)))}" data-page="${escape(page.slug)}" data-css="${escape(customCss(site,page))}" data-verifications="${escape(JSON.stringify(verificationTags(site,page)))}" aria-label="Custom code choices"><p data-code-status role="status">Third-party custom code stays off until you allow analytics. You can withdraw in this session.</p><div data-code-frame></div><div class="form-actions"><button type="button" data-code-allow>Allow custom code</button><button type="button" class="secondary" data-code-deny>Keep custom code off</button></div></section><script src="/pane-custom-code.js" defer></script>`
 }
 export function codeFromForm(input:Record<string,unknown>,saved:CustomCode|undefined,prefix:string):CustomCode|undefined {
  if(!['css','html','header','footer'].some(key=>input[prefix+key]!==undefined))return saved
@@ -37,7 +42,7 @@ export function customCodeSource(site:Site,page:Page):string {
 }
 
 export async function codeHashes(source:string,tag='script'):Promise<string[]> {
- const scripts=[...source.matchAll(new RegExp('<'+tag+'\\b[^>]*>([\\s\\S]*?)<\\/'+tag+'\\s*>','gi'))].map(match=>match[1])
+ const scripts=[...(tag==='script'?[codeRelay]:[]),...[...source.matchAll(new RegExp('<'+tag+'\\b[^>]*>([\\s\\S]*?)<\\/'+tag+'\\s*>','gi'))].map(match=>match[1])]
  return Promise.all([...new Set(scripts)].map(async text=>"'sha256-"+btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text)))))+"'"))
 }
 

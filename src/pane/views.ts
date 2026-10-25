@@ -30,7 +30,7 @@ export async function document(title: string, body: string, kind: 'app' | 'site'
       'x-content-type-options': 'nosniff',
       'x-frame-options': 'DENY',
       'permissions-policy': permissionsPolicy,
-      'content-security-policy': `default-src 'none'; script-src 'self'${sources([...extra.script,...hashes])}; connect-src 'self'${sources(extra.connect)}; form-action 'self'; base-uri 'none'; frame-ancestors 'none'; ${codeSource ? policy.replace("style-src 'self'","style-src 'self'"+sources(styleHashes)) : policy}${embedOrigin || codeSource ? `; frame-src ${codeSource ? "'self' " : ''}${embedOrigin??''}` : ''}`,
+      'content-security-policy': `default-src 'none'; script-src 'self'${sources([...extra.script,...hashes])}; connect-src 'self'${sources(extra.connect)}; form-action 'self'; base-uri 'none'; frame-ancestors 'none'; ${codeSource ? policy.replace("style-src 'self'","style-src 'self'"+sources(styleHashes)) : policy}${embedOrigin || codeSource ? `; frame-src ${codeSource ? "about: " : ''}${embedOrigin??''}` : ''}`,
     },
   })
 }
