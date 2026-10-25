@@ -1834,6 +1834,7 @@ test('image drafts preserve explicit descriptions and publication refuses missin
  const call=(path,body)=>app.request(path,{method:'POST',headers:{Cookie:cookie??'',Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)})
  try{
   cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})).headers.get('set-cookie').split(';')[0]
+  await app.request('/setup',{method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
   const png=await readFile('public/brand/icon-192.png'),image={src:'data:image/png;base64,'+png.toString('base64'),width:png.readUInt32BE(16),height:png.readUInt32BE(20),decorative:false}
   const text={id:'synthetic-pane-text',kind:'text',text:'Our bakery',format:'h3',column:1,span:12,row:1},picture={id:'synthetic-pane-image',kind:'image',text:'',image,column:1,span:12,row:2}
   const site={name:'Synthetic bakery',description:'Fresh bread every morning.',pages:[{slug:'home',title:'Welcome',body:'Our bakery',sections:[{id:'synthetic-pane-section',kind:'text',background:'#222222',blocks:[text,picture]}]}]}

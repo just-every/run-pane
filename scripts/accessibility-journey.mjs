@@ -41,7 +41,7 @@ try{
  for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await page.goto(origin+'/app/sites');const warnings=page.getByRole('region',{name:'Accessibility warnings'});assert.match(await warnings.innerText(),/Heading 3 follows Heading 1/);assert.match(await warnings.innerText(),/contrast/);await capture('heading-contrast-warning-'+width)}
  await page.goto(origin+'/app/canvas?page=home');await page.locator('[contenteditable=true]').first().click();await page.getByText('Layout settings',{exact:true}).click();await page.getByLabel('Paragraph style',{exact:true}).selectOption('h2');await saved();await page.locator('[data-layout-canvas] [data-section]').focus();await page.getByLabel('Hex background',{exact:true}).fill('#ffffff');await saved()
  // Create every current starter through the same organizer used by an owner.
- await page.goto(origin+'/app');await page.getByText('Page organization',{exact:true}).click()
+ await page.goto(origin+'/app');await page.getByText('Pages and folders',{exact:true}).click()
  for(const layout of ['landing','service','team','menu','pricing','faq','location']){await page.getByLabel('Starter layout',{exact:true}).selectOption(layout);await page.getByLabel('New page title',{exact:true}).fill(layout);await page.getByRole('button',{name:'Add page',exact:true}).click();await saved()}
  draft=(await state()).draft;await call('/api/pane/publish',{revision:draft.id})
  const results=[]
