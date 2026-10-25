@@ -46,6 +46,7 @@ export async function changeRejected(db:D1Database,action:string,input:Record<st
   SELECT id,name,email,message,created_at,'not_requested',? FROM pane_rejected_content WHERE id=? AND NOT EXISTS(SELECT 1 FROM pane_erased_messages WHERE id=?)`).bind(Date.now()+86400000,id,id))
  // A value-free receipt prevents a purged submission being captured again.
  if(action==='purge')statements.push(db.prepare('INSERT OR IGNORE INTO pane_erased_messages(id,created_at) VALUES(?,?)').bind(id,new Date().toISOString()))
+ statements.push(db.prepare("INSERT INTO pane_activity(actor,action,subject,created_at) SELECT actor,?,'rejection:'||?,? FROM pane_audit_context WHERE id=1").bind('spam.'+action,id,new Date().toISOString()))
  statements.push(db.prepare('DELETE FROM pane_rejected_content WHERE id=? AND held=0').bind(id))
  await db.batch(statements)
  return {processed:true}

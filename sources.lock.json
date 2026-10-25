@@ -387,6 +387,10 @@
       "sha256": "bdf478258f53bb7b24ab0e67b5578c0b761e620ea7cd4776e2128d6d970fa3f6",
       "executable": false
     },
+    "migrations/core/0031_rejected_content.sql": {
+      "sha256": "2036d7059e865c17ed95aeaf3effd3e556f415c9e822e6c69e9823e6596a7e7b",
+      "executable": false
+    },
     "ONBOARDING.md": {
       "sha256": "e687b31c1b4d11552e823b25256552325d97fe22b378f9896f83e8f2d8f9baaa",
       "executable": false
@@ -1140,7 +1144,7 @@
       "executable": false
     },
     "scripts/privacy-journey.mjs": {
-      "sha256": "6a79e4e111977c9fe9ede32f523024e15658a705daf592f2d37ca4ea39ddf21d",
+      "sha256": "a5e6e50a93acbc1d972d31d0c2704c008a8aaacc4454c9d1e487cee296d5dbf6",
       "executable": false
     },
     "scripts/promotions-journey.mjs": {
@@ -3183,6 +3187,10 @@
       "sha256": "5719dde379ea203474fc09492e84601916f27069bce5ca6992fb98aacf443973",
       "executable": false
     },
+    "src/pane/rejected-content.ts": {
+      "sha256": "af9b6626cb2eb14cd667c284db81cad8420707e409cf40d760ac67d279db0c0a",
+      "executable": false
+    },
     "src/pane/roles.ts": {
       "sha256": "cb87402c9c840490b38e1335610f925b1f9c4ebcc46e19448659d1714fb35eca",
       "executable": false
@@ -3301,6 +3309,10 @@
     },
     "src/pane/ui/sites.ts": {
       "sha256": "fc5ced3c036c43f4a6aff1ea9889ff6ba4712114a89af5f342d604013c2eface",
+      "executable": false
+    },
+    "src/pane/ui/spam-review.ts": {
+      "sha256": "a1475338b9c65764e78bfaa2a2f9151dc3709f919963d65aa7a345dad1d84833",
       "executable": false
     },
     "src/pane/ui/traffic-settings.ts": {
@@ -3468,7 +3480,7 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "2f69e5c0b860456669261368a24b5da8ca89ad5bcb83bd1b56d9b79d794a32db",
+      "sha256": "8bcf3bf93f1d8348397a36705a63946c2b2952cdf315ea918c4dd04a212cdd0f",
       "executable": false
     },
     "tests/runtime.mjs": {

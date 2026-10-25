@@ -1351,3 +1351,99 @@ test('published promotions target selected pages while invalid settings and unau
   assert.equal((await app.request('/api/pane/prepare',{method:'POST',headers:{Origin:'https://elsewhere.invalid',Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify({site})})).status,403)
  } finally {await app.mf.dispose()}
 })
+
+// Fresh native installation for rejected-content custody journeys.
+async function spamFixture(isolatedLive=false){
+ const app=await runtime({isolatedLive})
+ const boot=await app.request('/auth/bootstrap',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({token:settings.SETUP_TOKEN,displayName:'Synthetic spam owner'})})
+ let cookie=boot.headers.get('set-cookie').split(';')[0]
+ await app.request('/setup',{method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
+ let proof
+ const native=createOperatorAuth({db:app.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{proof=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+ await native.requestMagicLink(new Request(origin+'/auth/magic-link',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin}}),{email:settings.OWNER_EMAIL,returnTo:'/app'})
+ const token=new URL(proof.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token')
+ const confirmed=await app.request('/auth/confirm',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({token})});cookie=confirmed.headers.get('set-cookie').split(';')[0]
+ const post=(path,input,who=cookie)=>app.request(path,{method:'POST',headers:{Cookie:who,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(input)})
+ const site=structuredClone(fixture);site.pages.find(p=>p.slug==='contact').acknowledgment={subject:'Synthetic acknowledgment',text:'Synthetic text',responseTime:'One day'}
+ const rev=await(await post('/api/pane/prepare',{site})).json();assert.equal((await post('/api/pane/publish',{revision:rev.id})).status,200)
+ const send=(id=crypto.randomUUID(),fields={})=>app.request('/site/contact',{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({idempotency:id,name:'Synthetic rejected visitor',email:'synthetic-pane-rejected@example.test',message:'Synthetic private rejected content <script>probe</script>',website:'synthetic-pane-4',...fields})})
+ const read=async()=>await(await app.request('/api/pane',{headers:{Cookie:cookie}})).json()
+ return {app,cookie,post,send,read}
+}
+
+test('rejected content is opt-in, owner-only and expires after thirty days unless explicitly held',async()=>{
+ const {app,cookie,post,send,read}=await spamFixture(true)
+ try{
+  assert.equal((await read()).spamRetention,false)
+  await send();assert.equal((await read()).rejectedContent.length,0)
+  assert.equal((await post('/api/pane/spam/settings',{enabled:'on'})).status,400)
+  assert.equal((await post('/api/pane/spam/settings',{enabled:'on',confirm:'change-retention'})).status,200)
+  const id=crypto.randomUUID();assert.equal((await send(id)).status,403)
+  let state=await read();assert.equal(state.rejectedContent.length,1)
+  const row=state.rejectedContent[0];assert.equal(row.id,id);assert.equal(row.expires_at-Date.parse(row.created_at),30*86400000)
+  assert.equal(state.messages.length,0);assert.doesNotMatch(JSON.stringify(state.formRejections),/Synthetic private rejected|synthetic-pane-rejected/)
+  const html=await(await app.request('/app/inquiries',{headers:{Cookie:cookie}})).text();assert.match(html,/&lt;script&gt;probe&lt;\/script&gt;/);assert.doesNotMatch(html,/<script>probe/)
+  let mail
+  const native=createOperatorAuth({db:app.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{mail=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+  for(const role of ['admin','member']){
+   await native.invite(new Request(origin+'/auth/invite',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin,Cookie:cookie}}),{email:'synthetic-pane-'+role+'@example.test',displayName:'Synthetic '+role,role})
+   const token=new URL(mail.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token'),admitted=await post('/auth/confirm',{token},'')
+   const who=admitted.headers.get('set-cookie').split(';')[0]
+   const data=await(await app.request('/api/pane',{headers:{Cookie:who}})).json();assert.equal(data.rejectedContent,undefined);assert.equal(data.spamRetention,undefined);assert.deepEqual(data.formRejections,[])
+   assert.doesNotMatch(await(await app.request('/app/inquiries',{headers:{Cookie:who}})).text(),/Synthetic private rejected content|Spam protection review/)
+   for(const action of ['settings','hold','release','rescue','purge'])assert.equal((await post('/api/pane/spam/'+action,{id,enabled:'on',confirm:action==='settings'?'change-retention':action+'-rejected'},who)).status,403)
+  }
+  assert.equal((await app.request('/api/pane')).status,401)
+  assert.equal((await post('/api/pane/spam/hold',{id,confirm:'hold-rejected'})).status,200)
+  const scheduled=async time=>assert.equal((await(await app.mf.getWorker()).scheduled({scheduledTime:new Date(time),cron:'* * * * *'})).outcome,'ok')
+  await scheduled(row.expires_at+1);assert.equal((await read()).rejectedContent[0].held,1)
+  assert.equal((await post('/api/pane/spam/release',{id,confirm:'release-rejected'})).status,200)
+  await scheduled(row.expires_at-1);assert.equal((await read()).rejectedContent.length,1)
+  await scheduled(row.expires_at);assert.equal((await read()).rejectedContent.length,0)
+  assert.equal((await post('/api/pane/spam/settings',{enabled:'off',confirm:'change-retention'})).status,200)
+  await send();assert.equal((await read()).rejectedContent.length,0)
+ }finally{await app.mf.dispose()}
+})
+
+test('owner rescues a rejection once without an automatic reply and confirmed purge fences replay',async()=>{
+ const {app,post,send,read}=await spamFixture()
+ try{
+  await post('/api/pane/spam/settings',{enabled:'on',confirm:'change-retention'})
+  const id=crypto.randomUUID();await send(id);await send(id)
+  assert.equal((await read()).rejectedContent.length,1)
+  assert.equal((await post('/api/pane/spam/rescue',{id})).status,400)
+  const attempts=await Promise.all([post('/api/pane/spam/rescue',{id,confirm:'rescue-rejected'}),post('/api/pane/spam/rescue',{id,confirm:'rescue-rejected'})])
+  assert.ok(attempts.some(r=>r.status===200))
+  let state=await read();assert.equal(state.messages.length,1);assert.equal(state.messages[0].id,id);assert.equal(state.messages[0].acknowledgment_status,'not_requested');assert.equal(state.rejectedContent.length,0)
+  assert.equal((await post('/api/pane/spam/rescue',{id,confirm:'rescue-rejected'})).status,400)
+  await send(id);assert.equal((await read()).rejectedContent.length,0)
+  const purge=crypto.randomUUID();await send(purge)
+  assert.equal((await post('/api/pane/spam/purge',{id:purge})).status,400);assert.equal((await read()).rejectedContent.length,1)
+  assert.equal((await post('/api/pane/spam/purge',{id:purge,confirm:'purge-rejected'})).status,200)
+  await send(purge);state=await read();assert.equal(state.rejectedContent.length,0);assert.equal(state.messages.length,1)
+  const audit=(await app.db.prepare("SELECT * FROM pane_activity WHERE action LIKE 'spam.%'").all()).results
+  assert.ok(audit.some(r=>r.action==='spam.rescue'));assert.ok(audit.some(r=>r.action==='spam.purge'));assert.doesNotMatch(JSON.stringify(audit),/synthetic-pane-rejected@example.test|Synthetic private rejected/)
+ }finally{await app.mf.dispose()}
+})
+
+test('rejected answers join person export and atomic erasure while legal holds refuse deletion and archives exclude content',async()=>{
+ const {app,post,send,read}=await spamFixture(true)
+ try{
+  await post('/api/pane/spam/settings',{enabled:'on',confirm:'change-retention'})
+  const id=crypto.randomUUID(),email='synthetic-pane-rejected@example.test';await send(id)
+  const older=await exportData(app.db)
+  assert.doesNotMatch(JSON.stringify(older),/Synthetic private rejected content|synthetic-pane-rejected@example.test/)
+  const copy=await runtime();try{assert.equal((await restore(copy.db,older)).phase,'complete');assert.equal(await copy.db.prepare('SELECT COUNT(*) AS n FROM pane_rejected_content').first('n'),0);assert.equal(await copy.db.prepare('SELECT enabled FROM pane_spam_settings').first('enabled'),0)}finally{await copy.mf.dispose()}
+  let found=await(await post('/api/pane/privacy/find',{email:email.toUpperCase()})).json();assert.equal(found.rejected.length,1)
+  const exported=await post('/api/pane/privacy/export',{email});assert.equal(exported.status,200,await exported.clone().text());assert.equal((await exported.json()).rejected[0].id,id)
+  await post('/api/pane/spam/hold',{id,confirm:'hold-rejected'})
+  for(const action of ['rescue','purge'])assert.equal((await post('/api/pane/spam/'+action,{id,confirm:action+'-rejected'})).status,400)
+  assert.equal((await post('/api/pane/privacy/erase',{email,confirm:'erase-person-data'})).status,400)
+  assert.equal((await read()).rejectedContent.length,1)
+  await post('/api/pane/spam/release',{id,confirm:'release-rejected'})
+  assert.equal((await post('/api/pane/privacy/erase',{email,confirm:'erase-person-data'})).status,200)
+  found=await(await post('/api/pane/privacy/find',{email})).json();assert.deepEqual(found.rejected,[])
+  await send(id);assert.equal((await read()).rejectedContent.length,0)
+  const later=await exportData(app.db),old=await runtime();try{await assert.rejects(restore(old.db,older,later),/erased_row|erasure_epoch/)}finally{await old.mf.dispose()}
+ }finally{await app.mf.dispose()}
+})
