@@ -1855,10 +1855,12 @@ test('image drafts preserve explicit descriptions and publication refuses missin
   const pending=await (await call('/api/pane/prepare',{site:bad,base:draft.id})).json()
   const review=await (await call('/api/pane/page-request-review',{base:pending.id,page:'home'})).json()
   assert.equal((await call('/api/pane/page-publish',{base:pending.id,page:'home',request:review.id})).status,400,'Selected approvals require image descriptions too')
-  picture.image={...image,alt:'Bakery workshop mark'};picture.text='Bakery workshop mark';site.pages[0].body='Our bakery\n\nBakery workshop mark'
+  picture.image={...image,alt:'Bakery workshop mark',crop:{ratio:'4:3',width:4,height:3,x:65,y:30}};picture.text='Bakery workshop mark';site.pages[0].body='Our bakery\n\nBakery workshop mark'
   response=await call('/api/pane/prepare',{site});assert.equal(response.status,200,await response.clone().text());draft=await response.json();assert.equal((await call('/api/pane/publish',{revision:draft.id})).status,200)
   assert.match(await (await app.request('/site')).text(),/alt="Bakery workshop mark"/)
-  for(const mutate of [p=>p.image.src='data:image/svg+xml;base64,PHN2Zz4=',p=>p.image.width++,p=>p.image.decorative=true]){const invalid=structuredClone(site);mutate(invalid.pages[0].sections[0].blocks[1]);assert.equal((await call('/api/pane/prepare',{site:invalid})).status,400)}
+  assert.deepEqual(draft.site.pages[0].sections[0].blocks[1].image.crop,picture.image.crop)
+  assert.match(await (await app.request('/site')).text(),/aspect-ratio:4\/3;object-fit:cover;object-position:65% 30%/)
+  for(const mutate of [p=>p.image.src='data:image/svg+xml;base64,PHN2Zz4=',p=>p.image.width++,p=>p.image.decorative=true,p=>p.image.crop.x=101,p=>p.image.crop.width=0,p=>p.image.crop.ratio='arbitrary',p=>p.image.crop.script='unsupported']){const invalid=structuredClone(site);mutate(invalid.pages[0].sections[0].blocks[1]);assert.equal((await call('/api/pane/prepare',{site:invalid})).status,400)}
   const imported={...site,pages:[{slug:'home',title:'Imported bakery',body:'Our bakery',importedHtml:'<p>Our bakery</p><img src="https://example.test/bakery.png">'}]}
   response=await call('/api/pane/prepare',{site:imported});assert.equal(response.status,200,await response.clone().text());draft=await response.json();assert.equal((await call('/api/pane/publish',{revision:draft.id})).status,400,'Import normalization must not invent a decorative choice')
   imported.pages[0].importedHtml='<p>Our bakery</p><img src="https://example.test/bakery.png" alt="">'

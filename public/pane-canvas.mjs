@@ -24,6 +24,7 @@ function selectedParagraph(node){
 function settings(){
  const image=block()?.image,panel=form.querySelector('[data-image-settings]');panel.hidden=!image
  if(image){form.querySelector('[data-image-alt]').value=image.alt??'';form.querySelector('[data-image-decorative]').checked=image.decorative;form.querySelector('[data-image-alt]').disabled=image.decorative;form.querySelector('[data-image-status]').textContent=!image.decorative&&!image.alt?.trim()?'Add alternative text or mark this image decorative before publishing.':'Image description is ready.'}
+ if(image){const crop=image.crop??{ratio:'original',width:4,height:3,x:50,y:50};for(const input of form.querySelectorAll('[data-image-crop]')){const key=input.dataset.imageCrop;input.value=crop[key];input.disabled=['width','height'].includes(key)&&crop.ratio!=='free'}}
  for(const node of canvas.querySelectorAll('[data-selected]'))node.removeAttribute('data-selected')
  canvas.querySelector(blockId?`[data-block="${blockId}"]`:`[data-section="${sectionId}"]`)?.setAttribute('data-selected','')
  for(const input of form.querySelectorAll('[data-layout-field]')){
@@ -205,6 +206,7 @@ form.addEventListener('click',event=>{
  }
  if(action==='up'||action==='down'){const destination=Math.max(0,Math.min(items.length-1,index+(action==='up'?-1:1)));items.splice(index,1);items.splice(destination,0,selected??section);if(selected)items.forEach((block,index)=>block.row=index+1)}
  if(action==='reset'&&isPhone()){delete (selected??section).phone;commit();return}
+ if(action==='reset'&&selected?.image)delete selected.image.crop
  if(action==='reset'){if(selected)Object.assign(selected,{column:1,span:12,row:1,order:0,align:'left',vertical:'start'});else{Object.assign(section,{kind:'text',ratio:'1:1',gap:24,paddingTop:32,paddingBottom:32,height:'auto'});delete section.background}}
  commit()
 })
@@ -231,6 +233,13 @@ form.querySelector('[data-image-upload]').addEventListener('change',async event=
  catch(error){form.querySelector('[data-layout-selection]').textContent=error.message}
  event.target.value=''
 })
+for(const input of form.querySelectorAll('[data-image-crop]'))input.addEventListener('input',()=>{
+ const image=block()?.image;if(!image||!input.checkValidity())return
+ image.crop??={ratio:'original',width:4,height:3,x:50,y:50}
+ image.crop[input.dataset.imageCrop]=input.dataset.imageCrop==='ratio'?input.value:Number(input.value)
+ commit()
+})
+form.querySelector('[data-image-reset]').addEventListener('click',()=>{const image=block()?.image;if(image){delete image.crop;commit()}})
 for(const input of form.querySelectorAll('[data-image-alt],[data-image-decorative]'))input.addEventListener('input',()=>{
  const selected=block();if(!selected?.image)return
  const image=selected.image

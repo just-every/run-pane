@@ -187,6 +187,23 @@ try{
   assert.equal(await page.locator('[contenteditable=true]').last().locator('ul ul').count(),0)
   await page.getByRole('button',{name:'Redo',exact:true}).click();await saved()
   await capture('rich-canvas-'+width)
+  await page.getByLabel('Add image file').setInputFiles('public/site/cake-3.webp');await page.locator('[data-image-settings]:not([hidden])').waitFor();await saved()
+  await page.getByLabel('Alternative text',{exact:true}).fill('Celebration cake with yellow flowers');await saved()
+  const originalImage=(await state()).draft.site.pages.find(item=>item.slug==='services').sections.flatMap(item=>item.blocks).find(item=>item.image).image
+  for(const ratio of ['1:1','4:3','3:2','16:9','free']){
+   await page.getByLabel('Image aspect ratio',{exact:true}).selectOption(ratio)
+   if(ratio==='free'){await page.getByLabel('Free crop width',{exact:true}).fill('5');await page.getByLabel('Free crop height',{exact:true}).fill('4')}
+   await saved();const expected=ratio==='free'?1.25:Number(ratio.split(':')[0])/Number(ratio.split(':')[1])
+   assert.ok(Math.abs(await page.locator('[data-image-block] img').evaluate(node=>node.getBoundingClientRect().width/node.getBoundingClientRect().height)-expected)<0.01,'Chosen image crop ratio')
+  }
+  await page.getByLabel('Focal point horizontal',{exact:true}).fill('65');await page.getByLabel('Focal point vertical',{exact:true}).fill('30');await saved()
+  assert.equal(await page.locator('[data-image-block] img').evaluate(node=>getComputedStyle(node).objectPosition),'65% 30%')
+  await page.getByRole('button',{name:'Reset image crop',exact:true}).click();await saved()
+  assert.ok(Math.abs(await page.locator('[data-image-block] img').evaluate(node=>node.getBoundingClientRect().width/node.getBoundingClientRect().height)-originalImage.width/originalImage.height)<0.01,'Reset restores original image proportions')
+  assert.equal((await state()).draft.site.pages.find(item=>item.slug==='services').sections.flatMap(item=>item.blocks).find(item=>item.image).image.src,originalImage.src,'Crop never replaces original pixels')
+  await page.getByLabel('Image aspect ratio',{exact:true}).selectOption('4:3');await page.getByLabel('Focal point horizontal',{exact:true}).fill('65');await page.getByLabel('Focal point vertical',{exact:true}).fill('30');await saved()
+  await page.reload();await page.locator('[data-image-block] img').waitFor();await page.locator('[data-image-block]').click()
+  assert.equal(await page.getByLabel('Image aspect ratio',{exact:true}).inputValue(),'4:3');assert.equal(await page.getByLabel('Focal point horizontal',{exact:true}).inputValue(),'65');await capture('image-crop-canvas-'+width)
   // Formatting controls are named text buttons; existing icon controls have tooltips.
   assert.equal(await page.getByRole('button',{name:'Bold',exact:true}).count(),1)
   await page.getByText('Layout settings',{exact:true}).click();await capture('native-canvas-settings-'+width)
@@ -209,6 +226,8 @@ try{
   assert.equal(await page.locator('ul ul li').filter({hasText:/^Nested bullet$/}).innerText(),'Nested bullet');assert.equal(await page.locator('ol ol li').innerText(),'Nested number')
   for(const [tag,alignment] of [['h3','center'],['p','right'],['li','left'],['li','justify']])assert.ok(await page.locator(`[data-block] ${tag}[data-text-align="${alignment}"]`).count(),'Published paragraph alignment')
   assert.equal(await page.locator('.pane-p-large').count(),1);assert.equal(await page.locator('.pane-p-small').count(),1)
+  assert.equal(await page.locator('[data-image-block] img').evaluate(node=>getComputedStyle(node).objectPosition),'65% 30%')
+  assert.ok(Math.abs(await page.locator('[data-image-block] img').evaluate(node=>node.getBoundingClientRect().width/node.getBoundingClientRect().height)-4/3)<0.01)
   await capture('native-live-'+width)
   console.log('Native canvas geometry, pixel parity and conflict safety passed at '+width+'.')
 

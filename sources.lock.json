@@ -540,7 +540,7 @@
       "executable": false
     },
     "public/pane-canvas.mjs": {
-      "sha256": "cfaccaa3e37fed7595b28b0e808f1b1411ddb6f604263da66d882edede23d2a5",
+      "sha256": "877bcdb3f4fdc145508bcc7a6daea46968f46474664eebe95258157ff79d5c68",
       "executable": false
     },
     "public/pane-custom-code.js": {
@@ -568,7 +568,7 @@
       "executable": false
     },
     "public/pane-layout.mjs": {
-      "sha256": "6a802d658e2c1f4e39785e941b24753398d893756ff05d2cf1ef98234eeab88a",
+      "sha256": "c11aa1f5d6b36ae36a82a1dfd8d7c4886c0853e277c435e5d2ed3ebe185e7298",
       "executable": false
     },
     "public/pane-organization.js": {
@@ -972,7 +972,7 @@
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
-      "sha256": "765d44d80516e7d61abf49b2468f82f0bec7cdffbdc7d80fa38f3cfa0b8e0ef4",
+      "sha256": "a62c1c46527db01cc8672a8359df2863f496d55054494e316886e307dfd3644e",
       "executable": false
     },
     "scripts/custody-journey.mjs": {
@@ -3180,7 +3180,7 @@
       "executable": false
     },
     "src/pane/images.ts": {
-      "sha256": "ac557d12f5fe688b6888d28ef29dc86e083d49092a0a15c0c110fcb7947a9e77",
+      "sha256": "95a5f0f4f7dfa2aa4fcfb4e63348939eadb4d9370ba1dcc1d2fb43559d077603",
       "executable": false
     },
     "src/pane/import-authority.ts": {
@@ -3336,7 +3336,7 @@
       "executable": false
     },
     "src/pane/ui/canvas.ts": {
-      "sha256": "e647bcea71db6f077c4c7c5e2ba4c0d858afd4e411800dc8fd60dbc3e4d4e806",
+      "sha256": "06c3f3d33fd54e724710d50ea5d04ac823aa394697220f2ae1f568fefc3c00da",
       "executable": false
     },
     "src/pane/ui/changes.ts": {
@@ -3600,7 +3600,7 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "0a0c6a67ee7cbb9c4592112b01f9ff7201801c62bebe48238ee0fa804addacc6",
+      "sha256": "44775b0ae04b8a3678f192d52733b9c3f701ec58fc7ad93133454db06c0cf73a",
       "executable": false
     },
     "tests/runtime.mjs": {

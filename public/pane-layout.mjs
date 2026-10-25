@@ -9,6 +9,12 @@ export function layoutRules(sections){return sections.flatMap(section=>{
   const p=block.phone??{}
   return `${target} [data-block="${block.id}"]{display:${p.hidden?'none':'block'};grid-column:${p.column??1}/span ${p.span??12};grid-row:${p.row??index+1};z-index:${p.order??block.order};text-align:${p.align??block.align};align-self:${p.vertical??block.vertical}}`
  }).join('')
+ for(const block of section.blocks){
+  const image=block.image,crop=image?.crop
+  if(!crop)continue
+  const ratio=crop.ratio==='original'?`${image.width}/${image.height}`:crop.ratio==='free'?`${crop.width}/${crop.height}`:crop.ratio.replace(':','/')
+  rules.push(`${target} [data-block="${block.id}"] img{aspect-ratio:${ratio};object-fit:cover;object-position:${crop.x}% ${crop.y}%}`)
+ }
  return [...rules,`@container (max-width:700px){${mobile}}`]
 })}
 export function layoutCss(sections){return layoutRules(sections).join('')}
