@@ -1,3 +1,4 @@
+import {readImage} from './pane-image.mjs'
 import {richText,richMarkup} from './pane-rich.mjs'
 import {layoutRules,layoutMarkup} from './pane-layout.mjs'
 const editor=document.querySelector('[data-layout-editor]'),form=editor.querySelector('form'),field=form.querySelector('[data-layout-state]'),canvas=editor.querySelector('[data-layout-canvas]'),content=canvas.querySelector('.public-content')
@@ -13,6 +14,8 @@ const mobileBlock=(section,item)=>({column:1,span:12,row:section.blocks.indexOf(
 const identity=()=>crypto.randomUUID()
 const newBlock=()=>({id:identity(),kind:'text',text:'New text',column:1,span:12,row:1,order:0,align:'left',vertical:'start'})
 function settings(){
+ const image=block()?.image,panel=form.querySelector('[data-image-settings]');panel.hidden=!image
+ if(image){form.querySelector('[data-image-alt]').value=image.alt??'';form.querySelector('[data-image-decorative]').checked=image.decorative;form.querySelector('[data-image-alt]').disabled=image.decorative;form.querySelector('[data-image-status]').textContent=!image.decorative&&!image.alt?.trim()?'Add alternative text or mark this image decorative before publishing.':'Image description is ready.'}
  for(const node of canvas.querySelectorAll('[data-selected]'))node.removeAttribute('data-selected')
  canvas.querySelector(blockId?`[data-block="${blockId}"]`:`[data-section="${sectionId}"]`)?.setAttribute('data-selected','')
  for(const input of form.querySelectorAll('[data-layout-field]')){
@@ -33,7 +36,8 @@ function render(){
  for(const node of [...content.children])if(node!==style)node.remove()
  content.insertAdjacentHTML('beforeend',layoutMarkup(sections))
  for(const section of content.querySelectorAll('[data-section]')){section.draggable=true;section.tabIndex=0;section.setAttribute('aria-label','Section '+(sections.findIndex(item=>item.id===section.dataset.section)+1))}
- for(const node of content.querySelectorAll('[data-block]')){node.contentEditable='true';node.draggable=true;node.setAttribute('role','textbox');node.setAttribute('aria-label','Block text');node.setAttribute('aria-multiline','true')}
+ for(const node of content.querySelectorAll('[data-image-block]')){node.tabIndex=0;node.setAttribute('aria-label','Image block')}
+ for(const node of content.querySelectorAll('[data-block]:not([data-image-block])')){node.contentEditable='true';node.draggable=true;node.setAttribute('role','textbox');node.setAttribute('aria-label','Block text');node.setAttribute('aria-multiline','true')}
  settings()
 }
 function commit(redraw=true){field.value=JSON.stringify(sections);field.dispatchEvent(new Event('input',{bubbles:true}));if(redraw)render()}
@@ -96,6 +100,7 @@ function documentBlock(node){
 }
 function record(node){
  const target=sections.flatMap(section=>section.blocks).find(block=>block.id===node.dataset.block)
+ if(target.kind!=='text')return
  const content=readRich(node)
  target.content=content;target.text=richText(content)
  if(content.some(node=>['p','h1','h2','h3','h4','blockquote','pre','ul','ol'].includes(node.tag)))target.format='div'
@@ -125,7 +130,7 @@ document.addEventListener('selectionchange',()=>{const current=window.getSelecti
 canvas.addEventListener('keyup',()=>{selection=window.getSelection()?.rangeCount?window.getSelection().getRangeAt(0).cloneRange():undefined})
 canvas.addEventListener('mouseup',()=>{selection=window.getSelection()?.rangeCount?window.getSelection().getRangeAt(0).cloneRange():undefined})
 form.addEventListener('click',event=>{
- const command=event.target.dataset.textCommand;if(!command||!block())return
+ const command=event.target.dataset.textCommand;if(!command||!block()||block().kind!=='text')return
  let node=canvas.querySelector(`[data-block="${blockId}"]`);node.focus()
  if(selection&&node.contains(selection.commonAncestorContainer)){const current=window.getSelection();current.removeAllRanges();current.addRange(selection)}
  if(['insertUnorderedList','insertOrderedList','indent','outdent'].includes(command))node=documentBlock(node)
@@ -193,7 +198,20 @@ canvas.addEventListener('drop',event=>{
  dragged=undefined;commit()
 })
 form.addEventListener('draftrestore',()=>{sections=JSON.parse(field.value);if(!sections.some(section=>section.id===sectionId))sectionId=sections[0].id;if(!current().blocks.some(block=>block.id===blockId))blockId=undefined;render()})
-device.addEventListener('change',()=>{const sheet=document.querySelector('[data-canvas-device-style]').sheet;while(sheet.cssRules.length)sheet.deleteRule(0);if(device.value!=='fit')sheet.insertRule(`[data-layout-canvas]{width:${Number(device.value)}px}`,0);settings()})
+form.querySelector('[data-image-upload]').addEventListener('change',async event=>{
+ const file=event.target.files?.[0];if(!file)return
+ try{const image=await readImage(file),added={...newBlock(),kind:'image',image,text:'',row:Math.max(...current().blocks.map(item=>item.row))+1};current().blocks.push(added);blockId=added.id;commit()}
+ catch(error){form.querySelector('[data-layout-selection]').textContent=error.message}
+ event.target.value=''
+})
+for(const input of form.querySelectorAll('[data-image-alt],[data-image-decorative]'))input.addEventListener('input',()=>{
+ const selected=block();if(!selected?.image)return
+ const image=selected.image
+ image.decorative=form.querySelector('[data-image-decorative]').checked
+ image.alt=image.decorative?'':form.querySelector('[data-image-alt]').value
+ selected.text=image.alt;commit()
+})
+device.addEventListener('change',()=>{const sheet=document.querySelector('style[data-pane-layout]').sheet;while(sheet.cssRules.length)sheet.deleteRule(0);if(device.value!=='fit')sheet.insertRule(`[data-layout-canvas]{width:${Number(device.value)}px}`,0);settings()})
 // Active links belong to the live page; the editing surface keeps selection local.
 canvas.addEventListener('click',event=>{if(event.target.closest('a'))event.preventDefault()})
 render()

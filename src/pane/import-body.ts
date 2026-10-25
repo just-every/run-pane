@@ -29,7 +29,9 @@ export function importedBody(html:string,options:{base?:string;link?:(href:strin
    const alt=attr(node,'alt'),src=attr(node,'src')
    let url:string|undefined
    try{const source=new URL(src,options.base);if(['http:','https:'].includes(source.protocol)&&!source.username&&!source.password)url=source.href}catch{}
-   if(options.retainMedia)return '<img'+(url?' src="'+escape(url)+'"':'')+' alt="'+escape(alt)+'">'
+   const explicitAlt=node.attrs.some((entry:any)=>entry.name==='alt')
+   if(options.retainMedia)return '<img'+(url?' src="'+escape(url)+'"':'')+(explicitAlt?' alt="'+escape(alt)+'"':'')+'>'
+   if(explicitAlt&&!alt.trim())return '<span aria-hidden="true"></span>'
    return '<span role="img" aria-label="'+escape(alt||'Source image unavailable')+'"></span>'
   }
   // Retain visible labels from forms/widgets without activating them.

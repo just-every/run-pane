@@ -20,7 +20,8 @@ export async function document(title: string, body: string, kind: 'app' | 'site'
   const layoutStyles=[...body.matchAll(/<style data-pane-layout>([\s\S]*?)<\/style>/g)].map(match=>'<style>'+match[1]+'</style>').join('')
   const styleHashes = [...(codeSource ? await codeHashes(codeSource,'style') : []),...(layoutStyles?await codeHashes(layoutStyles,'style'):[])]
   const sources = (list: string[]) => list.length ? ' ' + list.join(' ') : ''
-  const policy = extra.image.length ? frame.policy.replace("img-src 'self'", `img-src 'self'${sources(extra.image)}`) : frame.policy
+  const imagePolicy=(body.includes('src="data:image/png;base64,')||body.includes('data-image-upload'))?frame.policy.replace("img-src 'self'","img-src 'self' data: blob:"):frame.policy
+  const policy = extra.image.length ? imagePolicy.replace("img-src 'self'", `img-src 'self'${sources(extra.image)}`) : imagePolicy
   const pageTitle = kind === 'site' ? title : `${title} · ${branding.name}`
   const head = kind === 'site' && iconHead ? frame.head.replace(iconHead, '') : frame.head
   return new Response(`<!doctype html><html lang="${escape(locale)}"${frame.htmlClass}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(pageTitle)}</title>${fontHead}${head}<link rel="stylesheet" href="/pane.css"></head><body class="pane pane-${kind}"><a class="skip-link" href="#main">Skip to content</a>${body}</body></html>`, {

@@ -13,6 +13,7 @@ export function layoutRules(sections){return sections.flatMap(section=>{
 })}
 export function layoutCss(sections){return layoutRules(sections).join('')}
 function blockMarkup(block){
+ if(block.kind==='image'){const image=block.image;return `<div data-block="${escape(block.id)}" data-image-block><img src="${escape(image.src)}" width="${image.width}" height="${image.height}" alt="${escape(image.decorative?'':image.alt??'')}"${image.decorative?' role="presentation"':''}></div>`}
  const format=block.format??'p',tag=['p-large','p-small'].includes(format)?'p':format
  return `<${tag} data-block="${escape(block.id)}"${tag!==format?` class="pane-${format}"`:''}>${block.content?richMarkup(block.content):escape(block.text)}</${tag}>`
 }

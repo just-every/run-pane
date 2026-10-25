@@ -100,3 +100,5 @@
 .public-content .pane-p-small{font-size:max(13px,.875em)}
 .public-content [data-block] :is(ul,ol){padding-inline-start:1.5em}
 .public-content [data-block] pre{white-space:pre-wrap;overflow-wrap:anywhere}
+
+.pane [data-image-block] img{display:block;max-width:100%;width:100%;height:auto}.pane [data-image-block]{align-self:start}

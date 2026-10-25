@@ -1,3 +1,4 @@
+import {requireImageDescriptions} from './accessibility'
 import { normalizeCode, codeFromForm } from './custom-code'
 import { normalizeComponents, resolveComponents, componentsFromForm } from './components'
 import { normalizeSections, sectionText } from './sections'
@@ -102,6 +103,7 @@ export async function publish(db:D1Database,actor:string,id:string,action:'publi
  if (!row) throw new Error('Revision not found.')
  if(await db.prepare('SELECT 1 FROM pane_revoked_revisions WHERE revision=?').bind(id).first())throw Error('Revoked revision needs a new draft and approval.')
  if (action === 'rollback' && !await db.prepare('SELECT 1 FROM pane_approvals WHERE revision=? LIMIT 1').bind(id).first()) throw new Error('Only a revision that was live before can be restored. Approve and publish this draft instead.')
+ requireImageDescriptions(revision(row).site)
  await db.batch(approvalStatements(db, { id: crypto.randomUUID(), action, revision: id, actor, created_at: new Date().toISOString() }))
  return revision(row)
 }

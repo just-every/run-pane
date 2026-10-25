@@ -1,10 +1,11 @@
+import {normalizeImage,type ImageContent} from './images'
 import {richText} from '../../public/pane-rich.mjs'
 /** Revision data for the first native section door. Media and visual controls follow. */
 export type RichNode = {tag:'text';text:string} | {tag:'p'|'p-large'|'p-small'|'h1'|'h2'|'h3'|'h4'|'blockquote'|'pre'|'ul'|'ol'|'li'|'strong'|'em'|'u'|'s'|'br';children:RichNode[]}
 export type PhoneBlock = {column?:number;span?:number;row?:number;order?:number;align?:TextBlock['align'];vertical?:TextBlock['vertical'];hidden?:boolean}
 export type TextBlock = {
  phone?: PhoneBlock;
- id: string; kind: 'text'; text: string; format?: 'p'|'h1'|'h2'|'h3'|'h4'|'blockquote'|'pre'|'p-large'|'p-small'|'div'; content?: RichNode[];
+ id: string; kind: 'text'|'image'; image?:ImageContent; text: string; format?: 'p'|'h1'|'h2'|'h3'|'h4'|'blockquote'|'pre'|'p-large'|'p-small'|'div'; content?: RichNode[];
  column: number; span: number; row: number; order: number;
  align: 'left' | 'center' | 'right' | 'justify'; vertical: 'start' | 'center' | 'end';
 }
@@ -86,8 +87,11 @@ export function normalizeSections(value: unknown): Section[] | undefined {
   if (section.background !== undefined && (typeof section.background !== 'string' || !/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(section.background))) throw Error('Use a hex section background with 3, 4, 6 or 8 digits.')
   const blocks = section.blocks.map(raw => {
    const block = object(raw)
-   if (Object.keys(block).some(key => !['phone','id','kind','text','column','span','row','order','align','vertical','format','content'].includes(key))) throw Error('Unsupported block field.')
-   if (block.kind !== 'text' || typeof block.text !== 'string' || !block.text.trim()) throw Error('Only nonempty text blocks are supported by this section door.')
+   if (Object.keys(block).some(key => !['phone','image','id','kind','text','column','span','row','order','align','vertical','format','content'].includes(key))) throw Error('Unsupported block field.')
+   if (!['text','image'].includes(String(block.kind)) || typeof block.text !== 'string' || (block.kind==='text'&&!block.text.trim())) throw Error('Choose a text block with content or a prepared image.')
+   const image=block.kind==='image'?normalizeImage(block.image):undefined
+   if(block.kind==='text'&&block.image!==undefined)throw Error('Text blocks cannot contain an image.')
+   if(image&&(block.content!==undefined||block.format!==undefined||block.text.normalize('NFC').trim()!==(image.decorative?'':image.alt??'')))throw Error('Image reading text must match its alternative text.')
    const content=block.content===undefined?undefined:normalizeRich(block.content,block.format==='div')
    const text = block.text.normalize('NFC').trim()
    if(content&&richText(content).trim()!==text)throw Error('Rich text and reading text must match.')
@@ -95,10 +99,10 @@ export function normalizeSections(value: unknown): Section[] | undefined {
    if (characters > 20000) throw Error('Section text exceeds 20,000 characters.')
    const column = number(block.column,1,12,1), span = number(block.span,1,12,12)
    if (column + span > 13) throw Error('A block must fit the twelve-column grid.')
-   return {...(block.phone===undefined?{}:{phone:phone(block.phone,true)}),id:identity(block.id),kind:'text' as const,...(content?{content}:{}),...(block.format===undefined?{}:{format:choice(block.format,['p','h1','h2','h3','h4','blockquote','pre','p-large','p-small','div'] as const,'p')}),text,column,span,row:number(block.row,1,100,1),order:number(block.order,0,100,0),align:choice(block.align,['left','center','right','justify'] as const,'left'),vertical:choice(block.vertical,['start','center','end'] as const,'start')}
+   return {...(block.phone===undefined?{}:{phone:phone(block.phone,true)}),id:identity(block.id),kind:block.kind as 'text'|'image',...(image?{image}:{}),...(content?{content}:{}),...(block.format===undefined?{}:{format:choice(block.format,['p','h1','h2','h3','h4','blockquote','pre','p-large','p-small','div'] as const,'p')}),text,column,span,row:number(block.row,1,100,1),order:number(block.order,0,100,0),align:choice(block.align,['left','center','right','justify'] as const,'left'),vertical:choice(block.vertical,['start','center','end'] as const,'start')}
   })
   return {id,...(section.phone===undefined?{}:{phone:phone(section.phone,false)}),...(section.height===undefined?{}:{height:choice(section.height,['auto','small','medium','large','full'] as const,'auto')}),...(section.component ? {component:String(section.component)} : {}),kind:choice(section.kind,['text','columns'] as const,'text'),ratio:choice(section.ratio,['1:1','1:2','2:1','1:1:1'] as const,'1:1'),gap:number(section.gap,0,160,24),paddingTop:number(section.paddingTop,0,240,32),paddingBottom:number(section.paddingBottom,0,240,32),...(section.background === undefined ? {} : {background:String(section.background).toLowerCase()}),blocks}
  })
 }
 /** Canonical reading order is the stored order, independent of visual overlap. */
-export const sectionText = (sections: Section[]) => sections.flatMap(section => section.blocks.map(block => block.text)).join('\n\n')
+export const sectionText = (sections: Section[]) => sections.flatMap(section => section.blocks.map(block => block.text).filter(Boolean)).join('\n\n')

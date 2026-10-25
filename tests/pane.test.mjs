@@ -1828,3 +1828,32 @@ test('rich section text keeps semantic formatting and nested lists through immut
   assert.ok((await (await app.request('/site/services')).text()).includes('<strong>Bold</strong>'))
  }finally{await app.mf.dispose()}
 })
+
+test('image drafts preserve explicit descriptions and publication refuses missing alt while warning about headings and contrast',async()=>{
+ const app=await runtime();let cookie
+ const call=(path,body)=>app.request(path,{method:'POST',headers:{Cookie:cookie??'',Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)})
+ try{
+  cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})).headers.get('set-cookie').split(';')[0]
+  const png=await readFile('public/brand/icon-192.png'),image={src:'data:image/png;base64,'+png.toString('base64'),width:png.readUInt32BE(16),height:png.readUInt32BE(20),decorative:false}
+  const text={id:'synthetic-pane-text',kind:'text',text:'Our bakery',format:'h3',column:1,span:12,row:1},picture={id:'synthetic-pane-image',kind:'image',text:'',image,column:1,span:12,row:2}
+  const site={name:'Synthetic bakery',description:'Fresh bread every morning.',pages:[{slug:'home',title:'Welcome',body:'Our bakery',sections:[{id:'synthetic-pane-section',kind:'text',background:'#222222',blocks:[text,picture]}]}]}
+  let response=await call('/api/pane/prepare',{site});assert.equal(response.status,200,await response.clone().text());let draft=await response.json()
+  assert.equal((await call('/api/pane/publish',{revision:draft.id})).status,400)
+  assert.match(await (await app.request('/app/sites',{headers:{Cookie:cookie}})).text(),/An image needs alternative text/)
+  assert.match(await (await app.request('/app/sites',{headers:{Cookie:cookie}})).text(),/Heading 3 follows Heading 1/)
+  assert.match(await (await app.request('/app/sites',{headers:{Cookie:cookie}})).text(),/contrast is below/)
+  assert.equal((await (await app.request('/api/pane',{headers:{Cookie:cookie}})).json()).live,null)
+  picture.image={...image,alt:'',decorative:true};text.format='h2';site.pages[0].sections[0].background='#ffffff'
+  response=await call('/api/pane/prepare',{site});assert.equal(response.status,200,await response.clone().text());draft=await response.json();assert.equal((await call('/api/pane/publish',{revision:draft.id})).status,200)
+  assert.match(await (await app.request('/site')).text(),/alt="" role="presentation"/)
+  picture.image={...image,alt:'Bakery workshop mark'};picture.text='Bakery workshop mark';site.pages[0].body='Our bakery\n\nBakery workshop mark'
+  response=await call('/api/pane/prepare',{site});assert.equal(response.status,200,await response.clone().text());draft=await response.json();assert.equal((await call('/api/pane/publish',{revision:draft.id})).status,200)
+  assert.match(await (await app.request('/site')).text(),/alt="Bakery workshop mark"/)
+  for(const mutate of [p=>p.image.src='data:image/svg+xml;base64,PHN2Zz4=',p=>p.image.width++,p=>p.image.decorative=true]){const invalid=structuredClone(site);mutate(invalid.pages[0].sections[0].blocks[1]);assert.equal((await call('/api/pane/prepare',{site:invalid})).status,400)}
+  const imported={...site,pages:[{slug:'home',title:'Imported bakery',body:'Our bakery',importedHtml:'<p>Our bakery</p><img src="https://example.test/bakery.png">'}]}
+  response=await call('/api/pane/prepare',{site:imported});assert.equal(response.status,200,await response.clone().text());draft=await response.json();assert.equal((await call('/api/pane/publish',{revision:draft.id})).status,400,'Import normalization must not invent a decorative choice')
+  imported.pages[0].importedHtml='<p>Our bakery</p><img src="https://example.test/bakery.png" alt="">'
+  response=await call('/api/pane/prepare',{site:imported});assert.equal(response.status,200,await response.clone().text());draft=await response.json();assert.equal((await call('/api/pane/publish',{revision:draft.id})).status,200)
+  assert.match(await (await app.request('/site')).text(),/<span aria-hidden="true"><\/span>/)
+ }finally{await app.mf.dispose()}
+})
