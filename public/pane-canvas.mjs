@@ -23,10 +23,11 @@ function settings(){
  for(const input of form.querySelectorAll('[data-layout-field]')){
   const key=input.dataset.layoutField,target=key==='hidden'?(block()??current()):sectionFields.includes(key)?current():block()
   const phoneKey=key==='hidden'||(sectionFields.includes(key)?mobileSectionFields:mobileBlockFields).includes(key)
-  input.disabled=!target||(key==='hidden'&&!isPhone())||(isPhone()&&!phoneKey)
+  input.disabled=!target||(key==='format'&&target?.kind==='image')||(key==='hidden'&&!isPhone())||(isPhone()&&!phoneKey)
   const value=isPhone()&&target&&phoneKey?(sectionFields.includes(key)?{...target,...target.phone}:key==='hidden'?{...target,...target.phone}:mobileBlock(current(),target))[key]:target?.[key]
   if(key==='hidden')input.checked=!!(block()??current()).phone?.hidden;else input.value=value??({height:'auto',background:'',format:'p'}[key]??'')
  }
+ for(const button of form.querySelectorAll('[data-text-command]'))button.disabled=block()?.kind==='image'
  for(const item of sections){const node=canvas.querySelector(`[data-section="${item.id}"]`);node?.toggleAttribute('data-phone-override',!!item.phone);for(const text of item.blocks)canvas.querySelector(`[data-block="${text.id}"]`)?.toggleAttribute('data-phone-override',!!text.phone)}
  form.querySelector('[data-device-status]').textContent=isPhone()?'Phone settings are independent. Outlined selections with a phone override keep their layout when desktop changes.':'Desktop and tablet use desktop settings. Phone overrides are preserved.'
  form.querySelector('[data-layout-selection]').textContent=((block()??current()).phone?'Phone override · ':'')+(blockId?'Text block selected. Edit text on the page or change its layout.':'Section selected. Drag it or use Move earlier and Move later.')

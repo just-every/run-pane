@@ -1830,7 +1830,8 @@ test('rich section text keeps semantic formatting and nested lists through immut
 })
 
 test('image drafts preserve explicit descriptions and publication refuses missing alt while warning about headings and contrast',async()=>{
- const app=await runtime();let cookie
+ for(const isolatedLive of [false,true]){
+ const app=await runtime({isolatedLive});let cookie
  const call=(path,body)=>app.request(path,{method:'POST',headers:{Cookie:cookie??'',Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)})
  try{
   cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})).headers.get('set-cookie').split(';')[0]
@@ -1847,6 +1848,10 @@ test('image drafts preserve explicit descriptions and publication refuses missin
   picture.image={...image,alt:'',decorative:true};text.format='h2';site.pages[0].sections[0].background='#ffffff'
   response=await call('/api/pane/prepare',{site});assert.equal(response.status,200,await response.clone().text());draft=await response.json();assert.equal((await call('/api/pane/publish',{revision:draft.id})).status,200)
   assert.match(await (await app.request('/site')).text(),/alt="" role="presentation"/)
+  const bad=structuredClone(draft.site);bad.pages[0].sections[0].blocks[1].image.decorative=false
+  const pending=await (await call('/api/pane/prepare',{site:bad,base:draft.id})).json()
+  const review=await (await call('/api/pane/page-request-review',{base:pending.id,page:'home'})).json()
+  assert.equal((await call('/api/pane/page-publish',{base:pending.id,page:'home',request:review.id})).status,400,'Selected approvals require image descriptions too')
   picture.image={...image,alt:'Bakery workshop mark'};picture.text='Bakery workshop mark';site.pages[0].body='Our bakery\n\nBakery workshop mark'
   response=await call('/api/pane/prepare',{site});assert.equal(response.status,200,await response.clone().text());draft=await response.json();assert.equal((await call('/api/pane/publish',{revision:draft.id})).status,200)
   assert.match(await (await app.request('/site')).text(),/alt="Bakery workshop mark"/)
@@ -1857,4 +1862,5 @@ test('image drafts preserve explicit descriptions and publication refuses missin
   response=await call('/api/pane/prepare',{site:imported});assert.equal(response.status,200,await response.clone().text());draft=await response.json();assert.equal((await call('/api/pane/publish',{revision:draft.id})).status,200)
   assert.match(await (await app.request('/site')).text(),/<span aria-hidden="true"><\/span>/)
  }finally{await app.mf.dispose()}
+ }
 })

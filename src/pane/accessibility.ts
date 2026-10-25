@@ -47,9 +47,15 @@ export function accessibilityFindings(site: Site): AccessibilityFinding[] {
     const surface = background(section.background)
     // At the narrowest published size H1–H3 qualify as large bold text.
     const headingText = tags.some(tag => /^h[1-3]$/.test(tag))
-    const bodyText = section.blocks.some(block => !/^h[1-3]$/.test(block.format ?? 'p') && (block.format !== 'div' || !block.content || block.content.some(node => !/^h[1-3]$/.test(node.tag))))
+    const bodyText = section.blocks.some(block => block.kind==='text' && !/^h[1-3]$/.test(block.format ?? 'p') && (block.format !== 'div' || !block.content || block.content.some(node => !/^h[1-3]$/.test(node.tag))))
     if (headingText && contrast(ink, surface) < 3) warn(`Section ${index + 1} heading contrast is below 3:1; choose a lighter background.`)
     if (bodyText && contrast(body, surface) < 4.5) warn(`Section ${index + 1} text contrast is below 4.5:1; choose a lighter background.`)
+   }
+   let phonePrevious=1
+   for(const section of page.sections.filter(section=>!section.phone?.hidden))for(const block of section.blocks.filter(block=>block.kind==='text'&&!block.phone?.hidden)){
+    for(const tag of [block.format??'p',...(block.content?richTags(block.content):[])])if(/^h[1-6]$/.test(tag)){
+     const level=Number(tag[1]);if(level>phonePrevious+1)warn(`Phone Heading ${level} follows Heading ${phonePrevious}; restore the hidden parent heading or change this heading.`);phonePrevious=level
+    }
    }
   } else if (page.importedHtml) {
    const walk = (node: Node) => {
