@@ -129,13 +129,20 @@ canvas.addEventListener('paste',event=>{
  form.querySelector('[data-layout-selection]').textContent='Pasted text styles kept. Links and media are not supported yet.'
 })
 let selection
+// Pointer activation must not replace the selected text with a toolbar caret.
+// Keyboard activation restores the same saved range after focusing its block.
+form.addEventListener('pointerdown',event=>{
+ if(event.target.closest('[data-text-command]'))event.preventDefault()
+})
 document.addEventListener('selectionchange',()=>{const current=window.getSelection();if(current?.rangeCount&&canvas.contains(current.getRangeAt(0).commonAncestorContainer))selection=current.getRangeAt(0).cloneRange()})
 canvas.addEventListener('keyup',()=>{selection=window.getSelection()?.rangeCount?window.getSelection().getRangeAt(0).cloneRange():undefined})
 canvas.addEventListener('mouseup',()=>{selection=window.getSelection()?.rangeCount?window.getSelection().getRangeAt(0).cloneRange():undefined})
 form.addEventListener('click',event=>{
  const command=event.target.dataset.textCommand;if(!command||!block()||block().kind!=='text')return
- let node=canvas.querySelector(`[data-block="${blockId}"]`);node.focus()
- if(selection&&node.contains(selection.commonAncestorContainer)){const current=window.getSelection();current.removeAllRanges();current.addRange(selection)}
+ let node=canvas.querySelector(`[data-block="${blockId}"]`)
+ const range=selection&&node.contains(selection.commonAncestorContainer)?selection.cloneRange():null
+ node.focus()
+ if(range){const current=window.getSelection();current.removeAllRanges();current.addRange(range)}
  if(['insertUnorderedList','insertOrderedList','indent','outdent'].includes(command))node=documentBlock(node)
  document.execCommand(command,false)
  record(node)
