@@ -61,8 +61,7 @@
           "VERIFY-WORKFLOW.md",
           "src/base/contract-style.ts",
           "src/modules/import-kit/README.md",
-          "src/modules/mail/README.md",
-          "src/modules/operator-auth/docs/vite-spa.md"
+          "src/modules/mail/README.md"
         ],
         "origin": {
           "repository": "https://github.com/runeditrun/base",
@@ -72,8 +71,7 @@
             "export/VERIFY-WORKFLOW.md",
             "foundation/runtime/contract-style.ts",
             "modules/import-kit/README.md",
-            "modules/mail/README.md",
-            "modules/operator-auth/docs/vite-spa.md"
+            "modules/mail/README.md"
           ]
         },
         "mappings": [
@@ -92,10 +90,6 @@
           {
             "path": "src/modules/mail/README.md",
             "originPath": "modules/mail/README.md"
-          },
-          {
-            "path": "src/modules/operator-auth/docs/vite-spa.md",
-            "originPath": "modules/operator-auth/docs/vite-spa.md"
           }
         ]
       }

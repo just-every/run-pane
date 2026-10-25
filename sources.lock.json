@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "parent": null,
   "edition": "just-every/run-pane",
-  "manifest": "3b7930d978108b4ded79266ff6c9a93cfa8ba48300789d61e12e801b874a1e68",
+  "manifest": "1b70abfc43d7390ccbb29b8ff56c315e6204ce80bdc0bca22ad2e17ca673c736",
   "toolchain": {
     "id": "runeditrun/edition-authoring",
     "version": "1.1.0",
@@ -67,8 +67,7 @@
           "VERIFY-WORKFLOW.md",
           "src/base/contract-style.ts",
           "src/modules/import-kit/README.md",
-          "src/modules/mail/README.md",
-          "src/modules/operator-auth/docs/vite-spa.md"
+          "src/modules/mail/README.md"
         ],
         "origin": {
           "repository": "https://github.com/runeditrun/base",
@@ -78,8 +77,7 @@
             "export/VERIFY-WORKFLOW.md",
             "foundation/runtime/contract-style.ts",
             "modules/import-kit/README.md",
-            "modules/mail/README.md",
-            "modules/operator-auth/docs/vite-spa.md"
+            "modules/mail/README.md"
           ]
         },
         "mappings": [
@@ -98,17 +96,13 @@
           {
             "path": "src/modules/mail/README.md",
             "originPath": "modules/mail/README.md"
-          },
-          {
-            "path": "src/modules/operator-auth/docs/vite-spa.md",
-            "originPath": "modules/operator-auth/docs/vite-spa.md"
           }
         ]
       },
       "baseline": {
-        "key": "cc9556f30992181f9cddbdda716c4888a030f043c2f55330a67ea86b174da890",
-        "digest": "8e6d60525c8c0768be2c47f996c77f6ef9e8e4eb2b1c6b498af1fc59999216d8",
-        "sha256": "587daa0dec9eb966c2998130a1e189082b6685bc8b134b9de1fc15448c8eb5da"
+        "key": "da31801f3c1fb408da1ed541d6c9375785b3017954a844596decd88a33c6b8d3",
+        "digest": "5281bdaddde5d5450e247b4fde0ae6427d6e06bb04f80113fadee4bfe9e61559",
+        "sha256": "fb9de513affebac57511670119c616bc836fb3a8d8000c13c98c53d39d8fd179"
       }
     }
   ],
@@ -150,7 +144,7 @@
       "executable": false
     },
     "base-copies.json": {
-      "sha256": "4520919015768aff9759e901e8d93f12f640ffb40a7517f858d5f10e4ff9a00e",
+      "sha256": "e7106e22826be83c83c185f5e6406f3ab82ba1760c0e9853f04a2281739eef37",
       "executable": false
     },
     "CHANGELOG.md": {
@@ -214,7 +208,7 @@
       "executable": false
     },
     "edition.json": {
-      "sha256": "3b7930d978108b4ded79266ff6c9a93cfa8ba48300789d61e12e801b874a1e68",
+      "sha256": "1b70abfc43d7390ccbb29b8ff56c315e6204ce80bdc0bca22ad2e17ca673c736",
       "executable": false
     },
     "fixtures/imports/durable.json": {
@@ -2774,7 +2768,7 @@
       "executable": false
     },
     "src/modules/operator-auth/docs/vite-spa.md": {
-      "sha256": "0c9cb19046087f55390368e9983be52a24ce8804cda0a621c7f74d12b90288b6",
+      "sha256": "37e2d7aab9fd1987c7c381c7c0a91724109e2e1a6c0af7f4fbbb528e2b603f3b",
       "executable": false
     },
     "src/modules/operator-auth/errors.mjs": {

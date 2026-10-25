@@ -1768,15 +1768,6 @@
         "src/modules/operator-auth/signin/index.d.mts": "100644",
         "src/modules/operator-auth/signin/index.mjs": "100644",
         "src/modules/operator-auth/signin/one-click.mjs": "100644"
-      },
-      "adapted": {
-        "src/modules/operator-auth/docs/vite-spa.md": "11f94fec479228d71ba6d7dd6ea7796c0d42c544"
-      },
-      "acknowledged": {
-        "src/modules/operator-auth/docs/vite-spa.md": {
-          "sha256": "0c9cb19046087f55390368e9983be52a24ce8804cda0a621c7f74d12b90288b6",
-          "mode": "100644"
-        }
       }
     },
     {
