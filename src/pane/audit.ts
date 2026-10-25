@@ -40,7 +40,7 @@ export async function activity(db:D1Database) {
   FROM pane_activity a LEFT JOIN oa_operators o ON o.id=a.actor ORDER BY a.sequence`).all<Activity>()).results
 }
 /** Erase an inactive/non-owner person's identifying account data and history attribution.
- * Native last-owner protection remains intact. Old archives still need PRIV-002's fence. */
+ * Native last-owner protection and the shared old-archive erasure checkpoint remain intact. */
 export async function erasePerson(db:D1Database,id:string,confirm:unknown) {
  if(confirm!=='erase-person')throw Error('Explicit erase-person confirmation required.')
  const person=await db.prepare("SELECT id FROM oa_operators WHERE id=? AND role!='owner'").bind(id).first()

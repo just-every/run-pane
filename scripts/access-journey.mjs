@@ -75,5 +75,25 @@ try {
   assert.equal(await reporter.getByRole('heading',{name:'Activity log',exact:true}).count(),0)
   await capture(reporter,'reporting-'+width)
  }
- console.log('Access browser journey passed: owner activity and export, permitted editor/search/preview controls, isolated reporting and explicit inbox replies and Denver workspace dates in a Tokyo browser at 1440 and 390.')
+ const state=await (await context.request.get(origin+'/api/pane')).json()
+ const erased=state.ownershipPeople.find(person=>person.name==='Synthetic editor')
+ assert.ok(erased)
+ const beforeErasure=await (await context.request.get(origin+'/api/pane/activity')).json()
+ const editorEdits=beforeErasure.filter(row=>row.actor==='Synthetic editor'&&row.action==='edit')
+ assert.ok(editorEdits.length)
+ assert.equal((await context.request.post(origin+'/api/pane/people/erase',{headers:{Origin:origin},data:{id:erased.id,confirm:'erase-person'}})).status(),200)
+ assert.equal((await people.editor.context.request.get(origin+'/api/pane')).status(),401)
+ for(const width of [1440,390]){
+  await page.setViewportSize({width,height:1000});await page.goto(origin+'/app/sites')
+  const log=page.locator('[aria-labelledby="activity-title"]');await log.scrollIntoViewIfNeeded()
+  assert.match(await log.innerText(),/Former person/);assert.doesNotMatch(await log.innerText(),/Synthetic editor/)
+  const history=await (await context.request.get(origin+'/api/pane/activity')).json()
+  for(const edit of editorEdits)assert.match(history.find(row=>row.sequence===edit.sequence).actor,/Former person/)
+  assert.deepEqual(history.map(row=>row.sequence),[...history.map(row=>row.sequence)].sort((a,b)=>a-b))
+  const exported=await context.request.get(origin+'/api/pane/activity/export');assert.deepEqual(await exported.json(),history)
+  assert.equal(await page.locator('a,button,summary').evaluateAll(nodes=>nodes.filter(n=>!n.textContent.trim()&&n.querySelector('svg')&&!n.dataset.tip).length),0,'Activity screen icon tooltip audit')
+  const avatar=page.locator('.avatar[data-tip]').first();await avatar.hover();await page.waitForTimeout(100);assert.equal(await page.locator('.pane-tooltip').count(),0);await page.locator('.pane-tooltip').waitFor();await page.keyboard.press('Escape');await page.mouse.move(5,500);await avatar.focus();await page.locator('.pane-tooltip').waitFor();assert.equal(await page.locator('.pane-tooltip').innerText(),'Account and team');await page.keyboard.press('Escape')
+  await capture(page,'activity-erased-'+width);await log.screenshot({path:resolve(folder,'activity-erased-panel-'+width+'.png')})
+ }
+ console.log('Access browser journey passed: owner ordered activity and export before and after actor erasure, tooltips, permitted editor/search/preview controls, isolated reporting and explicit inbox replies and Denver workspace dates in a Tokyo browser at 1440 and 390.')
 }finally{for(const member of roleContexts)await member.close();await browser.close();await fixture.stop()}

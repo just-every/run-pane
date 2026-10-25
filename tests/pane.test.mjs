@@ -727,7 +727,7 @@ test('activity records successful existing changes atomically and exports ordere
  } finally {await app.mf.dispose()}
 })
 
-test('explicit person erasure removes actor attribution, preserves the log and revokes access',async()=>{
+test('explicit person erasure preserves anonymous ordered activity through archive restore and revokes access',async()=>{
  const app=await runtime();let cookie
  const call=(path,body,session=cookie)=>app.request(path,{method:'POST',headers:{Cookie:session??'',Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)})
  const rows=async()=> (await app.request('/api/pane/activity',{headers:{Cookie:cookie}})).json()
@@ -748,6 +748,9 @@ test('explicit person erasure removes actor attribution, preserves the log and r
   const before=await rows(),entry=before.find(row=>row.subject==='revision:'+draft.id)
   assert.equal(entry.actor,'Synthetic administrator')
   assert.ok(before.some(row=>row.agent===issued.id&&row.action==='api.GET.401'))
+  const active=await (await call('/api/pane/tokens/create',{name:'synthetic-pane-7',operatorId:person,scopes:['pages:read']})).json()
+  assert.equal((await app.request('/api/pane/pages',{headers:{Authorization:'Bearer '+active.token}})).status,200)
+  const older=await exportData(app.db)
   assert.equal((await call('/api/pane/people/erase',{id:person})).status,400)
   assert.equal((await call('/api/pane/people/erase',{id:person,confirm:'erase-person'},adminCookie)).status,403)
   assert.equal((await call('/api/pane/people/erase',{id:person,confirm:'erase-person'})).status,200)
@@ -757,10 +760,41 @@ test('explicit person erasure removes actor attribution, preserves the log and r
   assert.match(after.find(row=>row.sequence===entry.sequence).actor,/Former person/)
   assert.doesNotMatch(JSON.stringify(after),/Synthetic administrator|synthetic-pane-4@example/)
   assert.equal((await call('/api/pane/prepare',{site:fixture},adminCookie)).status,401)
+  assert.equal((await app.request('/api/pane/pages',{headers:{Authorization:'Bearer '+active.token}})).status,401)
   const erased=await app.db.prepare('SELECT email,display_name,status FROM oa_operators WHERE id=?').bind(person).first()
   assert.equal(erased.status,'inactive');assert.equal(erased.display_name,'Former person');assert.ok(erased.email.endsWith('@erased.invalid'))
   const ownerId=(await app.db.prepare("SELECT id FROM oa_operators WHERE role='owner'").first()).id
   assert.equal((await call('/api/pane/people/erase',{id:ownerId,confirm:'erase-person'})).status,400)
+  const retained=await rows(),later=await exportData(app.db),restored=await runtime(),old=await runtime()
+  try {
+   await assert.rejects(restore(old.db,older,later),/erased_row|erasure_epoch/,'An up-to-date erasure journal refuses the pre-erasure archive')
+   assert.equal((await old.db.prepare('SELECT COUNT(*) AS count FROM oa_operators').first()).count,0,'Refused restore installs no account')
+   assert.equal((await old.db.prepare('SELECT COUNT(*) AS count FROM pane_activity').first()).count,0,'Refused restore installs no identifying activity')
+   assert.equal((await restore(restored.db,later)).phase,'complete')
+   let ownerMail
+   const native=createOperatorAuth({db:restored.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async message=>{ownerMail=message;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+   await native.requestMagicLink(new Request(origin+'/auth/magic-link',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin}}),{email:settings.OWNER_EMAIL})
+   const signInToken=new URL(ownerMail.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token')
+   const signedIn=await restored.request('/auth/confirm',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({token:signInToken})})
+   assert.equal(signedIn.status,303)
+   const ownerSession=signedIn.headers.get('set-cookie').split(';')[0]
+   const history=await (await restored.request('/api/pane/activity',{headers:{Cookie:ownerSession}})).json()
+   assert.deepEqual(history.filter(row=>row.sequence<=retained.at(-1).sequence),retained,'Restore retains every ordered event and anonymized attribution')
+   assert.match(history.find(row=>row.sequence===entry.sequence).actor,/Former person/)
+   assert.doesNotMatch(JSON.stringify(history),/Synthetic administrator|synthetic-pane-4@example/)
+   const exported=await restored.request('/api/pane/activity/export',{headers:{Cookie:ownerSession}})
+   assert.match(exported.headers.get('content-disposition'),/attachment/)
+   assert.deepEqual(await exported.json(),history,'Restored owner export matches the chronological log')
+   for(const path of ['/api/pane/activity','/api/pane/activity/export']){
+    assert.equal((await restored.request(path)).status,401)
+    assert.equal((await restored.request(path,{headers:{Cookie:adminCookie}})).status,401)
+   }
+   assert.equal((await restored.request('/api/pane/prepare',{method:'POST',headers:{Cookie:adminCookie,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({site:fixture})})).status,401)
+   assert.equal((await restored.request('/api/pane/pages',{headers:{Authorization:'Bearer '+active.token}})).status,401)
+   ownerMail=undefined
+   await native.requestMagicLink(new Request(origin+'/auth/magic-link',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin}}),{email:'synthetic-pane-4@example.test'})
+   assert.equal(ownerMail,undefined,'An erased address cannot obtain a sign-in link after restore')
+  } finally {await restored.mf.dispose();await old.mf.dispose()}
  } finally {await app.mf.dispose()}
 })
 
