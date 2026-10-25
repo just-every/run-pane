@@ -98,8 +98,11 @@ try{
   await page.getByRole('button',{name:'Add text block',exact:true}).click();await page.locator('[contenteditable=true]').last().fill('Native detail');await saved()
   await page.locator('[data-layout-canvas] [data-section]').focus();await layout('Section type').selectOption('columns');await layout('Column ratio').selectOption('2:1');await layout('Hex background').fill('#aabbcc');await layout('Top padding').fill('96');await layout('Bottom padding').fill('96');await saved()
   await page.locator('[contenteditable=true]').last().click();await layout('First column').fill('2');await layout('Column span').fill('6');await layout('Grid row').fill('2');await layout('Text alignment').selectOption('right');await saved()
+  // Desktop geometry is inspected in the real desktop preview at either screen width.
+  await layout('Device preview').selectOption('1440')
   assert.equal(await page.locator('[contenteditable=true]').last().evaluate(node=>getComputedStyle(node).gridColumn),'2 / span 6')
   assert.equal(await page.locator('[contenteditable=true]').last().evaluate(node=>getComputedStyle(node).textAlign),'right')
+  await layout('Device preview').selectOption('fit')
   await page.getByRole('button',{name:'Reset layout',exact:true}).click();await saved();assert.equal(await layout('Column span').inputValue(),'12')
   await page.getByRole('button',{name:'Undo',exact:true}).click();await saved();assert.equal(await layout('Column span').inputValue(),'6')
   await page.getByRole('button',{name:'Redo',exact:true}).click();await saved();await page.getByRole('button',{name:'Undo',exact:true}).click();await saved()
