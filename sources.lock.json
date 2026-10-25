@@ -136,7 +136,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "cd431875ebb68ce801c677befb4d5d658c344473aaa8215718e7ccf282d6fb18",
+      "sha256": "1a64767aa6ee366538a43ff0b6d93805a0639a0d26396d36ac747ce7f1cae3c7",
       "executable": false
     },
     "AGENTS.md": {
@@ -160,7 +160,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "a20c6dd4ec06f8653ae45dbdb2955c26eb151f38a0df7095ce4d2e6aff6341a6",
+      "sha256": "eb559daa4ae36c574960e76e8b13fce74892b50210ccb8be2c3c85ef1faa309e",
       "executable": false
     },
     "deploy-demo.json": {
@@ -1100,11 +1100,11 @@
       "executable": false
     },
     "scripts/forms-journey.mjs": {
-      "sha256": "64ab1dbe62ef1c1f9a676f42e558490b0a0c39aa22ee934abe960dae59ad75c4",
+      "sha256": "dc20dacc3a688ae02c1cf14825bff1a22c2fb82d13155800e9137dbc16a318c0",
       "executable": false
     },
     "scripts/gates-journey.mjs": {
-      "sha256": "bd463b403fe66d1edb7e8f6ed8f421e2e7c4a5e8f39c3d4056d101d96c5456c2",
+      "sha256": "464b808449fa76530b03dd66c1fa6ad4dae248b6a343c080afcde0839157cb84",
       "executable": false
     },
     "scripts/health-browser-journey.mjs": {
@@ -3520,11 +3520,11 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "23c0a947ddc65cb91a4e4881c4bdf2bbeac64a5e1b400c7eb50869fb9ea447a8",
+      "sha256": "5d34b7402f6629f90b92417d07c6775ebcc6557858147fd548dc73ab265d5e7e",
       "executable": false
     },
     "tests/runtime.mjs": {
-      "sha256": "ad3fa04455db5f3def7f8ee32fdfa6bd8fbdc5746eeb42703085d9d382ed6214",
+      "sha256": "ac01dc1170498a2838bf5efaf6b8fd8c2f558adde0ca1d266198e84738b68cbc",
       "executable": false
     },
     "tests/search.test.mjs": {

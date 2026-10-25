@@ -1489,6 +1489,19 @@ test('page and folder gates require passwords or explicitly admitted active nati
   assert.equal((await app.request('/site/services')).status,403)
   assert.match(await (await app.request('/site/services',{headers:{Cookie:memberCookie}})).text(),new RegExp(fixture.pages.find(p=>p.slug==='services').body))
   assert.equal((await app.request('/site/services',{headers:{Cookie:cookie}})).status,403,'Owner is not automatically a site member')
+  const memberBody=fixture.pages.find(p=>p.slug==='services').body
+  const preview=await app.request('/preview/'+proof.draft.id+'/services',{headers:{Cookie:cookie}})
+  assert.equal(preview.status,200);assert.ok((await preview.text()).includes(memberBody))
+  assert.equal((await app.request('/site/services',{headers:{Cookie:cookie}})).status,403,'Preview grants no member access')
+  assert.deepEqual((await (await app.request('/api/pane',{headers:{Cookie:cookie}})).json()).live.site.access.members,[person.id],'Preview leaves member admission unchanged')
+  await auth.invite(new Request(origin+'/auth/invite',{method:'POST',headers:{Origin:origin,Host:new URL(origin).host,Cookie:cookie}}),{email:'synthetic-pane-48@example.test',displayName:'Unadmitted reader',role:'member'})
+  const otherToken=new URL(message.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token'),otherSigned=await call('/auth/confirm',{token:otherToken}),otherCookie=otherSigned.headers.get('set-cookie').split(';')[0]
+  assert.equal((await app.request('/site/services',{headers:{Cookie:otherCookie,'X-Paid-Member':'true','X-Subscription-Status':'active'}})).status,403,'An active native account and claimed paid signals grant no admission')
+  assert.ok((await (await app.request('/site/services',{headers:{Cookie:memberCookie}})).text()).includes(memberBody),'Explicit admission still opens the same page')
+  await proof.save({members:'','page.3.mode':'password'})
+  assert.equal((await app.request('/site/services',{headers:{Cookie:memberCookie}})).status,403,'Removing admission takes effect on the next request')
+  await proof.save({members:person.id,'page.3.mode':'password'})
+  assert.ok((await (await app.request('/site/services',{headers:{Cookie:memberCookie}})).text()).includes(memberBody))
   const sitemap=await (await app.request('/sitemap.xml')).text();for(const path of ['about','services','hours'])assert.ok(!sitemap.includes('/site/'+path))
   const search=await (await app.request('/site/search?q='+encodeURIComponent(fixture.pages.find(p=>p.slug==='about').body.split(' ')[0]))).text();assert.ok(!search.includes('<a href="/site/about">'))
   assert.equal((await app.request('/site/about?unlock=1',{method:'POST',headers:{Origin:'https://foreign.invalid'},body:'password=synthetic-pane-42'})).status,403)
@@ -1585,6 +1598,7 @@ test('private uploads join native archive restore and person export and erasure 
   const native=createOperatorAuth({db:app.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{nativeMail=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
   await native.requestMagicLink(new Request(origin+'/auth/magic-link',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin}}),{email:settings.OWNER_EMAIL})
   const token=new URL(nativeMail.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token'),confirmed=await call('/auth/confirm',{token}),freshCookie=confirmed.headers.get('set-cookie').split(';')[0]
+  const exported=await call('/api/pane/privacy/export',{email:'synthetic-pane-61@example.test'},freshCookie);assert.equal(exported.status,200);const portable=await exported.json();assert.equal(portable.files.length,1);assert.match(Buffer.from(portable.fileChunks[0].data,'base64').toString(),/synthetic-pane-63/)
   const erased=await call('/api/pane/privacy/erase',{email:'synthetic-pane-61@example.test',confirm:'erase-person-data'},freshCookie);assert.equal(erased.status,200,await erased.text())
   assert.equal((await app.db.prepare('SELECT COUNT(*) AS n FROM pane_files').first()).n,0);assert.equal((await app.db.prepare('SELECT COUNT(*) AS n FROM pane_file_chunks').first()).n,0)
   assert.equal((await app.request('/app/files/'+record.files[0].id,{headers:{Cookie:cookie}})).status,404)
@@ -1593,6 +1607,39 @@ test('private uploads join native archive restore and person export and erasure 
   try{await assert.rejects(restore(empty.db,archive,later),/erased_row|erasure_epoch/)}finally{await empty.mf.dispose()}
  }finally{await app.mf.dispose()}
 })
+test('rejected PDFs leave no stored bytes and only opted-in validated text and metadata can be rescued by the owner',async()=>{
+ for(const isolatedLive of [false,true]){
+  const {app,call,cookie,submit}=await formFixture({isolatedLive})
+  try{
+   const read=async()=> (await app.request('/api/pane',{headers:{Cookie:cookie}})).json()
+   const file=new File(['%PDF-1.7\nsynthetic-pane-65-private-rejected-bytes'],'project.pdf',{type:'application/pdf'})
+   const emptyFiles=async()=>{
+    assert.equal(await app.db.prepare('SELECT COUNT(*) AS n FROM pane_files').first('n'),0)
+    assert.equal(await app.db.prepare('SELECT COUNT(*) AS n FROM pane_file_chunks').first('n'),0)
+    const records=await call('/api/pane/privacy/find',{email:'synthetic-pane-61@example.test'},cookie);assert.equal(records.status,200)
+    assert.doesNotMatch(await records.text(),/synthetic-pane-65-private-rejected-bytes|JVBERi0x/)
+    if(isolatedLive){
+     const namespace=await app.mf.getDurableObjectNamespace('PANE_LIVE'),stored=await namespace.get(namespace.idFromName('published-site')).syntheticStored()
+     assert.ok(!stored.some(([key])=>key.startsWith('file:')||key.startsWith('message:')),'Rejected uploads never enter durable intake')
+     assert.doesNotMatch(JSON.stringify(stored),/synthetic-pane-65-private-rejected-bytes|JVBERi0x/)
+    }
+   }
+   const off=await submit('contact',{website:'synthetic-pane-66'},file);assert.equal(off.status,403);assert.match((await off.json()).error,/Spam verification failed/)
+   assert.equal((await read()).rejectedContent.length,0);assert.equal((await read()).messages.length,0);await emptyFiles()
+   assert.equal((await call('/api/pane/spam/settings',{enabled:'on',confirm:'change-retention'},cookie)).status,200)
+   const id=crypto.randomUUID(),rejected=await submit('contact',{website:'synthetic-pane-66'},file,id);assert.equal(rejected.status,403);assert.match((await rejected.json()).error,/Spam verification failed/)
+   let state=await read();assert.equal(state.messages.length,0);assert.equal(state.rejectedContent.length,1)
+   const row=state.rejectedContent[0];assert.equal(row.expires_at-Date.parse(row.created_at),30*86400000);assert.match(row.message,/US phone: 312 555 0123/);assert.match(row.message,/Project PDF: project.pdf \(\d+ bytes\)/)
+   const review=await (await app.request('/app/inquiries',{headers:{Cookie:cookie}})).text();assert.match(review,/30 days/);assert.match(review,/project.pdf/)
+   await emptyFiles()
+   assert.equal((await call('/api/pane/spam/rescue',{id},cookie)).status,400);assert.equal((await read()).messages.length,0,'Viewing or unconfirmed rescue creates no submission')
+   assert.equal((await call('/api/pane/spam/rescue',{id,confirm:'rescue-rejected'},cookie)).status,200)
+   state=await read();assert.equal(state.messages.length,1);assert.equal(state.messages[0].id,id);assert.equal(state.messages[0].acknowledgment_status,'not_requested');assert.deepEqual(state.messages[0].files,[]);assert.equal(state.rejectedContent.length,0)
+   await emptyFiles()
+  }finally{await app.mf.dispose()}
+ }
+})
+
 test('durable typed intake retains private upload chunks through workspace outage and drains once after recovery',async()=>{
  const {app,cookie,submit}=await formFixture({isolatedLive:true})
  try{

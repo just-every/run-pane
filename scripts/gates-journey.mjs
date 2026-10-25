@@ -28,6 +28,15 @@ try{
   await live.getByLabel('Site password',{exact:true}).fill('synthetic-pane-52');await live.getByRole('button',{name:'Open site',exact:true}).click();await live.getByRole('heading',{name:site.pages[1].title,exact:true}).waitFor();await capture(live,'opened-private-page',width)
   await live.goto(origin+'/site/services');await live.getByRole('link',{name:'Member sign in',exact:true}).waitFor();await capture(live,'member-gate',width)
   await memberPage.goto(origin+'/site/services');await memberPage.getByRole('heading',{name:site.pages[2].title,exact:true}).waitFor();await capture(memberPage,'admitted-member',width)
+  await page.goto(origin+'/site/services');await page.getByRole('heading',{name:'Member sign-in required',exact:true}).waitFor();await capture(page,'owner-not-admitted',width)
+  const membersBefore=(await (await owner.request.get(origin+'/api/pane')).json()).live.site.access.members
+  await page.goto(origin+'/preview/'+saved.id+'/services');await page.getByText('Draft preview',{exact:true}).waitFor();await page.getByRole('heading',{name:site.pages[2].title,exact:true}).waitFor();await capture(page,'owner-member-preview',width)
+  assert.deepEqual((await (await owner.request.get(origin+'/api/pane')).json()).live.site.access.members,membersBefore)
+  assert.equal((await owner.request.get(origin+'/site/services')).status(),403)
+  await page.goto(origin+'/app/sites');await settings.getByLabel('Site reader',{exact:true}).uncheck();await save()
+  await memberPage.goto(origin+'/site/services');await memberPage.getByRole('heading',{name:'Member sign-in required',exact:true}).waitFor();await capture(memberPage,'removed-member-refused',width)
+  await page.goto(origin+'/app/sites');await settings.getByLabel('Site reader',{exact:true}).check();await save()
+
   await page.goto(origin+'/app/sites');await settings.getByLabel('Site gate',{exact:true}).selectOption('coming-soon');await settings.getByLabel('Gate title',{exact:true}).fill('Our workshop returns soon');await settings.getByLabel('Gate message',{exact:true}).fill('We are preparing new ideas for your next project.');await settings.getByLabel('New site password',{exact:true}).fill('synthetic-pane-53');saved=await save()
   for(const path of ['/site','/site/unknown','/site/search?q=workshop']){const response=await live.goto(origin+path);assert.match(response.headers()['x-robots-tag'],/noindex/);await live.getByRole('heading',{name:'Our workshop returns soon',exact:true}).waitFor()}
   await capture(live,'coming-soon',width)
