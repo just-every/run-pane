@@ -33,6 +33,10 @@ jobs:
   browser:
     runs-on: ubuntu-24.04
     timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [core, canvas]
     # Includes Chromium 1243 and its system libraries for @playwright/test 1.63.0.
     # Keep dependency installation out of the browser journey's time budget.
     container:
@@ -48,6 +52,8 @@ jobs:
       - run: npm install --global pnpm@10.12.4
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec vite build && node scripts/browser-proof.mjs
+        env:
+          PANE_BROWSER_SHARD: ${{ matrix.shard }}
   verify:
     needs: [product, browser]
     if: always()
