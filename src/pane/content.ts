@@ -82,14 +82,18 @@ export async function draftRevision(id: string, actor: string, value: unknown, c
 export class DraftConflict extends Error {
  constructor(public latest: Revision | null) { super('Another editor saved a newer draft. Compare their changes before saving yours.') }
 }
+export async function revisionForDraft(db:D1Database,actor:string,value:unknown,created_at:string):Promise<Revision>{
+ const row=await draftRevision(crypto.randomUUID(),actor,value,created_at)
+ const live=await db.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first()
+ const offers=redirectOffers(row.site,live?revision(live).site:null)
+ if(offers.length){row.site.redirectOffers=offers;row.hash=await contentHash(row.site)}
+ return row
+}
 export async function prepare(db: D1Database, actor: string, value: unknown, expectedBase?: string): Promise<Revision> {
  const latest = await db.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
  // Keep revision ordering stable even when saves share a millisecond.
  const created = new Date(Math.max(Date.now(), latest ? Date.parse(String(latest.created_at)) + 1 : 0)).toISOString()
- const row = await draftRevision(crypto.randomUUID(), actor, value, created)
- const liveRow = await db.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first()
- const offers = redirectOffers(row.site,liveRow ? revision(liveRow).site : null)
- if (offers.length) {row.site.redirectOffers = offers; row.hash = await contentHash(row.site)}
+ const row = await revisionForDraft(db,actor,value,created)
  if (expectedBase === undefined) await revisionStatement(db, row).run()
  else {
   // Compare and insert in one statement: two saves of the same base cannot both win.

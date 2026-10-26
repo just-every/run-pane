@@ -329,11 +329,14 @@ test('Pane AI search decisions require the native owner, preserve rejected edits
  ])
  const {app,call,get,state,ok,propose,decide,requests}=workspace
  try{
-  const source=structuredClone(fixture);source.pages.find(page=>page.slug==='home').links=[{label:fixture.pages[1].title,url:'page:about'}];source.pages.find(page=>page.slug==='about').title='Private unrelated title';source.pages.find(page=>page.slug==='about').body='Private unrelated material that must never reach the model.'
+  const source=structuredClone(fixture);source.pages=source.pages.map(page=>({...page,id:page.slug}));source.pages.find(page=>page.slug==='home').links=[{label:fixture.pages[1].title,url:'page:about'}];source.pages.find(page=>page.slug==='about').title='Private unrelated title';source.pages.find(page=>page.slug==='about').body='Private unrelated material that must never reach the model.'
   const shared={id:'synthetic-pane-shared',name:'Workshop introduction',section:{id:'shared-intro',kind:'text',blocks:[{id:'shared-text',kind:'text',text:source.pages.find(page=>page.slug==='home').body,column:1,span:12,row:1}]}}
   source.components=[shared];source.pages.find(page=>page.slug==='home').sections=[{...structuredClone(shared.section),id:'home-intro',component:shared.id}]
-  const initial=await ok(await call('/api/pane/prepare',{site:source}))
-  await ok(await call('/api/pane/publish',{revision:initial.id}))
+  const publishedBase=await ok(await call('/api/pane/prepare',{site:source}))
+  await ok(await call('/api/pane/publish',{revision:publishedBase.id}))
+  const renamed=structuredClone(publishedBase.site);renamed.pages.find(page=>page.id==='about').slug='our-studio'
+  const initial=await ok(await call('/api/pane/prepare',{base:publishedBase.id,site:renamed}))
+  assert.ok(initial.site.redirectOffers.some(offer=>offer.from==='/site/about'))
   const originalHtml=await(await get('/site','')).text(),proposal=await propose(initial.id,'search')
   assert.equal(proposal.base,initial.id);assert.equal(proposal.slug,'home');assert.equal(proposal.mode,'search')
   assert.equal(proposal.suggestions.length,5)
@@ -371,8 +374,8 @@ test('Pane AI search decisions require the native owner, preserve rejected edits
   assert.ok(home.links.some(link=>link.label===linkLabel&&link.url==='page:'+(destination.id??destination.slug)))
   assert.ok(!(await(await get('/site','')).text()).includes(linkLabel))
   await ok(await call('/api/pane/publish',{revision:linked.revision.id}))
-  assert.match(await(await get('/site','')).text(),/href="\/site\/about">Meet our workshop team/)
-  assert.equal((await get('/site/about','')).status,200)
+  assert.match(await(await get('/site','')).text(),/href="\/site\/our-studio">Meet our workshop team/)
+  assert.equal((await get('/site/our-studio','')).status,200)
   const activity=await (await get('/api/pane/activity')).json()
   for(const action of ['ai.request','ai.propose','ai.decide','ai.undo','ai.redo'])assert.ok(activity.some(event=>event.action===action),'The owner can trace '+action)
   for(const event of activity.filter(event=>event.action.startsWith('ai.')))assert.ok(!JSON.stringify(event).includes(proposedDescription),'Activity contains metadata only')

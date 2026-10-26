@@ -3,7 +3,7 @@ import {appendAiHistory} from './ai-history'
 import {replaceHtmlSelection} from './ai-html'
 import type {Bindings} from '../auth.server'
 import type {Revision,Site} from './model'
-import {draftRevision,DraftConflict,revision} from './content'
+import {revisionForDraft,DraftConflict,revision} from './content'
 import {aiModes,type AiMode,type AiBindings,type Proposal,type Suggestion} from './ai-types'
 import {modelSuggestions} from './ai-model'
 import {detachTarget,imageTargets,requestedImages,nativeLink,replaceText} from './ai-targets'
@@ -76,7 +76,7 @@ export async function decideAi(env:Bindings,actor:string,input:Record<string,unk
   if(!result.meta.changes)throw new DraftConflict(await latest(env.DB))
   return {id:proposal.id,revision:base,accepted:0}
  }
- const row=await draftRevision(crypto.randomUUID(),actor,site,new Date(Math.max(Date.now(),Date.parse(base.created_at)+1)).toISOString())
+ const row=await revisionForDraft(env.DB,actor,site,new Date(Math.max(Date.now(),Date.parse(base.created_at)+1)).toISOString())
  const results=await env.DB.batch([
   env.DB.prepare(`INSERT INTO pane_revisions(id,site,hash,actor,created_at) SELECT ?,?,?,?,? WHERE (SELECT id FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1)=? AND EXISTS(SELECT 1 FROM pane_ai_proposals WHERE id=? AND decisions IS NULL)`).bind(row.id,JSON.stringify(row.site),row.hash,actor,row.created_at,base.id,proposal.id),
   env.DB.prepare(`UPDATE pane_ai_proposals SET decisions=?,accepted_revision=?,last_revision=? WHERE id=? AND decisions IS NULL AND EXISTS(SELECT 1 FROM pane_revisions WHERE id=?)`).bind(JSON.stringify(decisions),row.id,row.id,proposal.id,row.id),

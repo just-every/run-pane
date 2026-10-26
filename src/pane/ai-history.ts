@@ -1,4 +1,4 @@
-import {draftRevision,DraftConflict,revision} from './content'
+import {revisionForDraft,DraftConflict,revision} from './content'
 import type {Bindings} from '../auth.server'
 import type {Revision} from './model'
 type History={actor:string;head_revision:string;entries:string;position:number}
@@ -30,7 +30,7 @@ export async function undoAiHistory(env:Bindings,actor:string,input:Record<strin
  if(position<0||position>=entries.length||entries[position]!==supplied.id)throw new DraftConflict(base)
  const target=await env.DB.prepare('SELECT * FROM pane_revisions WHERE id=?').bind(direction==='undo'?supplied.base:supplied.accepted_revision).first()
  if(!target)throw Error('Original revision is unavailable.')
- const row:Revision=await draftRevision(crypto.randomUUID(),actor,revision(target).site,new Date(Math.max(Date.now(),Date.parse(base.created_at)+1)).toISOString())
+ const row:Revision=await revisionForDraft(env.DB,actor,revision(target).site,new Date(Math.max(Date.now(),Date.parse(base.created_at)+1)).toISOString())
  const nextPosition=direction==='undo'?history.position-1:history.position+1
  const results=await env.DB.batch([
   env.DB.prepare(`INSERT INTO pane_revisions(id,site,hash,actor,created_at) SELECT ?,?,?,?,? WHERE (SELECT id FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1)=? AND EXISTS(SELECT 1 FROM pane_ai_history WHERE actor=? AND head_revision=? AND position=?)`).bind(row.id,JSON.stringify(row.site),row.hash,actor,row.created_at,base.id,actor,base.id,history.position),
