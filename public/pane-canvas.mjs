@@ -49,12 +49,13 @@ function render(){
  for(const node of [...content.children])if(node!==style)node.remove()
  content.insertAdjacentHTML('beforeend',layoutMarkup(sections,undefined,galleries?.media()??JSON.parse(form.querySelector('[data-media-state]').value)))
  for(const section of content.querySelectorAll('[data-section]')){section.draggable=true;section.tabIndex=0;section.setAttribute('aria-label','Section '+(sections.findIndex(item=>item.id===section.dataset.section)+1))}
- for(const node of content.querySelectorAll('[data-image-block],[data-gallery]')){node.tabIndex=0;node.setAttribute('aria-label','Image block')}
+ for(const node of content.querySelectorAll('[data-image-block],[data-gallery]')){node.tabIndex=0;node.setAttribute('aria-label',node.hasAttribute('data-gallery')?'Gallery block':'Image block')}
  for(const node of content.querySelectorAll('[data-block]:not([data-image-block]):not([data-gallery])')){node.contentEditable='true';node.draggable=true;node.setAttribute('role','textbox');node.setAttribute('aria-label','Block text');node.setAttribute('aria-multiline','true')}
+ for(const button of content.querySelectorAll('[data-gallery-open]')){button.removeAttribute('data-gallery-open');button.dataset.tip='Select image';button.setAttribute('aria-label','Select '+button.getAttribute('aria-label').replace(/^Enlarge /,''))}
  syncReadingOrder(content);settings()
 }
 function commit(redraw=true){field.value=JSON.stringify(sections);field.dispatchEvent(new Event('input',{bubbles:true}));if(redraw)render()}
-canvas.addEventListener('click',event=>{const section=event.target.closest('[data-section]');if(!section)return;sectionId=section.dataset.section;blockId=event.target.closest('[data-block]')?.dataset.block;settings()})
+canvas.addEventListener('click',event=>{const section=event.target.closest('[data-section]');if(!section)return;sectionId=section.dataset.section;blockId=event.target.closest('[data-block]')?.dataset.block;const item=event.target.closest('[data-gallery-index]');if(item)galleries?.select(Number(item.dataset.galleryIndex));settings()})
 canvas.addEventListener('focusin',event=>{const section=event.target.closest('[data-section]');if(!section)return;sectionId=section.dataset.section;blockId=event.target.closest('[data-block]')?.dataset.block;settings()})
 // Only these semantic nodes cross the authoring boundary. Pasted scripts and
 // active content are discarded, including their text; attributes never survive.

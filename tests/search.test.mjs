@@ -274,3 +274,12 @@ test('published URL changes offer explicit redirects and each revision owns its 
  assert.equal((await f.request('/site/about')).status, 200)
  assert.equal((await f.request('/site/temporary')).status, 404)
 })
+
+test('native page references follow renamed URLs and report a deleted destination before publication',async()=>{
+ const site={name:'Riverbend Bakery',description:'Fresh bread and cakes.',pages:[{id:'synthetic-pane-home',slug:'home',title:'Welcome',body:'Our local bakery.',links:[{label:'Our cakes',url:'page:synthetic-pane-cakes'}]},{id:'synthetic-pane-cakes',slug:'cakes',title:'Celebration cakes',body:'Made for your occasion.'}]}
+ let response=await post('/api/pane/prepare',{site});assert.equal(response.status,200,await response.clone().text());let draft=await response.json();await post('/api/pane/publish',{revision:draft.id});assert.match(await page('/site'),/href="\/site\/cakes">Our cakes/)
+ const renamed=structuredClone(draft.site);renamed.pages[1].slug='celebrations'
+ response=await post('/api/pane/prepare',{site:renamed,base:draft.id});assert.equal(response.status,200,await response.clone().text());draft=await response.json();assert.equal((await post('/api/pane/publish',{revision:draft.id})).status,200);assert.match(await page('/site'),/href="\/site\/celebrations">Our cakes/,'A reference resolves the new URL without a redirect hop')
+ const removed=structuredClone(draft.site);removed.pages[1].deleted=true
+ response=await post('/api/pane/prepare',{site:removed,base:draft.id});assert.equal(response.status,200,await response.clone().text());const checks=await page('/app/search');assert.match(checks,/Broken internal page reference/);assert.match(checks,/href="\/app\?page=home"/,'The finding links to the native link editor');assert.match(await page('/site'),/href="\/site\/celebrations">Our cakes/,'A deletion draft cannot change the approved site')
+})

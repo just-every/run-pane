@@ -1,3 +1,4 @@
+import {pageReference,referenceUrl} from './page-link-references'
 import {parseFragment,type DefaultTreeAdapterMap} from 'parse5'
 import {accessibilityFindings} from './accessibility'
 import {activePages,pagePath} from './pages'
@@ -14,6 +15,7 @@ export function contentWarnings(site:Site,page:Page):ContentWarning[]{
  if(page.importedHtml){const walk=(node:DefaultTreeAdapterMap['node'])=>{if('tagName' in node&&node.tagName==='a'){const href=node.attrs.find(a=>a.name==='href')?.value;if(href)urls.push(href)}if('childNodes' in node)node.childNodes.forEach(walk)};walk(parseFragment(page.importedHtml))}
  const routes=new Set(activePages(site).map(page=>pagePath(site,page.slug)))
  for(const href of new Set(urls)){
+  if(pageReference(href)!==undefined){if(referenceUrl(site,href)===null)result.push({field:'link',message:'Broken internal page reference: '+decodeURIComponent(href.slice(5)),href:'/app?page='+encodeURIComponent(page.slug)});continue}
   if(!href.startsWith('/site')||!/^\/site(?:[/?#]|$)/.test(href))continue
   const path=new URL(href,'https://site.invalid').pathname
   if(!routes.has(path)&&path!=='/site/search'&&!site.redirects?.some(r=>r.from===path))result.push({field:'link',message:`Broken internal link: ${href}`,href:fix})

@@ -57,7 +57,7 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
  try {slug=path==='/site'?'':decodeURIComponent(path.slice(6))} catch {return notFound()}
  const snapshot=env.PANE_LIVE?await liveSnapshot(env):null
  const row=env.PANE_LIVE?snapshot:await env.DB.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first()
- if(!row&&url.searchParams.has('pane-image'))return new Response(null,{status:404,headers:{'cache-control':'private, no-store'}})
+ if(!row&&(url.searchParams.has('pane-image')||url.searchParams.has('pane-brand')))return new Response(null,{status:404,headers:{'cache-control':'private, no-store'}})
  if(!row && path !== '/site' && !slugs.includes(slug) && slug !== 'search') return notFound()
  if(!row) return document('Website not published','<div class="public-site"><div class="public-shell"><main class="public-main" id="main"><h1>This website is getting ready</h1><p>The business has not published its first version.</p></main></div></div>','site')
  const site=snapshot?snapshot.site:revision(row).site

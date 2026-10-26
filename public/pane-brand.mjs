@@ -1,4 +1,4 @@
-import { readImage } from './pane-image.mjs'
+import { readImage,prepareImage } from './pane-image.mjs'
 
 for (const root of document.querySelectorAll('[data-brand-settings]')) {
  const field = root.querySelector('[data-brand-state]'), form = root.closest('form'), status = root.querySelector('[data-brand-status]')
@@ -36,7 +36,12 @@ for (const root of document.querySelectorAll('[data-brand-settings]')) {
   try {
    const image = await readImage(file)
    if (versions[key] !== version) return
-   brand[key] = {src: image.src, width: image.width, height: image.height}
+   const source=new Image();source.src=image.src;await source.decode()
+   const canvas=document.createElement('canvas'),size=key==='favicon'?[180,180]:key==='social'?[1200,630]:[360,112]
+   canvas.width=size[0];canvas.height=size[1]
+   const scale=Math.min(size[0]/source.naturalWidth,size[1]/source.naturalHeight),width=source.naturalWidth*scale,height=source.naturalHeight*scale
+   canvas.getContext('2d').drawImage(source,(size[0]-width)/2,(size[1]-height)/2,width,height)
+   const prepared=await prepareImage(canvas.toDataURL('image/png'));brand[key] = {src:prepared.src,width:prepared.width,height:prepared.height}
    commit()
    status.textContent = 'Public brand image prepared. Publish the draft to make it live.'
   } catch (error) {

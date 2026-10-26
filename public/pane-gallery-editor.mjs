@@ -30,5 +30,5 @@ export function galleryEditor(form,{block,section,commit,newBlock}){
  panel.querySelector('[data-gallery-remove]').onclick=()=>{if(block()?.gallery.items.length>1){block().gallery.items.splice(selected,1);save()}}
  panel.querySelector('[data-gallery-add]').onclick=()=>{if(block()?.gallery&&library.value){block().gallery.items.push({asset:library.value,caption:''});save()}}
  form.addEventListener('draftrestore',()=>{media=JSON.parse(mediaField.value);refresh()})
- return {refresh,media:()=>media}
+ return {refresh,media:()=>media,select:index=>{selected=index;refresh()}}
 }
