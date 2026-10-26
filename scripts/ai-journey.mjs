@@ -35,6 +35,7 @@ async function prepare(site){
 async function aiResponse(path,action,navigates=false){
  const navigation=navigates?page.waitForEvent('domcontentloaded'):null
  const [response]=await Promise.all([page.waitForResponse(response=>new URL(response.url()).pathname==='/api/pane/ai/'+path&&response.request().method()==='POST'),action()])
+ fixture.assertAiBoundary()
  assert.equal(response.status(),200,response.ok()?'The owner AI action succeeds':await response.text())
  if(navigation){await navigation;return null}
  return response.json()

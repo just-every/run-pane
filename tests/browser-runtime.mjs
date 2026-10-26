@@ -10,8 +10,9 @@ let f, ownerCookie
 const aiLive=process.env.PANE_AI_LIVE==='1',aiFixture=process.env.PANE_AI_FIXTURE==='1'
 if(aiLive&&!process.env.AI_API_KEY)throw Error('AI_API_KEY is required for the live AI journey.')
 export const aiRequests=[],aiOutbounds=[]
-let aiObserver
-export function observeAiEdge(observer){aiObserver=observer}
+let aiObserver,aiBoundaryError
+export function observeAiEdge(observer){aiObserver=observer;aiBoundaryError=undefined}
+export function assertAiBoundary(){if(aiBoundaryError)throw aiBoundaryError}
 export let aiProviderFailure=false
 export function failAiProvider(value){aiProviderFailure=value}
 async function aiEdge(request){
@@ -21,7 +22,7 @@ async function aiEdge(request){
  assert.equal(url.protocol,'https:');assert.equal(url.hostname,'api.openai.com','AI requests stay on the configured provider edge')
  const payload=await request.clone().json(),content=payload.messages.find(message=>message.role==='user').content,input=JSON.parse(content[0].text)
  aiRequests.push({payload,input,imageCount:content.filter(part=>part.type==='image_url').length,images:content.filter(part=>part.type==='image_url').map(part=>part.image_url.url)})
- if(aiObserver)await aiObserver(aiRequests.at(-1))
+ if(aiObserver)try{await aiObserver(aiRequests.at(-1))}catch(error){aiBoundaryError=error;throw error}
  if(aiProviderFailure)return Response.json({error:{message:'synthetic-pane-raw-provider-error'}},{status:400})
  if(aiLive){assert.ok(aiRequests.length<=8,'The live journey has a bounded model budget');const response=await fetch(request.url,{method:request.method,headers:Object.fromEntries(request.headers),body:await request.arrayBuffer(),redirect:'manual'});const record=aiRequests.at(-1);record.status=response.status;record.providerRequestId=response.headers.get('x-request-id');return response}
  assert.equal(request.headers.get('authorization'),'Bearer synthetic-pane-4')
