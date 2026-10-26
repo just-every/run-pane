@@ -1008,7 +1008,7 @@
       "executable": false
     },
     "scripts/ai-journey.mjs": {
-      "sha256": "7ef4d5f77029ca681a41081509e5ec6807aad437629b984ee47e871bbfc1d195",
+      "sha256": "36d78581a37a66e43732eef9e033d514f236f7964a28fea15d0d5faf06c0cd0c",
       "executable": false
     },
     "scripts/analytics-journey.mjs": {
@@ -3684,7 +3684,7 @@
       "executable": false
     },
     "tests/browser-runtime.mjs": {
-      "sha256": "2a8a07872e594396e592cbcd37392f89e795386658d6b715ff05c54c231021fe",
+      "sha256": "4beff6879cf48a9cef4126c8e2e0d4a9169532afe8e3dec9fe2e56a7b1d8a491",
       "executable": false
     },
     "tests/demo.test.mjs": {

@@ -15,7 +15,7 @@ async function aiEdge(request){
  assert.equal(url.protocol,'https:');assert.equal(url.hostname,'api.openai.com','AI requests stay on the configured provider edge')
  const payload=await request.clone().json(),content=payload.messages.find(message=>message.role==='user').content,input=JSON.parse(content[0].text)
  aiRequests.push({input,imageCount:content.filter(part=>part.type==='image_url').length,images:content.filter(part=>part.type==='image_url').map(part=>part.image_url.url)})
- if(aiLive){assert.ok(aiRequests.length<=8,'The live journey has a bounded model budget');return fetch(request)}
+ if(aiLive){assert.ok(aiRequests.length<=8,'The live journey has a bounded model budget');const response=await fetch(request);const record=aiRequests.at(-1);record.status=response.status;record.providerRequestId=response.headers.get('x-request-id');return response}
  assert.equal(request.headers.get('authorization'),'Bearer synthetic-pane-4')
  const suggestion=(kind,label,target,after)=>({kind,label,target,after})
  let suggestions

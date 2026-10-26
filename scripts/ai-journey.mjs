@@ -55,7 +55,7 @@ async function propose(mode,width,fields={}){
   if(item.kind==='finding')assert.equal(await control.locator('option[value=accept]').count(),0,'Findings cannot be accepted as content')
  }
  await capture(mode+'-review',width)
- evidence.push({viewport:width,mode,model:result.model,suggestions:result.suggestions})
+ evidence.push({viewport:width,mode,model:result.model,providerStatus:fixture.aiRequests.at(-1).status??200,providerRequestId:fixture.aiRequests.at(-1).providerRequestId??null,suggestions:result.suggestions})
  return result
 }
 async function decide(proposal,accept){
@@ -178,7 +178,7 @@ try{
  if(live&&process.env.PANE_AI_PROOF_OUTPUT){
   const output=resolve(process.env.PANE_AI_PROOF_OUTPUT)
   await mkdir(resolve(output,'..'),{recursive:true})
-  await writeFile(output,JSON.stringify({...result,evidence:evidence.map(item=>({viewport:item.viewport,operation:item.mode,model:item.model,kinds:item.suggestions.map(suggestion=>suggestion.kind),accepted:item.accepted??[],outcome:item.outcome??'reviewed',outputDigest:createHash('sha256').update(JSON.stringify(item.suggestions)).digest('hex')}))},null,2)+'\n')
+  await writeFile(output,JSON.stringify({...result,evidence:evidence.map(item=>({viewport:item.viewport,operation:item.mode,model:item.model,providerStatus:item.providerStatus,providerRequestId:item.providerRequestId,kinds:item.suggestions.map(suggestion=>suggestion.kind),accepted:item.accepted??[],outcome:item.outcome??'reviewed',outputDigest:createHash('sha256').update(JSON.stringify(item.suggestions)).digest('hex')}))},null,2)+'\n')
  }
  console.log(`AI-003 and AI-002 browser journey passed: explicit model requests, reviewed decisions, private drafts, publication, guarded Undo and Redo, paragraph modes, five raster images and separate Spanish page (${live?'live model':'fixture'}, 1440 and 390).`)
 }catch(error){if(page)await page.screenshot({path:resolve(folder,'failure.png'),fullPage:true}).catch(()=>{});throw error}
