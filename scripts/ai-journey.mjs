@@ -6,7 +6,7 @@ import {chromium} from '@playwright/test'
 const live=process.env.PANE_AI_LIVE==='1'
 if(!live)process.env.PANE_AI_FIXTURE='1'
 const fixture=await import('../tests/browser-runtime.mjs')
-const folder=resolve(process.env.PANE_SCREENSHOTS??'test-results/ai'),evidence=[]
+const folder=resolve(process.env.PANE_SCREENSHOTS??'./test-results/ai'),evidence=[]
 let browser,page,context
 const origin=fixture.origin
 const data=async()=>{const response=await context.request.get(origin+'/api/pane');assert.equal(response.status(),200);return response.json()}
@@ -142,7 +142,7 @@ try{
   const original=structuredClone(home(state.draft)),pageCount=state.draft.site.pages.length
   await editor();const translation=await propose('translate',width)
   assert.equal(translation.suggestions.length,1);assert.equal(translation.suggestions[0].kind,'translation')
-  assert.match(translation.suggestions[0].after,/\b(de|para|muebles|taller|la|los|una|en)\b/i,'Spanish proposal contains readable translated text')
+  assert.match(translation.suggestions[0].after,new RegExp('\\b(de|para|muebles|taller|la|los|una|en)\\b','i'),'Spanish proposal contains readable translated text')
   await decide(translation,()=>true);state=await data()
   assert.equal(state.draft.site.pages.length,pageCount+1);assert.deepEqual(home(state.draft),original,'Translation preserves the original page')
   const translated=state.draft.site.pages.find(item=>!imageSite.pages.some(existing=>existing.slug===item.slug))

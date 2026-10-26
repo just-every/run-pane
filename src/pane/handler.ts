@@ -101,7 +101,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   }
   if(action.startsWith('ai/')){
    if(!owner||scopes)return json({error:'Native owner only.'},403)
-   result=action==='ai/propose'?await proposeAi(env,actor.id,input):action==='ai/decide'?await decideAi(env,actor.id,input):action==='ai/undo'?await undoAi(env,actor.id,input):undefined
+   result=path.endsWith('/ai/propose')?await proposeAi(env,actor.id,input):path.endsWith('/ai/decide')?await decideAi(env,actor.id,input):path.endsWith('/ai/undo')?await undoAi(env,actor.id,input):undefined
    if(!result)return json({error:'Not found.'},404)
    return json(result)
   }else if(action==='component-create'){

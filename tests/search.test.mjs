@@ -368,6 +368,11 @@ test('Pane AI search decisions require the native owner, preserve rejected edits
   await ok(await call('/api/pane/publish',{revision:linked.revision.id}))
   assert.match(await(await get('/site','')).text(),/href="\/site\/about">Meet our workshop team/)
   assert.equal((await get('/site/about','')).status,200)
+  const activity=await (await get('/api/pane/activity')).json()
+  for(const action of ['ai.propose','ai.decide','ai.undo','ai.redo'])assert.ok(activity.some(event=>event.action===action),'The owner can trace '+action)
+  for(const event of activity.filter(event=>event.action.startsWith('ai.')))assert.ok(!JSON.stringify(event).includes(proposedDescription),'Activity contains metadata only')
+  const privacy=await ok(await call('/api/pane/policies/generate',{base:draft.id}))
+  assert.ok(privacy.site.pages.find(page=>page.policyStarter==='privacy').body.includes('OpenAI'))
  }finally{await app.mf.dispose()}
 })
 

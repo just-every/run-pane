@@ -1008,7 +1008,7 @@
       "executable": false
     },
     "scripts/ai-journey.mjs": {
-      "sha256": "31a88eb562d8f9991b9a5c62af35b4159cf41db8dfef5263736ba55cdd2c67bf",
+      "sha256": "e541a5e4341db548be1bb9933145a94880c8c6e124e36efd2875c4e8078e646b",
       "executable": false
     },
     "scripts/analytics-journey.mjs": {
@@ -3264,7 +3264,7 @@
       "executable": false
     },
     "src/pane/handler.ts": {
-      "sha256": "f9578e8e9138ec7a6e290de9a16d119e876a9b0709adfc93f2231b159273da85",
+      "sha256": "7d234d2d7f42feaa24428200b02ae52abf19de339b1b6b3af7dad9c5bbfb5a07",
       "executable": false
     },
     "src/pane/images.ts": {
@@ -3380,7 +3380,7 @@
       "executable": false
     },
     "src/pane/roles.ts": {
-      "sha256": "bbcfd58024193567437af7afb895cb994ee1210f8deb2fa9cbd5ccf96241da23",
+      "sha256": "1986817c743745afeb706ea97e40dbda331cda1b5d99458eb78ff9b88cbdc93d",
       "executable": false
     },
     "src/pane/schedule-time.ts": {
@@ -3712,7 +3712,7 @@
       "executable": false
     },
     "tests/search.test.mjs": {
-      "sha256": "54bbb0f5a7ec99e752438aac01f2257c62da889075a46f42282dbccf7f766aa7",
+      "sha256": "259f1f692b66bb07e6d9b4f9134ed8ef755915e387628c8c3873abebe64c2981",
       "executable": false
     },
     "tests/site.test.mjs": {
