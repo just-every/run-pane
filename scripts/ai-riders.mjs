@@ -3,7 +3,7 @@ import {privateSentinels,providerInput,auditMetadata} from '../tests/browser-ai-
 
 // Loaded by the existing canvas AI journey; no independent test registration.
 export async function riderProof({fixture,page,context,starter,workshopImages,data,prepare,editor,propose,decide,capture}){
- const {origin}=fixture,traces=new Map(),forbidden=[],receipts=[]
+ const {origin}=fixture,traces=new Map(),forbidden=['synthetic-pane-4'],receipts=[]
  const post=(path,body,headers={})=>context.request.post(origin+path,{headers:{Origin:origin,...headers},data:body})
  const activity=async()=>{const response=await context.request.get(origin+'/api/pane/activity');assert.equal(response.status(),200);return response.json()}
  await fixture.seedAiPrivateData(privateSentinels)
@@ -20,6 +20,7 @@ export async function riderProof({fixture,page,context,starter,workshopImages,da
    await page.setViewportSize({width,height:1000})
    const site=structuredClone(starter),home=site.pages.find(page=>page.slug==='home')
    site.pages.find(page=>page.slug==='about').body=privateSentinels.otherPage
+   site.pages.find(page=>page.slug==='about').links=[{label:'Private image',url:'https://images.example.test/private?signature=synthetic-pane-signed-image'}]
    site.pages.push({slug:'private-draft',title:'Private draft',body:privateSentinels.unpublished,hidden:true})
    home.body=privateSentinels.history;await prepare(site)
    home.body=starter.pages.find(page=>page.slug==='home').body
@@ -48,7 +49,7 @@ export async function riderProof({fixture,page,context,starter,workshopImages,da
     assert.equal(fixture.aiOutbounds.length,count,'Reviewing consent and named inputs sends nothing')
     await disclosure.scrollIntoViewIfNeeded();await capture('rider-'+mode+'-consent',width)
     const tokenResponse=await post('/api/pane/tokens/create',{name:'Synthetic rider scope',scopes:['pages:read','draft:write'],days:1})
-    assert.equal(tokenResponse.status(),200);const scoped=await tokenResponse.json()
+    assert.equal(tokenResponse.status(),200);const scoped=await tokenResponse.json();forbidden.push(scoped.token)
     const calls=fixture.aiOutbounds.length
     for(const [path,body] of [['propose',{base:source.id,slug:'home',mode,consent:true,images:images.map((_,index)=>'block:image-'+index)}],['decide',{id:'synthetic-pane-no-proposal',base:source.id,decisions:[]}],['undo',{id:'synthetic-pane-no-proposal',base:source.id}]])assert.equal((await post('/api/pane/ai/'+path,body,{Authorization:'Bearer '+scoped.token})).status(),403,'Scoped owner token is refused at '+path)
     assert.equal((await context.request.get(origin+'/api/pane/ai/history',{headers:{Authorization:'Bearer '+scoped.token}})).status(),403)

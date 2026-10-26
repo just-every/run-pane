@@ -41,7 +41,7 @@ async function aiResponse(path,action,navigates=false){
  return response.json()
 }
 async function propose(mode,width,fields={}){
- const before=await data(),count=fixture.aiRequests.length
+ const before=await data(),count=fixture.aiRequests.length,outboundCount=fixture.aiOutbounds.length
  await panel().getByLabel('Help with',{exact:true}).selectOption(mode)
  if(fields.selection)await panel().getByLabel('Selected paragraph',{exact:true}).fill(fields.selection)
  if(mode==='tone'&&fields.tone)await panel().getByLabel('Tone',{exact:true}).fill(fields.tone)
@@ -50,6 +50,7 @@ async function propose(mode,width,fields={}){
  const result=await aiResponse('propose',()=>panel().getByRole('button',{name:'Send to OpenAI',exact:true}).click())
  await panel().locator('[data-ai-suggestions] article').first().waitFor();await panel().locator('[data-ai-suggestions] article').first().scrollIntoViewIfNeeded()
  assert.equal(fixture.aiRequests.length,count+1,'Only the explicit send action calls the model')
+ assert.equal(fixture.aiOutbounds.length,outboundCount+1,'Generation sends only its one model request')
  assert.equal((await data()).draft.id,before.draft.id,'Reviewing suggestions leaves the draft intact')
  for(const item of result.suggestions){
   const control=panel().locator(`[data-suggestion-id="${item.id}"]`),row=control.locator('xpath=ancestor::article')
@@ -61,9 +62,11 @@ async function propose(mode,width,fields={}){
  return result
 }
 async function decide(proposal,accept){
+ const outboundCount=fixture.aiOutbounds.length
  let accepted=0
  for(const item of proposal.suggestions){const value=accept(item,accepted);if(value)accepted++;await panel().locator(`[data-suggestion-id="${item.id}"]`).selectOption(value?'accept':'reject')}
  const result=await aiResponse('decide',()=>panel().getByRole('button',{name:'Save decisions as a draft',exact:true}).click(),accepted>0)
+ assert.equal(fixture.aiOutbounds.length,outboundCount,'Every acceptance or rejection sends zero outbound requests')
  if(!accepted)assert.equal(result.accepted,0)
  evidence.at(-1).accepted=proposal.suggestions.filter(item=>accept(item,proposal.suggestions.indexOf(item))).map(item=>item.id)
  if(!accepted)await panel().getByText('All suggestions dismissed. Your page has not changed.',{exact:true}).waitFor()
