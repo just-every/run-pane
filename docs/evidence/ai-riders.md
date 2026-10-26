@@ -1,6 +1,6 @@
 # AI rider proof extension
 
-AI-003 is marked DONE in the candidate for CT to confirm from the landed exact SHA. AI-002 remains PARTIAL for the existing ROLE-001 initiation, CMS-004 own-post and ACCESS-001 obligations. This round adds no acceptance point or role permission. SEO-005 retains structured-data implementation, AI-004 bulk work and AGENT-008 budgets.
+AI-003 is DONE. CT ruled AI-002 STAYS PARTIAL at reviewed commit `9c68cb4775d6668b3bd3424bd2d3c9946df87900` on 26 October 2026 at 22:30Z. The bounded author-provider, lifecycle-audit, outbound-action, immutable-revision and approving-owner assertion gaps are recorded identically in both status documents. This round adds no acceptance point or role permission. SEO-005 retains structured-data implementation, AI-004 bulk work and AGENT-008 budgets.
 
 The existing “AI-003 and AI-002 browser journey” in `scripts/ai-journey.mjs` loads `riderProof` from `scripts/ai-riders.mjs`. `scripts/browser-proof.mjs` already loads that journey in the canvas shard. No test registration was added or removed. The same production Worker, native authentication, native D1 and real Base AI client run; only the paid provider edge is faked. No live model request was made in this fix round. The previous live-model record remains separately labeled.
 
