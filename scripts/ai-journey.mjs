@@ -173,7 +173,7 @@ try{
   assert.equal(guard.status(),409);await panel().locator('[data-ai-latest]').waitFor();assert.equal((await data()).draft.id,newer.id);await capture('stale-undo-guard',width)
   assert.equal((await data()).live.id,published.id,'Writing, images, translations and stale Undo never publish')
  }
- const result={live,provider:live?'OpenAI':'provider fake',date:new Date().toISOString(),source:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),calls:fixture.aiRequests.length,evidence}
+ const result={live,provider:live?'OpenAI':'provider fake',date:new Date().toISOString(),source:execFileSync('git',['-c','safe.directory='+process.cwd(),'rev-parse','HEAD'],{encoding:'utf8'}).trim(),calls:fixture.aiRequests.length,evidence}
  await writeFile(resolve(folder,live?'live-model-evidence.json':'fixture-evidence.json'),JSON.stringify(result,null,2)+'\n')
  if(live&&process.env.PANE_AI_PROOF_OUTPUT){
   const output=resolve(process.env.PANE_AI_PROOF_OUTPUT)
