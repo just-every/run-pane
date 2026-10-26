@@ -5,7 +5,7 @@ export function keys(value,expected,label){assert.deepEqual(Object.keys(value).s
 export function excludes(value,forbidden,label){const text=JSON.stringify(value);for(const secret of forbidden)if(secret)assert.equal(text.includes(secret),false,label)}
 
 // The entire paid-edge body is inspected, including instructions and output schema.
-export function providerInput(record,source,mode){
+export function providerInput(record,source,mode,privateValues){
  const {payload,input}=record,page=source.site.pages.find(page=>page.slug==='home')
  keys(payload,['model','store','max_completion_tokens','messages','response_format'],'Provider body allowlist')
  assert.equal(payload.model,'gpt-4.1-mini');assert.equal(payload.store,false);assert.ok(Number.isInteger(payload.max_completion_tokens))
@@ -45,7 +45,7 @@ export function providerInput(record,source,mode){
   else{keys(node,node.enum?['type','enum']:['type'],'Schema leaf allowlist');assert.equal(node.type,'string');if(node.enum)for(const value of node.enum)assert.ok(targets.has(value)||['search-title','search-description','heading','link','finding','alt'].includes(value),'Only selected identifiers and supported kinds occur in the output schema')}
  }
  shape(schema.schema)
- excludes(payload,Object.values(privateSentinels),'No private-data class crosses the paid edge')
+ excludes(payload,[...Object.values(privateSentinels),...privateValues],'Entire provider body excludes private values')
 }
 
 export function auditMetadata(events,requests,forbidden){
@@ -60,7 +60,7 @@ export function auditMetadata(events,requests,forbidden){
   assert.equal(details.operation,trace.mode);assert.equal(details.page,'home');assert.equal(details.sourceRevision,trace.base)
   assert.deepEqual(details.images,trace.images);assert.equal(details.provider,'OpenAI');assert.equal(details.model,'gpt-4.1-mini')
   assert.equal(details.outcome,{'ai.request':'requesting','ai.propose':'ready','ai.failed':'failed','ai.decide':'decided','ai.undo':'undone','ai.redo':'restored'}[event.action])
-  if(decision){assert.equal(details.resultRevision,trace.result);assert.deepEqual(details.decisions,trace.decisions)}
+  if(decision){assert.ok(Object.hasOwn(trace.results,event.action),'Observed outcome has an expected revision');assert.equal(details.resultRevision,trace.results[event.action],'Audit result revision matches this lifecycle outcome');assert.deepEqual(details.decisions,trace.decisions)}
   excludes(event,[...Object.values(privateSentinels),...forbidden],'Audit contains metadata without sensitive bodies or errors')
  }
 }

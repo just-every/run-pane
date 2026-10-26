@@ -109,7 +109,7 @@ try{
  for(const item of starter.pages){const fields=page.locator('#start-'+item.slug);await fields.getByLabel('Page title',{exact:true}).fill(item.title);await fields.getByLabel('Text',{exact:true}).fill(item.body)}
  await formSubmit('Prepare draft revision');await publish()
  assert.equal(fixture.aiRequests.length,0,'Native owner setup never calls a model')
- const riders=live?[]:await riderProof({fixture,page,context,starter,workshopImages,data,prepare,editor,propose,decide,capture})
+ const riders=live?[]:await riderProof({fixture,page,context,starter,workshopImages,data,prepare,editor,propose,decide,history,capture})
  for(const width of process.env.PANE_AI_RIDER_ONLY==='1'?[]:live?[1440]:[1440,390]){
   await page.setViewportSize({width,height:1000});await prepare(starter);await page.goto(origin+'/app');await publish();await editor()
   await tooltipAudit(width);await panel().getByRole('button',{name:'Send to OpenAI',exact:true}).scrollIntoViewIfNeeded();await capture('owner-ai-help',width)

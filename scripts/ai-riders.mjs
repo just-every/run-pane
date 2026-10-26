@@ -2,17 +2,17 @@ import assert from 'node:assert/strict'
 import {privateSentinels,providerInput,auditMetadata} from '../tests/browser-ai-riders.mjs'
 
 // Loaded by the existing canvas AI journey; no independent test registration.
-export async function riderProof({fixture,page,context,starter,workshopImages,data,prepare,editor,propose,decide,capture}){
- const {origin}=fixture,traces=new Map(),forbidden=['synthetic-pane-4'],receipts=[]
+export async function riderProof({fixture,page,context,starter,workshopImages,data,prepare,editor,propose,decide,history,capture}){
+ const {origin}=fixture,traces=new Map(),privateValues=['synthetic-pane-4','https://images.example.test/private?signature=synthetic-pane-signed-image'],forbidden=[...privateValues],receipts=[]
  const post=(path,body,headers={})=>context.request.post(origin+path,{headers:{Origin:origin,...headers},data:body})
  const activity=async()=>{const response=await context.request.get(origin+'/api/pane/activity');assert.equal(response.status(),200);return response.json()}
  await fixture.seedAiPrivateData(privateSentinels)
  const images=await workshopImages()
  let source,mode
  fixture.observeAiEdge(async record=>{
-  providerInput(record,source,mode)
+  providerInput(record,source,mode,privateValues)
   const click=(await activity()).filter(event=>event.action==='ai.request').at(-1),details=JSON.parse(click.details)
-  traces.set(details.request,{base:source.id,mode,images:mode==='alt'?images.map((_,index)=>'block:image-'+index):[]})
+  traces.set(details.request,{base:source.id,mode,images:mode==='alt'?images.map((_,index)=>'block:image-'+index):[],results:{}})
   auditMetadata([click],traces,forbidden)
  })
  try{
@@ -20,7 +20,7 @@ export async function riderProof({fixture,page,context,starter,workshopImages,da
    await page.setViewportSize({width,height:1000})
    const site=structuredClone(starter),home=site.pages.find(page=>page.slug==='home')
    site.pages.find(page=>page.slug==='about').body=privateSentinels.otherPage
-   site.pages.find(page=>page.slug==='about').links=[{label:'Private image',url:'https://images.example.test/private?signature=synthetic-pane-signed-image'}]
+   site.pages.find(page=>page.slug==='about').links=[{label:'Private image',url:privateValues[1]}]
    site.pages.push({slug:'private-draft',title:'Private draft',body:privateSentinels.unpublished,hidden:true})
    home.body=privateSentinels.history;await prepare(site)
    home.body=starter.pages.find(page=>page.slug==='home').body
@@ -65,13 +65,46 @@ export async function riderProof({fixture,page,context,starter,workshopImages,da
     const beforeAccept=fixture.aiOutbounds.length
     await decide(proposal,item=>mode==='search'?['search-title','search-description'].includes(item.kind):item.target==='block:image-0')
     const state=await data(),trace=traces.get(proposal.id)
-    trace.result=state.draft.id;trace.decisions=proposal.suggestions.map(item=>({id:item.id,accept:mode==='search'?['search-title','search-description'].includes(item.kind):item.target==='block:image-0'}))
+    trace.results['ai.decide']=state.draft.id;trace.decisions=proposal.suggestions.map(item=>({id:item.id,accept:mode==='search'?['search-title','search-description'].includes(item.kind):item.target==='block:image-0'}))
     assert.equal(fixture.aiOutbounds.length,beforeAccept,'Acceptance causes zero provider, mail, linked fetch or other outbound requests')
     assert.deepEqual(state.revisions.find(revision=>revision.id===source.id),source,'Acceptance preserves the entire immutable source revision and its hash')
     assert.equal(state.live.id,liveBefore.id);assert.equal(await (await context.request.get(origin+'/site')).text(),publicBefore,'Acceptance never publishes')
     forbidden.push(...proposal.suggestions.flatMap(item=>[item.before,item.after]).filter(value=>value&&value.length>20))
+    const auditOutcome=async(action,afterSequence)=>{
+     const events=await activity(),outcomes=events.filter(event=>event.sequence>afterSequence&&event.action.startsWith('ai.'))
+     assert.deepEqual(outcomes.map(event=>event.action),[action],'Exactly the requested lifecycle outcome is audited')
+     assert.equal(JSON.parse(outcomes[0].details).request,proposal.id)
+     auditMetadata(events,traces,forbidden)
+     return outcomes[0].sequence
+    }
+    const decided=(await activity()).filter(event=>event.action==='ai.decide'&&JSON.parse(event.details).request===proposal.id)
+    assert.equal(decided.length,1,'Mixed decisions are audited once');auditMetadata(await activity(),traces,forbidden)
+    let sequence=decided[0].sequence
+    for(const [action,label,expected] of [['ai.undo','Undo accepted changes',source.site],['ai.redo','Redo accepted changes',state.draft.site]]){
+     await history(label)
+     const next=await data();trace.results[action]=next.draft.id
+     assert.notEqual(next.draft.id,state.draft.id,'History creates a separate immutable revision')
+     assert.deepEqual(next.draft.site,expected,'History restores the exact expected site')
+     assert.equal(next.live.id,liveBefore.id);assert.equal(await (await context.request.get(origin+'/site')).text(),publicBefore)
+     assert.equal(fixture.aiOutbounds.length,beforeAccept,'History sends zero outbound requests')
+     sequence=await auditOutcome(action,sequence)
+     await capture('rider-'+mode+'-'+action.slice(3),width)
+    }
+    receipts.push({width,mode,request:proposal.id,source:source.id,results:trace.results,providerCalls:1,decisionOutboundCalls:0})
+    source=(await data()).draft;await editor()
+    const rejected=await propose(mode,width),rejectionTrace=traces.get(rejected.id),beforeReject=await data(),rejectCalls=fixture.aiOutbounds.length
+    const prior=(await activity()).at(-1).sequence
+    await decide(rejected,()=>false)
+    rejectionTrace.results['ai.decide']=null
+    rejectionTrace.decisions=rejected.suggestions.map(item=>({id:item.id,accept:false}))
+    const rejectedState=await data(),rejectionEvents=(await activity()).filter(event=>event.sequence>prior&&event.action.startsWith('ai.'))
+    assert.deepEqual(rejectionEvents.map(event=>event.action),['ai.decide'],'Rejection-only decisions are audited once')
+    assert.equal(JSON.parse(rejectionEvents[0].details).request,rejected.id)
+    assert.equal(rejectedState.draft.id,source.id);assert.deepEqual(rejectedState.revisions,beforeReject.revisions,'Rejection creates no revision')
+    assert.equal(rejectedState.live.id,liveBefore.id);assert.equal(fixture.aiOutbounds.length,rejectCalls)
     auditMetadata(await activity(),traces,forbidden)
-    receipts.push({width,mode,request:proposal.id,source:source.id,result:trace.result,providerCalls:1,acceptanceOutboundCalls:0})
+    await capture('rider-'+mode+'-rejected',width)
+    receipts.push({width,mode,outcome:'rejection-only',request:rejected.id,source:source.id,results:rejectionTrace.results,decisionOutboundCalls:0})
     await prepare(original.site);source=(await data()).draft;await editor()
    }
    mode='search';fixture.failAiProvider(true)
