@@ -219,6 +219,14 @@
       "sha256": "1b70abfc43d7390ccbb29b8ff56c315e6204ce80bdc0bca22ad2e17ca673c736",
       "executable": false
     },
+    "fixtures/images/apollo17.jpg": {
+      "sha256": "1386c99359f189efc8ec7ffdadf436a75ea1040663fcfcb6bc1f37a57baab238",
+      "executable": false
+    },
+    "fixtures/images/README.md": {
+      "sha256": "3a78462a80abd2d6c0f3c40b2f94cd40b559a52dad901a43cf1fba20508e0bf9",
+      "executable": false
+    },
     "fixtures/imports/durable.json": {
       "sha256": "fa9a46fe7e5e3357bfb75d10fa876ba3b853223c1cf51a331c0c23e7229a0e11",
       "executable": false
