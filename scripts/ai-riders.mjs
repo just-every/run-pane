@@ -35,7 +35,7 @@ export async function riderProof({fixture,page,context,starter,workshopImages,da
     mode=operation
     await panel.getByLabel('Help with',{exact:true}).selectOption(mode)
     const count=fixture.aiOutbounds.length,disclosure=panel.locator('#ai-disclosure')
-    await disclosure.scrollIntoViewIfNeeded();assert.equal(await disclosure.isVisible(),true,'Consent disclosure is visible before sending')
+    assert.equal(await disclosure.count(),1,'Consent disclosure exists before sending');await disclosure.scrollIntoViewIfNeeded();assert.equal(await disclosure.isVisible(),true,'Consent disclosure is visible before sending')
     const text=await disclosure.innerText()
     assert.match(text,/OpenAI, accessed through Base AI/,'Consent names the actual processor and access path')
     assert.ok(text.includes(home.title),'Consent identifies the selected page')
@@ -43,7 +43,7 @@ export async function riderProof({fixture,page,context,starter,workshopImages,da
     assert.equal(await panel.getByRole('button',{name:'Send to OpenAI',exact:true}).getAttribute('aria-describedby'),'ai-disclosure')
     if(mode==='alt')for(let index=0;index<images.length;index++){
      const named=panel.locator(`[data-ai-image-id="block:image-${index}"]`)
-     await named.scrollIntoViewIfNeeded();assert.equal(await named.isVisible(),true);assert.ok((await named.innerText()).includes('block:image-'+index));assert.equal(await named.locator('img').getAttribute('src'),images[index].src)
+     await named.scrollIntoViewIfNeeded();assert.equal(await named.isVisible(),true);assert.ok((await named.innerText()).includes('block:image-'+index),'Consent identifies each named image');assert.equal(await named.locator('img').getAttribute('src'),images[index].src)
     }
     assert.equal(fixture.aiOutbounds.length,count,'Reviewing consent and named inputs sends nothing')
     await disclosure.scrollIntoViewIfNeeded();await capture('rider-'+mode+'-consent',width)
