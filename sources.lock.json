@@ -136,7 +136,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "4f7efd6fdcbdc665f9c07fa2e1e9f70a568eea10b5d05e80025e7d441de60ddb",
+      "sha256": "b0dd946be8b082d73b0fe7c7ccd2fa78d6d8823172fa9536cbd612af367578a0",
       "executable": false
     },
     "AGENTS.md": {
@@ -160,7 +160,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "ef34018650f77757338596719aa8afa9cbd10c8aa617754ec58aac1eb3ae7e3f",
+      "sha256": "04f9ebe17ff281835e3ee0e86a3bfe21ac9df5cd05a8b65147b470641e432a6b",
       "executable": false
     },
     "deploy-demo.json": {
@@ -540,7 +540,7 @@
       "executable": false
     },
     "public/pane-canvas.mjs": {
-      "sha256": "877bcdb3f4fdc145508bcc7a6daea46968f46474664eebe95258157ff79d5c68",
+      "sha256": "36977f7e42ca814a74dc28e402468865749e7512952d2c4d0cb778b15b76efe1",
       "executable": false
     },
     "public/pane-custom-code.js": {
@@ -560,7 +560,7 @@
       "executable": false
     },
     "public/pane-image.mjs": {
-      "sha256": "9bf14001d6e2578daf048b44585d7d6f17585d043483175fcde2a5bbd6031c5a",
+      "sha256": "d71101aeead6bce53e399a5fd58c2ea132ded9c8265b7928fc3b08e793af644f",
       "executable": false
     },
     "public/pane-layout.d.mts": {
@@ -972,7 +972,7 @@
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
-      "sha256": "21304e0388f69f78c5ddb8332aff21173f3295e910a639dfdab0a962af6ebc2a",
+      "sha256": "6aaa496f5fe43e7fe1c30a394e27cba7d9d874bef6c987425fa1cfbadc94df2e",
       "executable": false
     },
     "scripts/custody-journey.mjs": {
@@ -3180,7 +3180,7 @@
       "executable": false
     },
     "src/pane/images.ts": {
-      "sha256": "95a5f0f4f7dfa2aa4fcfb4e63348939eadb4d9370ba1dcc1d2fb43559d077603",
+      "sha256": "af50fb3b6fb235e61fca5ef21f98dc265645cbdaa508eb8933f964e86c7030e4",
       "executable": false
     },
     "src/pane/import-authority.ts": {
@@ -3336,7 +3336,7 @@
       "executable": false
     },
     "src/pane/ui/canvas.ts": {
-      "sha256": "87d42b9969a1e9d932ca977de78745b5a47c6df7b3a0c9dc751881a36b8db033",
+      "sha256": "a3499b21876ddfe24ac3c12f3d3a45576f3f349ebd86a9155ec9cf8ddc318065",
       "executable": false
     },
     "src/pane/ui/changes.ts": {
@@ -3600,7 +3600,7 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "44775b0ae04b8a3678f192d52733b9c3f701ec58fc7ad93133454db06c0cf73a",
+      "sha256": "065ad3605d123da737c3e4f899401b061a8e05fee9a19e5cea4abbb549c25777",
       "executable": false
     },
     "tests/runtime.mjs": {

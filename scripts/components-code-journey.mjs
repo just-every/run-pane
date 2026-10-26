@@ -8,7 +8,7 @@ import {chromium} from '@playwright/test'
 const fixture=await import('../tests/browser-runtime.mjs'),origin=fixture.origin
 const folder=resolve(process.env.PANE_SCREENSHOTS??'./test-results/components-code')
 await mkdir(folder,{recursive:true})
-const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
+const browser=await chromium.launch({headless:true,executablePath:process.env.PANE_CHROMIUM_PATH,args:['--no-sandbox','--use-mock-keychain','--password-store=basic']})
 const context=await browser.newContext(),page=await context.newPage()
 const state=async()=> (await context.request.get(origin+'/api/pane')).json()
 const call=async(path,data)=>{const response=await context.request.post(origin+path,{headers:{Origin:origin},data});assert.equal(response.status(),200,await response.text());return response.json()}
@@ -21,6 +21,7 @@ try{
  for(const width of [1440,390]){
   await page.setViewportSize({width,height:1000})
   let draft=await call('/api/pane/prepare',{site:initial})
+  if(!process.env.PANE_CANVAS_ONLY){
   await page.goto(origin+'/app?page=home');await page.getByText('Save reusable section',{exact:true}).click()
   await page.getByLabel('Component name',{exact:true}).fill('Workshop announcement')
   await Promise.all([page.waitForURL(url=>url.searchParams.has('notice')),page.getByRole('button',{name:'Save section as component'}).click()])
@@ -88,6 +89,7 @@ try{
   await context.setExtraHTTPHeaders({DNT:'1'});await page.reload();assert.equal(await page.locator('[data-custom-code],iframe').count(),0);await context.setExtraHTTPHeaders({})
   await page.goto(origin+'/app/sites');await page.getByRole('button',{name:'Revoke publication approval',exact:true}).click();await page.waitForURL(url=>url.searchParams.has('notice'));await capture('custom-code-revoked-settings-'+width)
   await page.goto(origin+'/site/thanks');assert.equal(await page.locator('[data-custom-code],iframe').count(),0);assert.match(await page.locator('main').innerText(),/getting ready|Page not found/);await capture('custom-code-revoked-live-'+width)
+  }
   // The native canvas uses the live renderer and the same immutable save boundary.
   const native=structuredClone(initial);native.pages.find(item=>item.slug==='services').body='Native starting text'
   await call('/api/pane/prepare',{site:native,base:(await state()).draft.id})
@@ -187,9 +189,39 @@ try{
   assert.equal(await page.locator('[contenteditable=true]').last().locator('ul ul').count(),0)
   await page.getByRole('button',{name:'Redo',exact:true}).click();await saved()
   await capture('rich-canvas-'+width)
+  const largeOriginal=await page.evaluate(()=>{const canvas=document.createElement('canvas');canvas.width=6000;canvas.height=3000;const context=canvas.getContext('2d');context.fillStyle='#1a3462';context.fillRect(0,0,6000,3000);context.fillStyle='#e4bb31';context.fillRect(2600,1000,800,1000);return canvas.toDataURL('image/png')})
+  await page.getByLabel('Add image file').setInputFiles({name:'synthetic-pane-1.png',mimeType:'image/png',buffer:Buffer.from(largeOriginal.split(',')[1],'base64')});await saved();await page.locator('[data-image-settings]:not([hidden])').waitFor()
+  await page.waitForFunction(()=>JSON.parse(document.querySelector('[data-layout-state]').value).flatMap(section=>section.blocks).some(block=>block.image))
+  await saved()
+  const downsampled=(await state()).draft.site.pages.find(item=>item.slug==='services').sections.flatMap(item=>item.blocks).find(item=>item.image).image
+  assert.equal(downsampled.width,1600);assert.equal(downsampled.height,800);assert.equal(downsampled.original,largeOriginal,'The full 6000-pixel upload is retained before browser downsampling')
+  await page.getByRole('button',{name:'Delete selection',exact:true}).click();await saved()
   await page.getByLabel('Add image file').setInputFiles('public/site/cake-3.webp');await page.locator('[data-image-settings]:not([hidden])').waitFor();await saved()
   await page.getByLabel('Alternative text',{exact:true}).fill('Celebration cake with yellow flowers');await saved()
   const originalImage=(await state()).draft.site.pages.find(item=>item.slug==='services').sections.flatMap(item=>item.blocks).find(item=>item.image).image
+  assert.equal(originalImage.original,'data:image/webp;base64,'+(await readFile('public/site/cake-3.webp')).toString('base64'),'Picker retains exact uploaded bytes, before PNG preparation')
+  const selectedImage=async()=>(await state()).draft.site.pages.find(item=>item.slug==='services').sections.flatMap(item=>item.blocks).find(item=>item.image).image
+  for(const rotation of [90,180,270]){
+   await page.getByLabel('Image rotation',{exact:true}).selectOption(String(rotation));await saved()
+   await page.waitForFunction(rotation=>JSON.parse(document.querySelector('[data-layout-state]').value).flatMap(section=>section.blocks).find(block=>block.image).image.rotation===rotation,rotation)
+   const image=await selectedImage();assert.equal(image.rotation,rotation);assert.equal(image.original,originalImage.original)
+   assert.equal(image.width,rotation===180?originalImage.width:originalImage.height);assert.equal(image.height,rotation===180?originalImage.height:originalImage.width)
+   assert.equal(await page.evaluate(async({source,target,rotation})=>{
+    async function pixels(src){const image=new Image();image.src=src;await image.decode();const canvas=document.createElement('canvas');canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;const context=canvas.getContext('2d');context.drawImage(image,0,0);return {width:canvas.width,height:canvas.height,data:context.getImageData(0,0,canvas.width,canvas.height).data}}
+    const before=await pixels(source),after=await pixels(target)
+    for(let y=0;y<before.height;y++)for(let x=0;x<before.width;x++){
+     const tx=rotation===90?before.height-1-y:rotation===180?before.width-1-x:y
+     const ty=rotation===90?x:rotation===180?before.height-1-y:before.width-1-x
+     for(let channel=0;channel<4;channel++)if(Math.abs(before.data[(y*before.width+x)*4+channel]-after.data[(ty*after.width+tx)*4+channel])>1)return false
+    }
+    return true
+   },{source:originalImage.src,target:image.src,rotation}),true,'Each quarter turn rotates the actual retained pixels')
+   assert.equal(await page.locator('[data-image-block] img').evaluate(node=>node.complete&&node.naturalWidth===Number(node.getAttribute('width'))),true)
+  }
+  await page.getByRole('button',{name:'Undo',exact:true}).click();await saved();assert.equal((await selectedImage()).rotation,180)
+  await page.getByRole('button',{name:'Redo',exact:true}).click();await saved();assert.equal((await selectedImage()).rotation,270)
+  await page.reload();await page.locator('[data-image-block]').click();assert.equal(await page.getByLabel('Image rotation',{exact:true}).inputValue(),'270')
+  await page.getByRole('button',{name:'Reset image crop',exact:true}).click();await saved();assert.equal((await selectedImage()).src,originalImage.src);assert.equal((await selectedImage()).rotation,0)
   for(const ratio of ['1:1','4:3','3:2','16:9','free']){
    if(ratio==='1:1'){await page.getByLabel('Image aspect ratio',{exact:true}).focus();await page.keyboard.press('Home');await page.keyboard.press('ArrowDown')}else await page.getByLabel('Image aspect ratio',{exact:true}).selectOption(ratio)
    if(ratio==='free'){await page.getByLabel('Free crop width',{exact:true}).fill('5');await page.getByLabel('Free crop height',{exact:true}).fill('4')}
@@ -229,9 +261,38 @@ try{
   assert.equal(await page.locator('[data-image-block] img').evaluate(node=>getComputedStyle(node).objectPosition),'65% 30%')
   assert.ok(Math.abs(await page.locator('[data-image-block] img').evaluate(node=>node.getBoundingClientRect().width/node.getBoundingClientRect().height)-4/3)<0.01)
   await capture('native-live-'+width)
+  // A real photo is the first visual section on the published home page.
+  const heroSite=structuredClone((await state()).draft.site),heroImage=structuredClone(originalImage)
+  heroImage.crop={ratio:'1:1',width:1,height:1,x:65,y:30}
+  heroSite.pages.find(item=>item.slug==='home').body=heroImage.alt
+  heroSite.pages.find(item=>item.slug==='home').sections=[{id:'synthetic-pane-hero',kind:'text',blocks:[{id:'synthetic-pane-photo',kind:'image',text:heroImage.alt,image:heroImage,column:1,span:12,row:1}]}]
+  draft=await call('/api/pane/prepare',{site:heroSite});await call('/api/pane/publish',{revision:draft.id})
+  await page.goto(origin+'/site');await page.locator('[data-image-block] img').evaluate(image=>image.decode());await capture('hero-cropped-live-'+width)
+  const visibleSubject=await page.locator('[data-image-block] img').evaluate(image=>{
+   const box=image.getBoundingClientRect(),scale=Math.max(box.width/image.naturalWidth,box.height/image.naturalHeight)
+   // The upper yellow-flower cluster occupies this rectangle in the uploaded image.
+   return [[.30,.02],[.62,.36]].every(([sx,sy])=>{
+    const x=image.naturalWidth*sx*scale+(box.width-image.naturalWidth*scale)*.65
+    const y=image.naturalHeight*sy*scale+(box.height-image.naturalHeight*scale)*.30
+    return x>=0&&x<=box.width&&y>=0&&y<=box.height
+   })
+  });assert.equal(visibleSubject,true,'The chosen subject focal point remains inside the published hero')
+  assert.ok(!(await page.content()).includes(heroImage.original),'Live hero does not disclose original upload bytes')
+  await page.goto(origin+'/app/canvas?page=home');await page.locator('[data-image-block]').click()
+  await page.getByLabel('Image rotation',{exact:true}).selectOption('90');await saved()
+  await page.reload();await page.locator('[data-image-block]').click();assert.equal(await page.getByLabel('Image rotation',{exact:true}).inputValue(),'90')
+  await capture('hero-rotated-canvas-'+width)
+  await page.getByRole('button',{name:'Reset image crop',exact:true}).click();await saved()
+  const reset=(await state()).draft.site.pages.find(item=>item.slug==='home').sections[0].blocks[0].image
+  assert.equal(reset.src,originalImage.src);assert.equal(reset.original,originalImage.original);assert.equal(reset.rotation,0);assert.equal(reset.crop,undefined)
+  await capture('hero-reset-canvas-'+width)
+  draft=(await state()).draft;await call('/api/pane/publish',{revision:draft.id});await page.goto(origin+'/site')
+  await page.locator('[data-image-block] img').evaluate(image=>image.decode());assert.equal(await page.locator('[data-image-block] img').getAttribute('src'),originalImage.src)
+  assert.equal(await page.locator('[data-image-block] img').evaluate(image=>image.naturalWidth/image.naturalHeight),originalImage.width/originalImage.height)
+  await capture('hero-reset-live-'+width)
   console.log('Native canvas geometry, pixel parity and conflict safety passed at '+width+'.')
 
 
  }
- console.log('Reusable components and isolated custom code journey passed at 1440 and 390: five pages, one edit, usage, detached copy, undo and redo, approved live code, CSS, scoped headers, goals, consent, withdrawal, privacy refusals and workspace isolation.')
+ console.log(process.env.PANE_CANVAS_ONLY?'Native canvas and reversible image journey passed at 1440 and 390.':'Reusable components and isolated custom code journey passed at 1440 and 390: five pages, one edit, usage, detached copy, undo and redo, approved live code, CSS, scoped headers, goals, consent, withdrawal, privacy refusals and workspace isolation.')
 }catch(error){await page.screenshot({path:resolve(folder,'failure.png'),fullPage:true});await writeFile(resolve(folder,'failure.html'),await page.content());await writeFile(resolve(folder,'failure-state.json'),JSON.stringify(await state()));throw error}finally{await browser.close();await fixture.stop()}

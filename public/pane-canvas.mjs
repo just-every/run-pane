@@ -1,5 +1,5 @@
 import {syncReadingOrder} from './pane-reading-order.mjs'
-import {readImage} from './pane-image.mjs'
+import {readImage,prepareImage} from './pane-image.mjs'
 import {richText,richMarkup} from './pane-rich.mjs'
 import {layoutRules,layoutMarkup} from './pane-layout.mjs'
 const editor=document.querySelector('[data-layout-editor]'),form=editor.querySelector('form'),field=form.querySelector('[data-layout-state]'),canvas=editor.querySelector('[data-layout-canvas]'),content=canvas.querySelector('.public-content')
@@ -24,7 +24,7 @@ function selectedParagraph(node){
 function settings(){
  const image=block()?.image,panel=form.querySelector('[data-image-settings]');panel.hidden=!image
  if(image){form.querySelector('[data-image-alt]').value=image.alt??'';form.querySelector('[data-image-decorative]').checked=image.decorative;form.querySelector('[data-image-alt]').disabled=image.decorative;form.querySelector('[data-image-status]').textContent=!image.decorative&&!image.alt?.trim()?'Add alternative text or mark this image decorative before publishing.':'Image description is ready.'}
- if(image){const crop=image.crop??{ratio:'original',width:4,height:3,x:50,y:50};for(const input of form.querySelectorAll('[data-image-crop]')){const key=input.dataset.imageCrop;input.value=crop[key];input.disabled=['width','height'].includes(key)&&crop.ratio!=='free'}}
+ if(image){form.querySelector('[data-image-rotation]').value=image.rotation??0;const crop=image.crop??{ratio:'original',width:4,height:3,x:50,y:50};for(const input of form.querySelectorAll('[data-image-crop]')){const key=input.dataset.imageCrop;input.value=crop[key];input.disabled=['width','height'].includes(key)&&crop.ratio!=='free'}}
  for(const node of canvas.querySelectorAll('[data-selected]'))node.removeAttribute('data-selected')
  canvas.querySelector(blockId?`[data-block="${blockId}"]`:`[data-section="${sectionId}"]`)?.setAttribute('data-selected','')
  for(const input of form.querySelectorAll('[data-layout-field]')){
@@ -239,7 +239,23 @@ for(const input of form.querySelectorAll('[data-image-crop]'))input.addEventList
  image.crop[input.dataset.imageCrop]=input.dataset.imageCrop==='ratio'?input.value:Number(input.value)
  commit()
 })
-form.querySelector('[data-image-reset]').addEventListener('click',()=>{const image=block()?.image;if(image){delete image.crop;commit()}})
+let preparingImage=false
+async function rotateImage(rotation,reset=false){
+ const selected=block(),image=selected?.image;if(!image||preparingImage)return
+ preparingImage=true
+ form.querySelector('[data-save-status]').textContent='Preparing image…'
+ const before=field.value
+ try{
+  const prepared=await prepareImage(image.original??image.src,rotation)
+  if(field.value!==before){settings();return}
+  Object.assign(image,{original:image.original??prepared.original,src:prepared.src,width:prepared.width,height:prepared.height,rotation})
+  if(reset)delete image.crop
+  commit()
+ }catch(error){form.querySelector('[data-image-status]').textContent=error.message}
+ finally{preparingImage=false}
+}
+form.querySelector('[data-image-rotation]').addEventListener('change',event=>rotateImage(Number(event.target.value)))
+form.querySelector('[data-image-reset]').addEventListener('click',()=>rotateImage(0,true))
 for(const input of form.querySelectorAll('[data-image-alt],[data-image-decorative]'))input.addEventListener('input',()=>{
  const selected=block();if(!selected?.image)return
  const image=selected.image

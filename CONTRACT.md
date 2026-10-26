@@ -322,7 +322,7 @@ An editor crops, rotates and sets a focal point on an image in the browser; the 
 
 **Acceptance evidence:** Crop and set a focal point, see the hero keep the subject at 390 and 1440 wide, then revert to the original.
 
-*Status:* missing. No images.
+*Status:* done. Native image settings crop, rotate by quarter turns and set a focal point without replacing the privately retained upload. Accepted PNG, JPEG and WebP uploads are bounded to 512 KiB; their exact bytes remain in immutable private revisions before preparation of the bounded display PNG. Public documents render only the prepared PNG. Crop and rotation reset restore the original prepared pixels and proportions. Autosave, undo, redo, reopen and stale-revision refusal retain the upload and edit state. The published hero retains its chosen subject and resets at 1440 and 390. MEDIA-001 retains the separate media-library obligation and MEDIA-002 the responsive-rendition obligation.
 
 #### MEDIA-004 — Video, map, social embeds and Instagram feed.
 
@@ -1133,8 +1133,8 @@ Judged from the code and tests at commit `63f23309495fe9ed2335d3137be2470518a524
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 16 | 0 | 0 | 16 |
-| Target and push further | 24 | 27 | 60 | 111 |
-| All | 40 | 27 | 60 | 127 |
+| Target and push further | 25 | 27 | 59 | 111 |
+| All | 41 | 27 | 59 | 127 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -1177,7 +1177,7 @@ Judged from the code and tests at commit `63f23309495fe9ed2335d3137be2470518a524
 | `STYLE-004` | Logo, favicon and brand kit | target | missing |  | The live header shows the business name as text only. |
 | `MEDIA-001` | Media library with alt text and usage | target | missing |  | No uploads or media storage. |
 | `MEDIA-002` | Responsive image optimization | target | missing |  | No images. |
-| `MEDIA-003` | Basic image editing | target | missing |  | No images. |
+| `MEDIA-003` | Basic image editing | target | done | `tests/pane.test.mjs` — “image drafts preserve explicit descriptions and publication refuses missing alt while warning about headings and contrast” (exact original bytes through immutable save and authenticated reopen, original omitted from public delivery, native refusal, invalid original and rotation rejection, and stale-base conflict); `scripts/components-code-journey.mjs` — “Native canvas and reversible image journey” with PANE_CANVAS_ONLY=1 (6000-pixel original retained before downsampling, pixel-exact quarter turns, crop ratios and focal point, undo and redo, reopen, hero subject bounds, published crop and reset at 1440 and 390, shared-renderer geometry and pixel parity, and icon-control tooltip audit) | None. Native uploads are bounded to 512 KiB and kept privately; public documents use only the prepared display image. |
 | `MEDIA-004` | Video, map, social embeds and Instagram feed | target | partial | `scripts/privacy-journey.mjs` — owner-added YouTube URL embed waits for consent, keeps only its host in CSP and is suppressed under GPC | YouTube URL embed isolation is proved at both widths. Uploaded video, captions/renditions, actual playback, other named provider embeds and the official Instagram feed/refresh/revocation remain unproved. |
 | `CMS-001` | Structured collections with typed fields | target | missing |  | No collections. |
 | `CMS-002` | Collection template pages with item URLs | target | missing |  | No collections. |

@@ -1860,6 +1860,19 @@ test('image drafts preserve explicit descriptions and publication refuses missin
   assert.match(await (await app.request('/site')).text(),/alt="Bakery workshop mark"/)
   assert.deepEqual(draft.site.pages[0].sections[0].blocks[1].image.crop,picture.image.crop)
   assert.match(await (await app.request('/site')).text(),/aspect-ratio:4\/3;object-fit:cover;object-position:65% 30%/)
+  const originalBytes=await readFile('public/site/cake-3.webp')
+  picture.image.original='data:image/webp;base64,'+originalBytes.toString('base64');picture.image.rotation=90
+  response=await call('/api/pane/prepare',{site,base:draft.id});assert.equal(response.status,200,await response.clone().text());const rotated=await response.json()
+  assert.equal(rotated.site.pages[0].sections[0].blocks[1].image.original,picture.image.original,'Exact upload bytes survive the immutable draft')
+  const stale=await call('/api/pane/prepare',{site,base:draft.id});assert.equal(stale.status,409,'Image edits preserve the revision conflict boundary')
+  assert.equal((await call('/api/pane/publish',{revision:rotated.id})).status,200)
+  const publicHtml=await (await app.request('/site')).text()
+  assert.ok(!publicHtml.includes(picture.image.original),'The retained upload is not embedded in the public document')
+  const signedOut=await app.request('/api/pane');assert.equal(signedOut.status,401,'Original upload custody remains behind native authentication')
+  assert.equal((await (await app.request('/api/pane',{headers:{Cookie:cookie}})).json()).draft.site.pages[0].sections[0].blocks[1].image.original,picture.image.original,'Reopened owner draft keeps the exact upload')
+  for(const mutate of [p=>p.image.rotation=45,p=>p.image.rotation='90',p=>p.image.original='data:image/webp;base64,c3ludGhldGljLXBhbmUtMQ==']){
+   const invalid=structuredClone(site);mutate(invalid.pages[0].sections[0].blocks[1]);assert.equal((await call('/api/pane/prepare',{site:invalid})).status,400,'Invalid original bytes or rotation cannot create a draft')
+  }
   for(const mutate of [p=>p.image.src='data:image/svg+xml;base64,PHN2Zz4=',p=>p.image.width++,p=>p.image.decorative=true,p=>p.image.crop.x=101,p=>p.image.crop.width=0,p=>p.image.crop.ratio='arbitrary',p=>p.image.crop.script='unsupported']){const invalid=structuredClone(site);mutate(invalid.pages[0].sections[0].blocks[1]);assert.equal((await call('/api/pane/prepare',{site:invalid})).status,400)}
   const imported={...site,pages:[{slug:'home',title:'Imported bakery',body:'Our bakery',importedHtml:'<p>Our bakery</p><img src="https://example.test/bakery.png">'}]}
   response=await call('/api/pane/prepare',{site:imported});assert.equal(response.status,200,await response.clone().text());draft=await response.json();assert.equal((await call('/api/pane/publish',{revision:draft.id})).status,400,'Import normalization must not invent a decorative choice')
