@@ -108,7 +108,7 @@
   ],
   "files": {
     ".github/workflows/clone-journey.yml": {
-      "sha256": "fbc4e00e8f66f5b27991ab2eef11e2535c3ffd791a71b2304c6dc1e9caed5706",
+      "sha256": "e27a0256c997e83052505bf30c5f505d5713c023b335f8b7106b4a031c260d29",
       "executable": false
     },
     ".github/workflows/rer-managed.yml": {
@@ -124,7 +124,7 @@
       "executable": false
     },
     ".github/workflows/verify.yml": {
-      "sha256": "abca04e6dff45dd705d71514d31d22553abbee30d5b7182d23af5201e5564e65",
+      "sha256": "bbe750c7dd2536d43ca794c8cd7de36d9ae42e0530c95645b5482bc12a3793cc",
       "executable": false
     },
     ".gitignore": {

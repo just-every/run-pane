@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   product:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 12
     strategy:
       fail-fast: false
@@ -31,7 +31,7 @@ jobs:
       - if: matrix.shard == 'journey'
         run: pnpm verify
   browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 12
     # Includes Chromium 1243 and its system libraries for @playwright/test 1.63.0.
     # Keep dependency installation out of the browser journey's time budget.
@@ -51,6 +51,6 @@ jobs:
   verify:
     needs: [product, browser]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - run: test '${{ needs.product.result }}' = success && test '${{ needs.browser.result }}' = success
