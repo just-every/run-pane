@@ -6,7 +6,7 @@ const fixture = await import('../tests/browser-runtime.mjs')
 const ownsFixture = !process.env.PANE_BROWSER_FIXTURE
 const folder = resolve(process.env.PANE_SCREENSHOTS ?? 'test-results/privacy')
 await mkdir(folder, {recursive: true})
-const browser = await chromium.launch({headless: true, executablePath:process.env.PANE_CHROMIUM_PATH, args: ['--no-sandbox', '--use-mock-keychain', '--password-store=basic']})
+const browser = await chromium.launch({headless: true, executablePath:process.env.PANE_CHROMIUM_PATH, args: ['--no-sandbox', '--use-mock-keychain', '--password-store=basic',...(process.env.PANE_CHROMIUM_PATH?['--disable-site-isolation-trials']:[])]})
 const context = await browser.newContext(), page = await context.newPage()
 const origin = fixture.origin
 const site = JSON.parse(await readFile('fixtures/static-site.json', 'utf8'))

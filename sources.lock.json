@@ -976,7 +976,7 @@
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
-      "sha256": "457c01aa16815605538ce5404351831d8d79a6cfa183041746a86aaedde3b18b",
+      "sha256": "c207982d1330237c83e7b629cb927fef353071571acbbe820ad67fdcc3c8e574",
       "executable": false
     },
     "scripts/custody-journey.mjs": {
@@ -1220,7 +1220,7 @@
       "executable": false
     },
     "scripts/privacy-journey.mjs": {
-      "sha256": "3050dd8635998c8df11a2eaec5d733991da32ed1ee05b1abbeb28c4e56b09bad",
+      "sha256": "9f7c1890dc43e9ff3ed7364a361e361c15c7cf57b1310279de0b2c5b7e0e2ac8",
       "executable": false
     },
     "scripts/promotions-journey.mjs": {

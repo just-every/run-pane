@@ -306,7 +306,7 @@ try{
   await capture('hero-reset-canvas-'+width)
   draft=(await state()).draft;await call('/api/pane/publish',{revision:draft.id});await page.goto(origin+'/site')
   await page.locator('[data-image-block] img').evaluate(image=>image.decode());assert.ok((await page.locator('[data-image-block] img').getAttribute('src')).includes('pane-image='))
-  assert.equal(await page.locator('[data-image-block] img').evaluate(image=>image.naturalWidth/image.naturalHeight),originalImage.width/originalImage.height)
+  assert.ok(await page.locator('[data-image-block] img').evaluate((image,ratio)=>Math.abs(image.naturalWidth-ratio*image.naturalHeight)<=1,originalImage.width/originalImage.height),'Responsive density correction preserves the original proportions within one rounded pixel')
   await capture('hero-reset-live-'+width)
   console.log('Native canvas geometry, pixel parity and conflict safety passed at '+width+'.')
 
