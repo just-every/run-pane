@@ -189,19 +189,19 @@ try{
   assert.equal(await page.locator('[contenteditable=true]').last().locator('ul ul').count(),0)
   await page.getByRole('button',{name:'Redo',exact:true}).click();await saved()
   await capture('rich-canvas-'+width)
-  const largeOriginal=await page.evaluate(()=>{const canvas=document.createElement('canvas');canvas.width=6000;canvas.height=3000;const context=canvas.getContext('2d');context.fillStyle='#1a3462';context.fillRect(0,0,6000,3000);context.fillStyle='#e4bb31';context.fillRect(2600,1000,800,1000);return canvas.toDataURL('image/png')})
-  await page.getByLabel('Add image file').setInputFiles({name:'synthetic-pane-1.png',mimeType:'image/png',buffer:Buffer.from(largeOriginal.split(',')[1],'base64')});await saved();await page.locator('[data-image-settings]:not([hidden])').waitFor()
+  const largeOriginal=await page.evaluate(async source=>{const photo=new Image();photo.src=source;await photo.decode();const canvas=document.createElement('canvas');canvas.width=6000;canvas.height=3000;canvas.getContext('2d').drawImage(photo,0,0,6000,3000);return canvas.toDataURL('image/jpeg',0.5)},'data:image/webp;base64,'+(await readFile('public/site/cake-3.webp')).toString('base64'))
+  await page.getByLabel('Add image file').setInputFiles({name:'synthetic-pane-1.jpg',mimeType:'image/jpeg',buffer:Buffer.from(largeOriginal.split(',')[1],'base64')});await saved();await page.locator('[data-image-settings]:not([hidden])').waitFor()
   await page.waitForFunction(()=>JSON.parse(document.querySelector('[data-layout-state]').value).flatMap(section=>section.blocks).some(block=>block.image))
   await saved()
   const downsampled=(await state()).draft.site.pages.find(item=>item.slug==='services').sections.flatMap(item=>item.blocks).find(item=>item.image).image
-  assert.equal(downsampled.width,1600);assert.equal(downsampled.height,800);assert.equal(downsampled.original,largeOriginal,'The full 6000-pixel upload is retained before browser downsampling')
+  assert.equal(downsampled.renditions.at(-1).width,1600);assert.equal(downsampled.renditions.at(-1).height,800);assert.equal(downsampled.original,largeOriginal,'The full 6000-pixel upload is retained before browser downsampling')
   await page.getByLabel('Alternative text',{exact:true}).fill('Synthetic 6000-pixel workshop photo');await saved()
   const responsiveDraft=(await state()).draft;await call('/api/pane/publish',{revision:responsiveDraft.id})
   let phoneBytes,desktopBytes
   for(const viewportWidth of [390,1440]){
    const visitor=await browser.newContext({viewport:{width:viewportWidth,height:1000},deviceScaleFactor:1}),live=await visitor.newPage(),requests=[]
    live.on('response',response=>{if(response.url().includes('pane-image='))requests.push(response)})
-   await live.goto(origin+'/site/services');const image=live.locator('[data-image-block] img');await image.scrollIntoViewIfNeeded();await image.evaluate(node=>node.decode())
+   await live.goto(origin+'/site/services');const image=live.locator('[data-image-block] img');assert.ok(await image.evaluate(node=>node.getBoundingClientRect().top>innerHeight),'The responsive photo is below the fold');await image.scrollIntoViewIfNeeded();await image.evaluate(node=>node.decode())
    const selected=await image.evaluate(node=>node.currentSrc),expected=viewportWidth===390?480:1600
    assert.equal(new URL(selected).searchParams.get('width'),String(expected),'Viewport chooses a matched WebP payload')
    const payload=requests.find(response=>response.url()===selected);assert.ok(payload);assert.equal(payload.headers()['content-type'],'image/webp')
@@ -234,7 +234,7 @@ try{
     }
     return true
    },{source:originalImage.src,target:image.src,rotation}),true,'Each quarter turn rotates the actual retained pixels')
-   assert.equal(await page.locator('[data-image-block] img').evaluate(node=>node.complete&&node.naturalWidth===Number(node.getAttribute('width'))),true)
+   await page.locator('[data-image-block] img').evaluate(node=>node.decode());const currentSource=await page.locator('[data-image-block] img').evaluate(node=>node.currentSrc);assert.ok(image.renditions.some(item=>item.src===currentSource),'The rotated canvas selects one of the newly rotated responsive payloads')
   }
   await page.getByRole('button',{name:'Undo',exact:true}).click();await saved();assert.equal((await selectedImage()).rotation,180)
   await page.getByRole('button',{name:'Redo',exact:true}).click();await saved();assert.equal((await selectedImage()).rotation,270)

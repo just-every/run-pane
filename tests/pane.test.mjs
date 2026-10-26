@@ -1879,6 +1879,11 @@ test('image drafts preserve explicit descriptions and publication refuses missin
   for(const mutate of [p=>p.image.rotation=45,p=>p.image.rotation='90',p=>p.image.original='data:image/webp;base64,c3ludGhldGljLXBhbmUtMQ==']){
    const invalid=structuredClone(site);mutate(invalid.pages[0].sections[0].blocks[1]);assert.equal((await call('/api/pane/prepare',{site:invalid})).status,400,'Invalid original bytes or rotation cannot create a draft')
   }
+  const protectedSite=structuredClone(rotated.site);protectedSite.pages[0].access={mode:'members'}
+  const protectedDraft=await (await call('/api/pane/prepare',{site:protectedSite,base:rotated.id})).json();assert.equal((await call('/api/pane/publish',{revision:protectedDraft.id})).status,200)
+  const privateImage=await app.request('/site?pane-image=synthetic-pane-image&width=0');assert.notEqual(privateImage.headers.get('content-type'),'image/png','Protected page images use the every-request membership gate')
+  assert.equal((await call('/api/pane/publication-revoke',{revision:protectedDraft.id,confirm:'revoke-publication'})).status,200)
+  assert.equal((await app.request('/site?pane-image=synthetic-pane-image&width=0')).status,404,'Revocation immediately removes image delivery too')
   for(const mutate of [p=>p.image.src='data:image/svg+xml;base64,PHN2Zz4=',p=>p.image.width++,p=>p.image.renditions=[{src:'data:image/webp;base64,c3ludGhldGljLXBhbmUtMQ==',width:480,height:240}],p=>p.image.decorative=true,p=>p.image.crop.x=101,p=>p.image.crop.width=0,p=>p.image.crop.ratio='arbitrary',p=>p.image.crop.script='unsupported']){const invalid=structuredClone(site);mutate(invalid.pages[0].sections[0].blocks[1]);assert.equal((await call('/api/pane/prepare',{site:invalid})).status,400)}
   const imported={...site,pages:[{slug:'home',title:'Imported bakery',body:'Our bakery',importedHtml:'<p>Our bakery</p><img src="https://example.test/bakery.png">'}]}
   response=await call('/api/pane/prepare',{site:imported});assert.equal(response.status,200,await response.clone().text());draft=await response.json();assert.equal((await call('/api/pane/publish',{revision:draft.id})).status,400,'Import normalization must not invent a decorative choice')

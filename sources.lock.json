@@ -976,7 +976,7 @@
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
-      "sha256": "ea8975a3af19e553e4054fee9f3c817bfca03c6d1666f2c106fcf69dc3990a15",
+      "sha256": "457c01aa16815605538ce5404351831d8d79a6cfa183041746a86aaedde3b18b",
       "executable": false
     },
     "scripts/custody-journey.mjs": {
@@ -3280,7 +3280,7 @@
       "executable": false
     },
     "src/pane/public.ts": {
-      "sha256": "1dc0def02e9c8256ddc81ec2d270c03168e3b5364a8e6d4b011c98361479298a",
+      "sha256": "9a70b32eadcd444dcc79f0a24a35f1df7dbbb788ae1a2ea93c14481ea54035f1",
       "executable": false
     },
     "src/pane/redirects.ts": {
@@ -3328,7 +3328,7 @@
       "executable": false
     },
     "src/pane/tags.ts": {
-      "sha256": "b542be3c4bbdf9d4cd09c2af1b622f73397599ca24bc0243c159770af5ce382f",
+      "sha256": "39bf0f1cf0c6a6c64b72d79bbb0c8c16a4f48145583499131789ce968e736922",
       "executable": false
     },
     "src/pane/ui/access-settings.ts": {
@@ -3608,7 +3608,7 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "a7dc4a0c38641d34f57d26d8381ebd4d048f4e922a63f6289010c79c55a33481",
+      "sha256": "da34a4be3c3386bcc79015c06f05bd54dbd2f3cd106bfd0eead213bd6f587b4d",
       "executable": false
     },
     "tests/runtime.mjs": {
