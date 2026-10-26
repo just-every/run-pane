@@ -992,7 +992,7 @@
       "executable": false
     },
     "scripts/analytics-journey.mjs": {
-      "sha256": "6ecc599af19ad84cb6d727b072ee85a5131709958c52a42b4f1e70eb6d339c5b",
+      "sha256": "2c24b1228e4403f4ae0f07e4df645988606cff8e22ffe8dbeb6de3af11e1134c",
       "executable": false
     },
     "scripts/browser-journey.mjs": {
