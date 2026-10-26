@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import {readFile,mkdir} from 'node:fs/promises'
 import {resolve} from 'node:path'
 import {chromium} from '@playwright/test'
+// Approval timestamps predate the first review cutoff, independent of the host clock.
+process.env.PANE_BROWSER_NOW='2026-10-01T12:00:00Z'
 const fixture=await import('../tests/browser-runtime.mjs')
 const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
 const context=await browser.newContext(),page=await context.newPage(),origin=fixture.origin

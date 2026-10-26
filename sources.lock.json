@@ -1292,7 +1292,7 @@
       "executable": false
     },
     "scripts/scheduling-journey.mjs": {
-      "sha256": "33104c32a12f779743e28366d905fc6b71ad105d602ae383a0d0aa40e4729a67",
+      "sha256": "df1e9abdf5df16788fb5a735ee5b068cf21394e7358805e9aedcee3c8aa70b7f",
       "executable": false
     },
     "scripts/search-journey.mjs": {
@@ -3688,7 +3688,7 @@
       "executable": false
     },
     "tests/browser-runtime.mjs": {
-      "sha256": "7d6e977a7f3f2f4390ecb6b7630a40946b1483e4295391efa471be6b57e22c88",
+      "sha256": "428ec85bb4902c00cdcf3cc1f4d09c1966ab4562f4dd7e7ef22d082017a09dbe",
       "executable": false
     },
     "tests/demo.test.mjs": {
