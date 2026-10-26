@@ -29,7 +29,7 @@ export async function modelSuggestions(env:AiBindings,site:Site,page:Page,mode:A
  if(result.choices?.[0]?.finish_reason!=='stop')throw Error('OpenAI did not finish a complete proposal. No draft changed.')
  let raw:any
  try{raw=JSON.parse(result.choices[0].message.content)}catch{throw Error('OpenAI returned an unreadable proposal. No draft changed.')}
- if(!Array.isArray(raw.suggestions)||!raw.suggestions.length||raw.suggestions.length>120)throw Error('OpenAI returned an empty or oversized proposal.')
+ if(!Array.isArray(raw.suggestions)||!raw.suggestions.length||raw.suggestions.length>(mode==='translate'?targets.length:120))throw Error('OpenAI returned an empty or oversized proposal.')
  if(mode==='translate'){
   if(raw.suggestions.length!==targets.length||targets.some(target=>raw.suggestions.filter((s:any)=>s.kind==='translation'&&s.target===target.target).length!==1))throw Error('OpenAI omitted translated page text. No draft changed.')
   const translated=structuredClone(page);detachPage(translated)

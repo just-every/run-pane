@@ -456,9 +456,9 @@ test('Pane AI reviews five real page images individually and creates a hidden tr
    assert.deepEqual(content.filter(part=>part.type==='image_url').map(part=>part.image_url.url),Array(5).fill(src),'The model receives the saved raster bytes')
    return context.images.map((image,index)=>({kind:'alt',label:'Describe image '+(index+1),target:image.target,after:'A bakery emblem in image '+(index+1)+'.'}))
   }
-  assert.equal(context.mode,'translate');assert.equal(context.language,'Spanish')
+  assert.equal(context.mode,'translate');assert.ok(['Spanish','French'].includes(context.language))
   assert.ok(context.texts.some(entry=>entry.target==='title'))
-  return context.texts.map((entry,index)=>({kind:'translation',label:'Translate page text',target:entry.target,after:entry.text?'Texto de la panadería '+(index+1)+'.':''}))
+  return context.texts.map((entry,index)=>({kind:'translation',label:'Translate page text',target:entry.target,after:entry.text?(context.language==='Spanish'?'Texto de la panadería ':'Texte de la boulangerie ')+(index+1)+'.':''}))
  })
  const {app,call,get,state,ok,propose,decide}=workspace
  try{
@@ -493,5 +493,9 @@ test('Pane AI reviews five real page images individually and creates a hidden tr
   assert.ok((await(await get('/site/'+spanish.slug,'')).text()).includes('Texto de la panadería'))
   assert.ok(!(await(await get('/sitemap.xml','')).text()).includes('/site/'+spanish.slug))
   assert.equal(await(await get('/site','')).text(),published,'Publishing the translated page preserves the original page')
+  const frenchProposal=await propose(latest.id,'translate',{language:'French'});await decide(frenchProposal,()=>true)
+  const french=(await state()).draft.site.pages.find(page=>page.title.startsWith('Texte de la boulangerie'))
+  assert.ok(french&&french.hidden&&french.slug!==spanish.slug,'Another requested language has its own private page')
+  assert.deepEqual((await state()).draft.site.pages.find(page=>page.slug==='home'),latest.site.pages.find(page=>page.slug==='home'))
  }finally{await app.mf.dispose()}
 })

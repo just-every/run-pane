@@ -18,8 +18,22 @@ export function requestedImages(site:Site,page:Page,names:unknown){
 }
 
 export function pageTextTargets(page:Page,site?:Site):{target:string;text:string}[]{
- return [{target:'title',text:page.title},...(page.importedHtml?htmlTargets(page):page.sections?page.sections.flatMap(section=>section.blocks.flatMap(block=>block.kind==='text'?[{target:'block:'+block.id,text:block.text}]:block.image?[{target:'alt:'+block.id,text:block.image.alt??''}]:[])):[{target:'body',text:page.body}]),...((page.sections??[]).flatMap(section=>section.blocks.flatMap(block=>(block.gallery?.items??[]).map((item,index)=>({target:'caption:'+block.id+':'+index,text:item.caption}))))),...((site?.media??[]).filter(asset=>page.sections?.some(section=>section.blocks.some(block=>block.gallery?.items.some(item=>item.asset===asset.id)))).map(asset=>({target:'asset-alt:'+asset.id,text:asset.image.alt??''}))),...(page.embed?[{target:'embed-title',text:page.embed.title}]:[]),...(page.links??[]).map((link,i)=>({target:'link:'+i,text:link.label})),...(page.search?.title?[{target:'search-title',text:page.search.title}]:[]),...(page.search?.description?[{target:'search-description',text:page.search.description}]:[])]
+ const body=page.importedHtml?htmlTargets(page):page.sections?page.sections.flatMap(section=>section.blocks.flatMap(block=>
+  block.kind==='text'?[{target:'block:'+block.id,text:block.text}]:block.image?[{target:'alt:'+block.id,text:block.image.alt??''}]:[]
+ )):[{target:'body',text:page.body}]
+ const captions=(page.sections??[]).flatMap(section=>section.blocks.flatMap(block=>
+  (block.gallery?.items??[]).map((item,index)=>({target:'caption:'+block.id+':'+index,text:item.caption}))
+ ))
+ const galleryAlts=(site?.media??[]).filter(asset=>page.sections?.some(section=>section.blocks.some(block=>
+  block.gallery?.items.some(item=>item.asset===asset.id)
+ ))).map(asset=>({target:'asset-alt:'+asset.id,text:asset.image.alt??''}))
+ return [{target:'title',text:page.title},...body,...captions,...galleryAlts,
+  ...(page.embed?[{target:'embed-title',text:page.embed.title}]:[]),
+  ...(page.links??[]).map((link,index)=>({target:'link:'+index,text:link.label})),
+  ...(page.search?.title?[{target:'search-title',text:page.search.title}]:[]),
+  ...(page.search?.description?[{target:'search-description',text:page.search.description}]:[])]
 }
+
 export function replaceText(page:Page,target:string,text:string){
  if(target==='title')page.title=text
  else if(target==='body')page.body=text

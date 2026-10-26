@@ -3176,11 +3176,11 @@
       "executable": false
     },
     "src/pane/ai-model.ts": {
-      "sha256": "e59748875c7b37a2631dd5f2c78b530748cb3fb51e5f9e48182ea6535bb0250b",
+      "sha256": "1d4c718c39f72b842be59e5b55c0892b20f61701124cc01585c8cf54ed121664",
       "executable": false
     },
     "src/pane/ai-targets.ts": {
-      "sha256": "602df66b6a2a6436874a7b8dfc41b8c9548fed93988919b175ce23dd74867e9c",
+      "sha256": "c63248017a5f4f4632ea3a28573383d82b16602dde10fb638f35c904345704ac",
       "executable": false
     },
     "src/pane/ai-types.ts": {
@@ -3716,7 +3716,7 @@
       "executable": false
     },
     "tests/search.test.mjs": {
-      "sha256": "d068c67d803c4f5100642f085d7a22f62bfbdc675e88e0cabd8f91a7a3953037",
+      "sha256": "9eb746f6ac20b554507b09a3dc4ff1b88bef82b4a49dc79579dbf989ea5b6a5c",
       "executable": false
     },
     "tests/site.test.mjs": {
