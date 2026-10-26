@@ -329,11 +329,13 @@ test('Pane AI search decisions require the native owner, preserve rejected edits
  ])
  const {app,call,get,state,ok,propose,decide,requests}=workspace
  try{
-  const initial=await ok(await call('/api/pane/prepare',{site:fixture}))
+  const source=structuredClone(fixture);source.pages.find(page=>page.slug==='home').links=[{label:fixture.pages[1].title,url:'page:about'}];source.pages.find(page=>page.slug==='about').title='Private unrelated title';source.pages.find(page=>page.slug==='about').body='Private unrelated material that must never reach the model.'
+  const initial=await ok(await call('/api/pane/prepare',{site:source}))
   await ok(await call('/api/pane/publish',{revision:initial.id}))
   const originalHtml=await(await get('/site','')).text(),proposal=await propose(initial.id,'search')
   assert.equal(proposal.base,initial.id);assert.equal(proposal.slug,'home');assert.equal(proposal.mode,'search')
   assert.equal(proposal.suggestions.length,5)
+  assert.ok(!JSON.stringify(requests).includes('Private unrelated'),'Only selected-page material crosses the provider edge')
   assert.equal((await state()).draft.id,initial.id,'Generating suggestions does not save a draft')
   const decisionBody={id:proposal.id,base:proposal.base,decisions:proposal.suggestions.map(s=>({id:s.id,accept:s.kind.startsWith('search-')}))}
   const administrator=await workspace.admin()
@@ -369,7 +371,7 @@ test('Pane AI search decisions require the native owner, preserve rejected edits
   assert.match(await(await get('/site','')).text(),/href="\/site\/about">Meet our workshop team/)
   assert.equal((await get('/site/about','')).status,200)
   const activity=await (await get('/api/pane/activity')).json()
-  for(const action of ['ai.propose','ai.decide','ai.undo','ai.redo'])assert.ok(activity.some(event=>event.action===action),'The owner can trace '+action)
+  for(const action of ['ai.request','ai.propose','ai.decide','ai.undo','ai.redo'])assert.ok(activity.some(event=>event.action===action),'The owner can trace '+action)
   for(const event of activity.filter(event=>event.action.startsWith('ai.')))assert.ok(!JSON.stringify(event).includes(proposedDescription),'Activity contains metadata only')
   const privacy=await ok(await call('/api/pane/policies/generate',{base:draft.id}))
   assert.ok(privacy.site.pages.find(page=>page.policyStarter==='privacy').body.includes('OpenAI'))
@@ -387,8 +389,9 @@ test('Pane AI writing modes change selected text only and fence both saved and i
  try{
   const initial=await ok(await call('/api/pane/prepare',{site:fixture}));await ok(await call('/api/pane/publish',{revision:initial.id}))
   const live=await(await get('/site','')).text();let base=initial.id,selection='We repair well-loved furniture and build practical pieces for everyday life.'
-  for(const mode of ['rewrite','shorten','tone']){
-   const before=(await state()).draft,proposal=await propose(base,mode,{selection,...(mode==='tone'?{tone:'Warm and welcoming'}:{})})
+  const acceptedStates=[]
+  for(const mode of ['rewrite','shorten','tone','rewrite','shorten']){
+   const before=(await state()).draft;acceptedStates.push(before.site);const proposal=await propose(base,mode,{selection,...(mode==='tone'?{tone:'Warm and welcoming'}:{})})
    assert.equal(proposal.suggestions.length,1);assert.equal(proposal.suggestions[0].before,selection)
    assert.equal((await state()).draft.id,base)
    if(mode==='rewrite'){
@@ -401,6 +404,19 @@ test('Pane AI writing modes change selected text only and fence both saved and i
    assert.equal(await(await get('/site','')).text(),live)
    base=applied.revision.id;selection=acceptedProposal.suggestions[0].after
   }
+  const acceptedFinal=(await state()).draft.site
+  for(let index=4;index>=0;index--){
+   const history=await (await get('/api/pane/ai/history')).json()
+   const undone=await ok(await call('/api/pane/ai/undo',{id:history.undo.id,base:history.base,direction:'undo'}))
+   assert.deepEqual(undone.revision.site,acceptedStates[index]);base=undone.revision.id
+  }
+  assert.equal((await (await get('/api/pane/ai/history')).json()).undo,null)
+  for(let index=0;index<5;index++){
+   const history=await (await get('/api/pane/ai/history')).json()
+   const redone=await ok(await call('/api/pane/ai/undo',{id:history.redo.id,base:history.base,direction:'redo'}))
+   base=redone.revision.id
+  }
+  assert.deepEqual((await state()).draft.site,acceptedFinal,'Five durable redo steps restore the accepted draft')
   assert.equal(requests.find(context=>context.mode==='tone').tone,'Warm and welcoming')
   const savedProposal=await propose(base,'rewrite',{selection}),changed=structuredClone((await state()).draft.site)
   changed.pages.find(page=>page.slug==='about').body='A newer owner edit in the studio page.'
@@ -451,7 +467,7 @@ test('Pane AI reviews five real page images individually and creates a hidden tr
   home.sections=[{id:'synthetic-pane-10',kind:'text',blocks:[{id:'synthetic-pane-11',kind:'text',text:home.body,column:1,span:12,row:1},...Array.from({length:6},(_,index)=>({id:'synthetic-pane-'+(12+index),kind:'image',text:'Existing bakery description '+(index+1)+'.',image:{src,width:png.readUInt32BE(16),height:png.readUInt32BE(20),decorative:false,alt:'Existing bakery description '+(index+1)+'.'},column:1,span:12,row:index+2}))]}]
   home.body=home.sections.flatMap(section=>section.blocks.map(block=>block.text).filter(Boolean)).join('\n\n')
   const initial=await ok(await call('/api/pane/prepare',{site}));await ok(await call('/api/pane/publish',{revision:initial.id}))
-  const live=await(await get('/site','')).text(),proposal=await propose(initial.id,'alt')
+  const live=await(await get('/site','')).text(),proposal=await propose(initial.id,'alt',{images:Array.from({length:5},(_,index)=>'block:synthetic-pane-'+(12+index))})
   assert.equal(proposal.suggestions.length,5)
   const applied=await decide(proposal,(_,index)=>index%2===0),draft=(await state()).draft
   const expected=structuredClone(initial.site),images=expected.pages.find(page=>page.slug==='home').sections[0].blocks.filter(block=>block.kind==='image')

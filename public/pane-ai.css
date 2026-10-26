@@ -22,3 +22,7 @@
 .pane .ai-assist .ai-error { color: var(--pn-red); }
 .pane .ai-assist .ai-status:empty { display: none; }
 .pane .ai-history { padding: 10px; border: 1px solid var(--pn-line); border-radius: 10px; }
+
+.pane .ai-assist [data-ai-images] ol { display: grid; gap: 8px; padding-left: 20px; }
+.pane .ai-assist [data-ai-images] li { overflow-wrap: anywhere; }
+.pane .ai-assist [data-ai-images] img { display: block; object-fit: contain; margin-bottom: 4px; }

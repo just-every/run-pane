@@ -37,7 +37,7 @@ export function permittedDashboard(data:Dashboard,caps:Capability[]):Dashboard{
 }
 export function routeCapability(path:string,method:string):Capability|undefined{
  if(method==='GET'&&(path.startsWith('/app/files/')||path.startsWith('/api/pane/files/')))return 'inbox:read'
- if(method==='GET')return ({'/api/pane/pages':'pages:read','/api/pane/collections':'pages:read','/api/pane/activity':'audit','/api/pane/activity/export':'audit','/api/pane/roles':'team','/api/pane/tokens':'tokens','/app':'pages:read','/app/canvas':'pages:write','/app/inquiries':'inbox:read','/app/moves':'imports:read','/app/search':'pages:write'} as Record<string,Capability>)[path]
+ if(method==='GET')return ({'/api/pane/ai/history':'pages:write','/api/pane/pages':'pages:read','/api/pane/collections':'pages:read','/api/pane/activity':'audit','/api/pane/activity/export':'audit','/api/pane/roles':'team','/api/pane/tokens':'tokens','/app':'pages:read','/app/canvas':'pages:write','/app/inquiries':'inbox:read','/app/moves':'imports:read','/app/search':'pages:write'} as Record<string,Capability>)[path]
  const action=path.replace(/^\/(api\/pane|app)\//,'')
  if((path.startsWith('/app/spam/')||path.startsWith('/api/pane/spam/'))&&['settings','rescue','purge','hold','release'].includes(action.slice(5)))return 'erase'
  if(path.startsWith('/api/pane/ai/')&&['propose','decide','undo'].includes(path.split('/').at(-1)!))return 'pages:write'

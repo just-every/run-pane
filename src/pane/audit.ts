@@ -33,9 +33,9 @@ export function auditedDatabase(db: D1Database, actor: string | null, action: st
   const value=Reflect.get(target,key);return typeof value==='function'?value.bind(target):value
  }})
 }
-export type Activity = {sequence:number;action:string;subject:string;created_at:string;actor:string;agent:string|null}
+export type Activity = {sequence:number;action:string;subject:string;created_at:string;actor:string;agent:string|null;details?:string|null}
 export async function activity(db:D1Database) {
- return (await db.prepare(`SELECT a.sequence,a.action,a.subject,a.created_at,a.agent,
+ return (await db.prepare(`SELECT a.sequence,a.action,a.subject,a.created_at,a.agent,a.details,
   CASE WHEN a.actor IS NULL THEN 'Former person or system' ELSE COALESCE(o.display_name,'Former person') END AS actor
   FROM pane_activity a LEFT JOIN oa_operators o ON o.id=a.actor ORDER BY a.sequence`).all<Activity>()).results
 }

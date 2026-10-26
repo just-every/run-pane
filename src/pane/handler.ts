@@ -1,4 +1,5 @@
-import {proposeAi,decideAi,undoAi} from './ai'
+import {aiHistory,undoAiHistory} from './ai-history'
+import {proposeAi,decideAi} from './ai'
 import {canvasEditor} from './ui/canvas'
 import { parseImportDocument } from './import-formats'
 import { createComponent } from './components'
@@ -54,6 +55,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    if(!required||!scopes.includes(required))return json({error:'Token scope refused.'},403)
   }
   if(request.method==='GET'&&(path.startsWith('/app/files/')||path.startsWith('/api/pane/files/')))return privateFile(env.DB,decodeURIComponent(path.split('/').at(-1)!))
+  if(request.method==='GET'&&path==='/api/pane/ai/history'){if(!owner||scopes)return json({error:'Native owner only.'},403);return json(await aiHistory(env.DB,actor.id))}
   if(request.method==='GET'&&path==='/api/pane/roles')return json((await env.DB.prepare('SELECT o.id,o.display_name,o.role,o.status,r.roles FROM oa_operators o LEFT JOIN pane_roles r ON r.operator_id=o.id ORDER BY o.created_at,o.id').all()).results)
   if(request.method==='GET'&&path==='/api/pane/tokens'){
    if(!owner)return json({error:'Owner only.'},403)
@@ -101,7 +103,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   }
   if(action.startsWith('ai/')){
    if(!owner||scopes)return json({error:'Native owner only.'},403)
-   result=path.endsWith('/ai/propose')?await proposeAi(env,actor.id,input):path.endsWith('/ai/decide')?await decideAi(env,actor.id,input):path.endsWith('/ai/undo')?await undoAi(env,actor.id,input):undefined
+   result=path.endsWith('/ai/propose')?await proposeAi(env,actor.id,input):path.endsWith('/ai/decide')?await decideAi(env,actor.id,input):path.endsWith('/ai/undo')?await undoAiHistory(env,actor.id,input):undefined
    if(!result)return json({error:'Not found.'},404)
    return json(result)
   }else if(action==='component-create'){

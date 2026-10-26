@@ -98,7 +98,7 @@ try{
  browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
  context=await browser.newContext();page=await context.newPage();page.setDefaultTimeout(live?120000:20000)
  await fixture.bootstrap(context);await page.goto(origin+'/setup');await page.getByRole('checkbox').check();await formSubmit('Finish setup')
- const starter=JSON.parse(await readFile('fixtures/static-site.json','utf8'))
+ const starter=JSON.parse(await readFile('fixtures/static-site.json','utf8'));starter.pages.find(page=>page.slug==='home').links=[{label:'Our studio',url:'page:about'}]
  await page.getByLabel('Site name',{exact:true}).fill(starter.name);await page.getByLabel('Description',{exact:true}).fill(starter.description)
  for(const item of starter.pages){const fields=page.locator('#start-'+item.slug);await fields.getByLabel('Page title',{exact:true}).fill(item.title);await fields.getByLabel('Text',{exact:true}).fill(item.body)}
  await formSubmit('Prepare draft revision');await publish()

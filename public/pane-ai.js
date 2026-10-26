@@ -11,15 +11,15 @@ for (const root of document.querySelectorAll('[data-ai-assist]')) {
  const editor = root.closest('.edit-card').querySelector('form[data-autosave]')
  const status = root.querySelector('[data-ai-status]'), error = root.querySelector('[data-ai-error]')
  const latest = root.querySelector('[data-ai-latest]'), suggestions = root.querySelector('[data-ai-suggestions]')
- const history = root.querySelector('[data-ai-history]'), undo = root.querySelector('[data-ai-undo]')
+ const history = root.querySelector('[data-ai-history]'), undo = root.querySelector('[data-ai-undo]'), redo = root.querySelector('[data-ai-redo]')
  const mode = requestForm.elements.mode, selection = requestForm.elements.selection
- const storageKey = 'pane-ai:' + location.pathname + ':' + root.dataset.slug
- let proposal, lastBatch, busy = false, conflicted = false, needsReload = false
+ let proposal, historyState, busy = false, conflicted = false, needsReload = false
 
  function updateFields() {
   const selectedText = ['rewrite', 'shorten', 'tone'].includes(mode.value)
   root.querySelector('[data-ai-selection]').hidden = !selectedText
   root.querySelector('[data-ai-tone]').hidden = mode.value !== 'tone'
+  root.querySelector('[data-ai-images]').hidden = mode.value !== 'alt'
   root.querySelector('[data-ai-language]').hidden = mode.value !== 'translate'
   selection.required = selectedText
   requestForm.elements.tone.required = mode.value === 'tone'
@@ -27,12 +27,11 @@ for (const root of document.querySelectorAll('[data-ai-assist]')) {
  }
 
  function updateHistory() {
-  history.hidden = !lastBatch
-  if (!lastBatch) return
-  undo.textContent = lastBatch.undone ? 'Redo accepted changes' : 'Undo accepted changes'
-  root.querySelector('[data-ai-history-note]').textContent = lastBatch.undone
-   ? 'The accepted batch was undone in a new private draft.'
-   : 'Undo the last accepted batch in a new private draft. Publication stays separate.'
+  history.hidden = !historyState?.undo && !historyState?.redo
+  undo.hidden = !historyState?.undo
+  redo.hidden = !historyState?.redo
+  root.querySelector('[data-ai-history-note]').textContent = historyState
+   ? `${historyState.undoCount} accepted batches can be undone; ${historyState.redoCount} can be redone. Each action creates a private draft. Publication stays separate.` : ''
  }
 
  function lock(value) {
@@ -137,19 +136,10 @@ for (const root of document.querySelectorAll('[data-ai-assist]')) {
 
  function completed(result, batch, message) {
   if (typeof result.revision?.id !== 'string') throw Error('The saved revision was not returned. Check revision history before continuing.')
-  lastBatch = batch ? {...batch, base: result.revision.id} : lastBatch
   needsReload = true
   const link = element('a', 'Open updated page')
   link.href = '/app?page=' + encodeURIComponent(root.dataset.slug)
   status.replaceChildren(document.createTextNode(message + ' '), link)
-  if (batch) {
-   updateHistory()
-   try { sessionStorage.setItem(storageKey, JSON.stringify(lastBatch)) }
-   catch {
-    status.prepend(document.createTextNode('This browser could not remember the Undo action. Revision history remains available. '))
-    return
-   }
-  }
   location.assign(link.href)
  }
 
@@ -159,6 +149,7 @@ for (const root of document.querySelectorAll('[data-ai-assist]')) {
   run('Sending the selected page to OpenAI…', async base => {
    const body = {base, slug: root.dataset.slug, mode: mode.value, consent: true}
    if (['rewrite', 'shorten', 'tone'].includes(mode.value)) body.selection = selection.value
+   if (mode.value === 'alt') body.images = [...root.querySelectorAll('[data-ai-image-id]')].map(image => image.dataset.aiImageId)
    if (mode.value === 'tone') body.tone = requestForm.elements.tone.value
    if (mode.value === 'translate') body.language = requestForm.elements.language.value
    const result = await post('/api/pane/ai/propose', body)
@@ -182,23 +173,19 @@ for (const root of document.querySelectorAll('[data-ai-assist]')) {
   })
  })
 
- undo.addEventListener('click', () => {
-  if (!lastBatch) return
-  run(lastBatch.undone ? 'Redoing accepted changes…' : 'Undoing accepted changes…', async () => {
-   const result = await post('/api/pane/ai/undo', {id: lastBatch.id, base: lastBatch.base})
-   completed(result, {id: lastBatch.id, undone: !lastBatch.undone}, lastBatch.undone ? 'Accepted changes restored in a private draft.' : 'Accepted changes undone in a private draft.')
+ for (const [button, direction] of [[undo, 'undo'], [redo, 'redo']]) button.addEventListener('click', () => {
+  const entry = historyState?.[direction]
+  if (!entry) return
+  run(direction === 'undo' ? 'Undoing accepted changes…' : 'Redoing accepted changes…', async () => {
+   const result = await post('/api/pane/ai/undo', {id: entry.id, base: historyState.base, direction})
+   completed(result, null, direction === 'undo' ? 'Accepted changes undone in a private draft.' : 'Accepted changes restored in a private draft.')
   })
  })
-
- try {
-  const stored = sessionStorage.getItem(storageKey)
-  if (stored) {
-   const value = JSON.parse(stored)
-   if (typeof value.id === 'string' && typeof value.base === 'string' && typeof value.undone === 'boolean') lastBatch = value
-  }
- } catch {
-  status.textContent = 'This browser could not load the last Undo action. Use revision history to review earlier changes.'
- }
+ fetch('/api/pane/ai/history', {credentials: 'same-origin'}).then(async response => {
+  if (!response.ok) return
+  historyState = await response.json()
+  updateHistory()
+ }).catch(() => { status.textContent = 'Accepted-change history is unavailable. Reopen this page before using Undo.' })
  mode.addEventListener('change', updateFields)
  updateFields()
  updateHistory()
