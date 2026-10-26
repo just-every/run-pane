@@ -45,7 +45,7 @@ test('PRESENT-001: five pages preview with a draft banner and publish without pr
  const preview=await f.request('/preview/'+first.id+'/home',{headers:{Cookie:admin}}),previewHtml=await preview.text();assert.match(previewHtml,new RegExp(fixture.name));assert.match(previewHtml,/class="preview-banner"/)
  assert.equal((await json('/api/pane/publish',{revision:first.id})).status,200)
  for(const page of fixture.pages){const p=await f.request(page.slug==='home'?'/site':'/site/'+page.slug);assert.equal(p.status,200);const html=await p.text();assert.ok(html.includes(page.title));assert.ok(html.includes(`<title>${fixture.name}</title>`));assert.doesNotMatch(html,/\bPane\b|\/brand\/|rel="(?:icon|apple-touch-icon|manifest)"|preview-banner/)}
- const d=await data();assert.equal(d.live.id,first.id);assert.equal(d.approvals[0].revision,first.id);assert.ok(d.approvals[0].actor)
+ const d=await data();assert.equal(d.live.id,first.id);assert.equal(d.approvals[0].revision,first.id);assert.equal(d.approvals[0].actor,Object.keys(d.people).find(id=>d.people[id]==='Riverbend owner'),'Publication records the exact approving native owner')
 })
 test('ACCESS-002: mutations require the canonical origin; accepted contact is durable and visits respect privacy',async()=>{
  const before=await data(),foreign='https://elsewhere.invalid'
@@ -76,13 +76,20 @@ test('ACCESS-002: mutations require the canonical origin; accepted contact is du
 })
 test('later change and rollback restore the exact immutable site with recorded decisions',async()=>{
  const site=structuredClone(fixture);site.pages[0].body='Open late on Fridays. Freshly updated.'
+ const original=structuredClone(first)
  second=await (await json('/api/pane/prepare',{site})).json()
+ const changed=structuredClone(second)
+ const retained=async()=>{const state=await data();for(const expected of [original,changed])assert.deepEqual(state.revisions.find(row=>row.id===expected.id),expected,'Later prepare, publication and rollback preserve each source snapshot and hash')}
+ await retained()
  assert.equal((await json('/api/pane/publish',{revision:second.id})).status,200)
+ await retained()
  assert.ok((await (await f.request('/site')).text()).includes('Open late on Fridays.'))
  assert.equal((await json('/api/pane/rollback',{revision:first.id})).status,200)
+ await retained()
  assert.ok(!(await (await f.request('/site')).text()).includes('Open late on Fridays.'))
  assert.equal((await data()).approvals.filter(a=>a.action==='rollback').length,1)
  const never=await (await json('/api/pane/prepare',{site:{...fixture,name:'Riverbend never live'}})).json()
+ await retained()
  const refused=await json('/api/pane/rollback',{revision:never.id});assert.equal(refused.status,400);assert.match((await refused.json()).error,/Approve and publish/)
  assert.equal((await data()).live.id,first.id)
 })

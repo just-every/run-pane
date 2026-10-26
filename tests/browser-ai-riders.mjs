@@ -48,16 +48,16 @@ export function providerInput(record,source,mode,privateValues){
  excludes(payload,[...Object.values(privateSentinels),...privateValues],'Entire provider body excludes private values')
 }
 
-export function auditMetadata(events,requests,forbidden){
+export function auditMetadata(events,requests,forbidden,actor='Browser proof owner'){
  for(const event of events.filter(event=>event.action.startsWith('ai.'))){
   keys(event,['sequence','action','subject','created_at','agent','details','actor'],'Audit event allowlist')
-  assert.ok(Number.isInteger(event.sequence));assert.equal(event.actor,'Browser proof owner');assert.equal(event.agent,null);assert.ok(Number.isFinite(Date.parse(event.created_at)))
+  assert.ok(Number.isInteger(event.sequence));assert.equal(event.actor,actor);assert.equal(event.agent,null);assert.ok(Number.isFinite(Date.parse(event.created_at)))
   const details=JSON.parse(event.details),trace=requests.get(details.request)
   assert.ok(trace,'Every AI event links to an observed explicit request')
   const decision=['ai.decide','ai.undo','ai.redo'].includes(event.action)
   keys(details,['operation','page','images','sourceRevision','request','proposal','provider','model','outcome',...(decision?['resultRevision','decisions']:[])],'Audit metadata allowlist')
   assert.equal(event.subject,'proposal:'+details.request);assert.equal(details.proposal,details.request)
-  assert.equal(details.operation,trace.mode);assert.equal(details.page,'home');assert.equal(details.sourceRevision,trace.base)
+  assert.equal(details.operation,trace.mode);assert.equal(details.page,trace.page??'home');assert.equal(details.sourceRevision,trace.base)
   assert.deepEqual(details.images,trace.images);assert.equal(details.provider,'OpenAI');assert.equal(details.model,'gpt-4.1-mini')
   assert.equal(details.outcome,{'ai.request':'requesting','ai.propose':'ready','ai.failed':'failed','ai.decide':'decided','ai.undo':'undone','ai.redo':'restored'}[event.action])
   if(decision){assert.ok(Object.hasOwn(trace.results,event.action),'Observed outcome has an expected revision');assert.equal(details.resultRevision,trace.results[event.action],'Audit result revision matches this lifecycle outcome');assert.deepEqual(details.decisions,trace.decisions)}

@@ -4,6 +4,8 @@ import { readFile } from 'node:fs/promises'
 import { execFileSync } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
 import { runtime, origin, settings } from './runtime.mjs'
+import {postProvider} from './ai-post-proof.mjs'
+import {auditMetadata} from './browser-ai-riders.mjs'
 import { createOperatorAuth } from '../src/modules/operator-auth/index.mjs'
 let f, owner, first
 const fixture = JSON.parse(await readFile('fixtures/static-site.json', 'utf8'))
@@ -285,8 +287,10 @@ test('native page references follow renamed URLs and report a deleted destinatio
 })
 
 async function aiWorkspace(respond) {
- const hosted='https://pane.example.test',mail=[],requests=[]
+ const hosted='https://pane.example.test',mail=[],requests=[],outbounds=[]
+ let observeEdge,failProvider=false
  const app=await runtime({bindings:{AUTH_ORIGIN:hosted,AUTH_LOCAL:'false',MAIL_PROVIDER:'sendgrid',MAIL_API_KEY:'synthetic-pane-5',AI_ENABLED:'true',AI_API_KEY:'synthetic-pane-4',AI_MODEL:'gpt-4.1-mini'},outboundService:async request=>{
+  outbounds.push({origin:new URL(request.url).origin,path:new URL(request.url).pathname,method:request.method})
   if(new URL(request.url).hostname==='api.sendgrid.com'){mail.push(await request.json());return new Response(null,{status:202})}
   assert.equal(new URL(request.url).origin,'https://api.openai.com')
   const input=await request.json(),content=input.messages.find(message=>message.role==='user').content
@@ -300,6 +304,8 @@ async function aiWorkspace(respond) {
   assert.deepEqual(details.images,context.images.map(image=>image.target),'The generation click names the exact inputs before the provider receives them')
   assert.ok(!JSON.stringify(click).includes(context.page.body),'The generation audit contains no page content')
   requests.push(context)
+  if(observeEdge)await observeEdge(input,click)
+  if(failProvider)return new Response('synthetic-pane-raw-provider-error',{status:502})
   const suggestions=await respond(context,content)
   return Response.json({choices:[{finish_reason:'stop',message:{content:JSON.stringify(context.mode==='translate'?{translations:Object.fromEntries(suggestions.map(item=>[item.target,item.after]))}:{suggestions})}}],usage:{prompt_tokens:70,completion_tokens:40,total_tokens:110}})
  }})
@@ -317,7 +323,7 @@ async function aiWorkspace(respond) {
  }catch(error){await app.mf.dispose();throw error}
  const propose=async(base,mode,fields={})=>ok(await call('/api/pane/ai/propose',{base,slug:'home',mode,consent:true,...fields}))
  const decide=async(proposal,accept)=>ok(await call('/api/pane/ai/decide',{id:proposal.id,base:proposal.base,decisions:proposal.suggestions.map((suggestion,index)=>({id:suggestion.id,accept:accept(suggestion,index)}))}))
- return {app,call,get,state,ok,propose,decide,requests,expectActor(name){expectedActor=name},async person(roles,name,email){
+ return {app,call,get,state,ok,propose,decide,requests,outbounds,observe(fn){observeEdge=fn},failProvider(value){failProvider=value},expectActor(name){expectedActor=name},async person(roles,name,email){
   const invitation=await ok(await call('/api/pane/roles/invite',{email,displayName:name,roles}))
   const text=mail.at(-1).content.find(part=>part.type==='text/plain').value
   const token=new URL(text.match(/https:\/\/[^\s]+/)[0]).searchParams.get('token')
@@ -594,7 +600,8 @@ test('native page writers initiate private assistance within their current grant
   assert.equal((await call('/api/pane/ai/propose',{base:codedBase.id,slug:'home',mode:'translate',language:'Spanish',consent:true},colleague.cookie)).status,403)
   assert.equal(requests.length,beforeCodeRequest)
   const log=await ok(await get('/api/pane/activity'))
-  for(const action of ['ai.request','ai.propose','ai.decide','ai.undo','ai.redo'])assert.ok(log.some(event=>event.actor==='Synthetic editor'&&event.action===action),'Editor attribution for '+action)
+  auditMetadata(log.filter(event=>event.actor==='Synthetic author'),traces,forbidden,'Synthetic author')
+  for(const action of ['ai.request','ai.propose','ai.decide','ai.undo','ai.redo','ai.failed'])assert.ok(log.some(event=>event.actor==='Synthetic editor'&&event.action===action),'Editor attribution for '+action)
  }finally{await app.mf.dispose()}
 })
 
@@ -606,7 +613,42 @@ test('native authors write and submit only own posts and use assistance without 
   source.pages.find(page=>page.slug==='about').body=privatePage
   let base=await ok(await call('/api/pane/prepare',{site:source}));await ok(await call('/api/pane/publish',{revision:base.id}))
   const live=base.id,author=await workspace.person(['author'],'Synthetic author','synthetic-pane-author-1@example.test'),other=await workspace.person(['author'],'Other author','synthetic-pane-author-2@example.test'),editor=await workspace.person(['editor'],'Synthetic editor','synthetic-pane-editor-1@example.test')
-  const authorCall=(path,body)=>call(path,body,author.cookie),authorGet=path=>get(path,author.cookie)
+  const traces=new Map(),forbidden=[privatePage,otherPost,'synthetic-pane-4','synthetic-pane-5','synthetic-pane-raw-provider-error']
+  let selected,post
+  workspace.observe((payload,click)=>{
+   assert.ok(selected,'An explicit author request selects its current post before transmission')
+   postProvider(payload,selected.page,selected.site,selected.input,forbidden)
+   const details=JSON.parse(click.details)
+   traces.set(details.request,{base:selected.base,page:selected.page.slug,mode:selected.input.mode,images:selected.input.mode==='alt'?selected.input.images:[],results:{}})
+   auditMetadata([click],traces,forbidden,'Synthetic author')
+  })
+  const authorCall=async(path,body)=>{
+   const outboundBefore=workspace.outbounds.length,sequence=(await ok(await get('/api/pane/activity'))).at(-1)?.sequence??0
+   if(path==='/api/pane/ai/propose'&&body.post===post?.id){
+    const current=await state()
+    selected={base:body.base,site:current.draft.site,page:current.draft.site.posts.find(item=>item.id===body.post).content,input:body}
+   }
+   const response=await call(path,body,author.cookie)
+   if(path.startsWith('/api/pane/ai/')){
+    const events=(await ok(await get('/api/pane/activity'))).filter(event=>event.sequence>sequence&&event.action.startsWith('ai.'))
+    const sent=workspace.outbounds.slice(outboundBefore)
+    if(path.endsWith('/propose')&&[200,400].includes(response.status)){
+     assert.deepEqual(sent,[{origin:'https://api.openai.com',path:'/v1/chat/completions',method:'POST'}],'Author generation sends exactly one model request and no other outbound action')
+     assert.deepEqual(events.map(event=>event.action),['ai.request',response.status===200?'ai.propose':'ai.failed'],'Author generation audits exactly the request and sanitized outcome')
+    }else{
+     assert.deepEqual(sent,[],'Author decisions and history send zero outbound requests')
+     const action=path.endsWith('/undo')?'ai.'+body.direction:'ai.decide'
+     assert.deepEqual(events.map(event=>event.action),response.status===200?[action]:[],'Author lifecycle audits exactly its successful outcome')
+     if(response.status===200){
+      const result=await response.clone().json(),trace=traces.get(body.id)
+      trace.results[action]=action==='ai.decide'&&!result.accepted?null:result.revision.base
+      if(action==='ai.decide')trace.decisions=body.decisions
+     }
+    }
+    auditMetadata(events,traces,forbidden,'Synthetic author')
+   }
+   return response
+  },authorGet=path=>get(path,author.cookie)
   const read=async()=>ok(await authorGet('/api/pane/posts'))
   const write=async(input,cookie=author.cookie)=>ok(await call('/api/pane/posts/save',{base:(await state()).draft.id,...input},cookie))
   await write({blog:'news',content:{slug:['news','private-story'].join('/'),title:'Private story',body:otherPost}},other.cookie)
@@ -619,7 +661,7 @@ test('native authors write and submit only own posts and use assistance without 
   }
   let own=await read();assert.equal(own.posts.length,6);assert.deepEqual(new Set(own.posts.map(post=>post.blog)),new Set(['news','recipes']))
   assert.ok(!JSON.stringify(own).includes(otherPost));assert.ok(!JSON.stringify(own).includes(privatePage))
-  const foreign=(await ok(await get('/api/pane/posts',other.cookie))).posts[0],post=own.posts[0],content=post.content
+  const foreign=(await ok(await get('/api/pane/posts',other.cookie))).posts[0];post=own.posts[0];const content=post.content
   const allowed={base:own.base,id:post.id,blog:post.blog,content}
   const before=(await state()).draft.id,calls=requests.length
   for(const [path,input] of [['/posts/save',{...allowed,id:foreign.id}],['/posts/submit',{base:own.base,id:foreign.id}],['/posts/save',{...allowed,author:other.operatorId}],['/posts/save',{...allowed,content:{...content,customCode:{html:'<p>code</p>'}}}],['/ai/propose',{base:own.base,post:foreign.id,slug:foreign.content.slug,mode:'rewrite',selection:foreign.content.body,consent:true}],['/ai/propose',{base:own.base,slug:'home',mode:'rewrite',selection:source.pages[0].body,consent:true}]])assert.equal((await authorCall('/api/pane'+path,input)).status,403,path)
@@ -676,6 +718,10 @@ test('native authors write and submit only own posts and use assistance without 
   assert.equal((await authorGet('/site/'+spanish.content.slug)).status,404)
   const rejected=await ok(await authorCall('/api/pane/ai/propose',{base:(await read()).base,post:post.id,mode:'tone',selection,tone:'Friendly',consent:true}))
   const rejectedBase=(await read()).base;await ok(await authorCall('/api/pane/ai/decide',decision(rejected,false)));assert.equal((await read()).base,rejectedBase)
+  const failedBefore=await read();workspace.failProvider(true)
+  const failed=await authorCall('/api/pane/ai/propose',{base:rejectedBase,post:post.id,mode:'rewrite',selection,consent:true})
+  assert.equal(failed.status,400);assert.ok(!(await failed.text()).includes('synthetic-pane-raw-provider-error'));workspace.failProvider(false)
+  assert.deepEqual(await read(),failedBefore,'Failed author generation leaves the private draft unchanged')
   const pending=await ok(await authorCall('/api/pane/ai/propose',{base:rejectedBase,post:post.id,mode:'rewrite',selection,consent:true}))
   await write({id:post.id,blog:post.blog,content:{slug:content.slug,title:content.title,body:'A separately saved author draft.'}})
   const stale=await authorCall('/api/pane/ai/decide',decision(pending));assert.equal(stale.status,409);assert.ok(!JSON.stringify(await stale.json()).includes(otherPost))
@@ -696,7 +742,8 @@ test('native authors write and submit only own posts and use assistance without 
   assert.ok(!published.includes(otherPost));assert.ok(!published.includes('A separately saved author draft.'))
   for(const item of (await state()).draft.site.posts){assert.equal((await get('/site/'+item.content.slug,'')).status,404);assert.ok(!sitemap.includes('/site/'+item.content.slug))}
   const log=await ok(await get('/api/pane/activity'))
-  for(const action of ['ai.request','ai.propose','ai.decide','ai.undo','ai.redo'])assert.ok(log.some(event=>event.actor==='Synthetic author'&&event.action===action))
+  auditMetadata(log.filter(event=>event.actor==='Synthetic author'),traces,forbidden,'Synthetic author')
+  for(const action of ['ai.request','ai.propose','ai.decide','ai.undo','ai.redo','ai.failed'])assert.ok(log.some(event=>event.actor==='Synthetic author'&&event.action===action))
   assert.ok(!JSON.stringify(log).includes(otherPost));assert.ok(!JSON.stringify(log).includes(selection))
  }finally{await app.mf.dispose()}
 })
