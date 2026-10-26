@@ -1,3 +1,4 @@
+import {proposeAi,decideAi,undoAi} from './ai'
 import {canvasEditor} from './ui/canvas'
 import { parseImportDocument } from './import-formats'
 import { createComponent } from './components'
@@ -98,7 +99,12 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    const imported=parseImportDocument(typeof input.source==='string'?input.source:JSON.stringify(input.source)).site
    if(imported?.customCode||imported?.pages.some(page=>page.customCode))return json({error:'Only a native owner authors custom code, including imports.'},403)
   }
-  if(action==='component-create'){
+  if(action.startsWith('ai/')){
+   if(!owner||scopes)return json({error:'Native owner only.'},403)
+   result=action==='ai/propose'?await proposeAi(env,actor.id,input):action==='ai/decide'?await decideAi(env,actor.id,input):action==='ai/undo'?await undoAi(env,actor.id,input):undefined
+   if(!result)return json({error:'Not found.'},404)
+   return json(result)
+  }else if(action==='component-create'){
    const row=await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
    if(!row)throw Error('Prepare a site first.')
    result=await prepare(env.DB,actor.id,createComponent(revision(row).site,String(input.slug),String(input.section),String(input.componentName)),String(input.base??''));notice='Reusable section saved.';back='/app?page='+encodeURIComponent(String(input.slug))

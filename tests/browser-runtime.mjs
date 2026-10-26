@@ -7,6 +7,35 @@ import {resolve,extname,sep} from 'node:path'
 import {runtime,settings} from './runtime.mjs'
 import {createOperatorAuth} from '../src/modules/operator-auth/index.mjs'
 let f, ownerCookie
+const aiLive=process.env.PANE_AI_LIVE==='1',aiFixture=process.env.PANE_AI_FIXTURE==='1'
+if(aiLive&&!process.env.AI_API_KEY)throw Error('AI_API_KEY is required for the live AI journey.')
+export const aiRequests=[]
+async function aiEdge(request){
+ const url=new URL(request.url)
+ assert.equal(url.protocol,'https:');assert.equal(url.hostname,'api.openai.com','AI requests stay on the configured provider edge')
+ const payload=await request.clone().json(),content=payload.messages.find(message=>message.role==='user').content,input=JSON.parse(content[0].text)
+ aiRequests.push({input,imageCount:content.filter(part=>part.type==='image_url').length,images:content.filter(part=>part.type==='image_url').map(part=>part.image_url.url)})
+ if(aiLive){assert.ok(aiRequests.length<=8,'The live journey has a bounded model budget');return fetch(request)}
+ assert.equal(request.headers.get('authorization'),'Bearer synthetic-pane-4')
+ const suggestion=(kind,label,target,after)=>({kind,label,target,after})
+ let suggestions
+ if(input.mode==='search')suggestions=[
+  suggestion('search-title','Workshop search title','page',input.page.title+' | Cedar Street repairs'),
+  suggestion('search-description','Workshop search description','page','Repair well-loved furniture at Cedar Street Studio. Tell the workshop about your piece and the care it needs.'),
+  suggestion('heading','Clearer page heading',input.headings[0].target,'Furniture repairs with care'),
+  suggestion('link','Related workshop page',input.destinations[0].id,input.destinations[0].title),
+  suggestion('finding','Review business details','page','Confirm the workshop contact details before considering business structured data.'),
+ ]
+ else if(input.mode==='alt'){
+  assert.equal(input.images.length,5);assert.equal(aiRequests.at(-1).imageCount,5)
+  for(const src of aiRequests.at(-1).images)assert.ok(src.startsWith('data:image/png;base64,')&&Buffer.from(src.split(',')[1],'base64').length>300,'The model receives actual raster image bytes')
+  const descriptions=['A timber workbench beneath a workshop window.','A wooden chair with a red seat beside a bench.','A blue cabinet with two brass handles.','A green toolbox holding workshop hand tools.','A round timber table on two dark legs.']
+  suggestions=input.images.map((image,index)=>suggestion('alt','Describe workshop image '+(index+1),image.target,descriptions[index]))
+ }else if(input.mode==='translate'){
+  suggestions=input.texts.map(text=>suggestion('translation','Traducir '+text.target,text.target,!text.text?'':text.target==='title'?'Muebles hechos para durar':text.target==='body'?'En Cedar Street Studio reparamos muebles queridos y creamos piezas prácticas para la vida cotidiana.\n\nCuéntanos sobre tu proyecto y el cuidado que necesita.':'Taller de muebles: '+text.text))
+ }else suggestions=[suggestion('text','Revise selected paragraph','selection',input.mode==='shorten'?'We repair furniture and make practical pieces.':input.mode==='tone'?'Bring us your well-loved furniture. We will talk through the care it needs together.':'At Cedar Street Studio, we repair well-loved furniture and build useful pieces for everyday life.')]
+ return Response.json({choices:[{finish_reason:'stop',message:{content:JSON.stringify({suggestions})}}],usage:{prompt_tokens:100,completion_tokens:100,total_tokens:200}})
+}
 const assets=resolve('dist/client')
 const types={'.css':'text/css','.js':'text/javascript','.mjs':'text/javascript','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp','.ico':'image/x-icon','.woff2':'font/woff2','.woff':'font/woff','.json':'application/json','.webmanifest':'application/manifest+json'}
 const server=createServer(async(req,res)=>{
@@ -26,7 +55,7 @@ const server=createServer(async(req,res)=>{
 })
 await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve)})
 export const origin = 'http://127.0.0.1:' + server.address().port
-f = await runtime({bindings: {AUTH_ORIGIN: origin},isolatedLive:process.env.PANE_LIVE_FIXTURE==='1'})
+f = await runtime({bindings: {AUTH_ORIGIN: origin,...(aiLive||aiFixture?{AI_ENABLED:'true',AI_API_KEY:aiLive?process.env.AI_API_KEY:'synthetic-pane-4',AI_MODEL:'gpt-4.1-mini'}:{})},...(aiLive||aiFixture?{outboundService:aiEdge}:{}),isolatedLive:process.env.PANE_LIVE_FIXTURE==='1'})
 export async function protect(context){
  await context.route('https://challenges.cloudflare.com/turnstile/v0/api.js**',route=>route.fulfill({contentType:'application/javascript',body:`window.turnstile={render(slot,options){if(!/^[a-f0-9]{64}$/.test(options.cData))return options['error-callback']();options.callback('synthetic-pane-3:'+options.cData)}}`}))
 }

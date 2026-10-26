@@ -1,0 +1,24 @@
+.pane .ai-assist { margin-top: 12px; font-size: 13px; }
+.pane .ai-assist > summary { padding-block: 4px; color: var(--pn-fuchsia-deep); font-weight: 700; }
+.pane .ai-assist > summary::before { content: '+ '; }
+.pane .ai-assist[open] > summary::before { content: '− '; }
+.pane .ai-assist-body, .pane .ai-assist form, .pane .ai-assist [data-ai-selection], .pane .ai-history { display: grid; gap: 10px; min-width: 0; }
+.pane .ai-assist-body { margin-top: 10px; }
+.pane .ai-assist [hidden] { display: none; }
+.pane .ai-assist :is(p, label, button, a, select, textarea, input) { font-size: 13px; }
+.pane .ai-assist :is(p, pre) { overflow-wrap: anywhere; }
+.pane .ai-assist select { width: 100%; min-width: 0; min-height: 38px; padding: 8px 11px; border: 1px solid var(--pn-line-strong); border-radius: 9px; background: var(--pn-white); color: var(--pn-ink); font-family: var(--pn-font); }
+.pane .ai-assist select:focus { border-color: var(--pn-action); outline: 2px solid var(--pn-action); outline-offset: 2px; }
+.pane .ai-assist button { justify-self: start; max-width: 100%; white-space: normal; text-align: left; }
+.pane .ai-assist button:disabled { opacity: .6; cursor: default; }
+.pane .ai-assist h3 { font-size: 14px; }
+.pane .ai-assist [data-ai-suggestions] { display: grid; gap: 12px; }
+.pane .ai-suggestion, .pane .ai-latest { display: grid; gap: 8px; min-width: 0; padding: 10px; border: 1px solid var(--pn-line); border-radius: 10px; }
+.pane .ai-suggestion strong { color: var(--pn-ink); }
+.pane .ai-suggestion dl { display: grid; gap: 4px; margin: 0; }
+.pane .ai-suggestion dt { color: var(--pn-muted); font-size: 13px; font-weight: 600; }
+.pane .ai-suggestion dd { margin: 0 0 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pane .ai-latest pre { max-height: 16rem; margin: 0; overflow: auto; white-space: pre-wrap; font-size: 13px; }
+.pane .ai-assist .ai-error { color: var(--pn-red); }
+.pane .ai-assist .ai-status:empty { display: none; }
+.pane .ai-history { padding: 10px; border: 1px solid var(--pn-line); border-radius: 10px; }
