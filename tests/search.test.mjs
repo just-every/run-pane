@@ -467,6 +467,8 @@ test('Pane AI reviews five real page images individually and creates a hidden tr
   home.sections=[{id:'synthetic-pane-10',kind:'text',blocks:[{id:'synthetic-pane-11',kind:'text',text:home.body,column:1,span:12,row:1},...Array.from({length:6},(_,index)=>({id:'synthetic-pane-'+(12+index),kind:'image',text:'Existing bakery description '+(index+1)+'.',image:{src,width:png.readUInt32BE(16),height:png.readUInt32BE(20),decorative:false,alt:'Existing bakery description '+(index+1)+'.'},column:1,span:12,row:index+2}))]}]
   home.body=home.sections.flatMap(section=>section.blocks.map(block=>block.text).filter(Boolean)).join('\n\n')
   const initial=await ok(await call('/api/pane/prepare',{site}));await ok(await call('/api/pane/publish',{revision:initial.id}))
+  assert.equal((await call('/api/pane/ai/propose',{base:initial.id,slug:'home',mode:'alt',consent:true,images:['block:unselected-image']})).status,400)
+  assert.equal(workspace.requests.length,0,'An unselected image identifier never starts a model request')
   const live=await(await get('/site','')).text(),proposal=await propose(initial.id,'alt',{images:Array.from({length:5},(_,index)=>'block:synthetic-pane-'+(12+index))})
   assert.equal(proposal.suggestions.length,5)
   const applied=await decide(proposal,(_,index)=>index%2===0),draft=(await state()).draft
