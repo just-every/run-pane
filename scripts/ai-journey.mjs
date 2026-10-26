@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import {createHash} from 'node:crypto'
 import {execFileSync} from 'node:child_process'
 import {mkdir,readFile,writeFile} from 'node:fs/promises'
 import {resolve} from 'node:path'
@@ -112,7 +113,7 @@ try{
   const concurrentSite=structuredClone(before.draft.site);concurrentSite.pages.find(item=>item.slug==='about').body+='\n\nA separately saved workshop update.'
   const concurrent=await prepare(concurrentSite)
   const [conflict]=await Promise.all([page.waitForResponse(response=>new URL(response.url()).pathname==='/api/pane/ai/decide'),panel().getByRole('button',{name:'Save decisions as a draft',exact:true}).click()])
-  assert.equal(conflict.status(),409);await panel().locator('[data-ai-latest]').waitFor()
+  evidence.at(-1).outcome='conflict';assert.equal(conflict.status(),409);await panel().locator('[data-ai-latest]').waitFor()
   assert.equal((await data()).draft.id,concurrent.id,'A stale review keeps the other saved draft')
   for(const item of proposal.suggestions)assert.equal(await panel().locator(`[data-suggestion-id="${item.id}"]`).inputValue(),['search-title','search-description'].includes(item.kind)?'accept':'reject','The owner keeps every review decision during comparison')
   const downloading=page.waitForEvent('download');await panel().getByRole('button',{name:'Download review copy',exact:true}).click()
@@ -171,7 +172,13 @@ try{
   assert.equal(guard.status(),409);await panel().locator('[data-ai-latest]').waitFor();assert.equal((await data()).draft.id,newer.id);await capture('stale-undo-guard',width)
   assert.equal((await data()).live.id,published.id,'Writing, images, translations and stale Undo never publish')
  }
- await writeFile(resolve(folder,live?'live-model-evidence.json':'fixture-evidence.json'),JSON.stringify({live,provider:live?'OpenAI':'provider fake',date:new Date().toISOString(),source:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),calls:fixture.aiRequests.length,evidence},null,2)+'\n')
+ const result={live,provider:live?'OpenAI':'provider fake',date:new Date().toISOString(),source:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),calls:fixture.aiRequests.length,evidence}
+ await writeFile(resolve(folder,live?'live-model-evidence.json':'fixture-evidence.json'),JSON.stringify(result,null,2)+'\n')
+ if(live&&process.env.PANE_AI_PROOF_OUTPUT){
+  const output=resolve(process.env.PANE_AI_PROOF_OUTPUT)
+  await mkdir(resolve(output,'..'),{recursive:true})
+  await writeFile(output,JSON.stringify({...result,evidence:evidence.map(item=>({viewport:item.viewport,operation:item.mode,model:item.model,kinds:item.suggestions.map(suggestion=>suggestion.kind),accepted:item.accepted??[],outcome:item.outcome??'reviewed',outputDigest:createHash('sha256').update(JSON.stringify(item.suggestions)).digest('hex')}))},null,2)+'\n')
+ }
  console.log(`AI-003 and AI-002 browser journey passed: explicit model requests, reviewed decisions, private drafts, publication, guarded Undo and Redo, paragraph modes, five raster images and separate Spanish page (${live?'live model':'fixture'}, 1440 and 390).`)
 }catch(error){if(page)await page.screenshot({path:resolve(folder,'failure.png'),fullPage:true}).catch(()=>{});throw error}
 finally{if(browser)await browser.close();await fixture.stop()}
