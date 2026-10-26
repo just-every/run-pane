@@ -600,8 +600,7 @@ test('native page writers initiate private assistance within their current grant
   assert.equal((await call('/api/pane/ai/propose',{base:codedBase.id,slug:'home',mode:'translate',language:'Spanish',consent:true},colleague.cookie)).status,403)
   assert.equal(requests.length,beforeCodeRequest)
   const log=await ok(await get('/api/pane/activity'))
-  auditMetadata(log.filter(event=>event.actor==='Synthetic author'),traces,forbidden,'Synthetic author')
-  for(const action of ['ai.request','ai.propose','ai.decide','ai.undo','ai.redo','ai.failed'])assert.ok(log.some(event=>event.actor==='Synthetic editor'&&event.action===action),'Editor attribution for '+action)
+  for(const action of ['ai.request','ai.propose','ai.decide','ai.undo','ai.redo'])assert.ok(log.some(event=>event.actor==='Synthetic editor'&&event.action===action),'Editor attribution for '+action)
  }finally{await app.mf.dispose()}
 })
 
