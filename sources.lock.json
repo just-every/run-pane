@@ -3436,7 +3436,7 @@
       "executable": false
     },
     "src/pane/ui/ai-assist.ts": {
-      "sha256": "4fc9c5a890496586b87726cd0c77f750bfe14b3488a76b94b25838efcc4641a0",
+      "sha256": "bd70867e0b0082e03a77ca319eebb816fdd0bd1f05f0239a301ee13e959d54dc",
       "executable": false
     },
     "src/pane/ui/analytics-settings.ts": {
