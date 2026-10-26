@@ -3716,7 +3716,7 @@
       "executable": false
     },
     "tests/search.test.mjs": {
-      "sha256": "c63476d995c99a82e91d6f217c49b2f5337b8e82810b31342ea00dee298f9fdb",
+      "sha256": "1dd7829d96f921ea6c849ef0eefb4e0007829c84affc6d6e1f5f13fe4829d404",
       "executable": false
     },
     "tests/site.test.mjs": {
