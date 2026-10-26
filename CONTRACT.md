@@ -57,7 +57,7 @@ A business phone system has no sibling; Pane links phone numbers for click-to-ca
 
 - **Published clauses** are the `- **ID — Title.**` bullets in [Released guarantees](#released-guarantees). The previous contract and ACCEPTANCE.md already promised them; this edition gives them IDs and keeps every guarantee, widening only where a target clause names the change.
 - **Target clauses** are the `#### ID — Title.` headings in [Target clauses](#target-clauses), and **push-further clauses** are those in [Push further](#push-further). They are binding product requirements; each carries its status beside it.
-- **Status** is judged from the code and tests at commit `4d8d9f91886016ca078a9f5d38625a04843c5c24` (21 October 2026). `done` means the behavior ships and a cited test or journey exercises it; `partial` means some of it ships, or it ships without a test; `missing` means there is no implementation. Status is a build-planning judgment, not acceptance.
+- **Status** is judged from the code and tests at commit `237b60b36007d368545bf06d4d18b11aa8bec399` (26 October 2026). `done` means the behavior ships and a cited test or journey exercises it; `partial` means some of it ships, or it ships without a test; `missing` means there is no implementation. Status is a build-planning judgment, not acceptance.
 
 ## Target amendment — 16 October 2026
 
