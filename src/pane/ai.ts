@@ -8,22 +8,22 @@ import {aiModes,type AiMode,type AiBindings,type Proposal,type Suggestion} from 
 import {modelSuggestions} from './ai-model'
 import {detachTarget,imageTargets,requestedImages,nativeLink,replaceText} from './ai-targets'
 import {sectionText} from './sections'
-type Stored={status:string;id:string;actor:string;base:string;slug:string;mode:AiMode;suggestions:string;decisions:string|null;accepted_revision:string|null;last_revision:string|null;undone:number;created_at:string}
+type Stored={post_id:string|null;status:string;id:string;actor:string;base:string;slug:string;mode:AiMode;suggestions:string;decisions:string|null;accepted_revision:string|null;last_revision:string|null;undone:number;created_at:string}
 async function latest(db:D1Database){const row=await db.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first();return row?revision(row):null}
 async function current(db:D1Database,base:unknown){const row=await latest(db);if(!row||base!==row.id)throw new DraftConflict(row);return row}
 const publicProposal=(proposal:Proposal)=>({...proposal,suggestions:proposal.suggestions.map(({page,media,...suggestion})=>suggestion)})
 export async function proposeAi(env:Bindings&AiBindings,actor:string,input:Record<string,unknown>){
  if(input.consent!==true)throw Error('Explicit permission to send this page to OpenAI is required.')
  if(!aiModes.includes(input.mode as AiMode))throw Error('Choose a supported assistance mode.')
- const row=await current(env.DB,input.base),page=row.site.pages.find(page=>!page.deleted&&page.slug===input.slug)
+ const row=await current(env.DB,input.base),post=input.post?row.site.posts?.find(post=>post.id===input.post):undefined,page=input.post?post?.content:row.site.pages.find(page=>!page.deleted&&page.slug===input.slug)
  if(!page)throw Error('Choose a current page.')
  const id=crypto.randomUUID(),mode=input.mode as AiMode
  const images=mode==='alt'?requestedImages(row.site,page,input.images).map(image=>image.target):[]
  // Persist explicit consent before the one outbound attempt, including failed calls.
- await env.DB.prepare('INSERT INTO pane_ai_proposals(id,actor,base,slug,mode,model,images,suggestions,created_at) VALUES(?,?,?,?,?,?,?,?,?)').bind(id,actor,row.id,page.slug,mode,(env as AiBindings).AI_MODEL||'gpt-4.1-mini',JSON.stringify(images),'[]',new Date().toISOString()).run()
+ await env.DB.prepare('INSERT INTO pane_ai_proposals(id,actor,base,slug,mode,model,images,suggestions,created_at,post_id) VALUES(?,?,?,?,?,?,?,?,?,?)').bind(id,actor,row.id,page.slug,mode,(env as AiBindings).AI_MODEL||'gpt-4.1-mini',JSON.stringify(images),'[]',new Date().toISOString(),post?.id??null).run()
  try{
-  const output=await modelSuggestions(env,row.site,page,mode,input)
-  const proposal:Proposal={id,base:row.id,slug:page.slug,mode,suggestions:output.suggestions}
+  const output=await modelSuggestions(env,post?{name:row.site.name,description:row.site.description,pages:[page,...(row.site.posts??[]).filter(item=>item.blog===post.blog&&item.id!==post.id).map(item=>({slug:item.content.slug,title:'',body:''}))]}:row.site,page,mode,input)
+  const proposal:Proposal={...(post?{post:post.id}:{}),id,base:row.id,slug:page.slug,mode,suggestions:output.suggestions}
   const saved=await env.DB.prepare(`UPDATE pane_ai_proposals SET suggestions=?,status='ready' WHERE id=? AND (SELECT id FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1)=?`).bind(JSON.stringify(proposal.suggestions),id,row.id).run()
   if(!saved.meta.changes)throw new DraftConflict(await latest(env.DB))
   return {...publicProposal(proposal),model:output.model,usage:output.usage}
@@ -57,7 +57,7 @@ function applySuggestion(site:Site,slug:string,suggestion:Suggestion){
 }
 async function owned(db:D1Database,actor:string,id:unknown){
  const row=await db.prepare('SELECT * FROM pane_ai_proposals WHERE id=? AND actor=?').bind(String(id??''),actor).first<Stored>()
- if(!row)throw Error('Proposal not found for this owner.')
+ if(!row)throw Error('Proposal not found for this person.')
  return row
 }
 /** The guarded revision insert and decision journal commit in the same D1 batch. */
@@ -70,7 +70,14 @@ export async function decideAi(env:Bindings,actor:string,input:Record<string,unk
  if(!Array.isArray(decisions)||decisions.length!==suggestions.length||new Set(decisions.map(decision=>decision?.id)).size!==suggestions.length||suggestions.some(suggestion=>!decisions.some(decision=>decision?.id===suggestion.id&&typeof decision.accept==='boolean')))throw Error('Accept or reject every suggestion exactly once.')
  const accepted=suggestions.filter(suggestion=>decisions.find(decision=>decision.id===suggestion.id)!.accept)
  const site=structuredClone(base.site)
- for(const suggestion of accepted)applySuggestion(site,proposal.slug,suggestion)
+ if(proposal.post_id){
+  const post=site.posts?.find(post=>post.id===proposal.post_id)
+  if(!post)throw Error('Post no longer exists.')
+  const local:Site={name:site.name,description:site.description,pages:[post.content]}
+  for(const suggestion of accepted)applySuggestion(local,proposal.slug,suggestion)
+  if(accepted.some(item=>item.kind!=='translation'))post.state='draft'
+  for(const page of local.pages.slice(1))site.posts!.push({id:page.id!,author:post.author,blog:post.blog,state:'draft',content:page})
+ }else for(const suggestion of accepted)applySuggestion(site,proposal.slug,suggestion)
  if(!accepted.length){
   const result=await env.DB.prepare(`UPDATE pane_ai_proposals SET decisions=? WHERE id=? AND decisions IS NULL AND (SELECT id FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1)=?`).bind(JSON.stringify(decisions),proposal.id,base.id).run()
   if(!result.meta.changes)throw new DraftConflict(await latest(env.DB))

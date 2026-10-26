@@ -115,7 +115,7 @@ export async function riderProof({fixture,page,context,starter,workshopImages,da
    assert.equal((await data()).draft.id,source.id,'Provider failure creates no draft')
    const policy=await post('/api/pane/policies/generate',{base:source.id});assert.equal(policy.status(),200)
    const policies=await policy.json(),body=policies.site.pages.find(page=>page.policyStarter==='privacy').body
-   for(const phrase of ['OpenAI, accessed through Base AI','explicit owner click','selected page text','explicitly named native images','individually accepted','separate owner approval','Starter for owner review'])assert.ok(body.includes(phrase),'Connected editable policy starter discloses '+phrase)
+   for(const phrase of ['OpenAI, accessed through Base AI','explicit permitted user click','selected page text','explicitly named native images','individually accepted','separate owner approval','Starter for owner review'])assert.ok(body.includes(phrase),'Connected editable policy starter discloses '+phrase)
    for(const old of source.site.pages)assert.deepEqual(policies.site.pages.find(page=>page.slug===old.slug),old,'Policy generation preserves existing pages')
    assert.equal((await data()).live.id,liveBefore.id,'Policy starters remain unpublished')
   }

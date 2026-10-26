@@ -10,7 +10,7 @@ const live=process.env.PANE_AI_LIVE==='1'
 if(!live)process.env.PANE_AI_FIXTURE='1'
 const fixture=await import('../tests/browser-runtime.mjs')
 const folder=resolve(process.env.PANE_SCREENSHOTS??'./test-results/ai'),evidence=[]
-let browser,page,context
+let browser,page,context,actorPrefix=''
 const origin=fixture.origin
 const data=async()=>{const response=await context.request.get(origin+'/api/pane');assert.equal(response.status(),200);return response.json()}
 const home=revision=>revision.site.pages.find(item=>item.slug==='home')
@@ -18,7 +18,7 @@ const panel=()=>page.locator('[data-ai-assist]')
 async function capture(name,width){
  for(const size of live?[1440,390]:[width]){
   await page.setViewportSize({width:size,height:1000})
-  await page.screenshot({path:resolve(folder,`${name}-${size}.png`),fullPage:true})
+  await page.screenshot({path:resolve(folder,`${actorPrefix}${name}-${size}.png`),fullPage:true})
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,`${name} fits at ${size}`)
  }
  await page.setViewportSize({width,height:1000})
@@ -58,7 +58,7 @@ async function propose(mode,width,fields={}){
   if(item.kind==='finding')assert.equal(await control.locator('option[value=accept]').count(),0,'Findings cannot be accepted as content')
  }
  await capture(mode+'-review',width)
- evidence.push({viewport:width,mode,model:result.model,providerStatus:fixture.aiRequests.at(-1).status??200,providerRequestId:fixture.aiRequests.at(-1).providerRequestId??null,suggestions:result.suggestions})
+ evidence.push({actor:actorPrefix?'editor':'owner',viewport:width,mode,model:result.model,providerStatus:fixture.aiRequests.at(-1).status??200,providerRequestId:fixture.aiRequests.at(-1).providerRequestId??null,suggestions:result.suggestions})
  return result
 }
 async function decide(proposal,accept){
@@ -99,9 +99,77 @@ async function tooltipAudit(width){
  await page.getByRole('tooltip').getByText('Account and team',{exact:true}).waitFor();await capture('editor-keyboard-tooltip',width);await page.keyboard.press('Escape')
 }
 
+// Use the existing editor as a natively invited writer, with its own browser
+// context and proposal journal. No owner cookies are copied into that context.
+async function editorInitiation(starter){
+ const ownerContext=context,ownerPage=page
+ const link=await fixture.invitePerson(ownerContext,{email:'synthetic-pane-writer@example.test',displayName:'Synthetic writer',roles:['editor']})
+ const member=await browser.newContext({acceptDownloads:true}),tab=await member.newPage()
+ tab.setDefaultTimeout(20000)
+ try{
+  await fixture.protect(member);await tab.goto(link);await tab.getByRole('button',{name:/Confirm/}).click();await tab.waitForURL(url=>url.pathname==='/app')
+  const people=await (await ownerContext.request.get(origin+'/api/pane/roles')).json(),person=people.find(item=>item.display_name==='Synthetic writer')
+  assert.ok(person)
+  context=member;page=tab;actorPrefix='editor-'
+  for(const width of [1440,390]){
+   await page.setViewportSize({width,height:1000})
+   const source=await ownerContext.request.post(origin+'/api/pane/prepare',{headers:{Origin:origin},data:{site:starter}});assert.equal(source.status(),200)
+   const initial=(await data()).draft,liveBefore=(await data()).live.id
+   await editor();await tooltipAudit(width)
+   assert.equal(await panel().locator('option[value=search]').count(),0,'Search review remains owner-only')
+   assert.equal(await page.getByRole('button',{name:'Approve & publish',exact:true}).count(),0)
+   const calls=fixture.aiRequests.length
+   const forbidden=await member.request.post(origin+'/api/pane/ai/propose',{headers:{Origin:origin},data:{base:initial.id,slug:'home',mode:'search',consent:true}})
+   assert.equal(forbidden.status(),403);assert.equal(fixture.aiRequests.length,calls)
+   const snapshots=[]
+   for(const mode of ['rewrite','shorten','tone','rewrite','shorten']){
+    await editor();const before=(await data()).draft; snapshots.push(before.site)
+    const selection=home(before).body.split(/\n\s*\n/)[0],proposal=await propose(mode,width,{selection,tone:'Warm and friendly'})
+    await decide(proposal,()=>true)
+    const expected=structuredClone(before.site);home({site:expected}).body=home(before).body.replace(selection,proposal.suggestions[0].after)
+    assert.deepEqual((await data()).draft.site,expected,'Editor writing retains settings and every unselected page')
+    assert.equal((await data()).live.id,liveBefore)
+   }
+   const final=(await data()).draft.site
+   for(let index=4;index>=0;index--){await editor();await history('Undo accepted changes');assert.deepEqual((await data()).draft.site,snapshots[index])}
+   for(let index=0;index<5;index++){await editor();await history('Redo accepted changes')}
+   assert.deepEqual((await data()).draft.site,final,'Five editor redo steps survive reopened pages')
+   const images=await workshopImages(),site=structuredClone((await data()).draft.site),imageHome=home({site})
+   imageHome.sections=[{id:'workshop',kind:'text',blocks:[{id:'intro',kind:'text',text:imageHome.body,column:1,span:12,row:1},...images.map((image,index)=>({id:'image-'+index,kind:'image',image,text:'',column:1,span:12,row:index+2}))]}]
+   assert.equal((await ownerContext.request.post(origin+'/api/pane/prepare',{headers:{Origin:origin},data:{site}})).status(),200)
+   await editor();const alts=await propose('alt',width),accept=new Set(alts.suggestions.slice(0,2).map(item=>item.id))
+   await decide(alts,item=>accept.has(item.id))
+   for(const item of alts.suggestions){const block=home((await data()).draft).sections[0].blocks.find(block=>'block:'+block.id===item.target);assert.equal(block.image.alt,accept.has(item.id)?item.after:'')}
+   const original=structuredClone(home((await data()).draft))
+   await editor();const translation=await propose('translate',width);await decide(translation,()=>true)
+   const translated=(await data()).draft.site.pages.find(item=>item.slug.startsWith('es/'))
+   assert.ok(translated?.hidden);assert.deepEqual(home((await data()).draft),original)
+   assert.equal((await member.request.get(origin+'/site/'+translated.slug)).status(),404)
+   await page.goto(origin+'/preview/'+(await data()).draft.id+'/'+translated.slug);await capture('spanish-preview',width)
+   await editor();const beforeRejection=(await data()).draft.id,rejection=await propose('tone',width,{selection:original.sections[0].blocks[0].text,tone:'Warm'})
+   await decide(rejection,()=>false);assert.equal((await data()).draft.id,beforeRejection)
+   await capture('rejected-tone',width)
+   assert.equal((await member.request.post(origin+'/api/pane/publish',{headers:{Origin:origin},data:{revision:beforeRejection}})).status(),403)
+   const activity=await (await ownerContext.request.get(origin+'/api/pane/activity')).json()
+   for(const action of ['ai.request','ai.propose','ai.decide','ai.undo','ai.redo'])assert.ok(activity.some(item=>item.actor==='Synthetic writer'&&item.action===action))
+  }
+  const before=(await data()).draft.id,calls=fixture.aiRequests.length
+  const changed=await ownerContext.request.post(origin+'/api/pane/roles/set',{headers:{Origin:origin},data:{operatorId:person.id,roles:['reporting']}});assert.equal(changed.status(),200)
+  for(const width of [1440,390]){
+   await page.setViewportSize({width,height:1000});await page.goto(origin+'/app')
+   assert.equal(new URL(page.url()).pathname,'/app/sites');assert.equal(await panel().count(),0)
+   await capture('revoked',width)
+  }
+  assert.equal((await member.request.get(origin+'/api/pane/ai/history')).status(),403)
+  assert.equal((await member.request.post(origin+'/api/pane/ai/propose',{headers:{Origin:origin},data:{base:before,slug:'home',mode:'rewrite',selection:'Synthetic text',consent:true}})).status(),403)
+  assert.equal(fixture.aiRequests.length,calls)
+  console.log('Native editor assistance passed: all writing modes, five images, separate Spanish draft, individual decisions, five durable undo and redo steps, metadata audit, refusal and revocation, icon tooltips and overflow at 1440 and 390.')
+ }finally{context=ownerContext;page=ownerPage;actorPrefix='';await member.close()}
+}
+
 try{
  await mkdir(folder,{recursive:true})
- browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
+ browser=await chromium.launch({headless:true,executablePath:process.env.PANE_CHROMIUM_PATH,args:['--no-sandbox','--use-mock-keychain','--password-store=basic']})
  context=await browser.newContext({acceptDownloads:true});page=await context.newPage();page.setDefaultTimeout(live?120000:20000)
  await fixture.bootstrap(context);await page.goto(origin+'/setup');await page.getByRole('checkbox').check();await formSubmit('Finish setup')
  const starter=JSON.parse(await readFile('fixtures/static-site.json','utf8'));starter.pages.find(page=>page.slug==='home').links=[{label:'Our studio',url:'page:about'}]
@@ -179,6 +247,7 @@ try{
   assert.equal(guard.status(),409);await panel().locator('[data-ai-latest]').waitFor();assert.equal((await data()).draft.id,newer.id);await capture('stale-undo-guard',width)
   assert.equal((await data()).live.id,published.id,'Writing, images, translations and stale Undo never publish')
  }
+ if(!live)await editorInitiation(starter)
  const result={live,provider:live?'OpenAI':'provider fake',date:new Date().toISOString(),source:execFileSync('git',['-c','safe.directory='+process.cwd(),'rev-parse','HEAD'],{encoding:'utf8'}).trim(),calls:fixture.aiRequests.length,riders,evidence}
  await writeFile(resolve(folder,live?'live-model-evidence.json':'fixture-evidence.json'),JSON.stringify(result,null,2)+'\n')
  if(live&&process.env.PANE_AI_PROOF_OUTPUT){

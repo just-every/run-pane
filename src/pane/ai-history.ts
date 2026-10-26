@@ -4,12 +4,16 @@ import type {Revision} from './model'
 type History={actor:string;head_revision:string;entries:string;position:number}
 async function latest(db:D1Database){const row=await db.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first();return row?revision(row):null}
 async function stored(db:D1Database,actor:string){return db.prepare('SELECT * FROM pane_ai_history WHERE actor=?').bind(actor).first<History>()}
-export async function aiHistory(db:D1Database,actor:string){
+export async function aiHistory(db:D1Database,actor:string,writingOnly=false,post:string|null=null){
  const current=await latest(db),history=await stored(db,actor)
  if(!history||history.head_revision!==current?.id)return {base:current?.id,undo:null,redo:null,undoCount:0,redoCount:0}
  const entries=JSON.parse(history.entries) as string[]
- const summary=async(id:string|undefined)=>id?db.prepare('SELECT id,slug,mode FROM pane_ai_proposals WHERE id=? AND actor=?').bind(id,actor).first():null
- return {base:history.head_revision,undo:await summary(entries[history.position-1]),redo:await summary(entries[history.position]),undoCount:history.position,redoCount:entries.length-history.position}
+ const available=(await db.prepare("SELECT id,slug,mode FROM pane_ai_proposals WHERE id IN (SELECT value FROM json_each(?)) AND actor=? AND (?=0 OR mode!='search') AND post_id IS ?").bind(JSON.stringify(entries),actor,writingOnly?1:0,post).all<{id:string;slug:string;mode:string}>()).results
+ const summaries=new Map(available.map(row=>[row.id,row]))
+ let undoCount=0,redoCount=0
+ for(let index=history.position-1;index>=0&&summaries.has(entries[index]);index--)undoCount++
+ for(let index=history.position;index<entries.length&&summaries.has(entries[index]);index++)redoCount++
+ return {base:history.head_revision,undo:summaries.get(entries[history.position-1])??null,redo:summaries.get(entries[history.position])??null,undoCount,redoCount}
 }
 export async function appendAiHistory(db:D1Database,actor:string,base:string,next:string,proposal:string){
  const old=await stored(db,actor)

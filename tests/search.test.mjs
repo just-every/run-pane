@@ -294,7 +294,7 @@ async function aiWorkspace(respond) {
   const logged=await app.request(hosted+'/api/pane/activity',{headers:{Cookie:cookie}})
   assert.equal(logged.status,200)
   const click=(await logged.json()).filter(event=>event.action==='ai.request').at(-1),details=JSON.parse(click.details)
-  assert.equal(click.actor,'Synthetic owner');assert.equal(details.operation,context.mode)
+  assert.equal(click.actor,expectedActor);assert.equal(details.operation,context.mode)
   assert.equal(details.provider,'OpenAI');assert.equal(details.model,input.model)
   assert.equal(click.subject,'proposal:'+details.request);assert.ok(details.sourceRevision)
   assert.deepEqual(details.images,context.images.map(image=>image.target),'The generation click names the exact inputs before the provider receives them')
@@ -303,7 +303,7 @@ async function aiWorkspace(respond) {
   const suggestions=await respond(context,content)
   return Response.json({choices:[{finish_reason:'stop',message:{content:JSON.stringify(context.mode==='translate'?{translations:Object.fromEntries(suggestions.map(item=>[item.target,item.after]))}:{suggestions})}}],usage:{prompt_tokens:70,completion_tokens:40,total_tokens:110}})
  }})
- let cookie
+ let cookie,expectedActor='Synthetic owner'
  const call=(path,body,session=cookie,headers={})=>app.request(hosted+path,{method:'POST',headers:{Cookie:session??'',Origin:hosted,'Content-Type':'application/json',...headers},body:JSON.stringify(body)})
  const get=(path,session=cookie)=>app.request(hosted+path,{headers:{Cookie:session??''}})
  const state=async()=>{const response=await get('/api/pane');assert.equal(response.status,200);return response.json()}
@@ -317,7 +317,13 @@ async function aiWorkspace(respond) {
  }catch(error){await app.mf.dispose();throw error}
  const propose=async(base,mode,fields={})=>ok(await call('/api/pane/ai/propose',{base,slug:'home',mode,consent:true,...fields}))
  const decide=async(proposal,accept)=>ok(await call('/api/pane/ai/decide',{id:proposal.id,base:proposal.base,decisions:proposal.suggestions.map((suggestion,index)=>({id:suggestion.id,accept:accept(suggestion,index)}))}))
- return {app,call,get,state,ok,propose,decide,requests,async admin(){
+ return {app,call,get,state,ok,propose,decide,requests,expectActor(name){expectedActor=name},async person(roles,name,email){
+  const invitation=await ok(await call('/api/pane/roles/invite',{email,displayName:name,roles}))
+  const text=mail.at(-1).content.find(part=>part.type==='text/plain').value
+  const token=new URL(text.match(/https:\/\/[^\s]+/)[0]).searchParams.get('token')
+  const confirmed=await call('/auth/confirm',{token},'');assert.equal(confirmed.status,303,await confirmed.clone().text())
+  return {...invitation,cookie:confirmed.headers.get('set-cookie').split(';')[0]}
+ },async admin(){
   assert.equal((await call('/auth/invite',{email:'synthetic-pane-6@example.test',displayName:'Synthetic administrator',role:'admin'})).status,202)
   const text=mail.at(-1).content.find(part=>part.type==='text/plain').value
   const token=new URL(text.match(/https:\/\/[^\s]+/)[0]).searchParams.get('token')
@@ -513,5 +519,179 @@ test('Pane AI reviews five real page images individually and creates a hidden tr
   const french=(await state()).draft.site.pages.find(page=>page.title.startsWith('Texte de la boulangerie'))
   assert.ok(french&&french.hidden&&french.slug!==spanish.slug,'Another requested language has its own private page')
   assert.deepEqual((await state()).draft.site.pages.find(page=>page.slug==='home'),latest.site.pages.find(page=>page.slug==='home'))
+ }finally{await app.mf.dispose()}
+})
+
+
+test('native page writers initiate private assistance within their current grant and retain actor-owned decisions',async()=>{
+ const workspace=await aiWorkspace(context=>{
+  if(context.mode==='search')return [
+   {kind:'search-title',label:'Search title',target:'title',after:'Workshop search title'},
+   {kind:'search-description',label:'Description',target:'description',after:'Workshop search description'},
+   {kind:'heading',label:'Heading',target:'title',after:'Workshop heading'},
+   {kind:'finding',label:'Finding',target:'structured-data',after:'Review business facts'},
+  ]
+  if(context.mode==='alt')return context.images.map((image,index)=>({kind:'alt',label:'Image '+index,target:image.target,after:'Synthetic workshop image '+index}))
+  if(context.mode==='translate')return context.texts.map((entry,index)=>({kind:'translation',target:entry.target,after:entry.text?'Texto del taller '+index:''}))
+  return [{kind:'text',label:'Revise the selection',target:'selection',after:context.mode==='shorten'?'Furniture care.':context.mode==='tone'?'Bring your furniture to our friendly workshop.':'We repair furniture carefully.'}]
+ })
+ const {app,call,get,state,ok,requests}=workspace
+ try{
+  const initial=await ok(await call('/api/pane/prepare',{site:fixture}));await ok(await call('/api/pane/publish',{revision:initial.id}))
+  const ownerProposal=await workspace.propose(initial.id,'search')
+  const editor=await workspace.person(['editor'],'Synthetic editor','synthetic-pane-editor@example.test')
+  const colleague=await workspace.person(['editor'],'Synthetic colleague','synthetic-pane-colleague@example.test')
+  const author=await workspace.person(['author'],'Synthetic author','synthetic-pane-author@example.test')
+  const reader=await workspace.person(['inbox','reporting','comment-moderator'],'Synthetic reader','synthetic-pane-reader@example.test')
+  const decisions=proposal=>({id:proposal.id,base:proposal.base,decisions:proposal.suggestions.map(item=>({id:item.id,accept:true}))})
+  const writing={base:initial.id,slug:'home',mode:'rewrite',selection:initial.site.pages.find(page=>page.slug==='home').body.split(/\n\s*\n/)[0],consent:true}
+  for(const person of [author,reader]){
+   for(const [path,input] of [['propose',writing],['decide',decisions(ownerProposal)],['undo',{id:ownerProposal.id,base:initial.id}]])assert.equal((await call('/api/pane/ai/'+path,input,person.cookie)).status,403)
+   assert.equal((await get('/api/pane/ai/history',person.cookie)).status,403)
+   assert.ok(!(await (await get('/app',person.cookie)).text()).includes('data-ai-assist'))
+  }
+  assert.equal((await call('/api/pane/posts/save',{base:initial.id,content:{slug:'story',title:'Story',body:'Synthetic story'}},reader.cookie)).status,403)
+  const scoped=await ok(await call('/api/pane/tokens/create',{name:'Synthetic writer token',scopes:['draft:write','pages:read'],days:1}))
+  for(const path of ['propose','decide','undo'])assert.equal((await call('/api/pane/ai/'+path,writing,'',{Authorization:'Bearer '+scoped.token})).status,403)
+  assert.equal((await get('/api/pane/ai/history','')).status,401)
+  assert.equal((await call('/api/pane/ai/propose',{...writing,mode:'search'},editor.cookie)).status,403)
+  assert.equal((await call('/api/pane/ai/decide',{...decisions(ownerProposal),mode:'rewrite'},editor.cookie)).status,403,'Claimed mode cannot confer ownership or search authority')
+  assert.equal((await call('/api/pane/ai/propose',writing,editor.cookie,{Origin:'https://foreign.example'})).status,403)
+  assert.equal((await call('/api/pane/ai/propose',{...writing,consent:false},editor.cookie)).status,400)
+  assert.equal(requests.length,1,'Refusals never send content to OpenAI')
+  workspace.expectActor('Synthetic editor')
+  const before=(await state()).draft
+  const proposal=await ok(await call('/api/pane/ai/propose',writing,editor.cookie))
+  assert.equal((await state()).draft.id,before.id,'Editor generation creates no draft')
+  assert.equal((await call('/api/pane/ai/decide',decisions(proposal),colleague.cookie)).status,403)
+  const emptyHistory=await ok(await get('/api/pane/ai/history',colleague.cookie));assert.equal(emptyHistory.undo,null)
+  const accepted=await ok(await call('/api/pane/ai/decide',decisions(proposal),editor.cookie))
+  const expected=structuredClone(before.site);expected.pages.find(page=>page.slug==='home').body=expected.pages.find(page=>page.slug==='home').body.replace(writing.selection,proposal.suggestions[0].after)
+  assert.deepEqual(accepted.revision.site,expected,'Editor assistance changes only selected content, never settings or other pages')
+  assert.equal((await state()).live.id,initial.id)
+  for(const action of ['publish','page-publish','rollback'])assert.equal((await call('/api/pane/'+action,{revision:accepted.revision.id,base:accepted.revision.id,page:'home'},editor.cookie)).status,403)
+  const history=await ok(await get('/api/pane/ai/history',editor.cookie));assert.equal(history.undo.id,proposal.id)
+  const undone=await ok(await call('/api/pane/ai/undo',{id:proposal.id,base:accepted.revision.id},editor.cookie));assert.deepEqual(undone.revision.site,before.site)
+  const redone=await ok(await call('/api/pane/ai/undo',{id:proposal.id,base:undone.revision.id},editor.cookie));assert.deepEqual(redone.revision.site,expected)
+  const next={...writing,base:redone.revision.id,selection:proposal.suggestions[0].after,mode:'tone',tone:'Friendly'}
+  const pending=await ok(await call('/api/pane/ai/propose',next,editor.cookie)),requestCount=requests.length
+  await ok(await call('/api/pane/roles/set',{operatorId:editor.operatorId,roles:['reporting']}))
+  for(const [path,input] of [['propose',next],['decide',decisions(pending)],['undo',{id:proposal.id,base:redone.revision.id}]])assert.equal((await call('/api/pane/ai/'+path,input,editor.cookie)).status,403,'Revocation applies on the next '+path+' request')
+  assert.equal((await get('/api/pane/ai/history',editor.cookie)).status,403)
+  assert.equal(requests.length,requestCount);assert.equal((await state()).draft.id,redone.revision.id)
+  await ok(await call('/api/pane/roles/set',{operatorId:editor.operatorId,roles:['editor']}))
+  const rejected=await ok(await call('/api/pane/ai/decide',{...decisions(pending),decisions:pending.suggestions.map(item=>({id:item.id,accept:false}))},editor.cookie));assert.equal(rejected.accepted,0)
+  const stale=await ok(await call('/api/pane/ai/propose',next,editor.cookie))
+  const newer=await ok(await call('/api/pane/prepare',{base:redone.revision.id,site:redone.revision.site}))
+  assert.equal((await call('/api/pane/ai/decide',decisions(stale),editor.cookie)).status,409)
+  assert.equal((await state()).draft.id,newer.id)
+  await ok(await call('/auth/operator/status',{operatorId:editor.operatorId,status:'inactive'}))
+  assert.equal((await call('/api/pane/ai/propose',{...next,base:newer.id},editor.cookie)).status,401)
+  assert.equal((await get('/api/pane/ai/history',editor.cookie)).status,401)
+  assert.equal((await state()).live.id,initial.id)
+  const coded=structuredClone((await state()).draft.site);coded.pages.find(page=>page.slug==='home').customCode={html:'<p>Owner code</p>'}
+  const codedBase=await ok(await call('/api/pane/prepare',{site:coded})),beforeCodeRequest=requests.length
+  assert.equal((await call('/api/pane/ai/propose',{base:codedBase.id,slug:'home',mode:'translate',language:'Spanish',consent:true},colleague.cookie)).status,403)
+  assert.equal(requests.length,beforeCodeRequest)
+  const log=await ok(await get('/api/pane/activity'))
+  for(const action of ['ai.request','ai.propose','ai.decide','ai.undo','ai.redo'])assert.ok(log.some(event=>event.actor==='Synthetic editor'&&event.action===action),'Editor attribution for '+action)
+ }finally{await app.mf.dispose()}
+})
+
+test('native authors write and submit only own posts and use assistance without exposing other content',async()=>{
+ const workspace=await aiWorkspace(context=>context.mode==='translate'?context.texts.map((text,index)=>({kind:'translation',target:text.target,after:text.text?'Texto del taller '+index:''})):context.mode==='alt'?context.images.map((image,index)=>({kind:'alt',label:'Describe image '+index,target:image.target,after:'Synthetic post image '+index})): [{kind:'text',label:'Revise this post',target:'selection',after:context.mode==='shorten'?'Post summary.':context.mode==='tone'?'Welcome to our workshop story.':'A carefully rewritten workshop story.'}])
+ const {app,call,get,state,ok,requests}=workspace
+ try{
+  const privatePage='synthetic-pane-unrelated-page',otherPost='synthetic-pane-other-author-post',source=structuredClone(fixture)
+  source.pages.find(page=>page.slug==='about').body=privatePage
+  let base=await ok(await call('/api/pane/prepare',{site:source}));await ok(await call('/api/pane/publish',{revision:base.id}))
+  const live=base.id,author=await workspace.person(['author'],'Synthetic author','synthetic-pane-author-1@example.test'),other=await workspace.person(['author'],'Other author','synthetic-pane-author-2@example.test'),editor=await workspace.person(['editor'],'Synthetic editor','synthetic-pane-editor-1@example.test')
+  const authorCall=(path,body)=>call(path,body,author.cookie),authorGet=path=>get(path,author.cookie)
+  const read=async()=>ok(await authorGet('/api/pane/posts'))
+  const write=async(input,cookie=author.cookie)=>ok(await call('/api/pane/posts/save',{base:(await state()).draft.id,...input},cookie))
+  await write({blog:'news',content:{slug:['news','private-story'].join('/'),title:'Private story',body:otherPost}},other.cookie)
+  for(const blog of ['news','recipes'])for(let index=0;index<3;index++){
+   const result=await write({blog,content:{slug:blog+'/story-'+index,title:blog+' story '+index,body:'We care for workshop furniture and share the story behind each carefully restored piece.'}})
+   const post=result.posts.at(-1)
+   assert.equal(post.author,author.operatorId);assert.equal(post.state,'draft');assert.equal(post.content.hidden,true)
+   const submitted=await ok(await authorCall('/api/pane/posts/submit',{base:result.base,id:post.id}))
+   assert.equal(submitted.posts.find(item=>item.id===post.id).state,'review')
+  }
+  let own=await read();assert.equal(own.posts.length,6);assert.deepEqual(new Set(own.posts.map(post=>post.blog)),new Set(['news','recipes']))
+  assert.ok(!JSON.stringify(own).includes(otherPost));assert.ok(!JSON.stringify(own).includes(privatePage))
+  const foreign=(await ok(await get('/api/pane/posts',other.cookie))).posts[0],post=own.posts[0],content=post.content
+  const allowed={base:own.base,id:post.id,blog:post.blog,content}
+  const before=(await state()).draft.id,calls=requests.length
+  for(const [path,input] of [['/posts/save',{...allowed,id:foreign.id}],['/posts/submit',{base:own.base,id:foreign.id}],['/posts/save',{...allowed,author:other.operatorId}],['/posts/save',{...allowed,content:{...content,customCode:{html:'<p>code</p>'}}}],['/ai/propose',{base:own.base,post:foreign.id,slug:foreign.content.slug,mode:'rewrite',selection:foreign.content.body,consent:true}],['/ai/propose',{base:own.base,slug:'home',mode:'rewrite',selection:source.pages[0].body,consent:true}]])assert.equal((await authorCall('/api/pane'+path,input)).status,403,path)
+  for(const path of ['prepare','autosave','publish','page-publish','rollback',['roles','set'].join('/')])assert.equal((await authorCall('/api/pane/'+path,{base:own.base,revision:own.base,site:source,operatorId:author.operatorId,roles:['editor']})).status,403)
+  assert.equal((await call('/api/pane/posts/save',allowed,editor.cookie)).status,403)
+  assert.equal((await authorGet('/api/pane/ai/history?post='+foreign.id)).status,403)
+  assert.equal((await state()).draft.id,before);assert.equal(requests.length,calls)
+  assert.equal((await authorCall('/api/pane/posts/save',{...allowed,base:'synthetic-pane-stale'})).status,409)
+  const conflict=await (await authorCall('/api/pane/posts/submit',{base:'synthetic-pane-stale',id:post.id})).json()
+  assert.ok(!JSON.stringify(conflict).includes(otherPost));assert.ok(!JSON.stringify(conflict).includes(privatePage))
+  workspace.expectActor('Synthetic author')
+  const decision=(proposal,accept=true)=>({id:proposal.id,base:proposal.base,post:post.id,decisions:proposal.suggestions.map(item=>({id:item.id,accept}))})
+  let selection=content.body
+  const acceptedStates=[]
+  for(const mode of ['rewrite','shorten','tone','rewrite','shorten']){
+   own=await read();acceptedStates.push(structuredClone(own.posts))
+   const proposal=await ok(await authorCall('/api/pane/ai/propose',{base:own.base,post:post.id,mode,selection,tone:'Friendly',consent:true}))
+   assert.equal((await read()).base,own.base);assert.equal(proposal.post,post.id)
+   assert.equal((await call('/api/pane/ai/decide',decision(proposal),other.cookie)).status,403)
+   assert.equal((await authorCall('/api/pane/ai/decide',{...decision(proposal),post:foreign.id})).status,403)
+   const result=await ok(await authorCall('/api/pane/ai/decide',decision(proposal)))
+   assert.ok(!JSON.stringify(result).includes(privatePage));assert.ok(!JSON.stringify(result).includes(otherPost))
+   const revised=(await read()).posts.find(item=>item.id===post.id)
+   assert.equal(revised.content.body,proposal.suggestions[0].after);assert.equal(revised.state,'draft');selection=revised.content.body
+   assert.deepEqual((await read()).posts.filter(item=>item.id!==post.id),acceptedStates.at(-1).filter(item=>item.id!==post.id),'Assistance leaves every unselected own post unchanged')
+   assert.deepEqual((await state()).draft.site.posts.find(item=>item.id===foreign.id),foreign,'Assistance leaves the other author post unchanged')
+   assert.equal((await state()).live.id,live)
+  }
+  const final=(await read()).posts
+  for(let index=4;index>=0;index--){
+   const history=await ok(await authorGet('/api/pane/ai/history?post='+post.id))
+   const result=await ok(await authorCall('/api/pane/ai/undo',{base:history.base,id:history.undo.id,post:post.id,direction:'undo'}))
+   assert.deepEqual(result.revision.posts,acceptedStates[index]);assert.ok(!JSON.stringify(result).includes(otherPost))
+  }
+  for(let index=0;index<5;index++){
+   const history=await ok(await authorGet('/api/pane/ai/history?post='+post.id))
+   await ok(await authorCall('/api/pane/ai/undo',{base:history.base,id:history.redo.id,post:post.id,direction:'redo'}))
+  }
+  assert.deepEqual((await read()).posts,final)
+  const png=await readFile('public/brand/icon-192.png'),image={src:'data:image/png;base64,'+png.toString('base64'),width:192,height:192,alt:'Existing image',decorative:false}
+  const images=Array.from({length:5},(_,index)=>({id:'image-'+index,kind:'image',image:{...image},text:image.alt,column:1,span:12,row:index+2}))
+  const imageContent={...(await read()).posts.find(item=>item.id===post.id).content,sections:[{id:'post-body',kind:'text',blocks:[{id:'intro',kind:'text',text:selection,column:1,span:12,row:1},...images]}],body:[selection,...images.map(item=>item.text)].join('\n\n')}
+  await write({id:post.id,blog:post.blog,content:imageContent})
+  const alt=await ok(await authorCall('/api/pane/ai/propose',{base:(await read()).base,post:post.id,mode:'alt',images:images.map(item=>'block:'+item.id),consent:true}))
+  const mixed=decision(alt);mixed.decisions=mixed.decisions.map((item,index)=>({...item,accept:index<2}))
+  await ok(await authorCall('/api/pane/ai/decide',mixed))
+  for(const [index,item] of (await read()).posts.find(item=>item.id===post.id).content.sections[0].blocks.slice(1).entries())assert.equal(item.image.alt,index<2?alt.suggestions[index].after:'Existing image')
+  const untranslated=structuredClone((await read()).posts)
+  const translated=await ok(await authorCall('/api/pane/ai/propose',{base:(await read()).base,post:post.id,mode:'translate',language:'Spanish',consent:true}))
+  await ok(await authorCall('/api/pane/ai/decide',decision(translated)))
+  const spanish=(await read()).posts.find(item=>item.content.slug.startsWith('es/'))
+  assert.equal(spanish.author,author.operatorId);assert.equal(spanish.state,'draft');assert.ok(spanish.content.hidden)
+  for(const original of untranslated)assert.deepEqual((await read()).posts.find(item=>item.id===original.id),original)
+  assert.equal((await authorGet('/site/'+spanish.content.slug)).status,404)
+  const rejected=await ok(await authorCall('/api/pane/ai/propose',{base:(await read()).base,post:post.id,mode:'tone',selection,tone:'Friendly',consent:true}))
+  const rejectedBase=(await read()).base;await ok(await authorCall('/api/pane/ai/decide',decision(rejected,false)));assert.equal((await read()).base,rejectedBase)
+  const pending=await ok(await authorCall('/api/pane/ai/propose',{base:rejectedBase,post:post.id,mode:'rewrite',selection,consent:true}))
+  await write({id:post.id,blog:post.blog,content:{slug:content.slug,title:content.title,body:'A separately saved author draft.'}})
+  const stale=await authorCall('/api/pane/ai/decide',decision(pending));assert.equal(stale.status,409);assert.ok(!JSON.stringify(await stale.json()).includes(otherPost))
+  assert.ok(requests.every(request=>!JSON.stringify(request).includes(privatePage)&&!JSON.stringify(request).includes(otherPost)),'No unrelated page or other author content reaches the model')
+  const editorState=await ok(await get('/api/pane',editor.cookie));assert.equal(editorState.draft.site.posts,undefined);assert.ok(!JSON.stringify(editorState).includes(otherPost))
+  const pageEdit=await ok(await call('/api/pane/prepare',{base:(await state()).draft.id,site:source},editor.cookie));assert.equal(pageEdit.site.posts,undefined)
+  assert.equal((await read()).posts.length,7,'A page editor cannot remove private posts by omitting them from a snapshot')
+  const composite=await ok(await call('/api/pane/roles/set',{operatorId:author.operatorId,roles:['author','editor']}))
+  assert.ok(composite.roles.includes('author'))
+  const compositeState=await ok(await authorGet('/api/pane'));assert.equal(compositeState.draft.site.posts.length,7);assert.ok(!JSON.stringify(compositeState).includes(otherPost))
+  await ok(await call('/api/pane/roles/set',{operatorId:author.operatorId,roles:['reporting']}))
+  for(const path of ['/api/pane/posts','/api/pane/ai/history?post='+post.id])assert.equal((await authorGet(path)).status,403)
+  assert.equal((await authorCall('/api/pane/ai/decide',decision(pending))).status,403)
+  assert.equal((await state()).live.id,live)
+  const log=await ok(await get('/api/pane/activity'))
+  for(const action of ['ai.request','ai.propose','ai.decide','ai.undo','ai.redo'])assert.ok(log.some(event=>event.actor==='Synthetic author'&&event.action===action))
+  assert.ok(!JSON.stringify(log).includes(otherPost));assert.ok(!JSON.stringify(log).includes(selection))
  }finally{await app.mf.dispose()}
 })

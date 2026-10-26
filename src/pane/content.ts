@@ -52,6 +52,21 @@ export function normalizeSite(value: unknown): Site {
  })
  const analyticsCampaigns = normalizeCampaigns(input.analyticsCampaigns), goals = normalizeGoals(input.goals,pages), analytics = normalizeAnalytics(input.analytics), responseDays = normalizeResponseDays(input.responseDays)
  const site: Site = {...(input.brand?{brand:normalizeBrand(input.brand)}:{}),...(input.media?{media:normalizeMedia(input.media)}:{}),...(normalizeCode(input.customCode)?{customCode:normalizeCode(input.customCode)}:{}),...(components ? {components} : {}),...(input.forms ? {forms:normalizeForms(input.forms)} : {}),...(input.access ? {access:normalizeAccess(input.access)} : {}),...(input.promotion !== undefined ? {promotion:normalizePromotion(input.promotion,pages,input.automations?.timeZone??'America/Chicago')} : {}), ...(input.locale ? {locale:normalizeLocale(input.locale)} : {}), ...normalizePageOrganization(input,pages), ...(input.automations !== undefined ? {automations: normalizeAutomations(input.automations)} : {}), ...(input.navigation ? {navigation: normalizeNavigation(input.navigation,pages)} : {}), ...(input.socials ? {socials: normalizeSocials(input.socials)} : {}), ...(analyticsCampaigns.length ? {analyticsCampaigns} : {}), ...(analytics ? {analytics} : {}), ...(goals.length ? {goals} : {}), ...(responseDays ? {responseDays} : {}), name: input.name.normalize('NFC').trim(), description: input.description.normalize('NFC').trim(), pages, ...(input.robots !== undefined ? {robots: normalizeRobots(input.robots)} : {}), ...(input.redirects !== undefined ? {redirects: normalizeRedirects(input.redirects)} : {})}
+ if(input.posts!==undefined){
+  if(!Array.isArray(input.posts)||input.posts.length>1000)throw Error('Provide at most 1000 private posts.')
+  const ids=new Set<string>(),paths=new Set<string>()
+  site.posts=input.posts.map(post=>{
+   if(!post||typeof post.id!=='string'||!post.id||post.id.length>240||ids.has(post.id)||typeof post.author!=='string'||!post.author||post.author.length>240||!['draft','review'].includes(post.state))throw Error('Invalid private post identity, author or state.')
+   ids.add(post.id)
+   const allowed=['slug','title','body','sections','importedHtml','links','search','id','hidden']
+   if(!post.content||Object.keys(post.content).some(key=>!allowed.includes(key)))throw Error('Private posts accept content fields only.')
+   const content=normalizeSite({name:site.name,description:site.description,pages:[{...post.content,id:post.id,hidden:true}]}).pages[0]
+   const blog=cleanSlug(post.blog),path=blog+'::'+content.slug
+   if(paths.has(path))throw Error('Each private post needs a unique URL within its blog.')
+   paths.add(path)
+   return {id:post.id,author:post.author,blog,state:post.state,content}
+  })
+ }
  const routes = new Set(activePages(site).map(page => pagePath(site,page.slug)))
  for (const redirect of site.redirects ?? []) if (routes.has(redirect.from) || ['/site/search','/site/visit'].includes(redirect.from)) throw Error(`Redirect ${redirect.from} would replace an existing page or service.`)
  for(const page of site.pages)for(const section of page.sections??[])for(const block of section.blocks)for(const item of block.gallery?.items??[])if(!site.media?.some(asset=>asset.id===item.asset))throw Error('Gallery image is missing from the library.')

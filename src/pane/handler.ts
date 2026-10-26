@@ -1,3 +1,4 @@
+import {latestContent,ownPost,postView,PostDenied,savePost} from './posts'
 import {aiHistory,undoAiHistory} from './ai-history'
 import {proposeAi,decideAi} from './ai'
 import {canvasEditor} from './ui/canvas'
@@ -11,7 +12,7 @@ import { findPersonData,erasePersonData,personEmail } from './privacy'
 import { policyStarters } from './policies'
 import { transferOwnership,revokeContributor } from './ownership'
 import { liveCall } from './outage'
-import { capabilities, permittedDashboard, routeCapability, assignRoles, inviteRoles } from './roles'
+import { capabilities, permittedDashboard, visibleRevision, routeCapability, assignRoles, inviteRoles } from './roles'
 import { apiIdentity, createToken } from './api-tokens'
 import { activity, erasePerson } from './audit'
 import { markReviewed } from './schedules'
@@ -55,7 +56,16 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    if(!required||!scopes.includes(required))return json({error:'Token scope refused.'},403)
   }
   if(request.method==='GET'&&(path.startsWith('/app/files/')||path.startsWith('/api/pane/files/')))return privateFile(env.DB,decodeURIComponent(path.split('/').at(-1)!))
-  if(request.method==='GET'&&path==='/api/pane/ai/history'){if(!owner||scopes)return json({error:'Native owner only.'},403);return json(await aiHistory(env.DB,actor.id))}
+  if(request.method==='GET'&&path==='/api/pane/posts')return json(postView(await latestContent(env.DB),actor.id,owner||actor.role==='admin'))
+  if(request.method==='GET'&&path==='/api/pane/ai/history'){
+   const post=url.searchParams.get('post')
+   if(post||!editor){
+    if(!caps.includes('posts:write'))return json({error:'Your role cannot assist with posts.'},403)
+    const current=await latestContent(env.DB);if(!current)return json({error:'Save a post first.'},403)
+    ownPost(current.site,post,actor.id,owner||actor.role==='admin')
+   }
+   return json(await aiHistory(env.DB,actor.id,!owner,post))
+  }
   if(request.method==='GET'&&path==='/api/pane/roles')return json((await env.DB.prepare('SELECT o.id,o.display_name,o.role,o.status,r.roles FROM oa_operators o LEFT JOIN pane_roles r ON r.operator_id=o.id ORDER BY o.created_at,o.id').all()).results)
   if(request.method==='GET'&&path==='/api/pane/tokens'){
    if(!owner)return json({error:'Owner only.'},403)
@@ -80,7 +90,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    return new Response(JSON.stringify(rows),{headers:{'content-type':'application/json','cache-control':'no-store',...(path.endsWith('/export')?{'content-disposition':'attachment; filename="pane-activity.json"'}:{})}})
   }
   if(request.method==='GET') {
-   const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps)
+   const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps,actor)
    if(env.PANE_LIVE&&owner){const review=await env.PANE_LIVE.get(env.PANE_LIVE.idFromName('published-site')).fetch('https://pane.internal/review');Object.assign(data,await review.json())}
    if(path==='/app/canvas')return document('Visual canvas',canvasEditor(data,url.searchParams.get('page')??''),'site')
    if(api&&path!=='/api/pane')return json({error:'Not found.'},404)
@@ -101,10 +111,31 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    const imported=parseImportDocument(typeof input.source==='string'?input.source:JSON.stringify(input.source)).site
    if(imported?.customCode||imported?.pages.some(page=>page.customCode))return json({error:'Only a native owner authors custom code, including imports.'},403)
   }
+  if(path.endsWith('/posts/save')||path.endsWith('/posts/submit'))return json(postView(await savePost(env.DB,actor.id,input,owner||actor.role==='admin',path.endsWith('/posts/submit')),actor.id,owner||actor.role==='admin'))
   if(action.startsWith('ai/')){
-   if(!owner||scopes)return json({error:'Native owner only.'},403)
+   const retained=path.endsWith('/ai/propose')?null:await env.DB.prepare('SELECT post_id,mode,suggestions FROM pane_ai_proposals WHERE id=? AND actor=?').bind(String(input.id??''),actor.id).first<{post_id:string|null;mode:string;suggestions:string}>()
+   const post=path.endsWith('/ai/propose')?input.post:retained?.post_id
+   if(post&&(path.endsWith('/ai/propose')?input.mode:retained?.mode)==='search')return json({error:'Post assistance supports writing, image descriptions and separate translated drafts.'},403)
+   if(post||!editor){
+    if(!post||!caps.includes('posts:write')||input.post!==post)return json({error:'Choose a post within your current content permissions.'},403)
+    const current=await latestContent(env.DB);if(!current)return json({error:'Save a post first.'},403)
+    ownPost(current.site,post,actor.id,owner||actor.role==='admin')
+   }
+   // Route capabilities admit native page writers and own-post authors. Authority is
+   // checked from retained metadata, never the caller's claimed operation.
+   if(!owner){
+    const proposal=retained
+    const mode=path.endsWith('/ai/propose')?input.mode:proposal?.mode
+    if(!['rewrite','shorten','tone','alt','translate'].includes(mode))return json({error:'Page writers may use writing assistance on their own proposals. Search review requires the owner.'},403)
+    // Duplicating owner-authored executable code is outside an editor's grant.
+    if(mode==='translate'&&!post){
+     const source=path.endsWith('/ai/propose')?await env.DB.prepare('SELECT site FROM pane_revisions WHERE id=?').bind(String(input.base??'')).first<{site:string}>():null
+     if((source&&JSON.parse(source.site).pages.some((page:{slug:string;customCode?:unknown})=>page.slug===input.slug&&page.customCode))||(proposal&&JSON.parse(proposal.suggestions).some((item:{page?:{customCode?:unknown}})=>item.page?.customCode)))return json({error:'Only the owner may duplicate a page containing custom code.'},403)
+    }
+   }
    result=path.endsWith('/ai/propose')?await proposeAi(env,actor.id,input):path.endsWith('/ai/decide')?await decideAi(env,actor.id,input):path.endsWith('/ai/undo')?await undoAiHistory(env,actor.id,input):undefined
    if(!result)return json({error:'Not found.'},404)
+   if(typeof result==='object'&&'revision' in result)result={...result,revision:!editor?postView(result.revision as import('./model').Revision,actor.id,false):visibleRevision(result.revision as import('./model').Revision,caps,actor)}
    return json(result)
   }else if(action==='component-create'){
    const row=await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
@@ -132,7 +163,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    if(action!=='privacy/find'){const proof=await operatorAuth(env).requireStepUp(request,action==='privacy/export'?'export':'delete');privacyActor.sessionId=proof.id}
    result=env.PANE_LIVE?await liveCall(env,action==='privacy/erase'?'/privacy/erase':'/privacy/find',{email,confirm:input.confirm,actor:privacyActor}):action==='privacy/erase'?await erasePersonData(env.DB,email,input.confirm,privacyActor):await findPersonData(env.DB,email)
    if(action==='privacy/export')return new Response(JSON.stringify(result,null,2),{headers:{'content-type':'application/json','content-disposition':'attachment; filename="pane-person.json"','cache-control':'no-store'}})
-   if(action==='privacy/find'&&!api){const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps);data.privacyRequest=result as import('./privacy').PersonPrivacy;return document('Person privacy request',workspace(data,'/app/inquiries',''))}
+   if(action==='privacy/find'&&!api){const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps,actor);data.privacyRequest=result as import('./privacy').PersonPrivacy;return document('Person privacy request',workspace(data,'/app/inquiries',''))}
    notice='Person data erased. Backup and replay fences are retained; follow up with the listed downstream services.';back='/app/inquiries'
   }else if(action==='ownership/transfer'){
    result=await transferOwnership(env,request,input);notice='Ownership transferred. Sign in again as an editor.';back='/signin?returnTo=%2Fapp'
@@ -152,19 +183,20 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   } else if(action==='tokens/revoke') {
    await env.DB.prepare('UPDATE pane_api_tokens SET revoked_at=COALESCE(revoked_at,?) WHERE id=?').bind(Date.now(),String(input.id??'')).run();result={revoked:true}
   } else if(action==='prepare'||action==='autosave') {
-   const proposed=normalizeSite(input.site??await siteFromForm(env.DB,input))
    const currentAccess=await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
    const previousAccess=currentAccess?revision(currentAccess).site:null
+   if(!owner&&actor.role!=='admin'&&input.site?.posts!==undefined)return json({error:'Your role cannot change posts.'},403)
+   const proposed=normalizeSite(input.site?{...input.site,...(!owner&&actor.role!=='admin'&&previousAccess?.posts?{posts:previousAccess.posts}:{})}:await siteFromForm(env.DB,input))
    if((!owner||scopes)&&(JSON.stringify(proposed.customCode??null)!==JSON.stringify(previousAccess?.customCode??null)||proposed.pages.some(page=>JSON.stringify(page.customCode??null)!==JSON.stringify(previousAccess?.pages.find(old=>(old.id??old.slug)===(page.id??page.slug))?.customCode??null))))return json({error:'Only the owner authors custom code.'},403)
    if(!owner&&(JSON.stringify(proposed.forms??null)!==JSON.stringify(previousAccess?.forms??null)||JSON.stringify(proposed.access??null)!==JSON.stringify(previousAccess?.access??null)||proposed.pages.some(page=>JSON.stringify(page.access??null)!==JSON.stringify(previousAccess?.pages.find(old=>(old.id??old.slug)===(page.id??page.slug))?.access??null))))return json({error:'Only the owner changes access.'},403)
    if(!caps.includes('settings:write')){
     const latest=await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
     const current=latest?revision(latest).site:null
     if(latest&&input.base!==latest.id)throw new DraftConflict(latest?revision(latest):null)
-    for(const key of ['brand','promotion','locale','automations','goals','analyticsCampaigns','analytics','responseDays','robots'] as const)if(JSON.stringify(proposed[key]??null)!==JSON.stringify(current?.[key]??null))return json({error:'Only owners and admins can change business settings.'},403)
+    for(const key of ['posts','brand','promotion','locale','automations','goals','analyticsCampaigns','analytics','responseDays','robots'] as const)if(JSON.stringify(proposed[key]??null)!==JSON.stringify(current?.[key]??null))return json({error:'Only owners and admins can change business settings.'},403)
    }
    result=await prepare(env.DB,actor.id,proposed, action==='autosave' ? String(input.base??'') : typeof input.base==='string' ? input.base : undefined)
-   if(action==='autosave')return json(result)
+   if(action==='autosave')return json(visibleRevision(result as import('./model').Revision,caps,actor))
    notice='Draft prepared. Preview it before publishing.'
    if(typeof input.slug==='string')back='/app?page='+encodeURIComponent(input.slug)
   } else if(action==='page-request-review') {
@@ -194,13 +226,13 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    if(input.job){
     const saved=await readMoveInReport(env.DB,actor,String(input.job))
     if(api)return json(saved)
-    const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps)
+    const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps,actor)
     return document('Migration report',shell(data,'moves','<div class="screen-head"><div><h1>Your migration report</h1><p>Rechecked from the retained source against the imported draft.</p></div></div>'+moveReport(saved.report)+'<p><a class="text-link" href="/app/moves">Back to Moves</a></p>'))
    }
    result=await planMoveIn(env.DB,actor,typeof input.source==='string'?input.source:JSON.stringify(input.source))
    if(!api) {
     const site=(result as Awaited<ReturnType<typeof planMoveIn>>).site
-    const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps)
+    const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps,actor)
     return document('Review move-in',shell(data,'moves',moveReview(site,(result as {fingerprint:string}).fingerprint,String(input.source),(result as Awaited<ReturnType<typeof planMoveIn>>).report)))
    }
   } else if(action==='import/apply') {
@@ -231,9 +263,11 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
     wire.prepare('DELETE FROM pane_messages WHERE id=?').bind(id),
    ]);result={erased:id};notice='Contact message erased. Its replay fence is retained.';back='/app/inquiries'
   } else return json({error:'Not found.'},404)
+  if(result&&typeof result==='object'&&'site' in result)result=visibleRevision(result as import('./model').Revision,caps,actor)
   return api?json(result):new Response(null,{status:303,headers:{location:back+(back.includes('?')?'&':'?')+'notice='+encodeURIComponent(notice)}})
  } catch(error) {
-  if(error instanceof DraftConflict)return json({error:error.message,latest:error.latest},409)
+  if(error instanceof PostDenied)return json({error:error.message},403)
+  if(error instanceof DraftConflict)return json({error:error.message,latest:!editor?postView(error.latest,actor.id,false):visibleRevision(error.latest,caps,actor)},409)
   const message=error instanceof Error?error.message:'Request failed.'
   return json({error:message},400)
  }

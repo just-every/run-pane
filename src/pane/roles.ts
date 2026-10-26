@@ -1,11 +1,11 @@
 import { operatorAuth, type Bindings } from '../auth.server'
 import { operatorMail } from '../mail.server.mjs'
-import type { Dashboard } from './model'
+import type { Dashboard,Revision } from './model'
 export const paneRoles=['editor','author','comment-moderator','inbox','reporting'] as const
 export type PaneRole=typeof paneRoles[number]
-export type Capability='settings:write'|'pages:read'|'pages:write'|'inbox:read'|'inbox:write'|'reports:read'|'imports:read'|'imports:write'|'publish'|'erase'|'audit'|'team'|'tokens'
-export const ownerCapabilities:Capability[]=['settings:write','pages:read','pages:write','inbox:read','inbox:write','reports:read','imports:read','imports:write','publish','erase','audit','team','tokens']
-const grants:Record<PaneRole,Capability[]>={editor:['pages:read','pages:write'],author:[],'comment-moderator':[],inbox:['inbox:read','inbox:write'],reporting:['reports:read']}
+export type Capability='ai:write'|'posts:write'|'settings:write'|'pages:read'|'pages:write'|'inbox:read'|'inbox:write'|'reports:read'|'imports:read'|'imports:write'|'publish'|'erase'|'audit'|'team'|'tokens'
+export const ownerCapabilities:Capability[]=['ai:write','posts:write','settings:write','pages:read','pages:write','inbox:read','inbox:write','reports:read','imports:read','imports:write','publish','erase','audit','team','tokens']
+const grants:Record<PaneRole,Capability[]>={editor:['pages:read','pages:write','ai:write'],author:['posts:write','ai:write'],'comment-moderator':[],inbox:['inbox:read','inbox:write'],reporting:['reports:read']}
 export async function capabilities(db:D1Database,operator:{id:string;role:string}):Promise<Capability[]>{
  if(operator.role==='owner')return [...ownerCapabilities]
  if(operator.role==='admin')return ownerCapabilities.filter(c=>!['publish','erase','audit','team','tokens'].includes(c))
@@ -25,7 +25,13 @@ export async function assignRoles(db:D1Database,actorId:string,input:Record<stri
  return {operatorId:id,roles}
 }
 export const can=(data:Dashboard,capability:Capability)=>data.capabilities?.includes(capability)??(data.role.toLowerCase()==='owner'||data.role.toLowerCase()==='admin')
-export function permittedDashboard(data:Dashboard,caps:Capability[]):Dashboard{
+export function visibleRevision(row:Revision|null,caps:Capability[],actor:{id:string;role:string}):Revision|null{
+ if(!row||['owner','admin'].includes(actor.role))return row
+ const {posts,...site}=row.site
+ return {...row,site:{...site,...(caps.includes('posts:write')&&posts?{posts:posts.filter(post=>post.author===actor.id)}:{})}}
+}
+export function permittedDashboard(data:Dashboard,caps:Capability[],actor:{id:string;role:string}):Dashboard{
+ data={...data,draft:visibleRevision(data.draft,caps,actor),live:visibleRevision(data.live,caps,actor),revisions:data.revisions.map(row=>visibleRevision(row,caps,actor)!)}
  return {...data,capabilities:caps,...(data.role==='owner'?{}:{rejectedContent:undefined,spamRetention:undefined,formRejections:[]}),
   ...(caps.includes('team')?{}:{ownershipPeople:undefined,privacyRequest:undefined}),
   ...(caps.includes('pages:read')?{}:{pageRequests:[],draft:null,live:null,revisions:[],approvals:[],schedules:undefined}),
@@ -37,10 +43,11 @@ export function permittedDashboard(data:Dashboard,caps:Capability[]):Dashboard{
 }
 export function routeCapability(path:string,method:string):Capability|undefined{
  if(method==='GET'&&(path.startsWith('/app/files/')||path.startsWith('/api/pane/files/')))return 'inbox:read'
- if(method==='GET')return ({'/api/pane/ai/history':'pages:write','/api/pane/pages':'pages:read','/api/pane/collections':'pages:read','/api/pane/activity':'audit','/api/pane/activity/export':'audit','/api/pane/roles':'team','/api/pane/tokens':'tokens','/app':'pages:read','/app/canvas':'pages:write','/app/inquiries':'inbox:read','/app/moves':'imports:read','/app/search':'pages:write'} as Record<string,Capability>)[path]
+ if(method==='GET')return ({'/api/pane/ai/history':'ai:write','/api/pane/posts':'posts:write','/api/pane/pages':'pages:read','/api/pane/collections':'pages:read','/api/pane/activity':'audit','/api/pane/activity/export':'audit','/api/pane/roles':'team','/api/pane/tokens':'tokens','/app':'pages:read','/app/canvas':'pages:write','/app/inquiries':'inbox:read','/app/moves':'imports:read','/app/search':'pages:write'} as Record<string,Capability>)[path]
  const action=path.replace(/^\/(api\/pane|app)\//,'')
  if((path.startsWith('/app/spam/')||path.startsWith('/api/pane/spam/'))&&['settings','rescue','purge','hold','release'].includes(action.slice(5)))return 'erase'
- if(path.startsWith('/api/pane/ai/')&&['propose','decide','undo'].includes(path.split('/').at(-1)!))return 'pages:write'
+ if(path.startsWith('/api/pane/ai/')&&['propose','decide','undo'].includes(path.split('/').at(-1)!))return 'ai:write'
+ if(['/api/pane/posts/save','/api/pane/posts/submit'].includes(path))return 'posts:write'
  return ({'component-create':'pages:write',forms:'settings:write',access:'settings:write','privacy/find':'erase','privacy/export':'erase','privacy/erase':'erase','policies/generate':'settings:write','ownership/transfer':'team','team/revoke':'team',prepare:'pages:write',autosave:'pages:write',publish:'publish','publication-revoke':'publish','page-request-review':'pages:write','page-publish':'publish',rollback:'publish',review:'pages:write','import/dry-run':'imports:write','import/apply':'imports:write','import/undo':'imports:write','import/crawl-challenge':'imports:write','import/crawl':'imports:write','messages/update':'inbox:write','messages/reply':'inbox:write','messages/erase':'erase','people/erase':'erase','tokens/create':'tokens','tokens/revoke':'tokens','roles/set':'team','roles/invite':'team'} as Record<string,Capability>)[action]
 }
 

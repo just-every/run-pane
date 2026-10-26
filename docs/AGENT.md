@@ -102,12 +102,12 @@ published read-only workspace access; an explicit Pane assignment replaces it.
 | `editor` | Edit/preview pages and search drafts; no publication or inbox/reporting |
 | `inbox` | Read enquiries, explicitly send replies and manage their follow-up |
 | `reporting` | Read aggregate traffic and goal reports; no drafts or enquiries |
-| `author` | No content access yet; own-post writing/submission awaits CMS-004 |
+| `author` | Write and submit own private posts through the native API and helper; assistance on those posts only |
 | `comment-moderator` | No content access yet; queue/notifications await CMS-010 |
 
 Roles compose by union. Every Pane handler and search/preview door checks them
 on the server; dashboard responses omit inaccessible content. Only the owner
-can assign roles. ct approved that default and the reserved author/moderator
+can assign roles. ct approved that default and the author and reserved moderator
 behavior on 22 Oct; ROLE-001 stays partial until every role's doors exist.
 Future collection, post and moderation
 doors must implement their named permission and audit before shipping.
@@ -178,3 +178,74 @@ when editing. Use the current revision `base` with the authenticated prepare
 API to detect concurrent edits; a 409 returns the latest full snapshot for
 comparison. Publication still requires owner approval, and rollback restores
 section data with the rest of the immutable revision.
+
+## Private own-post writing and assistance
+
+An assigned native author can write and submit their own posts through the
+helper or the matching native HTTP API. This is the private CMS-004 foundation:
+public blog pages, owner publication, feeds, taxonomy and the complete CMS-011
+body workflow remain unimplemented. Submitting records a review state without
+publishing or sending notifications. ROLE-002 retains those notification and
+delegated-publication obligations.
+
+`posts` reads `GET /api/pane/posts` and returns `base` and the caller's posts.
+Owners and native admins can read all posts; assigned authors see only their
+own. A page editor cannot read or change these private posts. Combined editor
+and author grants retain both permissions without revealing another author's
+posts. Every mutation requires the current `base`; stale writes return 409
+with only content that the caller can read. Post content and review state live
+in the existing immutable revisions and installation archives.
+
+```sh
+node scripts/pane.mjs posts --origin http://127.0.0.1:8787 --session-file /private/path/session
+node scripts/pane.mjs post-save --origin http://127.0.0.1:8787 --session-file /private/path/session --input /private/path/post.json
+node scripts/pane.mjs post-submit --origin http://127.0.0.1:8787 --session-file /private/path/session --input /private/path/submit.json
+```
+
+A new post input has this shape. For an edit, also include its returned `id`.
+The server assigns authorship and the immutable revision; the caller cannot
+impersonate another author. Content accepts native text and raster sections,
+inert imported text, links and search fields; it does not accept forms,
+executable code, access settings or shared library assets.
+
+```json
+{"base":"CURRENT_REVISION","blog":"news","content":{"slug":"workshop-story","title":"Workshop story","body":"The paragraph to review."}}
+```
+
+Submission takes `{"base":"CURRENT_REVISION","id":"POST_ID"}`. Posts and
+translated posts remain private even when the owner publishes the current
+website pages; a native post publishing door remains CMS-004 work.
+
+For assistance, native page writers use the existing Pages AI panel or
+`ai-propose`. Authors can use `ai-propose` for their own post, including its
+`post` ID in every proposal, decision and undo request. An explicit generation
+command sends the selected post text and necessary local context, or exactly
+the named native images, to OpenAI through Base AI. Reading, saving and
+submitting content never sends it to the model. Before sending, review the
+selected paragraph or named images and the provider's actual retention terms.
+The command's `consent: true` records that explicit send; it does not authorize
+publication. AI-003 search review remains owner-only and applies to pages.
+Scoped integration tokens cannot use post or assistance commands.
+
+```json
+{"base":"CURRENT_REVISION","post":"POST_ID","mode":"rewrite","selection":"The paragraph to review.","consent":true}
+```
+
+Pass that private JSON file to `ai-propose --input FILE`. Supported writing
+modes are `rewrite`, `shorten`, `tone` (with `tone`), `alt` (with the exact
+`images` target IDs from the selected content), and `translate` (with
+`language`, such as Spanish). Generation returns pending suggestions and
+changes no draft. `ai-decide --input FILE` takes `id`, `base`, the same `post`
+and one `{ "id": "SUGGESTION_ID", "accept": true }` or false per suggestion
+in `decisions`. Accepted edits create a private immutable draft; rejection
+changes no content. Translation creates a separate private own-post draft and
+preserves the source. For page requests, omit `post`; non-owner translation
+cannot duplicate a page containing owner-authored code.
+
+`ai-history --post POST_ID` reads only that post's actor-owned history.
+`ai-undo --input FILE` takes the current `base`, the accepted proposal `id`,
+its `post` and `direction` (`undo` or `redo`). Five durable undo and redo steps
+are proved. A newer save fences the stack and decisions, preserving the newer
+content. Revoking the author or editor grant takes effect on the next request,
+including history, pending decisions and undo. AI activity retains identifiers
+and sanitized outcomes, never the selected text, model output or image bytes.

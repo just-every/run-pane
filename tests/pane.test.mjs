@@ -884,6 +884,14 @@ test('the real helper uses an authorized admin private session file for status, 
   const status=await helper('status');assert.equal(status.code,0,status.output)
   const prepared=await helper('prepare',['--input',siteFile]);assert.equal(prepared.code,0,prepared.output)
   const revision=JSON.parse(prepared.output).id
+  const postFile=join(folder,'post.json')
+  await writeFile(postFile,JSON.stringify({base:revision,blog:'news',content:{slug:'workshop-story',title:'Workshop story',body:'A private workshop story.'}}))
+  const savedPost=await helper('post-save',['--input',postFile]);assert.equal(savedPost.code,0,savedPost.output)
+  const post=JSON.parse(savedPost.output).posts[0]
+  const listedPosts=await helper('posts');assert.equal(listedPosts.code,0,listedPosts.output);assert.equal(JSON.parse(listedPosts.output).posts[0].id,post.id)
+  await writeFile(postFile,JSON.stringify({base:JSON.parse(savedPost.output).base,id:post.id}))
+  const submittedPost=await helper('post-submit',['--input',postFile]);assert.equal(submittedPost.code,0,submittedPost.output);assert.equal(JSON.parse(submittedPost.output).posts[0].state,'review')
+  const postHistory=await helper('ai-history',['--post',post.id]);assert.equal(postHistory.code,0,postHistory.output);assert.equal(JSON.parse(postHistory.output).undo,null)
   const plan=await helper('import-plan',['--input',siteFile]);assert.equal(plan.code,0,plan.output)
   const applied=await helper('import-apply',['--input',siteFile,'--fingerprint',JSON.parse(plan.output).fingerprint]);assert.equal(applied.code,0,applied.output)
   const refused=await helper('publish',['--revision',revision]);assert.equal(refused.code,1);assert.match(refused.output,/role cannot/)
