@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import {execFileSync} from 'node:child_process'
 import {mkdir,readFile,writeFile} from 'node:fs/promises'
 import {resolve} from 'node:path'
 import {chromium} from '@playwright/test'
@@ -157,7 +158,7 @@ try{
   assert.equal(guard.status(),409);await panel().locator('[data-ai-latest]').waitFor();assert.equal((await data()).draft.id,newer.id);await capture('stale-undo-guard',width)
   assert.equal((await data()).live.id,published.id,'Writing, images, translations and stale Undo never publish')
  }
- await writeFile(resolve(folder,live?'live-model-evidence.json':'fixture-evidence.json'),JSON.stringify({live,calls:fixture.aiRequests.length,evidence},null,2)+'\n')
+ await writeFile(resolve(folder,live?'live-model-evidence.json':'fixture-evidence.json'),JSON.stringify({live,provider:live?'OpenAI':'provider fake',date:new Date().toISOString(),source:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),calls:fixture.aiRequests.length,evidence},null,2)+'\n')
  console.log(`AI-003 and AI-002 browser journey passed: explicit model requests, reviewed decisions, private drafts, publication, guarded Undo and Redo, paragraph modes, five raster images and separate Spanish page (${live?'live model':'fixture'}, 1440 and 390).`)
 }catch(error){if(page)await page.screenshot({path:resolve(folder,'failure.png'),fullPage:true}).catch(()=>{});throw error}
 finally{if(browser)await browser.close();await fixture.stop()}

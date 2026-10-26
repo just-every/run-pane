@@ -276,7 +276,7 @@
       "executable": false
     },
     "management/integration/deployment-spec.json": {
-      "sha256": "67d14dc62da3907154bba41ed8d4b8d94773f9f67e1d30eae34fd8231a88b291",
+      "sha256": "b69328018e26eef9dcf708b236ebdb7512c885bfa02ed220e99e87cc956aaed0",
       "executable": false
     },
     "migrations/core/0001_owner.sql": {
@@ -1008,7 +1008,7 @@
       "executable": false
     },
     "scripts/ai-journey.mjs": {
-      "sha256": "168510c2537ece290d1c7e1cc83aa15b7b13930d1fe5b26c6ba3ce18f6f8f82a",
+      "sha256": "e3081debe86c106768dc0a9107de092c0c032c48efb1de50a4037c4b27a357c0",
       "executable": false
     },
     "scripts/analytics-journey.mjs": {
