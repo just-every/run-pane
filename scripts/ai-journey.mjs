@@ -4,6 +4,7 @@ import {execFileSync} from 'node:child_process'
 import {mkdir,readFile,writeFile} from 'node:fs/promises'
 import {resolve} from 'node:path'
 import {chromium} from '@playwright/test'
+import {riderProof} from './ai-riders.mjs'
 
 const live=process.env.PANE_AI_LIVE==='1'
 if(!live)process.env.PANE_AI_FIXTURE='1'
@@ -104,7 +105,8 @@ try{
  for(const item of starter.pages){const fields=page.locator('#start-'+item.slug);await fields.getByLabel('Page title',{exact:true}).fill(item.title);await fields.getByLabel('Text',{exact:true}).fill(item.body)}
  await formSubmit('Prepare draft revision');await publish()
  assert.equal(fixture.aiRequests.length,0,'Native owner setup never calls a model')
- for(const width of live?[1440]:[1440,390]){
+ const riders=live?[]:await riderProof({fixture,page,context,starter,workshopImages,data,prepare,editor,propose,decide,capture})
+ for(const width of process.env.PANE_AI_RIDER_ONLY==='1'?[]:live?[1440]:[1440,390]){
   await page.setViewportSize({width,height:1000});await prepare(starter);await page.goto(origin+'/app');await publish();await editor()
   await tooltipAudit(width);await panel().getByRole('button',{name:'Send to OpenAI',exact:true}).scrollIntoViewIfNeeded();await capture('owner-ai-help',width)
   const before=await data(),liveBefore=await (await context.request.get(origin+'/site')).text()
@@ -173,7 +175,7 @@ try{
   assert.equal(guard.status(),409);await panel().locator('[data-ai-latest]').waitFor();assert.equal((await data()).draft.id,newer.id);await capture('stale-undo-guard',width)
   assert.equal((await data()).live.id,published.id,'Writing, images, translations and stale Undo never publish')
  }
- const result={live,provider:live?'OpenAI':'provider fake',date:new Date().toISOString(),source:execFileSync('git',['-c','safe.directory='+process.cwd(),'rev-parse','HEAD'],{encoding:'utf8'}).trim(),calls:fixture.aiRequests.length,evidence}
+ const result={live,provider:live?'OpenAI':'provider fake',date:new Date().toISOString(),source:execFileSync('git',['-c','safe.directory='+process.cwd(),'rev-parse','HEAD'],{encoding:'utf8'}).trim(),calls:fixture.aiRequests.length,riders,evidence}
  await writeFile(resolve(folder,live?'live-model-evidence.json':'fixture-evidence.json'),JSON.stringify(result,null,2)+'\n')
  if(live&&process.env.PANE_AI_PROOF_OUTPUT){
   const output=resolve(process.env.PANE_AI_PROOF_OUTPUT)

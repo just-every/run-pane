@@ -9,12 +9,20 @@ import {createOperatorAuth} from '../src/modules/operator-auth/index.mjs'
 let f, ownerCookie
 const aiLive=process.env.PANE_AI_LIVE==='1',aiFixture=process.env.PANE_AI_FIXTURE==='1'
 if(aiLive&&!process.env.AI_API_KEY)throw Error('AI_API_KEY is required for the live AI journey.')
-export const aiRequests=[]
+export const aiRequests=[],aiOutbounds=[]
+let aiObserver
+export function observeAiEdge(observer){aiObserver=observer}
+export let aiProviderFailure=false
+export function failAiProvider(value){aiProviderFailure=value}
 async function aiEdge(request){
  const url=new URL(request.url)
+ aiOutbounds.push({origin:url.origin,path:url.pathname,method:request.method})
+ if(url.hostname==='api.sendgrid.com')return new Response(null,{status:202})
  assert.equal(url.protocol,'https:');assert.equal(url.hostname,'api.openai.com','AI requests stay on the configured provider edge')
  const payload=await request.clone().json(),content=payload.messages.find(message=>message.role==='user').content,input=JSON.parse(content[0].text)
- aiRequests.push({input,imageCount:content.filter(part=>part.type==='image_url').length,images:content.filter(part=>part.type==='image_url').map(part=>part.image_url.url)})
+ aiRequests.push({payload,input,imageCount:content.filter(part=>part.type==='image_url').length,images:content.filter(part=>part.type==='image_url').map(part=>part.image_url.url)})
+ if(aiObserver)await aiObserver(aiRequests.at(-1))
+ if(aiProviderFailure)return Response.json({error:{message:'synthetic-pane-raw-provider-error'}},{status:400})
  if(aiLive){assert.ok(aiRequests.length<=8,'The live journey has a bounded model budget');const response=await fetch(request.url,{method:request.method,headers:Object.fromEntries(request.headers),body:await request.arrayBuffer(),redirect:'manual'});const record=aiRequests.at(-1);record.status=response.status;record.providerRequestId=response.headers.get('x-request-id');return response}
  assert.equal(request.headers.get('authorization'),'Bearer synthetic-pane-4')
  const suggestion=(kind,label,target,after)=>({kind,label,target,after})
@@ -96,4 +104,13 @@ export async function invitePerson(context,{email,displayName,roles}){
 // Only the test adapter can disconnect content/intake tables. No product outage switch.
 export async function databaseUnavailable(value){
  for(const table of ['pane_revisions','pane_messages'])await f.db.prepare(value?`ALTER TABLE ${table} RENAME TO synthetic_unavailable_${table}`:`ALTER TABLE synthetic_unavailable_${table} RENAME TO ${table}`).run()
+}
+
+// Private records are seeded only in the isolated test database.
+export async function seedAiPrivateData(sentinels){
+ const now=new Date().toISOString()
+ for(const [id,message] of [['form',sentinels.form],['enquiry',sentinels.enquiry]])await f.db.prepare('INSERT INTO pane_messages(id,name,email,message,created_at) VALUES(?,?,?,?,?)').bind('synthetic-pane-'+id,'Synthetic visitor',id+'@example.test',message,now).run()
+ await f.db.prepare('INSERT INTO pane_visits(day,path,source,device,campaign,referrer,count) VALUES(?,?,?,?,?,?,?)').bind('2026-10-01','/site','Direct','desktop',sentinels.visitor,'',1).run()
+ await f.db.prepare("INSERT INTO oa_operators(id,email,display_name,role,status,version,created_at) VALUES(?,?,?,'member','active',1,?)").bind('synthetic-pane-account','private@example.test',sentinels.account,now).run()
+ await f.db.prepare('INSERT INTO rer_dependency_keys(interface,private_key) VALUES(?,?)').bind('synthetic-pane-private',sentinels.secret).run()
 }
