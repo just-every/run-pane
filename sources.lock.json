@@ -544,7 +544,7 @@
       "executable": false
     },
     "public/pane-ai.js": {
-      "sha256": "98f3a82c9ac5edb2adaa249636b3a86e0012045725fcb6846b3bbda6e6043a65",
+      "sha256": "e4fd785daf55503ff1e529bd1f5700bdfa396e52ead25e70ec59521295246d2b",
       "executable": false
     },
     "public/pane-analytics.js": {
@@ -664,7 +664,7 @@
       "executable": false
     },
     "public/pane-tooltip.js": {
-      "sha256": "0cd816adab5ecac3eb1814a134fa936e5f65873e5f0ad39543c5645005c8a7cd",
+      "sha256": "47d082a1a5035e19d7c2be44c771b103451ddbcb8f7fec0203884683539bf832",
       "executable": false
     },
     "public/pane-tracker.js": {

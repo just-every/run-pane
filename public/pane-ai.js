@@ -120,6 +120,11 @@ for (const root of document.querySelectorAll('[data-ai-assist]')) {
    }
    ids.add(item.id)
    const row = element('article', undefined, 'ai-suggestion')
+   if (item.kind === 'alt') {
+    const image = [...root.querySelectorAll('[data-ai-image-id]')].find(image => image.dataset.aiImageId === item.target)
+    if (!image) throw Error('The image preview no longer matches this review. Open the latest page before requesting suggestions.')
+    row.append(image.querySelector('img').cloneNode(true), element('span', image.querySelector('span').textContent))
+   }
    row.append(element('strong', item.label))
    const comparison = element('dl')
    if (typeof item.before === 'string') comparison.append(element('dt', 'Before'), element('dd', item.before))

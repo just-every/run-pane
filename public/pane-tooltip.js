@@ -24,3 +24,4 @@ document.addEventListener('pointerout', event => { const target = tipTarget(even
 document.addEventListener('focusin', event => { const target = tipTarget(event); if (target?.matches(':focus-visible')) show(target) })
 document.addEventListener('focusout', hide)
 document.addEventListener('keydown', event => { if (event.key === 'Escape') hide() })
+window.addEventListener('resize', () => { if (owner) show(owner) })
