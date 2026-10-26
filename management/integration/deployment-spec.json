@@ -210,6 +210,12 @@
       "name": "0032_typed_forms.sql",
       "sha256": "efe02060c29bf275e31fd7522722c39ff06b0aa688576a55dd6bf7697e010267",
       "sql": "-- Private files share the enquiry custody and erasure boundary. Chunks keep each row bounded.\nCREATE TABLE pane_files(id TEXT PRIMARY KEY,message_id TEXT NOT NULL REFERENCES pane_messages(id) ON DELETE CASCADE,name TEXT NOT NULL,type TEXT NOT NULL,size INTEGER NOT NULL,hash TEXT NOT NULL);\nCREATE TABLE pane_file_chunks(id TEXT PRIMARY KEY,file_id TEXT NOT NULL REFERENCES pane_files(id) ON DELETE CASCADE,position INTEGER NOT NULL,data TEXT NOT NULL,UNIQUE(file_id,position));\n"
+    },
+    {
+      "binding": "DB",
+      "name": "0033_publication_revocation.sql",
+      "sha256": "6f74d68b3e65de0c8f7e920f39a9d793e04114131ff9b315ab48ec1c9f0b26b9",
+      "sql": "-- Revocation keeps the immutable approval record and removes live delivery.\nCREATE TABLE pane_revoked_revisions(revision TEXT PRIMARY KEY,actor TEXT NOT NULL,created_at TEXT NOT NULL);\nCREATE TRIGGER pane_revoke_live AFTER INSERT ON pane_revoked_revisions BEGIN\n UPDATE pane_state SET live=NULL WHERE live=NEW.revision;\nEND;\nCREATE TRIGGER pane_refuse_revoked BEFORE UPDATE OF live ON pane_state WHEN NEW.live IN (SELECT revision FROM pane_revoked_revisions) BEGIN\n SELECT RAISE(ABORT,'Revoked revision needs a new draft and approval.');\nEND;\nCREATE TRIGGER pane_activity_revocation AFTER INSERT ON pane_revoked_revisions BEGIN\n INSERT INTO pane_activity(actor,action,subject,created_at) VALUES(NEW.actor,'publication.revoke','revision:'||NEW.revision,NEW.created_at);\nEND;\n"
     }
   ],
   "compatibilityDate": "2026-09-08",
