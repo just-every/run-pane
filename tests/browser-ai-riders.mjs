@@ -25,7 +25,7 @@ export function providerInput(record,source,mode){
   assert.deepEqual(input.destinations,[{id:'about',title:'Our studio'}],'Only the existing page-local link label and identifier are sent')
   assert.deepEqual(input.headings,[{target:'title',text:page.title},...page.sections.flatMap(section=>section.blocks).filter(block=>block.kind==='text').map(block=>({target:'block:'+block.id,text:block.text}))])
   assert.ok(input.checks.length>0,'The selected weak page has search findings')
-  for(const check of input.checks){keys(check,['field','issue'],'Search finding allowlist');assert.ok(['duplicate','missing','review'].includes(check.issue));assert.ok(['title','description','heading','links','canonical','image'].includes(check.field))}
+  for(const check of input.checks){keys(check,['field','issue'],'Search finding allowlist');assert.ok(['duplicate','missing','review'].includes(check.issue));assert.ok(['title','description','noindex','link','image'].includes(check.field))}
  }
  for(const [index,block] of images.entries()){
   assert.deepEqual(content[index*2+1],{type:'text',text:'block:'+block.id})
