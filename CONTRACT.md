@@ -1150,7 +1150,7 @@ No desk homepage claims file (`CLAIMS.md`) exists for Pane on 17 October 2026. W
 
 ## Status
 
-CT ruled AI-002 STAYS PARTIAL at reviewed commit `9c68cb4775d6668b3bd3424bd2d3c9946df87900` on 26 October 2026 at 22:30Z. This candidate restores that judgment and adds the bounded assertions for a fresh judgment after landing. CMS-004 retains its private own-post foundation and remains partial. Unchanged rows retain their previous judgments.
+Judged from the code and tests at commit `be71077f443870f58d6bb095de54bb6f308f76bb` (26 October 2026). CT ruled AI-002 STAYS PARTIAL at reviewed commit `9c68cb4775d6668b3bd3424bd2d3c9946df87900` on 26 October 2026 at 22:30Z. This candidate restores that judgment and adds the bounded assertions for a fresh judgment after landing. CMS-004 retains its private own-post foundation and remains partial. Unchanged rows retain their previous judgments.
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
