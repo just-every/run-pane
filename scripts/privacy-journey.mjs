@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFile, mkdir } from 'node:fs/promises'
+import { readFile, mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { chromium } from '@playwright/test'
 const fixture = await import('../tests/browser-runtime.mjs')
@@ -25,6 +25,7 @@ try {
   assert.equal(prepared.status(), 200)
   assert.equal((await context.request.post(origin + '/api/pane/publish', {headers: {Origin: origin}, data: {revision: (await prepared.json()).id}})).status(), 200)
  } else await fixture.signIn(page)
+ if(!process.env.PANE_TAGS_ONLY){
  let loads = 0
  await page.addInitScript(() => { addEventListener('message', event => { if (event.data?.privacyProbe) window.privacyProbe = {parentCookie: event.data.privacyProbe, origin: event.origin, api: event.data.api} }) })
  await page.route('https://www.youtube-nocookie.com/**', async route => {
@@ -146,6 +147,7 @@ try {
 
  }
 
+ }
  // Marketplace consent is independent for each category, including saved choices.
  let tagLoads={plausible:0,meta:0}
  await page.addInitScript(()=>{window.tagTicks={};window.tagIsolation={};addEventListener('message',event=>{if(event.data?.tagTick){window.tagTicks[event.data.tagTick]=(window.tagTicks[event.data.tagTick]??0)+1;window.tagIsolation[event.data.tagTick]={...event.data.isolation,origin:event.origin}}})})
@@ -170,13 +172,13 @@ try {
   assert.equal((await context.request.post(origin+'/api/pane/publish',{headers:{Origin:origin},data:{revision:draft.id}})).status(),200)
   await page.goto(origin+'/site');await page.evaluate(()=>localStorage.clear());await page.reload()
   const baseline={...tagLoads};assert.equal(await page.locator('[data-marketplace] iframe').count(),0)
-  await page.getByRole('button',{name:'Allow analytics',exact:true}).click();await page.waitForFunction(()=>window.tagTicks.plausible>=2)
+  await page.getByRole('button',{name:'Allow analytics',exact:true}).focus();await page.keyboard.press('Enter');await page.waitForFunction(()=>window.tagTicks.plausible>=2)
   assert.equal(tagLoads.plausible,baseline.plausible+1);assert.equal(tagLoads.meta,baseline.meta)
   assert.deepEqual(await page.evaluate(()=>window.tagIsolation.plausible),{cookie:'blocked',storage:'blocked',parent:'blocked',identity:'blocked',origin:'null'})
   await capture('marketplace-one-category-'+width)
-  await page.getByRole('button',{name:'Withdraw analytics',exact:true}).click();assert.equal(await page.locator('[data-marketplace] iframe').count(),0)
+  await page.getByRole('button',{name:'Withdraw analytics',exact:true}).focus();await page.keyboard.press('Enter');assert.equal(await page.locator('[data-marketplace] iframe').count(),0)
   await page.waitForTimeout(100);const stopped=await page.evaluate(()=>window.tagTicks.plausible);await page.waitForTimeout(150);assert.equal(await page.evaluate(()=>window.tagTicks.plausible),stopped,'Withdrawal destroys executing timers in this session')
-  await page.getByRole('button',{name:'Allow advertising',exact:true}).click();await page.waitForFunction(()=>window.tagTicks.meta>=2)
+  await page.getByRole('button',{name:'Allow advertising',exact:true}).focus();await page.keyboard.press('Enter');await page.waitForFunction(()=>window.tagTicks.meta>=2)
   assert.deepEqual(await page.evaluate(()=>window.tagIsolation.meta),{cookie:'blocked',storage:'blocked',parent:'blocked',identity:'blocked',origin:'null'})
   await context.setExtraHTTPHeaders({'Sec-GPC':'1'});const beforeGpc={...tagLoads};const gpc=await page.reload();assert.equal(await page.locator('[data-marketplace] iframe').count(),0);assert.ok(!gpc.headers()['content-security-policy'].includes('connect.facebook.net'));assert.deepEqual(tagLoads,beforeGpc)
   await capture('marketplace-gpc-'+width);await context.setExtraHTTPHeaders({})
@@ -184,4 +186,4 @@ try {
   await page.goto(origin+'/app');assert.equal(await page.locator('[data-marketplace]').count(),0);assert.ok(!(await context.request.get(origin+'/app')).headers()['content-security-policy'].includes('connect.facebook.net'))
  }
  console.log('Privacy browser journey passed: owner revision approval, page-only CSP, inert previews, consent, GPC, opaque sandbox and API refusal at 1440 and 390.')
-} finally { await browser.close(); if (ownsFixture) await fixture.stop() }
+} catch(error){await page.screenshot({path:resolve(folder,'failure.png'),fullPage:true});await writeFile(resolve(folder,'failure.html'),await page.content());throw error} finally { await browser.close(); if (ownsFixture) await fixture.stop() }

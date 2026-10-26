@@ -15,13 +15,13 @@ export function normalizeTags(text:string):string {
 export function tags(site:Site):Tag[]{return JSON.parse(site.customCode?.tags??'[]')}
 export function tagSource(tag:Tag):string {
  const provider=tagCatalog.find(item=>item.id===tag.provider)!
- const policy=`default-src 'none'; script-src ${provider.script} 'unsafe-inline'; connect-src ${provider.connect}; img-src ${provider.connect}; style-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'`
- const initialize=tag.provider==='meta'?`window.fbq=function(){(fbq.queue=fbq.queue||[]).push(arguments)};fbq.loaded=true;fbq.version='2.0';fbq('init',${JSON.stringify(tag.account)});fbq('track','PageView');`:''
+ const policy=`default-src 'none'; script-src ${new URL(provider.script).origin} 'unsafe-inline'; connect-src ${provider.connect}; img-src ${provider.connect}; style-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'`
+ const initialize=tag.provider==='meta'?`window.fbq=function(){fbq.callMethod?fbq.callMethod.apply(fbq,arguments):fbq.queue.push(arguments)};fbq.queue=[];window._fbq=fbq;fbq.loaded=true;fbq.version='2.0';fbq('init',${JSON.stringify(tag.account)});fbq('track','PageView');`:''
  return `<!doctype html><meta http-equiv="Content-Security-Policy" content="${escape(policy)}"><script>${initialize}</script><script defer src="${provider.script}"${tag.provider==='plausible'?` data-domain="${escape(tag.account)}"`:''}></script>`
 }
 export function tagSources(site:Site){
  const selected=tags(site).map(tag=>tagCatalog.find(item=>item.id===tag.provider)!)
- return {script:selected.map(item=>item.script),connect:selected.map(item=>item.connect),image:selected.map(item=>item.connect)}
+ return {script:selected.map(item=>new URL(item.script).origin),connect:selected.map(item=>item.connect),image:selected.map(item=>item.connect)}
 }
 export function tagMarkup(site:Site,live:boolean,quiet:boolean):string {
  if(!tags(site).length)return ''

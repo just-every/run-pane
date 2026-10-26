@@ -584,7 +584,7 @@
       "executable": false
     },
     "public/pane-public.css": {
-      "sha256": "a6f18bc722b6e427c7ee8df7a8d57453a876682cf9953d7abf65842f80395c21",
+      "sha256": "d999f4e142d0ee95e53a8604d2cfee563e5997288aaed7bd31f63b9921c7a701",
       "executable": false
     },
     "public/pane-reading-order.mjs": {
@@ -1220,7 +1220,7 @@
       "executable": false
     },
     "scripts/privacy-journey.mjs": {
-      "sha256": "fc5eec20ee4b560f5f045f43de95447a54283d09dca7bf8d6c060bd7d43ccb8f",
+      "sha256": "66a0c935a119c8921462975a4de8987ca9630f3a338e3cfb4589221e77c2d324",
       "executable": false
     },
     "scripts/promotions-journey.mjs": {
@@ -3328,7 +3328,7 @@
       "executable": false
     },
     "src/pane/tags.ts": {
-      "sha256": "39bf0f1cf0c6a6c64b72d79bbb0c8c16a4f48145583499131789ce968e736922",
+      "sha256": "d11e8452b6f5fd48b16eb303b463896d6b5fdf8afd48eb7870b7998b9796f6f8",
       "executable": false
     },
     "src/pane/ui/access-settings.ts": {
@@ -3608,7 +3608,7 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "da34a4be3c3386bcc79015c06f05bd54dbd2f3cd106bfd0eead213bd6f587b4d",
+      "sha256": "22a3605fd32fb5f665fd0ad00765f6a8667d498feb83994f34b833a47bbc9ab8",
       "executable": false
     },
     "tests/runtime.mjs": {

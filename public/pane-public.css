@@ -110,3 +110,6 @@
 .public-content [data-block] [data-text-align="center"]{text-align:center}
 .public-content [data-block] [data-text-align="right"]{text-align:right}
 .public-content [data-block] [data-text-align="justify"]{text-align:justify}
+
+/* Consent execution frames are never visual page content. */
+.external-embed iframe[hidden]{display:none}

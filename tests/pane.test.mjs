@@ -1751,7 +1751,7 @@ test('custom code requires owner authoring and approved immutable live revisions
   const site=structuredClone(fixture);site.customCode={tags:JSON.stringify([{provider:'plausible',category:'analytics',account:'synthetic-pane-1.test'},{provider:'meta',category:'advertising',account:'synthetic-pane-2'}]),css:'.proof { color: rgb(120, 20, 60) }',html:'<p class="proof">Synthetic embed</p>',header:'<meta name="synthetic-verification" content="synthetic-pane-1">',footer:'<script>window.syntheticFooter=true</script>'};site.pages[4].customCode={header:'<script>window.syntheticThankYou=true</script>'}
   const response=await call('/api/pane/prepare',{site,base:''});assert.equal(response.status,200,await response.clone().text());const prepared=await response.json()
   const preview=await app.request('/preview/'+prepared.id+'/contact',{headers:{Cookie:cookie}})
-  assert.doesNotMatch(await preview.text(),/data-custom-code|pane-custom-code.js|syntheticThankYou/)
+  assert.doesNotMatch(await preview.text(),/data-custom-code|data-marketplace|pane-custom-code.js|pane-tags.js|syntheticThankYou/)
   assert.doesNotMatch(preview.headers.get('content-security-policy'),/unsafe-inline/)
   assert.equal((await call('/api/pane/publish',{revision:prepared.id})).status,200)
   const live=await app.request('/site/contact'),html=await live.text()
@@ -1759,7 +1759,7 @@ test('custom code requires owner authoring and approved immutable live revisions
   assert.match(live.headers.get('content-security-policy'),/script-src 'self'.*'sha256-/)
   const home=await app.request('/site');assert.doesNotMatch(await home.text(),/syntheticThankYou/)
   for(const headers of [{'Sec-GPC':'1'},{DNT:'1'}]){
-   const quiet=await app.request('/site/contact',{headers});assert.doesNotMatch(await quiet.text(),/data-custom-code|pane-custom-code.js|syntheticThankYou/)
+   const quiet=await app.request('/site/contact',{headers});assert.doesNotMatch(await quiet.text(),/data-custom-code|data-marketplace|pane-custom-code.js|pane-tags.js|syntheticThankYou/)
    assert.doesNotMatch(quiet.headers.get('content-security-policy'),/unsafe-inline|frame-src 'self'/)
   }
   let mail;const auth=createOperatorAuth({db:app.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{mail=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
@@ -1786,7 +1786,7 @@ test('custom code requires owner authoring and approved immutable live revisions
   assert.equal((await call('/api/pane/publication-revoke',{revision:replacement.id})).status,400)
   assert.match(await (await app.request('/site/contact')).text(),/Unapproved replacement/)
   assert.equal((await call('/api/pane/publication-revoke',revoke)).status,200)
-  for(const path of ['/site','/site/contact','/site/search'])assert.doesNotMatch(await (await app.request(path)).text(),/data-custom-code|Unapproved replacement|Synthetic embed/,'Revoked approval takes every live door down on the next request')
+  for(const path of ['/site','/site/contact','/site/search'])assert.doesNotMatch(await (await app.request(path)).text(),/data-custom-code|data-marketplace|Unapproved replacement|Synthetic embed/,'Revoked approval takes every live door down on the next request')
   assert.equal((await call('/api/pane/publish',{revision:replacement.id})).status,400,'A revoked version cannot be republished')
   assert.equal((await call('/api/pane/rollback',{revision:replacement.id})).status,400,'Rollback cannot revive revoked code')
   const events=await (await app.request('/api/pane/activity',{headers:{Cookie:cookie}})).json()
