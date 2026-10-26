@@ -50,4 +50,5 @@ export function replaceText(page:Page,target:string,text:string){
 }
 /** Shared placements become independent snapshots so an accepted edit affects only its named page. */
 export function detachPage(page:Page){for(const section of page.sections??[])delete section.component}
+export function detachTarget(page:Page,target:string){const section=page.sections?.find(section=>section.blocks.some(block=>'block:'+block.id===target));if(section)delete section.component}
 export function nativeLink(site:Site,target:string){const page=site.pages.find(page=>!page.deleted&&pageId(page)===target);if(!page)throw Error('Choose an existing native page.');return 'page:'+encodeURIComponent(pageId(page))}

@@ -330,6 +330,8 @@ test('Pane AI search decisions require the native owner, preserve rejected edits
  const {app,call,get,state,ok,propose,decide,requests}=workspace
  try{
   const source=structuredClone(fixture);source.pages.find(page=>page.slug==='home').links=[{label:fixture.pages[1].title,url:'page:about'}];source.pages.find(page=>page.slug==='about').title='Private unrelated title';source.pages.find(page=>page.slug==='about').body='Private unrelated material that must never reach the model.'
+  const shared={id:'synthetic-pane-shared',name:'Workshop introduction',section:{id:'shared-intro',kind:'text',blocks:[{id:'shared-text',kind:'text',text:source.pages.find(page=>page.slug==='home').body,column:1,span:12,row:1}]}}
+  source.components=[shared];source.pages.find(page=>page.slug==='home').sections=[{...structuredClone(shared.section),id:'home-intro',component:shared.id}]
   const initial=await ok(await call('/api/pane/prepare',{site:source}))
   await ok(await call('/api/pane/publish',{revision:initial.id}))
   const originalHtml=await(await get('/site','')).text(),proposal=await propose(initial.id,'search')

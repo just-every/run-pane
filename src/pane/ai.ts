@@ -6,7 +6,7 @@ import type {Revision,Site} from './model'
 import {draftRevision,DraftConflict,revision} from './content'
 import {aiModes,type AiMode,type AiBindings,type Proposal,type Suggestion} from './ai-types'
 import {modelSuggestions} from './ai-model'
-import {detachPage,imageTargets,requestedImages,nativeLink,replaceText} from './ai-targets'
+import {detachTarget,imageTargets,requestedImages,nativeLink,replaceText} from './ai-targets'
 import {sectionText} from './sections'
 type Stored={status:string;id:string;actor:string;base:string;slug:string;mode:AiMode;suggestions:string;decisions:string|null;accepted_revision:string|null;last_revision:string|null;undone:number;created_at:string}
 async function latest(db:D1Database){const row=await db.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first();return row?revision(row):null}
@@ -38,16 +38,16 @@ function applySuggestion(site:Site,slug:string,suggestion:Suggestion){
   if(site.pages.some(page=>page.slug===suggestion.page!.slug))throw Error('Translated page already exists.')
   site.pages.push(structuredClone(suggestion.page));if(suggestion.media?.length)site.media=[...(site.media??[]),...structuredClone(suggestion.media)];return
  }
- detachPage(page)
  if(kind==='search-title')page.search={...page.search,title:after}
  else if(kind==='search-description')page.search={...page.search,description:after}
- else if(kind==='heading')replaceText(page,target,after)
+ else if(kind==='heading'){detachTarget(page,target);replaceText(page,target,after)}
  else if(kind==='link'){const url=nativeLink(site,target),destination=site.pages.find(page=>pageId(page)===target)!,index=page.links?.findIndex(link=>link.url===url||link.url===pagePath(site,destination.slug))??-1;if(index>=0)page.links![index]={label:after,url};else page.links=[...(page.links??[]),{label:after,url}]}
  else if(kind==='text'){
   if(page.importedHtml){if(!replaceHtmlSelection(page,suggestion.before!,after))throw Error('The selected imported text no longer exists.')}
-  else if(page.sections){const block=page.sections.flatMap(section=>section.blocks).find(block=>block.kind==='text'&&block.text===suggestion.before);if(!block)throw Error('The selected text no longer exists.');replaceText(page,'block:'+block.id,after)}
+  else if(page.sections){const block=page.sections.flatMap(section=>section.blocks).find(block=>block.kind==='text'&&block.text===suggestion.before);if(!block)throw Error('The selected text no longer exists.');detachTarget(page,'block:'+block.id);replaceText(page,'block:'+block.id,after)}
   else {if(!suggestion.before||!page.body.includes(suggestion.before))throw Error('The selected text no longer exists.');page.body=page.body.replace(suggestion.before,after)}
  }else if(kind==='alt'){
+  detachTarget(page,target)
   const image=imageTargets(site,page).find(image=>image.target===target)
   if(!image)throw Error('The selected image no longer exists.')
   image.image.alt=after;image.image.decorative=false

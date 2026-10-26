@@ -3180,7 +3180,7 @@
       "executable": false
     },
     "src/pane/ai-targets.ts": {
-      "sha256": "c63248017a5f4f4632ea3a28573383d82b16602dde10fb638f35c904345704ac",
+      "sha256": "cc8d4ea84da72fbf0238430949317f84941bdb7a32487ecd64c361aaa664c6f0",
       "executable": false
     },
     "src/pane/ai-types.ts": {
@@ -3188,7 +3188,7 @@
       "executable": false
     },
     "src/pane/ai.ts": {
-      "sha256": "803a6ed27b5c6f9682236e07c35da46d1003345a0915b52fead567ac254c8a97",
+      "sha256": "a71e3f941022bd22d6d938e30bd6e90d55ff0305c8509c5764abc39be27140ef",
       "executable": false
     },
     "src/pane/analytics.ts": {
@@ -3716,7 +3716,7 @@
       "executable": false
     },
     "tests/search.test.mjs": {
-      "sha256": "37a4ab5e129381b52da26c596334b624fa2ce2a4926fbd6e5d53715437a937d4",
+      "sha256": "cb6dbfaf070e0b5cd649fbc99b3c2548045f11ca85e2fe86a78fa9bca496e9f9",
       "executable": false
     },
     "tests/site.test.mjs": {
