@@ -136,7 +136,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "69c3c57597d4bcbae42695a74b8b4f55ad2cc66a92ccf9a355345c86c3359f9c",
+      "sha256": "915f0247f198ec6675c6ad7e75c0ece988cac20a1645a6972ba2b302d728721a",
       "executable": false
     },
     "AGENTS.md": {
@@ -160,7 +160,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "ab3cad77444c06d98f9e6152dfd5cdd7c5ea4b7098e017c0c814c82f019a8a3b",
+      "sha256": "d66be00ec0e9f850810a7ba0d4d1d818d1031eccc5b68447795e1e6c3126abc8",
       "executable": false
     },
     "deploy-demo.json": {
@@ -196,7 +196,7 @@
       "executable": false
     },
     "docs/evidence/ai-riders.md": {
-      "sha256": "d96b275ee0e1895b1483feeed9a48e382fe7327304913aa4bc5397a38130c102",
+      "sha256": "7d468352f28b86de5b21acaa3277c9081345255c03087d0459df6b5e979d3ee2",
       "executable": false
     },
     "docs/FORMS-AND-ACCESS.md": {

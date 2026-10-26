@@ -1,6 +1,6 @@
 # AI rider proof extension
 
-AI-003 is DONE. CT ruled AI-002 STAYS PARTIAL at reviewed commit `9c68cb4775d6668b3bd3424bd2d3c9946df87900` on 26 October 2026 at 22:30Z. The bounded author-provider, lifecycle-audit, outbound-action, immutable-revision and approving-owner assertion gaps are recorded identically in both status documents. This round adds no acceptance point or role permission. SEO-005 retains structured-data implementation, AI-004 bulk work and AGENT-008 budgets.
+AI-003 is DONE. CT ruled AI-002 STAYS PARTIAL at reviewed commit `9c68cb4775d6668b3bd3424bd2d3c9946df87900` on 26 October 2026 at 22:30Z. This candidate closes those bounded proof gaps and marks AI-002 DONE for a fresh exact-candidate judgment. CMS-004 retains its separate public-blog and rich-body obligations. No acceptance point or role authority changes.
 
 The existing “AI-003 and AI-002 browser journey” in `scripts/ai-journey.mjs` loads `riderProof` from `scripts/ai-riders.mjs`. `scripts/browser-proof.mjs` already loads that journey in the canvas shard. No test registration was added or removed. The same production Worker, native authentication, native D1 and real Base AI client run; only the paid provider edge is faked. No live model request was made in this fix round. The previous live-model record remains separately labeled.
 
@@ -46,3 +46,12 @@ Four named mutations were built against the real Worker. For each, the old loade
 | `undo-private-body`: add privateBody only to an undo event returned by the activity API | exit 0; AI-003 and AI-002 browser journey passed | exit 1; AssertionError: Audit metadata allowlist |
 
 All four mutations were restored. The normal full AI journey, three targeted AI route tests and typecheck pass with the strengthened proof. Captures cover the existing consent, rejection-only, undo and redo screens at both widths, and the normal journey checks icon tooltip hover and keyboard focus. The one-off driver, exact before and after command output and mutation results are retained in the mapped reports directory for `sx-pane-c-i893-fix2`. These runtime mutation experiments add no permanent test and make no claim about provider handling or model quality.
+
+
+## Native author fix round: provider fake
+
+The existing author test in `tests/search.test.mjs` now loads `postProvider` from `tests/ai-post-proof.mjs` at the paid edge. It compares the full selected context, image parts and exact output schema and excludes private values across the entire body, including system instructions. Every explicit generation has exactly one OpenAI POST; acceptance, rejection, undo and redo have zero outbound calls. Complete audit allowlists run before transmission and after each outcome, including sanitized provider failure. The existing publication tests in `tests/pane.test.mjs` compare the approving owner exactly and reread both immutable snapshots and hashes after later prepare, publication and rollback.
+
+All five counterexamples named by CT were applied individually to production source, built and exercised through the real public routes. `author-system-private-post`, `author-undo-raw-error`, `author-decision-mail`, `altered-published-source-hash` and `misattributed-approving-owner` each exited 1 at its intended new assertion. Sources were restored after every experiment. The restored five targeted AI route tests, four publication route tests and full AI browser journey passed, including native editor controls and tooltips at 1440 and 390. No test registration was added or deleted. This is provider-fake evidence; no live-model request or quality certification is claimed.
+
+The experiment and normal-proof source is `d75c791`; its product, tests, public assets and journey files are byte-identical to implementation `237b60b36007d368545bf06d4d18b11aa8bec399`. The landing candidate changes only status, evidence, provenance and the regenerated source lock after that proof. Exact-candidate Verify loads these same assertions and browser journey before landing.
