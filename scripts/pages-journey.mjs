@@ -149,9 +149,9 @@ try {
   await page.setViewportSize({width,height:1000});await page.goto(origin+'/site')
   if(width===390)await page.locator('.public-menu-mobile > summary').click()
   const profile=page.locator(width===390?'.public-menu-mobile':'.public-menu-desktop').getByRole('link',{name:'Instagram',exact:true})
-  await profile.hover();await page.getByRole('tooltip').getByText('Instagram',{exact:true}).waitFor();await capture('public-header-tooltip',width)
+  await profile.hover();await page.getByRole('tooltip').getByText('Instagram profile',{exact:true}).waitFor();await capture('public-header-tooltip',width)
   await profile.focus();await page.keyboard.press('Tab');await page.keyboard.press('Shift+Tab')
-  await page.getByRole('tooltip').getByText('Instagram',{exact:true}).waitFor();await capture('public-header-keyboard-tooltip',width)
+  await page.getByRole('tooltip').getByText('Instagram profile',{exact:true}).waitFor();await capture('public-header-keyboard-tooltip',width)
   await page.goto(origin+'/app?page=services');await page.getByLabel('Text',{exact:true}).fill(`Unfinished service draft ${width}`);await saved(page)
   const before=(await data()).live
   await page.goto(origin+'/app?page=about');await page.getByLabel('Text',{exact:true}).fill(`Reviewed studio update ${width}`);await saved(page);await page.reload()

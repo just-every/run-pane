@@ -1126,8 +1126,9 @@ test('US business defaults render Denver hours, currency, phone, address and Sun
 
 test('form protection refuses and separately counts honeypot, per-form bursts and invalid provider proofs',async()=>{
  const binding=form=>createHash('sha256').update(form).digest('hex')
+ let now=Date.parse('2026-10-26T08:06:59.000Z')
  let answer={success:true,hostname:new URL(origin).hostname,action:'pane-contact',cdata:binding('contact')},calls=0,unavailable=false
- const app=await runtime({turnstile:async(_request,fields)=>{
+ const app=await runtime({now:()=>now,turnstile:async(_request,fields)=>{
   calls++;assert.equal(fields.get('secret'),'synthetic-pane-2');assert.ok(fields.get('idempotency_key'))
   return unavailable?new Response(null,{status:503}):Response.json(answer)
  }})
@@ -1154,6 +1155,11 @@ test('form protection refuses and separately counts honeypot, per-form bursts an
   for(let index=0;index<20;index++)status=(await send({'cf-turnstile-response':''})).status
   assert.equal(status,429)
   answer.cdata=binding('requests/quote');assert.equal((await send({},'requests/quote')).status,303)
+  // Crossing a minute opens a fresh bucket, even after the previous one refused a burst.
+  now+=60_000
+  assert.equal((await send({'cf-turnstile-response':''})).status,403)
+  for(let index=1;index<20;index++)assert.equal((await send({'cf-turnstile-response':''})).status,403)
+  assert.equal((await send({'cf-turnstile-response':''})).status,429)
   const rejected=(await app.db.prepare('SELECT * FROM pane_form_rejections').all()).results
   for(const reason of ['honeypot','turnstile','rate','unavailable'])assert.ok(rejected.some(r=>r.reason===reason),reason)
   assert.doesNotMatch(JSON.stringify(rejected),/Private rejected words|synthetic-pane@example.test|synthetic-pane-3/)

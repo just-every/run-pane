@@ -1244,7 +1244,7 @@
       "executable": false
     },
     "scripts/pages-journey.mjs": {
-      "sha256": "d6c4eea9f742a3d7ed007f16313b1909dcc0a0d1714f4286d554af99c03821aa",
+      "sha256": "3d68331c2371835bb0911a53ddbeba92521f3bcaf67d5d27f46c16be031549f5",
       "executable": false
     },
     "scripts/pane-policy.mjs": {
@@ -3660,11 +3660,11 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "c6416fd237b77e7c1f5ecd394fadf6cb6c885b2cf7fa1ce1fad0020d32788aa6",
+      "sha256": "66ec07a2ddf13597a58b903ac257562763b706330cdbaeb42696c292f8196c84",
       "executable": false
     },
     "tests/runtime.mjs": {
-      "sha256": "ac01dc1170498a2838bf5efaf6b8fd8c2f558adde0ca1d266198e84738b68cbc",
+      "sha256": "c0e59eb2e4121adc0e1b6a78b3b3f4b67fa61438a94673d0a02bd3bdea17a7ab",
       "executable": false
     },
     "tests/search.test.mjs": {
