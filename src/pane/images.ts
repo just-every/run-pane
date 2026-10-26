@@ -34,7 +34,7 @@ export function normalizeImage(value: unknown): ImageContent {
   renditions=image.renditions.map(value=>{
    if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Invalid responsive image.')
    const item=value as Record<string,unknown>
-   if(Object.keys(item).some(key=>!['src','width','height'].includes(key))||typeof item.src!=='string'||!/^data:image\/webp;base64,[A-Za-z0-9+/]+={0,2}$/.test(item.src)||item.src.length>Math.ceil(40*1024/3)*4+24)throw Error('Responsive images must be bounded WebP data.')
+   if(Object.keys(item).some(key=>!['src','width','height'].includes(key))||typeof item.src!=='string'||!/^data:image\/webp;base64,[A-Za-z0-9+/]+={0,2}$/.test(item.src)||item.src.length>Math.ceil(96*1024/3)*4+24)throw Error('Responsive images must be bounded WebP data.')
    const data=Uint8Array.from(atob(item.src.split(',')[1]),c=>c.charCodeAt(0)),view=new DataView(data.buffer)
    let binary='';for(const byte of data)binary+=String.fromCharCode(byte)
    if(btoa(binary)!==item.src.split(',')[1]||data.length<30||String.fromCharCode(...data.slice(0,4))!=='RIFF'||String.fromCharCode(...data.slice(8,12))!=='WEBP'||view.getUint32(4,true)+8!==data.length)throw Error('Invalid WebP bytes.')

@@ -32,8 +32,8 @@ export async function prepareImage(original,rotation=0) {
    if(renditions.some(item=>item.width===output.width))continue
    output.getContext('2d').drawImage(canvas,0,0,output.width,output.height)
    let src
-   for(const quality of [0.82,0.65,0.45,0.25]){src=output.toDataURL('image/webp',quality);if(src.length<=Math.ceil(40*1024/3)*4+24)break}
-   if(!src.startsWith('data:image/webp;base64,')||src.length>Math.ceil(40*1024/3)*4+24)throw Error('This image needs smaller web renditions. Choose a simpler photo.')
+   for(const quality of [0.82,0.65,0.45,0.25]){src=output.toDataURL('image/webp',quality);if(src.length<=Math.ceil(96*1024/3)*4+24)break}
+   if(!src.startsWith('data:image/webp;base64,')||src.length>Math.ceil(96*1024/3)*4+24)throw Error('This image needs smaller web renditions. Choose a simpler photo.')
    renditions.push({src,width:output.width,height:output.height})
   }
   // Retain a PNG fallback while bounding photographic uploads without losing the original.

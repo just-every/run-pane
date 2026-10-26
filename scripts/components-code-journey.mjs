@@ -189,13 +189,13 @@ try{
   assert.equal(await page.locator('[contenteditable=true]').last().locator('ul ul').count(),0)
   await page.getByRole('button',{name:'Redo',exact:true}).click();await saved()
   await capture('rich-canvas-'+width)
-  const largeOriginal=await page.evaluate(async source=>{const photo=new Image();photo.src=source;await photo.decode();const canvas=document.createElement('canvas');canvas.width=6000;canvas.height=3000;canvas.getContext('2d').drawImage(photo,0,0,6000,3000);return canvas.toDataURL('image/jpeg',0.5)},'data:image/webp;base64,'+(await readFile('public/site/cake-3.webp')).toString('base64'))
+  const largeOriginal=await page.evaluate(async source=>{const photo=new Image();photo.src=source;await photo.decode();const canvas=document.createElement('canvas');canvas.width=6000;canvas.height=6000;canvas.getContext('2d').drawImage(photo,0,0,6000,6000);return canvas.toDataURL('image/jpeg',0.15)},'data:image/jpeg;base64,'+(await readFile('fixtures/images/apollo17.jpg')).toString('base64'))
   await page.getByLabel('Add image file').setInputFiles({name:'synthetic-pane-1.jpg',mimeType:'image/jpeg',buffer:Buffer.from(largeOriginal.split(',')[1],'base64')});await saved();await page.locator('[data-image-settings]:not([hidden])').waitFor()
   await page.waitForFunction(()=>JSON.parse(document.querySelector('[data-layout-state]').value).flatMap(section=>section.blocks).some(block=>block.image))
   await saved()
   const downsampled=(await state()).draft.site.pages.find(item=>item.slug==='services').sections.flatMap(item=>item.blocks).find(item=>item.image).image
-  assert.equal(downsampled.renditions.at(-1).width,1600);assert.equal(downsampled.renditions.at(-1).height,800);assert.equal(downsampled.original,largeOriginal,'The full 6000-pixel upload is retained before browser downsampling')
-  await page.getByLabel('Alternative text',{exact:true}).fill('Synthetic 6000-pixel workshop photo');await saved()
+  assert.equal(downsampled.renditions.at(-1).width,1600);assert.equal(downsampled.renditions.at(-1).height,1600);assert.equal(downsampled.original,largeOriginal,'The full 6000-pixel upload is retained before browser downsampling')
+  await page.getByLabel('Alternative text',{exact:true}).fill('6000-pixel Apollo 17 photograph');await saved()
   const responsiveDraft=(await state()).draft;await call('/api/pane/publish',{revision:responsiveDraft.id})
   let phoneBytes,desktopBytes
   for(const viewportWidth of [390,1440]){
@@ -211,7 +211,7 @@ try{
    await live.screenshot({path:resolve(folder,'responsive-photo-'+viewportWidth+'.png'),fullPage:true});assert.equal(await live.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false)
    await visitor.close()
   }
-  assert.ok(phoneBytes<desktopBytes,'The phone receives fewer image bytes than the desktop')
+  assert.ok(phoneBytes<desktopBytes,'The phone receives fewer image bytes than the desktop');console.log('Responsive photograph payloads:',JSON.stringify({phoneBytes,desktopBytes}))
   await capture('responsive-image-settings-'+width)
   await page.getByRole('button',{name:'Delete selection',exact:true}).click();await saved()
   await page.getByLabel('Add image file').setInputFiles('public/site/cake-3.webp');await page.locator('[data-image-settings]:not([hidden])').waitFor();await saved()

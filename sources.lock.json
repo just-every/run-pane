@@ -136,7 +136,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "b0dd946be8b082d73b0fe7c7ccd2fa78d6d8823172fa9536cbd612af367578a0",
+      "sha256": "b8b73fe4fcaeda71ede9f1c795c1b7ebb484892b1abc26cda308c15d357fc152",
       "executable": false
     },
     "AGENTS.md": {
@@ -160,7 +160,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "04f9ebe17ff281835e3ee0e86a3bfe21ac9df5cd05a8b65147b470641e432a6b",
+      "sha256": "d976723ac3bb84762dcdf6cd7116b88e0917d0625379e71d1a3742cfec0085c4",
       "executable": false
     },
     "deploy-demo.json": {
@@ -560,7 +560,7 @@
       "executable": false
     },
     "public/pane-image.mjs": {
-      "sha256": "07aa6054e4550b597dc4febd0073c54158cdcd5b4fc291078dd2ee2f89b5f04a",
+      "sha256": "1e3232a4ff317afc6d7bccb48fed9ff31ffa0ae869a3572615f53a0fa81c2e8b",
       "executable": false
     },
     "public/pane-layout.d.mts": {
@@ -976,7 +976,7 @@
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
-      "sha256": "c207982d1330237c83e7b629cb927fef353071571acbbe820ad67fdcc3c8e574",
+      "sha256": "554728a6b0f51a7a17f4c3f70a0293ccfd9b18a5702a36fbaab2b86274ebe005",
       "executable": false
     },
     "scripts/custody-journey.mjs": {
@@ -3184,7 +3184,7 @@
       "executable": false
     },
     "src/pane/images.ts": {
-      "sha256": "e734b7aa714c47cff0679339b0e0e9ba99514850a8da95635d84b1d1145a43f5",
+      "sha256": "dfae07b2f1db45b9e9caffa8d8353ddb5cc5170df059aaef32335f1f2a8c6617",
       "executable": false
     },
     "src/pane/import-authority.ts": {
