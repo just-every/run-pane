@@ -6,7 +6,7 @@ const fixture = await import('../tests/browser-runtime.mjs')
 const ownsFixture = !process.env.PANE_BROWSER_FIXTURE
 const folder = resolve(process.env.PANE_SCREENSHOTS ?? 'test-results/privacy')
 await mkdir(folder, {recursive: true})
-const browser = await chromium.launch({headless: true, args: ['--use-mock-keychain', '--password-store=basic']})
+const browser = await chromium.launch({headless: true, executablePath:process.env.PANE_CHROMIUM_PATH, args: ['--no-sandbox', '--use-mock-keychain', '--password-store=basic']})
 const context = await browser.newContext(), page = await context.newPage()
 const origin = fixture.origin
 const site = JSON.parse(await readFile('fixtures/static-site.json', 'utf8'))
@@ -144,6 +144,44 @@ try {
   await Promise.all([page.waitForURL(url=>url.searchParams.has('notice')),privacy.getByRole('button',{name:'Permanently erase person data'}).click()])
   const state=await(await context.request.get(origin+'/api/pane')).json();assert.equal(state.rejectedContent.some(row=>row.email===email),false);assert.equal(state.messages.some(row=>row.email===email),false)
 
+ }
+
+ // Marketplace consent is independent for each category, including saved choices.
+ let tagLoads={plausible:0,meta:0}
+ await page.addInitScript(()=>{window.tagTicks={};window.tagIsolation={};addEventListener('message',event=>{if(event.data?.tagTick){window.tagTicks[event.data.tagTick]=(window.tagTicks[event.data.tagTick]??0)+1;window.tagIsolation[event.data.tagTick]={...event.data.isolation,origin:event.origin}}})})
+ for(const [provider,pattern] of [['plausible','https://plausible.io/js/script.js'],['meta','https://connect.facebook.net/en_US/fbevents.js']])await context.route(pattern,async route=>{
+  tagLoads[provider]++
+  await route.fulfill({contentType:'application/javascript',body:`const isolation={};for(const [name,read] of Object.entries({cookie:()=>document.cookie,storage:()=>localStorage.length,parent:()=>parent.document.body,identity:()=>parent.document.querySelector('[data-account]')})){try{read();isolation[name]='exposed'}catch{isolation[name]='blocked'}};setInterval(()=>parent.postMessage({tagTick:'${provider}',isolation},'*'),30)`})
+ })
+ for(const width of [1440,390]){
+  await page.setViewportSize({width,height:1000});await context.setExtraHTTPHeaders({});await page.goto(origin+'/app?page=home')
+  await page.getByText('Tag marketplace settings',{exact:true}).click()
+  await page.getByLabel('Plausible Analytics public account',{exact:true}).fill('synthetic-pane-1.test')
+  await page.getByLabel('Plausible Analytics consent category',{exact:true}).selectOption('analytics')
+  await page.getByLabel('Meta Pixel public account',{exact:true}).fill('synthetic-pane-2')
+  await page.getByLabel('Meta Pixel consent category',{exact:true}).selectOption('advertising')
+  await page.waitForFunction(()=>document.querySelector('[data-save-status]')?.textContent==='Draft saved. Not published.')
+  await page.reload();await page.getByText('Tag marketplace settings',{exact:true}).click()
+  assert.equal(await page.getByLabel('Plausible Analytics consent category',{exact:true}).inputValue(),'analytics')
+  assert.equal(await page.locator('button,a,summary').evaluateAll(nodes=>nodes.filter(n=>!n.textContent.trim()&&n.querySelector('svg')&&!n.dataset.tip).length),0)
+  await capture('marketplace-settings-'+width)
+  const draft=(await (await context.request.get(origin+'/api/pane')).json()).draft
+  const preview=await context.request.get(origin+'/preview/'+draft.id+'/home');assert.ok(!(await preview.text()).includes('data-marketplace'));assert.ok(!preview.headers()['content-security-policy'].includes('connect.facebook.net'))
+  assert.equal((await context.request.post(origin+'/api/pane/publish',{headers:{Origin:origin},data:{revision:draft.id}})).status(),200)
+  await page.goto(origin+'/site');await page.evaluate(()=>localStorage.clear());await page.reload()
+  const baseline={...tagLoads};assert.equal(await page.locator('[data-marketplace] iframe').count(),0)
+  await page.getByRole('button',{name:'Allow analytics',exact:true}).click();await page.waitForFunction(()=>window.tagTicks.plausible>=2)
+  assert.equal(tagLoads.plausible,baseline.plausible+1);assert.equal(tagLoads.meta,baseline.meta)
+  assert.deepEqual(await page.evaluate(()=>window.tagIsolation.plausible),{cookie:'blocked',storage:'blocked',parent:'blocked',identity:'blocked',origin:'null'})
+  await capture('marketplace-one-category-'+width)
+  await page.getByRole('button',{name:'Withdraw analytics',exact:true}).click();assert.equal(await page.locator('[data-marketplace] iframe').count(),0)
+  await page.waitForTimeout(100);const stopped=await page.evaluate(()=>window.tagTicks.plausible);await page.waitForTimeout(150);assert.equal(await page.evaluate(()=>window.tagTicks.plausible),stopped,'Withdrawal destroys executing timers in this session')
+  await page.getByRole('button',{name:'Allow advertising',exact:true}).click();await page.waitForFunction(()=>window.tagTicks.meta>=2)
+  assert.deepEqual(await page.evaluate(()=>window.tagIsolation.meta),{cookie:'blocked',storage:'blocked',parent:'blocked',identity:'blocked',origin:'null'})
+  await context.setExtraHTTPHeaders({'Sec-GPC':'1'});const beforeGpc={...tagLoads};const gpc=await page.reload();assert.equal(await page.locator('[data-marketplace] iframe').count(),0);assert.ok(!gpc.headers()['content-security-policy'].includes('connect.facebook.net'));assert.deepEqual(tagLoads,beforeGpc)
+  await capture('marketplace-gpc-'+width);await context.setExtraHTTPHeaders({})
+  const gpcContext=await browser.newContext({viewport:{width,height:1000}});await gpcContext.addInitScript(()=>Object.defineProperty(navigator,'globalPrivacyControl',{get:()=>true}));let gpcLoads=0;await gpcContext.route(/https:\/\/(plausible.io|connect.facebook.net)\//,route=>{gpcLoads++;return route.abort()});const gpcPage=await gpcContext.newPage();await gpcPage.goto(origin+'/site');await gpcPage.getByRole('button',{name:'Allow advertising',exact:true}).click();assert.equal(await gpcPage.locator('[data-marketplace] iframe').count(),0);assert.equal(gpcLoads,0);await gpcContext.close()
+  await page.goto(origin+'/app');assert.equal(await page.locator('[data-marketplace]').count(),0);assert.ok(!(await context.request.get(origin+'/app')).headers()['content-security-policy'].includes('connect.facebook.net'))
  }
  console.log('Privacy browser journey passed: owner revision approval, page-only CSP, inert previews, consent, GPC, opaque sandbox and API refusal at 1440 and 390.')
 } finally { await browser.close(); if (ownsFixture) await fixture.stop() }

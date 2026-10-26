@@ -18,9 +18,9 @@ export function layoutRules(sections){return sections.flatMap(section=>{
  return [...rules,`@container (max-width:700px){${mobile}}`]
 })}
 export function layoutCss(sections){return layoutRules(sections).join('')}
-function blockMarkup(block,index){
- if(block.kind==='image'){const image=block.image;return `<div data-block="${escape(block.id)}" data-reading-index="${index}" data-image-block><img src="${escape(image.src)}" width="${image.width}" height="${image.height}" alt="${escape(image.decorative?'':image.alt??'')}"${image.decorative?' role="presentation"':''}></div>`}
+function blockMarkup(block,index,imageUrl){
+ if(block.kind==='image'){const image=block.image;return `<div data-block="${escape(block.id)}" data-reading-index="${index}" data-image-block><img src="${escape(imageUrl?imageUrl(block.id,0):image.src)}"${imageUrl&&image.renditions?.length?` srcset="${image.renditions.map(item=>escape(imageUrl(block.id,item.width))+' '+item.width+'w').join(', ')}" sizes="(max-width: 700px) 100vw, 1100px"`: ''} loading="lazy" decoding="async" width="${image.width}" height="${image.height}" alt="${escape(image.decorative?'':image.alt??'')}"${image.decorative?' role="presentation"':''}></div>`}
  const format=block.format??'p',tag=['p-large','p-small'].includes(format)?'p':format
  return `<${tag} data-block="${escape(block.id)}" data-reading-index="${index}"${tag!==format?` class="pane-${format}"`:''}>${block.content?richMarkup(block.content):escape(block.text)}</${tag}>`
 }
-export function layoutMarkup(sections){return sections.map(section=>`<section data-section="${escape(section.id)}"${section.component?` data-component="${escape(section.component)}"`:''}>${section.blocks.map(blockMarkup).join('')}</section>`).join('')}
+export function layoutMarkup(sections,imageUrl){return sections.map(section=>`<section data-section="${escape(section.id)}"${section.component?` data-component="${escape(section.component)}"`:''}>${section.blocks.map((block,index)=>blockMarkup(block,index,imageUrl)).join('')}</section>`).join('')}

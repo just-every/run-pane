@@ -1,3 +1,4 @@
+import {tags,tagSource,tagSources} from './tags'
 import { customCodeSource, codeConfirmation } from './custom-code'
 import { typedForm,validateForm,boundedForm,uploadStatements,type Upload } from './forms'
 import { accessResponse, pageRules } from './access'
@@ -67,6 +68,15 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
  const redirect=site.redirects?.find(redirect=>redirect.from===path)
  if (redirect && ['GET','HEAD'].includes(request.method)) return new Response(null,{status:redirect.status,headers:{location:redirect.to,'cache-control':'no-store'}})
  const page=activePages(site).find(page=>page.slug===slug)
+ if(url.searchParams.has('pane-image')){
+  if(!['GET','HEAD'].includes(request.method)||!page)return new Response(null,{status:404})
+  const image=page.sections?.flatMap(section=>section.blocks).find(block=>block.id===url.searchParams.get('pane-image'))?.image
+  const width=url.searchParams.get('width'),source=width==='0'?image?.src:image?.renditions?.find(item=>String(item.width)===width)?.src
+  if(!source)return new Response(null,{status:404,headers:{'cache-control':'private, no-store'}})
+  const bytes=Uint8Array.from(atob(source.split(',')[1]),c=>c.charCodeAt(0))
+  return new Response(request.method==='HEAD'?null:bytes,{headers:{'content-type':width==='0'?'image/png':'image/webp','content-length':String(bytes.length),'cache-control':'private, no-store','x-content-type-options':'nosniff','vary':'Cookie'}})
+ }
+
  if(path==='/site/visit' && request.method==='POST') {
   if(optedOut(request))return new Response(null,{status:204})
   const body=await request.json() as Record<string,unknown>
@@ -140,13 +150,13 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   const missing=site.notFound && activePages(site).find(page=>page.slug===site.notFound)
   if(!missing)return notFound()
   const missingGate=await accessResponse(request,env,site,missing);if(missingGate)return missingGate
-  const response=await document(site.name,announcements+publicPage(site,missing.slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY),'site',missing.embed ? embedOrigin(missing.embed) : undefined,optedOut(request) ? undefined : site.analytics,site.locale?.locale,optedOut(request)?'':customCodeSource(site,missing))
+  const response=await document(site.name,announcements+publicPage(site,missing.slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY),'site',missing.embed ? embedOrigin(missing.embed) : undefined,optedOut(request) ? undefined : site.analytics,site.locale?.locale,optedOut(request)?'':customCodeSource(site,missing)+tags(site).map(tagSource).join(''),optedOut(request)?undefined:tagSources(site))
   const headers=new Headers(response.headers);headers.set('x-robots-tag','noindex, nofollow')
   return new Response(request.method==='HEAD'?null:response.body,{status:404,headers})
  }
  const notice=(form||page.kind==='contact'||slug==='contact')&&url.searchParams.has('sent')?'<div class="public-site public-sent"><div class="public-shell"><p class="notice" role="status">'+escape(form?.confirmation??'Thank you. Your message has been received.')+'</p></div></div>':''
  const embed=page.embed
- const response=await document(site.name,announcements+notice+publicPage(site,slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY)+promotionMarkup(site,slug),'site',embed ? embedOrigin(embed) : undefined,optedOut(request) ? undefined : site.analytics,site.locale?.locale,optedOut(request)?'':customCodeSource(site,page!))
+ const response=await document(site.name,announcements+notice+publicPage(site,slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY)+promotionMarkup(site,slug),'site',embed ? embedOrigin(embed) : undefined,optedOut(request) ? undefined : site.analytics,site.locale?.locale,optedOut(request)?'':customCodeSource(site,page!)+tags(site).map(tagSource).join(''),optedOut(request)?undefined:tagSources(site))
  if(form||page.kind==='contact'||slug==='contact'){
   const headers=new Headers(response.headers);headers.set('vary','Cookie');headers.set('cache-control','private, no-store');const policy=headers.get('content-security-policy')!
   headers.set('content-security-policy',policy.replace("script-src 'self'","script-src 'self' https://challenges.cloudflare.com").replace("connect-src 'self'","connect-src 'self' https://challenges.cloudflare.com")+(embed||(!optedOut(request)&&(site.customCode||page.customCode))?' https://challenges.cloudflare.com':'; frame-src https://challenges.cloudflare.com'))

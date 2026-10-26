@@ -13,9 +13,10 @@ import { moves } from './ui/moves'
 import { shell, type Tab } from './ui/shell'
 import { sites } from './ui/sites'
 
-export async function document(title: string, body: string, kind: 'app' | 'site' = 'app', embedOrigin?: string, analytics?: Analytics, locale = 'en-US', codeSource = ''): Promise<Response> {
+export async function document(title: string, body: string, kind: 'app' | 'site' = 'app', embedOrigin?: string, analytics?: Analytics, locale = 'en-US', codeSource = '', tagPolicy?:{script:string[];connect:string[];image:string[]}): Promise<Response> {
   const frame = await themeFrame({ href: '/rer-theme.css', productName: branding.name, accentColor: branding.primaryColor })
   const extra = analyticsSources(analytics)
+  if(kind==='site'&&tagPolicy){extra.script.push(...tagPolicy.script);extra.connect.push(...tagPolicy.connect);extra.image.push(...tagPolicy.image)}
   const hashes = codeSource ? await codeHashes(codeSource) : []
   const layoutStyles=[...body.matchAll(/<style data-pane-layout>([\s\S]*?)<\/style>/g)].map(match=>'<style>'+match[1]+'</style>').join('')
   const styleHashes = [...(codeSource ? await codeHashes(codeSource,'style') : []),...(layoutStyles?await codeHashes(layoutStyles,'style'):[])]
@@ -33,7 +34,7 @@ export async function document(title: string, body: string, kind: 'app' | 'site'
       'x-content-type-options': 'nosniff',
       'x-frame-options': 'DENY',
       'permissions-policy': permissionsPolicy,
-      'content-security-policy': `default-src 'none'; script-src 'self'${sources([...extra.script,...hashes])}; connect-src 'self'${sources(extra.connect)}; form-action 'self'; base-uri 'none'; frame-ancestors 'none'; ${styleHashes.length ? policy.replace("style-src 'self'","style-src 'self'"+sources(styleHashes)) : policy}${embedOrigin || codeSource ? `; frame-src ${codeSource ? "about: " : ''}${embedOrigin??''}` : ''}`,
+      'content-security-policy': `default-src 'none'; script-src 'self'${sources([...extra.script,...hashes])}; connect-src 'self'${sources(extra.connect)}; form-action 'self'; base-uri 'none'; frame-ancestors 'none'; ${styleHashes.length ? policy.replace("style-src 'self'","style-src 'self'"+sources(styleHashes)) : policy}${embedOrigin || codeSource || tagPolicy?.script.length ? `; frame-src ${(codeSource || tagPolicy?.script.length) ? "about: " : ''}${embedOrigin??''}` : ''}`,
     },
   })
 }

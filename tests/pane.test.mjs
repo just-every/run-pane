@@ -1748,14 +1748,14 @@ test('custom code requires owner authoring and approved immutable live revisions
  const call=(path,body)=>app.request(path,{method:'POST',headers:{Cookie:cookie??'',Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)})
  try{
   cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic code owner'})).headers.get('set-cookie').split(';')[0]
-  const site=structuredClone(fixture);site.customCode={css:'.proof { color: rgb(120, 20, 60) }',html:'<p class="proof">Synthetic embed</p>',header:'<meta name="synthetic-verification" content="synthetic-pane-1">',footer:'<script>window.syntheticFooter=true</script>'};site.pages[4].customCode={header:'<script>window.syntheticThankYou=true</script>'}
+  const site=structuredClone(fixture);site.customCode={tags:JSON.stringify([{provider:'plausible',category:'analytics',account:'synthetic-pane-1.test'},{provider:'meta',category:'advertising',account:'synthetic-pane-2'}]),css:'.proof { color: rgb(120, 20, 60) }',html:'<p class="proof">Synthetic embed</p>',header:'<meta name="synthetic-verification" content="synthetic-pane-1">',footer:'<script>window.syntheticFooter=true</script>'};site.pages[4].customCode={header:'<script>window.syntheticThankYou=true</script>'}
   const response=await call('/api/pane/prepare',{site,base:''});assert.equal(response.status,200,await response.clone().text());const prepared=await response.json()
   const preview=await app.request('/preview/'+prepared.id+'/contact',{headers:{Cookie:cookie}})
   assert.doesNotMatch(await preview.text(),/data-custom-code|pane-custom-code.js|syntheticThankYou/)
   assert.doesNotMatch(preview.headers.get('content-security-policy'),/unsafe-inline/)
   assert.equal((await call('/api/pane/publish',{revision:prepared.id})).status,200)
   const live=await app.request('/site/contact'),html=await live.text()
-  assert.match(html,/data-custom-code/);assert.match(html,/syntheticThankYou/)
+  assert.match(html,/data-marketplace/);assert.match(live.headers.get('content-security-policy'),/connect.facebook.net/);assert.match(html,/data-custom-code/);assert.match(html,/syntheticThankYou/)
   assert.match(live.headers.get('content-security-policy'),/script-src 'self'.*'sha256-/)
   const home=await app.request('/site');assert.doesNotMatch(await home.text(),/syntheticThankYou/)
   for(const headers of [{'Sec-GPC':'1'},{DNT:'1'}]){
@@ -1769,6 +1769,8 @@ test('custom code requires owner authoring and approved immutable live revisions
   const changed=structuredClone(prepared.site);changed.customCode.html='<p>Unapproved replacement</p>'
   const denied=await app.request('/api/pane/prepare',{method:'POST',headers:{Cookie:adminCookie,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({site:changed,base:prepared.id})})
   assert.equal(denied.status,403)
+  const changedTag=structuredClone(prepared.site);changedTag.customCode.tags=JSON.stringify([{provider:'meta',category:'advertising',account:'synthetic-pane-3'}]);assert.equal((await app.request('/api/pane/prepare',{method:'POST',headers:{Cookie:adminCookie,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({site:changedTag,base:prepared.id})})).status,403,'Tag changes inherit owner-only authoring')
+  for(const tags of [[{provider:'meta',category:'analytics',account:'synthetic-pane-1'}],[{provider:'unknown',category:'advertising',account:'synthetic-pane-1'}],[{provider:'plausible',category:'analytics',account:'https://unexpected.test'}]]){const invalid=structuredClone(prepared.site);invalid.customCode.tags=JSON.stringify(tags);assert.equal((await call('/api/pane/prepare',{site:invalid,base:prepared.id})).status,400)}
   const imported=await app.request('/api/pane/import/dry-run',{method:'POST',headers:{Cookie:adminCookie,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({source:JSON.stringify({...changed,schemaVersion:1})})});assert.equal(imported.status,403,'Imports cannot bypass owner-only custom code authoring')
   for(const css of ['@import "https://external.invalid/x.css";', '.proof { background: url(/api/pane) }', '.proof { background: image-set("https://external.invalid/x.png" 1x) }', '.proof { color: \\72 ed }']){const unsafe=structuredClone(changed);unsafe.customCode.css=css;assert.equal((await call('/api/pane/prepare',{site:unsafe,base:prepared.id})).status,400,'Resource-loading CSS stays denied')}
   const next=await call('/api/pane/prepare',{site:changed,base:prepared.id});assert.equal(next.status,200)
@@ -1867,13 +1869,17 @@ test('image drafts preserve explicit descriptions and publication refuses missin
   const stale=await call('/api/pane/prepare',{site,base:draft.id});assert.equal(stale.status,409,'Image edits preserve the revision conflict boundary')
   assert.equal((await call('/api/pane/publish',{revision:rotated.id})).status,200)
   const publicHtml=await (await app.request('/site')).text()
+  const served=await app.request('/site?pane-image=synthetic-pane-image&width=0');assert.equal(served.headers.get('content-type'),'image/png');assert.deepEqual(Buffer.from(await served.arrayBuffer()),png);assert.equal(served.headers.get('cache-control'),'private, no-store')
+  assert.equal((await app.request('/site?pane-image=synthetic-pane-image&width=480')).status,404,'Only retained rendition widths can be served')
+  assert.equal((await app.request('/site?pane-image=missing&width=0')).status,404)
+  const head=await app.request('/site?pane-image=synthetic-pane-image&width=0',{method:'HEAD'});assert.equal(head.status,200);assert.equal((await head.arrayBuffer()).byteLength,0)
   assert.ok(!publicHtml.includes(picture.image.original),'The retained upload is not embedded in the public document')
   const signedOut=await app.request('/api/pane');assert.equal(signedOut.status,401,'Original upload custody remains behind native authentication')
   assert.equal((await (await app.request('/api/pane',{headers:{Cookie:cookie}})).json()).draft.site.pages[0].sections[0].blocks[1].image.original,picture.image.original,'Reopened owner draft keeps the exact upload')
   for(const mutate of [p=>p.image.rotation=45,p=>p.image.rotation='90',p=>p.image.original='data:image/webp;base64,c3ludGhldGljLXBhbmUtMQ==']){
    const invalid=structuredClone(site);mutate(invalid.pages[0].sections[0].blocks[1]);assert.equal((await call('/api/pane/prepare',{site:invalid})).status,400,'Invalid original bytes or rotation cannot create a draft')
   }
-  for(const mutate of [p=>p.image.src='data:image/svg+xml;base64,PHN2Zz4=',p=>p.image.width++,p=>p.image.decorative=true,p=>p.image.crop.x=101,p=>p.image.crop.width=0,p=>p.image.crop.ratio='arbitrary',p=>p.image.crop.script='unsupported']){const invalid=structuredClone(site);mutate(invalid.pages[0].sections[0].blocks[1]);assert.equal((await call('/api/pane/prepare',{site:invalid})).status,400)}
+  for(const mutate of [p=>p.image.src='data:image/svg+xml;base64,PHN2Zz4=',p=>p.image.width++,p=>p.image.renditions=[{src:'data:image/webp;base64,c3ludGhldGljLXBhbmUtMQ==',width:480,height:240}],p=>p.image.decorative=true,p=>p.image.crop.x=101,p=>p.image.crop.width=0,p=>p.image.crop.ratio='arbitrary',p=>p.image.crop.script='unsupported']){const invalid=structuredClone(site);mutate(invalid.pages[0].sections[0].blocks[1]);assert.equal((await call('/api/pane/prepare',{site:invalid})).status,400)}
   const imported={...site,pages:[{slug:'home',title:'Imported bakery',body:'Our bakery',importedHtml:'<p>Our bakery</p><img src="https://example.test/bakery.png">'}]}
   response=await call('/api/pane/prepare',{site:imported});assert.equal(response.status,200,await response.clone().text());draft=await response.json();assert.equal((await call('/api/pane/publish',{revision:draft.id})).status,400,'Import normalization must not invent a decorative choice')
   imported.pages[0].importedHtml='<p>Our bakery</p><img src="https://example.test/bakery.png" alt="">'

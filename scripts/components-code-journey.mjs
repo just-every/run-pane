@@ -195,6 +195,24 @@ try{
   await saved()
   const downsampled=(await state()).draft.site.pages.find(item=>item.slug==='services').sections.flatMap(item=>item.blocks).find(item=>item.image).image
   assert.equal(downsampled.width,1600);assert.equal(downsampled.height,800);assert.equal(downsampled.original,largeOriginal,'The full 6000-pixel upload is retained before browser downsampling')
+  await page.getByLabel('Alternative text',{exact:true}).fill('Synthetic 6000-pixel workshop photo');await saved()
+  const responsiveDraft=(await state()).draft;await call('/api/pane/publish',{revision:responsiveDraft.id})
+  let phoneBytes,desktopBytes
+  for(const viewportWidth of [390,1440]){
+   const visitor=await browser.newContext({viewport:{width:viewportWidth,height:1000},deviceScaleFactor:1}),live=await visitor.newPage(),requests=[]
+   live.on('response',response=>{if(response.url().includes('pane-image='))requests.push(response)})
+   await live.goto(origin+'/site/services');const image=live.locator('[data-image-block] img');await image.scrollIntoViewIfNeeded();await image.evaluate(node=>node.decode())
+   const selected=await image.evaluate(node=>node.currentSrc),expected=viewportWidth===390?480:1600
+   assert.equal(new URL(selected).searchParams.get('width'),String(expected),'Viewport chooses a matched WebP payload')
+   const payload=requests.find(response=>response.url()===selected);assert.ok(payload);assert.equal(payload.headers()['content-type'],'image/webp')
+   const bytes=(await payload.body()).length;if(viewportWidth===390)phoneBytes=bytes;else desktopBytes=bytes
+   assert.equal(await image.getAttribute('loading'),'lazy');assert.ok(Number(await image.getAttribute('width'))>0);assert.ok(Number(await image.getAttribute('height'))>0)
+   assert.equal(requests.length,1,'The document does not download every rendition or the retained original')
+   await live.screenshot({path:resolve(folder,'responsive-photo-'+viewportWidth+'.png'),fullPage:true});assert.equal(await live.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false)
+   await visitor.close()
+  }
+  assert.ok(phoneBytes<desktopBytes,'The phone receives fewer image bytes than the desktop')
+  await capture('responsive-image-settings-'+width)
   await page.getByRole('button',{name:'Delete selection',exact:true}).click();await saved()
   await page.getByLabel('Add image file').setInputFiles('public/site/cake-3.webp');await page.locator('[data-image-settings]:not([hidden])').waitFor();await saved()
   await page.getByLabel('Alternative text',{exact:true}).fill('Celebration cake with yellow flowers');await saved()
@@ -287,7 +305,7 @@ try{
   assert.equal(reset.src,originalImage.src);assert.equal(reset.original,originalImage.original);assert.equal(reset.rotation,0);assert.equal(reset.crop,undefined)
   await capture('hero-reset-canvas-'+width)
   draft=(await state()).draft;await call('/api/pane/publish',{revision:draft.id});await page.goto(origin+'/site')
-  await page.locator('[data-image-block] img').evaluate(image=>image.decode());assert.equal(await page.locator('[data-image-block] img').getAttribute('src'),originalImage.src)
+  await page.locator('[data-image-block] img').evaluate(image=>image.decode());assert.ok((await page.locator('[data-image-block] img').getAttribute('src')).includes('pane-image='))
   assert.equal(await page.locator('[data-image-block] img').evaluate(image=>image.naturalWidth/image.naturalHeight),originalImage.width/originalImage.height)
   await capture('hero-reset-live-'+width)
   console.log('Native canvas geometry, pixel parity and conflict safety passed at '+width+'.')

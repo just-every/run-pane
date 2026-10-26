@@ -87,7 +87,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    return document(screens[path][1],workspace(data,path,url.searchParams.get('page')??''),'app',undefined,undefined,data.locale)
   }
   if(request.method!=='POST')return json({error:'Method not allowed.'},405)
-  if(Number(request.headers.get('content-length')??0)>1200000)return json({error:'Input exceeds 1.2 MB.'},413)
+  if(Number(request.headers.get('content-length')??0)>1800000)return json({error:'Input exceeds 1.8 MB.'},413)
   const formData=request.headers.get('content-type')?.includes('application/json')?null:await request.formData()
   const input:Record<string,any>=formData?Object.fromEntries(formData):await request.json()
   if(formData&&path==='/app/access')input.members=formData.getAll('members')

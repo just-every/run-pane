@@ -28,11 +28,13 @@ export const slugs = ['home','about','services','hours','contact']
 export function normalizeSite(value: unknown): Site {
  const input = value as Site
  if (!input || typeof input !== 'object' || typeof input.name !== 'string' || !input.name.trim() || input.name.length > 120 || typeof input.description !== 'string' || input.description.length > 500 || !Array.isArray(input.pages) || !input.pages.length) throw new Error('Provide a business name, description and pages.')
+ if(JSON.stringify(input).length>1750000)throw Error('This draft exceeds the 1.75 MB image and content budget.')
  const components = normalizeComponents(input.components)
  const pages = input.pages.map(raw => {
   const page=resolveComponents(raw,components??[])
   if (!page || typeof page.title !== 'string' || !page.title.trim() || page.title.length > 120 || typeof page.body !== 'string' || !page.body.trim() || page.body.length > 20000) throw new Error('Every page needs a title and body (up to 20,000 characters).')
   if(page.policyStarter!==undefined&&!['privacy','terms','accessibility'].includes(page.policyStarter))throw Error('Invalid policy starter.')
+  if(page.customCode?.tags!==undefined)throw Error('Configure marketplace tags in site settings.')
   const sections = normalizeSections(page.sections)
   if (sections && (page.importedHtml !== undefined || page.layout !== undefined)) throw Error('Sections cannot be combined with an imported body or starter layout.')
   if (sections && sectionText(sections) !== page.body.normalize('NFC').trim()) throw Error('Section text must match the page body in reading order.')

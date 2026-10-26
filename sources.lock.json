@@ -560,15 +560,15 @@
       "executable": false
     },
     "public/pane-image.mjs": {
-      "sha256": "d71101aeead6bce53e399a5fd58c2ea132ded9c8265b7928fc3b08e793af644f",
+      "sha256": "07aa6054e4550b597dc4febd0073c54158cdcd5b4fc291078dd2ee2f89b5f04a",
       "executable": false
     },
     "public/pane-layout.d.mts": {
-      "sha256": "ea5a75be6412ea45dc0831fb9893397d691215372d93769209de408ceece04d4",
+      "sha256": "e740e504997bdd8cfbf550790e8225ed64e992f729b08cbe483f6b196e054572",
       "executable": false
     },
     "public/pane-layout.mjs": {
-      "sha256": "c11aa1f5d6b36ae36a82a1dfd8d7c4886c0853e277c435e5d2ed3ebe185e7298",
+      "sha256": "080a44ae82216ed94e95087cd78a28fa90f4ef12359bfb2dbccd4124be8f6bdc",
       "executable": false
     },
     "public/pane-organization.js": {
@@ -972,7 +972,7 @@
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
-      "sha256": "6aaa496f5fe43e7fe1c30a394e27cba7d9d874bef6c987425fa1cfbadc94df2e",
+      "sha256": "ea8975a3af19e553e4054fee9f3c817bfca03c6d1666f2c106fcf69dc3990a15",
       "executable": false
     },
     "scripts/custody-journey.mjs": {
@@ -1216,7 +1216,7 @@
       "executable": false
     },
     "scripts/privacy-journey.mjs": {
-      "sha256": "a5e6e50a93acbc1d972d31d0c2704c008a8aaacc4454c9d1e487cee296d5dbf6",
+      "sha256": "c4abcadcdcaf2176af977cc05f0a2a12eb20be9289294461af2756eb5821ff4f",
       "executable": false
     },
     "scripts/promotions-journey.mjs": {
@@ -3124,11 +3124,11 @@
       "executable": false
     },
     "src/pane/content.ts": {
-      "sha256": "d36d0ee8f0c6f789d3582ce7fd0d240d30725718260da7c7c1d608c44903c766",
+      "sha256": "a74ea795955f790a88bfd439c390504238820cb06c6a2e2b6142976e24a0b3db",
       "executable": false
     },
     "src/pane/custom-code.ts": {
-      "sha256": "f48a30ba39fa054ef6d338b10eb530edf5d4644468b2efd796d4f2db7b0ef188",
+      "sha256": "1cbe88c721de732ece557936ad1d0ed2096669e44beac6dcb73b5e3372a79a6b",
       "executable": false
     },
     "src/pane/data.ts": {
@@ -3176,11 +3176,11 @@
       "executable": false
     },
     "src/pane/handler.ts": {
-      "sha256": "1975eed3bce103f1d1ae66ef9872d258cea86b7e5a490a33b8d4c68718b2a4eb",
+      "sha256": "5325ea6ee32579ae9e780753f3c7f0d050eca07a14d9a15b67c97d7a9f05e4d8",
       "executable": false
     },
     "src/pane/images.ts": {
-      "sha256": "af50fb3b6fb235e61fca5ef21f98dc265645cbdaa508eb8933f964e86c7030e4",
+      "sha256": "e734b7aa714c47cff0679339b0e0e9ba99514850a8da95635d84b1d1145a43f5",
       "executable": false
     },
     "src/pane/import-authority.ts": {
@@ -3272,11 +3272,11 @@
       "executable": false
     },
     "src/pane/public-view.ts": {
-      "sha256": "8dabaff71d7180904fad8beceee41edcabf6aff92f5c515a6e4740ba9409e7ef",
+      "sha256": "4f98653359da6dfc840867da4e6ba83966cc82e3f3ef4a9960a9edc94eaf6c26",
       "executable": false
     },
     "src/pane/public.ts": {
-      "sha256": "09967bbd389f8d1e971858fcef8761cd36cae8599d59990a2b1e19e710d0d8aa",
+      "sha256": "1dc0def02e9c8256ddc81ec2d270c03168e3b5364a8e6d4b011c98361479298a",
       "executable": false
     },
     "src/pane/redirects.ts": {
@@ -3348,7 +3348,7 @@
       "executable": false
     },
     "src/pane/ui/custom-code-settings.ts": {
-      "sha256": "3b6f72774638ea0e9011d100a90853c0eb6eaf4feaf51db8c4cd91f98e85f043",
+      "sha256": "ffdbdaa004da8a7ab3ef9c94c68610a3a53351a40b1aaad354beeac863d22ad3",
       "executable": false
     },
     "src/pane/ui/editor.ts": {
@@ -3444,7 +3444,7 @@
       "executable": false
     },
     "src/pane/views.ts": {
-      "sha256": "bdfa12ab517cdeb9793eadd7a687328ffaab7bdccf5a57b6bc20d4d4e470a7b5",
+      "sha256": "d85ecb3b8b42519ac2682a397fb3f46db0715c36a735e58e49a04675d7cf7796",
       "executable": false
     },
     "src/pane/visit-data.ts": {
@@ -3600,7 +3600,7 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "065ad3605d123da737c3e4f899401b061a8e05fee9a19e5cea4abbb549c25777",
+      "sha256": "a7dc4a0c38641d34f57d26d8381ebd4d048f4e922a63f6289010c79c55a33481",
       "executable": false
     },
     "tests/runtime.mjs": {
