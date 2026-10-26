@@ -544,7 +544,7 @@
       "executable": false
     },
     "public/pane-ai.js": {
-      "sha256": "e4fd785daf55503ff1e529bd1f5700bdfa396e52ead25e70ec59521295246d2b",
+      "sha256": "84071e9c5e7a01ad969c95dc86d44830a0aa0ad1b802261b13e36454994df95b",
       "executable": false
     },
     "public/pane-analytics.js": {
@@ -3176,7 +3176,7 @@
       "executable": false
     },
     "src/pane/ai-model.ts": {
-      "sha256": "1d4c718c39f72b842be59e5b55c0892b20f61701124cc01585c8cf54ed121664",
+      "sha256": "38c446b6097dd390db752dcd3f4e358c59d083c2c7014a96339d52927b79b86c",
       "executable": false
     },
     "src/pane/ai-targets.ts": {

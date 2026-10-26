@@ -123,7 +123,7 @@ for (const root of document.querySelectorAll('[data-ai-assist]')) {
    if (item.kind === 'alt') {
     const image = [...root.querySelectorAll('[data-ai-image-id]')].find(image => image.dataset.aiImageId === item.target)
     if (!image) throw Error('The image preview no longer matches this review. Open the latest page before requesting suggestions.')
-    row.append(image.querySelector('img').cloneNode(true), element('span', image.querySelector('span').textContent))
+    row.append(image.querySelector('img').cloneNode(true), element('p', image.querySelector('span').textContent))
    }
    row.append(element('strong', item.label))
    const comparison = element('dl')
