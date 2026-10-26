@@ -288,7 +288,7 @@ test('native page references follow renamed URLs and report a deleted destinatio
 
 async function aiWorkspace(respond) {
  const hosted='https://pane.example.test',mail=[],requests=[],outbounds=[]
- let observeEdge,failProvider=false
+ let observeEdge,failProvider=false,edgeError
  const app=await runtime({bindings:{AUTH_ORIGIN:hosted,AUTH_LOCAL:'false',MAIL_PROVIDER:'sendgrid',MAIL_API_KEY:'synthetic-pane-5',AI_ENABLED:'true',AI_API_KEY:'synthetic-pane-4',AI_MODEL:'gpt-4.1-mini'},outboundService:async request=>{
   outbounds.push({origin:new URL(request.url).origin,path:new URL(request.url).pathname,method:request.method})
   if(new URL(request.url).hostname==='api.sendgrid.com'){mail.push(await request.json());return new Response(null,{status:202})}
@@ -304,13 +304,13 @@ async function aiWorkspace(respond) {
   assert.deepEqual(details.images,context.images.map(image=>image.target),'The generation click names the exact inputs before the provider receives them')
   assert.ok(!JSON.stringify(click).includes(context.page.body),'The generation audit contains no page content')
   requests.push(context)
-  if(observeEdge)await observeEdge(input,click)
+  if(observeEdge)try{await observeEdge(input,click)}catch(error){edgeError=error;throw error}
   if(failProvider)return new Response('synthetic-pane-raw-provider-error',{status:502})
   const suggestions=await respond(context,content)
   return Response.json({choices:[{finish_reason:'stop',message:{content:JSON.stringify(context.mode==='translate'?{translations:Object.fromEntries(suggestions.map(item=>[item.target,item.after]))}:{suggestions})}}],usage:{prompt_tokens:70,completion_tokens:40,total_tokens:110}})
  }})
  let cookie,expectedActor='Synthetic owner'
- const call=(path,body,session=cookie,headers={})=>app.request(hosted+path,{method:'POST',headers:{Cookie:session??'',Origin:hosted,'Content-Type':'application/json',...headers},body:JSON.stringify(body)})
+ const call=async(path,body,session=cookie,headers={})=>{const response=await app.request(hosted+path,{method:'POST',headers:{Cookie:session??'',Origin:hosted,'Content-Type':'application/json',...headers},body:JSON.stringify(body)});if(edgeError)throw edgeError;return response}
  const get=(path,session=cookie)=>app.request(hosted+path,{headers:{Cookie:session??''}})
  const state=async()=>{const response=await get('/api/pane');assert.equal(response.status,200);return response.json()}
  const ok=async response=>{assert.equal(response.status,200,await response.clone().text());return response.json()}
