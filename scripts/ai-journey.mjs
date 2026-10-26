@@ -42,7 +42,7 @@ async function propose(mode,width,fields={}){
  const before=await data(),count=fixture.aiRequests.length
  await panel().getByLabel('Help with',{exact:true}).selectOption(mode)
  if(fields.selection)await panel().getByLabel('Selected paragraph',{exact:true}).fill(fields.selection)
- if(fields.tone)await panel().getByLabel('Tone',{exact:true}).fill(fields.tone)
+ if(mode==='tone'&&fields.tone)await panel().getByLabel('Tone',{exact:true}).fill(fields.tone)
  if(mode==='translate')await panel().getByLabel('Language',{exact:true}).fill('Spanish')
  assert.equal(fixture.aiRequests.length,count,'Selecting assistance never calls a model')
  const result=await aiResponse('propose',()=>panel().getByRole('button',{name:'Send to OpenAI',exact:true}).click())
@@ -167,6 +167,7 @@ try{
   await editor();const rejected=await propose('translate',width),rejectionBase=(await data()).draft.id
   await decide(rejected,()=>false);assert.equal((await data()).draft.id,rejectionBase);await capture('translation-rejected',width)
   await page.reload();await panel().locator(':scope > summary').click()
+  await panel().getByRole('button',{name:'Undo accepted changes',exact:true}).waitFor({state:'visible'})
   const newer=await prepare((await data()).draft.site)
   const [guard]=await Promise.all([page.waitForResponse(response=>new URL(response.url()).pathname==='/api/pane/ai/undo'),panel().getByRole('button',{name:'Undo accepted changes',exact:true}).click()])
   assert.equal(guard.status(),409);await panel().locator('[data-ai-latest]').waitFor();assert.equal((await data()).draft.id,newer.id);await capture('stale-undo-guard',width)
