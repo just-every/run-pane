@@ -1,0 +1,137 @@
+{
+  "live": true,
+  "provider": "OpenAI",
+  "date": "2026-10-26T12:58:58.204Z",
+  "source": "57911f06018582251d41429c9cec40750ae17734",
+  "calls": 8,
+  "evidence": [
+    {
+      "viewport": 1440,
+      "operation": "search",
+      "model": "gpt-4.1-mini",
+      "providerStatus": 200,
+      "providerRequestId": "req_0181a514e3d0485cbf83746bea33f559",
+      "kinds": [
+        "search-title",
+        "search-description",
+        "heading",
+        "link",
+        "finding"
+      ],
+      "accepted": [],
+      "outcome": "conflict",
+      "outputDigest": "2086b51b6800f23e8a47d5814b89d2ca4639bed11fa38daccb205c485267469b"
+    },
+    {
+      "viewport": 1440,
+      "operation": "search",
+      "model": "gpt-4.1-mini",
+      "providerStatus": 200,
+      "providerRequestId": "req_bb6c326decff4a778703264e1855e3fa",
+      "kinds": [
+        "search-title",
+        "search-description",
+        "heading",
+        "link",
+        "finding"
+      ],
+      "accepted": [
+        "ed8088f4-1585-44a8-bae8-c6486e8b93b1",
+        "af86215a-cc69-470a-a238-d9b4ccff3aa4"
+      ],
+      "outcome": "reviewed",
+      "outputDigest": "c26ff22a379c8d212d732456f755a0c76c59088806acd79174529cc125994ef6"
+    },
+    {
+      "viewport": 1440,
+      "operation": "rewrite",
+      "model": "gpt-4.1-mini",
+      "providerStatus": 200,
+      "providerRequestId": "req_9ee32d28fc674b8b81b01cecc21aa699",
+      "kinds": [
+        "text"
+      ],
+      "accepted": [
+        "5a9d7f9c-6770-4b52-8ddd-457ec4c74190"
+      ],
+      "outcome": "reviewed",
+      "outputDigest": "af5be522a18b5d0ae01fa5ca0c61b3a3c76633e330da2588a6bb24b5752ec175"
+    },
+    {
+      "viewport": 1440,
+      "operation": "shorten",
+      "model": "gpt-4.1-mini",
+      "providerStatus": 200,
+      "providerRequestId": "req_e8e8d1e5e7df45a4a43bb60a2c6b0420",
+      "kinds": [
+        "text"
+      ],
+      "accepted": [
+        "7290124c-779d-4bd1-8c5f-9fcc2fb6e49c"
+      ],
+      "outcome": "reviewed",
+      "outputDigest": "0e95e4c1d8c93c986dc6bfae47bfc98ed181b4d38725b8c7ede40b33d87dbfe7"
+    },
+    {
+      "viewport": 1440,
+      "operation": "tone",
+      "model": "gpt-4.1-mini",
+      "providerStatus": 200,
+      "providerRequestId": "req_2746de62d71d4994b31b331f2cf55b18",
+      "kinds": [
+        "text"
+      ],
+      "accepted": [],
+      "outcome": "reviewed",
+      "outputDigest": "8cea18203084e46924495f9f422a2224acc8063a5f8a9cd7996710bc46492101"
+    },
+    {
+      "viewport": 1440,
+      "operation": "alt",
+      "model": "gpt-4.1-mini",
+      "providerStatus": 200,
+      "providerRequestId": "req_ae44b0a667ba43ac818c3d4101d71a3e",
+      "kinds": [
+        "alt",
+        "alt",
+        "alt",
+        "alt",
+        "alt"
+      ],
+      "accepted": [
+        "04d971bd-217d-4057-b8dc-9a7ae627bdd6",
+        "65367599-a8f5-48c3-ab6e-d90afe09b9fe"
+      ],
+      "outcome": "reviewed",
+      "outputDigest": "6673cbce77a57d7d4f093c4db6710576626565eaa9a1719772f1fdeb3b2823e4"
+    },
+    {
+      "viewport": 1440,
+      "operation": "translate",
+      "model": "gpt-4.1-mini",
+      "providerStatus": 200,
+      "providerRequestId": "req_49e79640a85940a3b07fdd08359e47cd",
+      "kinds": [
+        "translation"
+      ],
+      "accepted": [
+        "aab3d30b-e195-49e7-a6be-c4bac43154a8"
+      ],
+      "outcome": "reviewed",
+      "outputDigest": "ab4f4918e2c18cfc06af1cd6fca7584e7b7db1c96bac348d93a87d4780a7c1c9"
+    },
+    {
+      "viewport": 1440,
+      "operation": "translate",
+      "model": "gpt-4.1-mini",
+      "providerStatus": 200,
+      "providerRequestId": "req_3b0cf11d9c2e49b6a17ec074e1ef93bb",
+      "kinds": [
+        "translation"
+      ],
+      "accepted": [],
+      "outcome": "reviewed",
+      "outputDigest": "b336d65d95cef6e3ce48b3f0a40d492f3361771a7ce1b9be9d75323e1b2d9cc6"
+    }
+  ]
+}

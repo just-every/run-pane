@@ -136,7 +136,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "97f631459b8ca79e2f9380a789fa80792a13453459223ba31f4cdbfbfd93f867",
+      "sha256": "f3e14095c8e3b3cde31686a3b5ac53ba54db7cb0694915c9585bd2d4b76da14f",
       "executable": false
     },
     "AGENTS.md": {
@@ -160,7 +160,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "c6b361ecce1d22dba8f911266ef9187a6d9b98b2c4b9ee148fdb99b05f37ebea",
+      "sha256": "1e4f33f3d682a9aed0088e596acdb064c45ab5096003b3954307fa4ef43a3b05",
       "executable": false
     },
     "deploy-demo.json": {
@@ -189,6 +189,10 @@
     },
     "docs/CUSTOM-CODE.md": {
       "sha256": "7f03232afbebd3f69561ed5792a965304a9acbbcfd79a59c6cd39e818b472df7",
+      "executable": false
+    },
+    "docs/evidence/ai-live.json": {
+      "sha256": "90eef1b579b2fa70229984f2650ee3c5ee43e3c034513d6456abdbec6c084fe1",
       "executable": false
     },
     "docs/FORMS-AND-ACCESS.md": {
@@ -3716,7 +3720,7 @@
       "executable": false
     },
     "tests/search.test.mjs": {
-      "sha256": "679b72e959a0c82f471497c0c4683f69500347afb40a9f11270b1e9572e5c9c4",
+      "sha256": "bea3bc939becf4a4e82bf1d3c941debcbacaa94b2119abcd3e6a2c6e63af8e06",
       "executable": false
     },
     "tests/site.test.mjs": {
