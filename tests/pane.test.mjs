@@ -1893,3 +1893,46 @@ test('image drafts preserve explicit descriptions and publication refuses missin
  }finally{await app.mf.dispose()}
  }
 })
+
+test('gallery publications resolve immutable library images and enforce the page gate and revocation for every rendition',async()=>{
+ for(const isolatedLive of [false,true]){
+  const app=await runtime({isolatedLive});let cookie
+  const call=(path,body)=>app.request(path,{method:'POST',headers:{Cookie:cookie??'',Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)})
+  try{
+   cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic bakery owner'})).headers.get('set-cookie').split(';')[0]
+   await app.request('/setup',{method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
+   const png=await readFile('public/brand/icon-192.png'),image={src:'data:image/png;base64,'+png.toString('base64'),width:png.readUInt32BE(16),height:png.readUInt32BE(20),decorative:false,alt:'Bakery celebration mark',original:'data:image/png;base64,'+png.toString('base64')}
+   const text={id:'synthetic-pane-text',kind:'text',text:'Fresh from our bakery',column:1,span:12,row:1},gallery={id:'synthetic-pane-gallery',kind:'gallery',text:'',column:1,span:12,row:2,gallery:{layout:'grid',columns:3,phoneColumns:1,gap:16,phoneGap:12,lightbox:true,items:[{asset:'synthetic-pane-1',caption:'A celebration',href:'/site'}]}}
+   const site={name:'Riverbend Bakery',description:'Bread and celebration cakes.',media:[{id:'synthetic-pane-1',name:'Celebration',image}],pages:[{slug:'home',title:'Our work',body:text.text,sections:[{id:'synthetic-pane-section',kind:'text',blocks:[text,gallery]}]}]}
+   const missing=structuredClone(site);missing.media[0].image.alt='';let response=await call('/api/pane/prepare',{site:missing});assert.equal(response.status,200,await response.clone().text());assert.equal((await call('/api/pane/publish',{revision:(await response.json()).id})).status,400,'A gallery cannot bypass missing image descriptions')
+   response=await call('/api/pane/prepare',{site});assert.equal(response.status,200,await response.clone().text());let draft=await response.json();assert.equal((await call('/api/pane/publish',{revision:draft.id})).status,200)
+   const html=await (await app.request('/site')).text();assert.match(html,/data-gallery="grid"/);assert.match(html,/A celebration/);assert.ok(!html.includes(image.original),'Original library uploads never enter public markup')
+   const path='/site?pane-image=synthetic-pane-gallery%3Asynthetic-pane-1&width=0'
+   const served=await app.request(path);assert.equal(served.headers.get('content-type'),'image/png');assert.deepEqual(Buffer.from(await served.arrayBuffer()),png);assert.equal(served.headers.get('cache-control'),'private, no-store')
+   assert.equal((await app.request(path,{method:'HEAD'})).status,200);assert.equal((await app.request(path+'&original=1')).headers.get('content-type'),'image/png');assert.equal((await app.request('/site?pane-image=unplaced%3Asynthetic-pane-1&width=0')).status,404)
+   const altered=structuredClone(site);altered.media[0].image.alt='Changed in draft';const next=await (await call('/api/pane/prepare',{site:altered,base:draft.id})).json();assert.match(await (await app.request('/site')).text(),/alt="Bakery celebration mark"/,'An unpublished library change cannot mutate the live page')
+   assert.equal((await call('/api/pane/prepare',{site,base:draft.id})).status,409,'Library editing keeps conflict protection')
+   const missingAsset=structuredClone(site);missingAsset.media=[];assert.equal((await call('/api/pane/prepare',{site:missingAsset})).status,400,'Missing library references are refused')
+   const protectedSite=structuredClone(next.site);protectedSite.pages[0].access={mode:'members'};draft=await (await call('/api/pane/prepare',{site:protectedSite,base:next.id})).json();assert.equal((await call('/api/pane/publish',{revision:draft.id})).status,200)
+   assert.notEqual((await app.request(path)).headers.get('content-type'),'image/png','Gallery bytes follow the current member gate')
+   await call('/api/pane/publication-revoke',{revision:draft.id,confirm:'revoke-publication'});assert.equal((await app.request(path)).status,404)
+  }finally{await app.mf.dispose()}
+ }
+})
+
+test('brand uploads stay draft until approval and publish served icons, social images and profile structured data',async()=>{
+ const app=await runtime();let cookie
+ const call=(path,body)=>app.request(path,{method:'POST',headers:{Cookie:cookie??'',Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)})
+ try{
+  cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Bakery owner'})).headers.get('set-cookie').split(';')[0]
+  await app.request('/setup',{method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
+  const png=await readFile('public/brand/icon-192.png'),image={src:'data:image/png;base64,'+png.toString('base64'),width:png.readUInt32BE(16),height:png.readUInt32BE(20)}
+  const site={name:'Riverbend Bakery',description:'Fresh bread and handmade cakes.',brand:{logo:image,favicon:image,social:image},socials:{instagram:'https://www.instagram.com/riverbendbakery',facebook:'https://www.facebook.com/riverbendbakery'},pages:[{slug:'home',title:'Welcome',body:'Baked in our neighbourhood.'}]}
+  let response=await call('/api/pane/prepare',{site});assert.equal(response.status,200,await response.clone().text());let draft=await response.json();assert.equal((await app.request('/site?pane-brand=favicon')).headers.get('content-type'),'text/html; charset=utf-8','Draft brand assets have no live delivery')
+  await call('/api/pane/publish',{revision:draft.id});const html=await (await app.request('/site')).text();assert.match(html,/class="public-brand-logo"/);assert.match(html,/rel="apple-touch-icon"/);assert.match(html,/property="og:image"/);assert.match(html,/@type":"LocalBusiness"/);assert.match(html,/sameAs/)
+  for(const key of ['logo','favicon','social']){const response=await app.request('/site?pane-brand='+key);assert.equal(response.headers.get('content-type'),'image/png');assert.deepEqual(Buffer.from(await response.arrayBuffer()),png);assert.equal((await app.request('/site?pane-brand='+key,{method:'HEAD'})).status,200)}
+  assert.equal((await app.request('/site?pane-brand=original')).status,404)
+  const bad=structuredClone(site);bad.brand.logo.src='data:image/svg+xml;base64,PHN2Zz4=';assert.equal((await call('/api/pane/prepare',{site:bad})).status,400,'Branding uses the raster validation boundary')
+  await call('/api/pane/publication-revoke',{revision:draft.id,confirm:'revoke-publication'});assert.equal((await app.request('/site?pane-brand=logo')).status,404,'Revocation removes public brand delivery')
+ }finally{await app.mf.dispose()}
+})

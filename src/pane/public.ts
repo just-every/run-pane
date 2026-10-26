@@ -69,9 +69,17 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
  const redirect=site.redirects?.find(redirect=>redirect.from===path)
  if (redirect && ['GET','HEAD'].includes(request.method)) return new Response(null,{status:redirect.status,headers:{location:redirect.to,'cache-control':'no-store'}})
  const page=activePages(site).find(page=>page.slug===slug)
+ if(url.searchParams.has('pane-brand')){
+  const key=url.searchParams.get('pane-brand'),image=key&&['logo','favicon','social'].includes(key)?site.brand?.[key as keyof NonNullable<typeof site.brand>]:undefined
+  if(!image||!['GET','HEAD'].includes(request.method))return new Response(null,{status:404,headers:{'cache-control':'private, no-store'}})
+  const bytes=Uint8Array.from(atob(image.src.split(',')[1]),c=>c.charCodeAt(0))
+  return new Response(request.method==='HEAD'?null:bytes,{headers:{'content-type':'image/png','content-length':String(bytes.length),'cache-control':'private, no-store','x-content-type-options':'nosniff','vary':'Cookie'}})
+ }
  if(url.searchParams.has('pane-image')){
   if(!['GET','HEAD'].includes(request.method)||!page)return new Response(null,{status:404})
-  const image=page.sections?.flatMap(section=>section.blocks).find(block=>block.id===url.searchParams.get('pane-image'))?.image
+  const [blockId,assetId]=(url.searchParams.get('pane-image')??'').split(':')
+  const block=page.sections?.flatMap(section=>section.blocks).find(block=>block.id===blockId)
+  const image=assetId&&block?.gallery?.items.some(item=>item.asset===assetId)?site.media?.find(asset=>asset.id===assetId)?.image:block?.image
   const width=url.searchParams.get('width'),source=width==='0'?image?.src:image?.renditions?.find(item=>String(item.width)===width)?.src
   if(!source)return new Response(null,{status:404,headers:{'cache-control':'private, no-store'}})
   const bytes=Uint8Array.from(atob(source.split(',')[1]),c=>c.charCodeAt(0))

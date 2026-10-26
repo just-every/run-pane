@@ -21,7 +21,7 @@ export async function document(title: string, body: string, kind: 'app' | 'site'
   const layoutStyles=[...body.matchAll(/<style data-pane-layout>([\s\S]*?)<\/style>/g)].map(match=>'<style>'+match[1]+'</style>').join('')
   const styleHashes = [...(codeSource ? await codeHashes(codeSource,'style') : []),...(layoutStyles?await codeHashes(layoutStyles,'style'):[])]
   const sources = (list: string[]) => list.length ? ' ' + list.join(' ') : ''
-  const imagePolicy=(body.includes('src="data:image/png;base64,')||body.includes('data-image-upload'))?frame.policy.replace("img-src 'self'","img-src 'self' data:"):frame.policy
+  const imagePolicy=(body.includes('src="data:image/png;base64,')||body.includes('data-image-upload')||body.includes('data-brand-settings')||body.includes('data-gallery-settings'))?frame.policy.replace("img-src 'self'","img-src 'self' data:"):frame.policy
   const rasterPolicy=body.includes('data-image-upload')?imagePolicy.replace("img-src 'self'","img-src 'self' blob:"):imagePolicy
   const policy = extra.image.length ? rasterPolicy.replace("img-src 'self'", `img-src 'self'${sources(extra.image)}`) : rasterPolicy
   const pageTitle = kind === 'site' ? title : `${title} · ${branding.name}`

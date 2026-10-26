@@ -1,3 +1,4 @@
+import {brandHead} from './brand'
 import { isProtected } from './access'
 import { liveSnapshot } from './outage'
 import { capabilities } from './roles'
@@ -67,10 +68,11 @@ export async function searchMetadata(request: Request, response: Response, origi
  if(!preview&&response.headers.get('x-robots-tag')?.includes('noindex'))return response
  const noindex = isProtected(draft.site,page) || preview || url.origin !== new URL(env.AUTH_ORIGIN).origin || !!original.RER_DEV_ORIGIN || search.noindex
  const headers = new Headers(response.headers)
+ if(draft.site.brand)headers.set('content-security-policy',(headers.get('content-security-policy')??'').replace("img-src 'self'","img-src 'self' data:"))
  if (noindex) headers.set('x-robots-tag', 'noindex, nofollow')
  const title = search.title || draft.site.name
  const updated = new Response(response.body, {status: response.status, headers})
  return new HTMLRewriter().on('title', {element(element) {element.setInnerContent(title)}}).on('head', {element(element) {
-  element.append(`<meta name="description" content="${escape(search.description || draft.site.description)}"><link rel="canonical" href="${escape(canonical)}">${noindex ? '<meta name="robots" content="noindex, nofollow">' : ''}`, {html: true})
+  element.append(`${brandHead(draft!.site,url.origin,title,search.description||draft!.site.description,canonical)}<meta name="description" content="${escape(search.description || draft.site.description)}"><link rel="canonical" href="${escape(canonical)}">${noindex ? '<meta name="robots" content="noindex, nofollow">' : ''}`, {html: true})
  }}).transform(updated)
 }

@@ -31,6 +31,7 @@ export async function publishPage(db:D1Database,actor:string,base:string,id:stri
  const draft=revision(latest),live=revision(liveRow),page=draft.site.pages.find(page=>pageId(page)===id)
  const reviewed=request?revision(request).site.pages.find(candidate=>pageId(candidate)===id):undefined
  if(!page || page.deleted || !reviewed || JSON.stringify(page)!==JSON.stringify(reviewed))throw Error('Request review again after changing this page.')
+ if(JSON.stringify(draft.site.media??null)!==JSON.stringify(live.site.media??null))throw Error('Publish shared image library changes with the whole site.')
  if(JSON.stringify(draft.site.components??null)!==JSON.stringify(live.site.components??null)||JSON.stringify(draft.site.customCode??null)!==JSON.stringify(live.site.customCode??null))throw Error('Publish shared component or custom code changes with the whole site.')
  const previous=live.site.pages.find(candidate=>pageId(candidate)===id)
  // Shared organization stays a separate explicit whole-site approval.

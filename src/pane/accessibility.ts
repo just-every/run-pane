@@ -41,7 +41,7 @@ export function accessibilityFindings(site: Site): AccessibilityFinding[] {
   }
   if (page.sections) {
    for (const [index, section] of page.sections.entries()) {
-    for(const block of section.blocks)if(block.image&&!block.image.decorative&&!block.image.alt?.trim())findings.push({slug:page.slug,image:true,message:'An image needs alternative text or an explicit decorative mark before publishing.'})
+    for(const block of section.blocks)for(const image of [block.image,...(block.gallery?.items.map(item=>site.media?.find(asset=>asset.id===item.asset)?.image)??[])])if(image&&!image.decorative&&!image.alt?.trim())findings.push({slug:page.slug,image:true,message:'An image needs alternative text or an explicit decorative mark before publishing.'})
     const tags = section.blocks.filter(block=>block.kind==='text').flatMap(block => [block.format ?? 'p', ...(block.content ? richTags(block.content) : [])])
     tags.forEach(heading)
     const surface = background(section.background)

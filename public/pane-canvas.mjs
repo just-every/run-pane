@@ -1,3 +1,4 @@
+import {galleryEditor} from './pane-gallery-editor.mjs'
 import {syncReadingOrder} from './pane-reading-order.mjs'
 import {readImage,prepareImage} from './pane-image.mjs'
 import {richText,richMarkup} from './pane-rich.mjs'
@@ -21,7 +22,9 @@ function selectedParagraph(node){
  const paragraph=element?.closest('p,h1,h2,h3,h4,blockquote,pre,li')
  return paragraph&&paragraph!==node&&node.contains(paragraph)?paragraph:null
 }
+let galleries
 function settings(){
+ galleries?.refresh()
  const image=block()?.image,panel=form.querySelector('[data-image-settings]');panel.hidden=!image
  if(image){form.querySelector('[data-image-alt]').value=image.alt??'';form.querySelector('[data-image-decorative]').checked=image.decorative;form.querySelector('[data-image-alt]').disabled=image.decorative;form.querySelector('[data-image-status]').textContent=!image.decorative&&!image.alt?.trim()?'Add alternative text or mark this image decorative before publishing.':'Image description is ready.'}
  if(image){form.querySelector('[data-image-rotation]').value=image.rotation??0;const crop=image.crop??{ratio:'original',width:4,height:3,x:50,y:50};for(const input of form.querySelectorAll('[data-image-crop]')){const key=input.dataset.imageCrop;input.value=crop[key];input.disabled=['width','height'].includes(key)&&crop.ratio!=='free'}}
@@ -30,11 +33,11 @@ function settings(){
  for(const input of form.querySelectorAll('[data-layout-field]')){
   const key=input.dataset.layoutField,target=key==='hidden'?(block()??current()):sectionFields.includes(key)?current():block()
   const phoneKey=key==='hidden'||(sectionFields.includes(key)?mobileSectionFields:mobileBlockFields).includes(key)
-  input.disabled=!target||(key==='format'&&target?.kind==='image')||(key==='hidden'&&!isPhone())||(isPhone()&&!phoneKey)
+  input.disabled=!target||(key==='format'&&target?.kind!=='text')||(key==='hidden'&&!isPhone())||(isPhone()&&!phoneKey)
   const value=isPhone()&&target&&phoneKey?(sectionFields.includes(key)?{...target,...target.phone}:key==='hidden'?{...target,...target.phone}:mobileBlock(current(),target))[key]:target?.[key]
   if(key==='hidden')input.checked=!!(block()??current()).phone?.hidden;else input.value=(key==='align'&&block()?.format==='div'?selectedParagraph(canvas.querySelector(`[data-block="${blockId}"]`))?.dataset.textAlign:undefined)??value??({height:'auto',background:'',format:'p'}[key]??'')
  }
- for(const button of form.querySelectorAll('[data-text-command]'))button.disabled=block()?.kind==='image'
+ for(const button of form.querySelectorAll('[data-text-command]'))button.disabled=block()?.kind!=='text'
  for(const item of sections){const node=canvas.querySelector(`[data-section="${item.id}"]`);node?.toggleAttribute('data-phone-override',!!item.phone);for(const text of item.blocks)canvas.querySelector(`[data-block="${text.id}"]`)?.toggleAttribute('data-phone-override',!!text.phone)}
  form.querySelector('[data-device-status]').textContent=isPhone()?'Phone settings are independent. Outlined selections with a phone override keep their layout when desktop changes.':'Desktop and tablet use desktop settings. Phone overrides are preserved.'
  form.querySelector('[data-layout-selection]').textContent=((block()??current()).phone?'Phone override · ':'')+(blockId?(block()?.format==='div'?'Text block selected. Place the caret in a paragraph to align it independently.':'Text block selected. Edit text on the page or change its layout.'):'Section selected. Drag it or use Move earlier and Move later.')
@@ -44,10 +47,10 @@ function render(){
  while(sheet.cssRules.length)sheet.deleteRule(0)
  for(const rule of layoutRules(sections))sheet.insertRule(rule,sheet.cssRules.length)
  for(const node of [...content.children])if(node!==style)node.remove()
- content.insertAdjacentHTML('beforeend',layoutMarkup(sections))
+ content.insertAdjacentHTML('beforeend',layoutMarkup(sections,undefined,galleries?.media()??JSON.parse(form.querySelector('[data-media-state]').value)))
  for(const section of content.querySelectorAll('[data-section]')){section.draggable=true;section.tabIndex=0;section.setAttribute('aria-label','Section '+(sections.findIndex(item=>item.id===section.dataset.section)+1))}
- for(const node of content.querySelectorAll('[data-image-block]')){node.tabIndex=0;node.setAttribute('aria-label','Image block')}
- for(const node of content.querySelectorAll('[data-block]:not([data-image-block])')){node.contentEditable='true';node.draggable=true;node.setAttribute('role','textbox');node.setAttribute('aria-label','Block text');node.setAttribute('aria-multiline','true')}
+ for(const node of content.querySelectorAll('[data-image-block],[data-gallery]')){node.tabIndex=0;node.setAttribute('aria-label','Image block')}
+ for(const node of content.querySelectorAll('[data-block]:not([data-image-block]):not([data-gallery])')){node.contentEditable='true';node.draggable=true;node.setAttribute('role','textbox');node.setAttribute('aria-label','Block text');node.setAttribute('aria-multiline','true')}
  syncReadingOrder(content);settings()
 }
 function commit(redraw=true){field.value=JSON.stringify(sections);field.dispatchEvent(new Event('input',{bubbles:true}));if(redraw)render()}
@@ -266,4 +269,5 @@ for(const input of form.querySelectorAll('[data-image-alt],[data-image-decorativ
 device.addEventListener('change',()=>{const sheet=document.querySelector('style[data-pane-layout]').sheet;while(sheet.cssRules.length)sheet.deleteRule(0);if(device.value!=='fit')sheet.insertRule(`[data-layout-canvas]{width:${Number(device.value)}px}`,0);syncReadingOrder(content);settings()})
 // Active links belong to the live page; the editing surface keeps selection local.
 canvas.addEventListener('click',event=>{if(event.target.closest('a'))event.preventDefault()})
+galleries=galleryEditor(form,{block,section:current,newBlock,commit:id=>{if(id)blockId=id;commit()}})
 render()

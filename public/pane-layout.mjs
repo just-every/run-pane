@@ -1,3 +1,4 @@
+import {galleryMarkup} from './pane-gallery-markup.mjs'
 import {richMarkup} from './pane-rich.mjs'
 // The server and canvas share this renderer. Values have passed section validation.
 const escape=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
@@ -10,6 +11,7 @@ export function layoutRules(sections){return sections.flatMap(section=>{
   return `${target} [data-block="${block.id}"]{display:${p.hidden?'none':'block'};grid-column:${p.column??1}/span ${p.span??12};grid-row:${p.row??index+1};z-index:${p.order??block.order};text-align:${p.align??block.align};align-self:${p.vertical??block.vertical}}`
  }).join('')
  for(const block of section.blocks){
+  if(block.gallery){const g=block.gallery;rules.push(`${target} [data-block="${block.id}"]{--gallery-columns:${g.columns};--gallery-phone-columns:${g.phoneColumns};--gallery-gap:${g.gap}px;--gallery-phone-gap:${g.phoneGap}px}`)}
   const image=block.image,crop=image?.crop
   if(!image)continue
   if(!crop){rules.push(`${target} [data-block="${block.id}"] img{aspect-ratio:${image.width}/${image.height}}`);continue}
@@ -19,9 +21,10 @@ export function layoutRules(sections){return sections.flatMap(section=>{
  return [...rules,`@container (max-width:700px){${mobile}}`]
 })}
 export function layoutCss(sections){return layoutRules(sections).join('')}
-function blockMarkup(block,index,imageUrl){
+function blockMarkup(block,index,imageUrl,media){
+ if(block.kind==='gallery')return galleryMarkup(block,index,imageUrl,media)
  if(block.kind==='image'){const image=block.image;return `<div data-block="${escape(block.id)}" data-reading-index="${index}" data-image-block><img src="${escape(imageUrl?imageUrl(block.id,0):image.src)}"${image.renditions?.length?` srcset="${image.renditions.map(item=>escape(imageUrl?imageUrl(block.id,item.width):item.src)+' '+item.width+'w').join(', ')}" sizes="(max-width: 700px) 100vw, 1100px"`: ''} loading="${imageUrl?'lazy':'eager'}" decoding="async" width="${image.width}" height="${image.height}" alt="${escape(image.decorative?'':image.alt??'')}"${image.decorative?' role="presentation"':''}></div>`}
  const format=block.format??'p',tag=['p-large','p-small'].includes(format)?'p':format
  return `<${tag} data-block="${escape(block.id)}" data-reading-index="${index}"${tag!==format?` class="pane-${format}"`:''}>${block.content?richMarkup(block.content):escape(block.text)}</${tag}>`
 }
-export function layoutMarkup(sections,imageUrl){return sections.map(section=>`<section data-section="${escape(section.id)}"${section.component?` data-component="${escape(section.component)}"`:''}>${section.blocks.map((block,index)=>blockMarkup(block,index,imageUrl)).join('')}</section>`).join('')}
+export function layoutMarkup(sections,imageUrl,media){return sections.map(section=>`<section data-section="${escape(section.id)}"${section.component?` data-component="${escape(section.component)}"`:''}>${section.blocks.map((block,index)=>blockMarkup(block,index,imageUrl,media)).join('')}</section>`).join('')}

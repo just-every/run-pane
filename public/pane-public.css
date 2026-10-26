@@ -113,3 +113,5 @@
 
 /* Consent execution frames are never visual page content. */
 .external-embed iframe[hidden]{display:none}
+
+.brand-settings img{max-width:100%;height:auto}.public-brand-logo{object-fit:contain;max-width:180px;max-height:56px}
