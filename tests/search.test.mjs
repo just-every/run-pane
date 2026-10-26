@@ -293,7 +293,7 @@ async function aiWorkspace(respond) {
   const context=JSON.parse(content.find(part=>part.type==='text').text)
   requests.push(context)
   const suggestions=await respond(context,content)
-  return Response.json({choices:[{finish_reason:'stop',message:{content:JSON.stringify({suggestions})}}],usage:{prompt_tokens:70,completion_tokens:40,total_tokens:110}})
+  return Response.json({choices:[{finish_reason:'stop',message:{content:JSON.stringify(context.mode==='translate'?{translations:Object.fromEntries(suggestions.map(item=>[item.target,item.after]))}:{suggestions})}}],usage:{prompt_tokens:70,completion_tokens:40,total_tokens:110}})
  }})
  let cookie
  const call=(path,body,session=cookie,headers={})=>app.request(hosted+path,{method:'POST',headers:{Cookie:session??'',Origin:hosted,'Content-Type':'application/json',...headers},body:JSON.stringify(body)})

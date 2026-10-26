@@ -34,7 +34,7 @@ async function aiEdge(request){
  }else if(input.mode==='translate'){
   suggestions=input.texts.map(text=>suggestion('translation','Traducir '+text.target,text.target,!text.text?'':text.target==='title'?'Muebles hechos para durar':text.target==='body'?'En Cedar Street Studio reparamos muebles queridos y creamos piezas prácticas para la vida cotidiana.\n\nCuéntanos sobre tu proyecto y el cuidado que necesita.':'Taller de muebles: '+text.text))
  }else suggestions=[suggestion('text','Revise selected paragraph','selection',input.mode==='shorten'?'We repair furniture and make practical pieces.':input.mode==='tone'?'Bring us your well-loved furniture. We will talk through the care it needs together.':'At Cedar Street Studio, we repair well-loved furniture and build useful pieces for everyday life.')]
- return Response.json({choices:[{finish_reason:'stop',message:{content:JSON.stringify({suggestions})}}],usage:{prompt_tokens:100,completion_tokens:100,total_tokens:200}})
+ return Response.json({choices:[{finish_reason:'stop',message:{content:JSON.stringify(input.mode==='translate'?{translations:Object.fromEntries(suggestions.map(item=>[item.target,item.after]))}:{suggestions})}}],usage:{prompt_tokens:100,completion_tokens:100,total_tokens:200}})
 }
 const assets=resolve('dist/client')
 const types={'.css':'text/css','.js':'text/javascript','.mjs':'text/javascript','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp','.ico':'image/x-icon','.woff2':'font/woff2','.woff':'font/woff','.json':'application/json','.webmanifest':'application/manifest+json'}
