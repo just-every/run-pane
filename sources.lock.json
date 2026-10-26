@@ -544,7 +544,7 @@
       "executable": false
     },
     "public/pane-ai.js": {
-      "sha256": "158842e2c7cd2a52c9a32db9520baa1cc206311376e764d24472af3e94bfe274",
+      "sha256": "98f3a82c9ac5edb2adaa249636b3a86e0012045725fcb6846b3bbda6e6043a65",
       "executable": false
     },
     "public/pane-analytics.js": {
@@ -1008,7 +1008,7 @@
       "executable": false
     },
     "scripts/ai-journey.mjs": {
-      "sha256": "518de031a4ed0200a5b18cdfbaf96b9f79b9776b706a75102f8a34f5f8707ade",
+      "sha256": "07a91d4468acce9a53e20502ad412b6f450d84dd94dfc073ffbdc73f8a7b4bcd",
       "executable": false
     },
     "scripts/analytics-journey.mjs": {

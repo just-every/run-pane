@@ -64,6 +64,17 @@ for (const root of document.querySelectorAll('[data-ai-assist]')) {
    link.rel = 'noopener'
    latest.append(link)
   }
+  const useLatest = element('a', 'Use latest draft')
+  useLatest.href = '/app?page=' + encodeURIComponent(root.dataset.slug)
+  const download = element('button', 'Download review copy', 'secondary small')
+  download.type = 'button'
+  download.addEventListener('click', () => {
+   const decisions = [...suggestions.querySelectorAll('select')].map(choice => ({id: choice.dataset.suggestionId, decision: choice.value}))
+   const url = URL.createObjectURL(new Blob([JSON.stringify({proposal, decisions, history: historyState}, null, 2)], {type: 'application/json'}))
+   const link = element('a'); link.href = url; link.download = 'pane-ai-review.json'; link.click()
+   setTimeout(() => URL.revokeObjectURL(url), 1000)
+  })
+  latest.append(download, useLatest)
   latest.hidden = false
  }
 

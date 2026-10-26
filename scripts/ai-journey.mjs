@@ -96,7 +96,7 @@ async function tooltipAudit(width){
 try{
  await mkdir(folder,{recursive:true})
  browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
- context=await browser.newContext();page=await context.newPage();page.setDefaultTimeout(live?120000:20000)
+ context=await browser.newContext({acceptDownloads:true});page=await context.newPage();page.setDefaultTimeout(live?120000:20000)
  await fixture.bootstrap(context);await page.goto(origin+'/setup');await page.getByRole('checkbox').check();await formSubmit('Finish setup')
  const starter=JSON.parse(await readFile('fixtures/static-site.json','utf8'));starter.pages.find(page=>page.slug==='home').links=[{label:'Our studio',url:'page:about'}]
  await page.getByLabel('Site name',{exact:true}).fill(starter.name);await page.getByLabel('Description',{exact:true}).fill(starter.description)
@@ -106,7 +106,21 @@ try{
  for(const width of live?[1440]:[1440,390]){
   await page.setViewportSize({width,height:1000});await prepare(starter);await page.goto(origin+'/app');await publish();await editor()
   await tooltipAudit(width);await panel().getByRole('button',{name:'Send to OpenAI',exact:true}).scrollIntoViewIfNeeded();await capture('owner-ai-help',width)
-  const before=await data(),liveBefore=await (await context.request.get(origin+'/site')).text(),proposal=await propose('search',width)
+  const before=await data(),liveBefore=await (await context.request.get(origin+'/site')).text()
+  let proposal=await propose('search',width)
+  for(const item of proposal.suggestions)await panel().locator(`[data-suggestion-id="${item.id}"]`).selectOption(['search-title','search-description'].includes(item.kind)?'accept':'reject')
+  const concurrentSite=structuredClone(before.draft.site);concurrentSite.pages.find(item=>item.slug==='about').body+='\n\nA separately saved workshop update.'
+  const concurrent=await prepare(concurrentSite)
+  const [conflict]=await Promise.all([page.waitForResponse(response=>new URL(response.url()).pathname==='/api/pane/ai/decide'),panel().getByRole('button',{name:'Save decisions as a draft',exact:true}).click()])
+  assert.equal(conflict.status(),409);await panel().locator('[data-ai-latest]').waitFor()
+  assert.equal((await data()).draft.id,concurrent.id,'A stale review keeps the other saved draft')
+  for(const item of proposal.suggestions)assert.equal(await panel().locator(`[data-suggestion-id="${item.id}"]`).inputValue(),['search-title','search-description'].includes(item.kind)?'accept':'reject','The owner keeps every review decision during comparison')
+  const downloading=page.waitForEvent('download');await panel().getByRole('button',{name:'Download review copy',exact:true}).click()
+  const download=await downloading,copyPath=resolve(folder,`conflict-review-${width}.json`);await download.saveAs(copyPath)
+  const copy=JSON.parse(await readFile(copyPath,'utf8'));assert.equal(copy.proposal.id,proposal.id);assert.equal(copy.decisions.filter(item=>item.decision==='accept').length,2)
+  await capture('proposal-conflict-retained',width)
+  await Promise.all([page.waitForEvent('domcontentloaded'),panel().getByRole('link',{name:'Use latest draft',exact:true}).click()])
+  await panel().locator(':scope > summary').click();proposal=await propose('search',width)
   for(const kind of ['search-title','search-description','heading','link','finding'])assert.ok(proposal.suggestions.some(item=>item.kind===kind),'Search review includes '+kind)
   await decide(proposal,item=>['search-title','search-description'].includes(item.kind))
   let state=await data(),accepted=home(state.draft)
