@@ -363,8 +363,9 @@ test('Pane AI search decisions require the native owner, preserve rejected edits
   const published=await(await get('/site','')).text()
   assert.ok(published.includes('<title>'+proposedTitle+'</title>'));assert.ok(published.includes('name="description" content="'+proposedDescription+'"'))
   assert.ok(!published.includes(rejectedHeading));assert.ok(!published.includes(linkLabel))
-  const links=await propose(redo.revision.id,'search'),linked=await decide(links,s=>s.kind==='link'),draft=(await state()).draft
+  const links=await propose(redo.revision.id,'search'),linked=await decide(links,s=>['link','heading'].includes(s.kind)),draft=(await state()).draft
   const home=draft.site.pages.find(page=>page.slug==='home'),destination=draft.site.pages.find(page=>page.slug==='about')
+  assert.equal(home.title,rejectedHeading,'An explicitly accepted heading changes only its named page')
   assert.ok(home.links.some(link=>link.label===linkLabel&&link.url==='page:'+(destination.id??destination.slug)))
   assert.ok(!(await(await get('/site','')).text()).includes(linkLabel))
   await ok(await call('/api/pane/publish',{revision:linked.revision.id}))
