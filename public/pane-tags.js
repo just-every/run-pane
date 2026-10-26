@@ -1,3 +1,4 @@
+(()=>{
 // The live page owns consent; provider execution is confined to opaque frames.
 const marketplace=document.querySelector('[data-marketplace]')
 const quiet=()=>navigator.globalPrivacyControl===true||navigator.doNotTrack==='1'
@@ -22,4 +23,6 @@ for(const region of marketplace.querySelectorAll('[data-tag-category]')){
  let saved;try{saved=localStorage.getItem('pane:consent:tag:'+category)}catch{}
  choose(category,saved)
 }
-addEventListener('storage',event=>{const category=event.key?.replace('pane:consent:tag:','');if(marketplace.querySelector(`[data-tag-category="${category}"]`))choose(category,event.newValue)})
+addEventListener('storage',event=>{const category=event.key?.startsWith('pane:consent:tag:')?event.key.slice('pane:consent:tag:'.length):'';if(!['analytics','advertising'].includes(category))return;if(marketplace.querySelector(`[data-tag-category="${category}"]`))choose(category,event.newValue)})
+
+})()

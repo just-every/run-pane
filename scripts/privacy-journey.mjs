@@ -65,7 +65,7 @@ try {
   assert.equal(await page.locator('iframe').getAttribute('sandbox'), 'allow-scripts')
   assert.equal(await page.locator('iframe').getAttribute('referrerpolicy'), 'no-referrer')
   await capture('embed-enabled-' + width)
-  await page.getByRole('button', {name: 'Keep external content off'}).click()
+  await page.getByRole('button', {name: 'Keep external content off'}).focus();await page.keyboard.press('Enter')
   assert.equal(await page.locator('iframe').count(), 0)
   await page.reload()
   assert.equal(await page.locator('iframe').count(), 0)

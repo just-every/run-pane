@@ -248,7 +248,7 @@ async function rotateImage(rotation,reset=false){
  try{
   const prepared=await prepareImage(image.original??image.src,rotation)
   if(field.value!==before){settings();return}
-  Object.assign(image,{original:image.original??prepared.original,src:prepared.src,width:prepared.width,height:prepared.height,rotation})
+  Object.assign(image,{original:image.original??prepared.original,src:prepared.src,renditions:prepared.renditions,width:prepared.width,height:prepared.height,rotation})
   if(reset)delete image.crop
   commit()
  }catch(error){form.querySelector('[data-image-status]').textContent=error.message}

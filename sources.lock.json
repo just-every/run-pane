@@ -540,7 +540,7 @@
       "executable": false
     },
     "public/pane-canvas.mjs": {
-      "sha256": "36977f7e42ca814a74dc28e402468865749e7512952d2c4d0cb778b15b76efe1",
+      "sha256": "60d3e3c0d27e49541c67c66ceb6a969f0f1042c51bbce0ef7216ef708a6c03bb",
       "executable": false
     },
     "public/pane-custom-code.js": {
@@ -568,7 +568,7 @@
       "executable": false
     },
     "public/pane-layout.mjs": {
-      "sha256": "080a44ae82216ed94e95087cd78a28fa90f4ef12359bfb2dbccd4124be8f6bdc",
+      "sha256": "21055b7003f42aca2c7e20414d399f2152ca855bb20793384fbedf8a03280885",
       "executable": false
     },
     "public/pane-organization.js": {
@@ -609,6 +609,10 @@
     },
     "public/pane-search.css": {
       "sha256": "da96a822e786ad51f93e513942e95a51c73ee8e682ed97b1b1d783ef9dc4882d",
+      "executable": false
+    },
+    "public/pane-tags.js": {
+      "sha256": "efec4bd2c3028361e475b71579d0381c5513994c98c2a8a0537f4763e04a6fae",
       "executable": false
     },
     "public/pane-tooltip.js": {
@@ -1216,7 +1220,7 @@
       "executable": false
     },
     "scripts/privacy-journey.mjs": {
-      "sha256": "c4abcadcdcaf2176af977cc05f0a2a12eb20be9289294461af2756eb5821ff4f",
+      "sha256": "fc5eec20ee4b560f5f045f43de95447a54283d09dca7bf8d6c060bd7d43ccb8f",
       "executable": false
     },
     "scripts/promotions-journey.mjs": {
@@ -3321,6 +3325,10 @@
     },
     "src/pane/site-search.ts": {
       "sha256": "77f9e2ac80dc9eee48381639a530f1645c392de9360e21efb266d2762fa6a142",
+      "executable": false
+    },
+    "src/pane/tags.ts": {
+      "sha256": "b542be3c4bbdf9d4cd09c2af1b622f73397599ca24bc0243c159770af5ce382f",
       "executable": false
     },
     "src/pane/ui/access-settings.ts": {
