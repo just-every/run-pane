@@ -18,6 +18,14 @@ const panel=()=>page.locator('[data-ai-assist]')
 async function capture(name,width){
  for(const size of live?[1440,390]:[width]){
   await page.setViewportSize({width:size,height:1000})
+  if(await panel().count()){
+   const visible=await panel().evaluate(node=>{
+    const box=node.getBoundingClientRect();let left=Math.max(0,box.left),right=Math.min(innerWidth,box.right)
+    for(let parent=node.parentElement;parent;parent=parent.parentElement)if(/hidden|clip|scroll|auto/.test(getComputedStyle(parent).overflowX)){const bounds=parent.getBoundingClientRect();left=Math.max(left,bounds.left);right=Math.min(right,bounds.right)}
+    return {width:box.width,visibleWidth:Math.max(0,right-left)}
+   })
+   assert.ok(visible.width>0&&visible.visibleWidth>=visible.width-2,'The entire AI review panel is horizontally readable at '+size+': '+JSON.stringify(visible))
+  }
   await page.screenshot({path:resolve(folder,`${actorPrefix}${name}-${size}.png`),fullPage:true})
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,`${name} fits at ${size}`)
  }
@@ -177,8 +185,8 @@ try{
  for(const item of starter.pages){const fields=page.locator('#start-'+item.slug);await fields.getByLabel('Page title',{exact:true}).fill(item.title);await fields.getByLabel('Text',{exact:true}).fill(item.body)}
  await formSubmit('Prepare draft revision');await publish()
  assert.equal(fixture.aiRequests.length,0,'Native owner setup never calls a model')
- const riders=live?[]:await riderProof({fixture,page,context,starter,workshopImages,data,prepare,editor,propose,decide,history,capture})
- for(const width of process.env.PANE_AI_RIDER_ONLY==='1'?[]:live?[1440]:[1440,390]){
+ const riders=live||process.env.PANE_AI_EDITOR_ONLY==='1'?[]:await riderProof({fixture,page,context,starter,workshopImages,data,prepare,editor,propose,decide,history,capture})
+ for(const width of process.env.PANE_AI_RIDER_ONLY==='1'||process.env.PANE_AI_EDITOR_ONLY==='1'?[]:live?[1440]:[1440,390]){
   await page.setViewportSize({width,height:1000});await prepare(starter);await page.goto(origin+'/app');await publish();await editor()
   await tooltipAudit(width);await panel().getByRole('button',{name:'Send to OpenAI',exact:true}).scrollIntoViewIfNeeded();await capture('owner-ai-help',width)
   const before=await data(),liveBefore=await (await context.request.get(origin+'/site')).text()

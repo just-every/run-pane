@@ -690,6 +690,11 @@ test('native authors write and submit only own posts and use assistance without 
   for(const path of ['/api/pane/posts','/api/pane/ai/history?post='+post.id])assert.equal((await authorGet(path)).status,403)
   assert.equal((await authorCall('/api/pane/ai/decide',decision(pending))).status,403)
   assert.equal((await state()).live.id,live)
+  // Approving the ordinary website pages cannot expose the private post store.
+  await ok(await call('/api/pane/publish',{revision:(await state()).draft.id}))
+  const published=await (await get('/site','')).text(),sitemap=await (await get('/sitemap.xml','')).text()
+  assert.ok(!published.includes(otherPost));assert.ok(!published.includes('A separately saved author draft.'))
+  for(const item of (await state()).draft.site.posts){assert.equal((await get('/site/'+item.content.slug,'')).status,404);assert.ok(!sitemap.includes('/site/'+item.content.slug))}
   const log=await ok(await get('/api/pane/activity'))
   for(const action of ['ai.request','ai.propose','ai.decide','ai.undo','ai.redo'])assert.ok(log.some(event=>event.actor==='Synthetic author'&&event.action===action))
   assert.ok(!JSON.stringify(log).includes(otherPost));assert.ok(!JSON.stringify(log).includes(selection))

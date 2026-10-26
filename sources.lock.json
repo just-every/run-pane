@@ -588,7 +588,7 @@
       "executable": false
     },
     "public/pane-editor.css": {
-      "sha256": "3d8d1e1fd7eeab98cf5c1ca5fcb8fb278cc023638313bef0877531fce1568a98",
+      "sha256": "116aad0ebae9377faa85239f2c263cf72b6e1855cfa3130e13bda76d3fc009e6",
       "executable": false
     },
     "public/pane-embeds.js": {
@@ -1020,7 +1020,7 @@
       "executable": false
     },
     "scripts/ai-journey.mjs": {
-      "sha256": "46ec84ab7771bbe52a4082a88d8f90b9f778f33debf2c3202c7798e96a8a1708",
+      "sha256": "98733b774161e68ff5cfb6cf8b41521b82681fdda381cd772d5fa91a91b76039",
       "executable": false
     },
     "scripts/ai-riders.mjs": {
@@ -3740,7 +3740,7 @@
       "executable": false
     },
     "tests/search.test.mjs": {
-      "sha256": "7bfdf16dd66e752d323633ea8fd8efa5f8f2de429951481542d6a5100979224c",
+      "sha256": "c1b21870a1c26217abe414abec2cd13542053cbc8e96b132a12ab366b1523989",
       "executable": false
     },
     "tests/site.test.mjs": {
