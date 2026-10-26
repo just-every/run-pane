@@ -11,7 +11,8 @@ export function layoutRules(sections){return sections.flatMap(section=>{
  }).join('')
  for(const block of section.blocks){
   const image=block.image,crop=image?.crop
-  if(!crop)continue
+  if(!image)continue
+  if(!crop){rules.push(`${target} [data-block="${block.id}"] img{aspect-ratio:${image.width}/${image.height}}`);continue}
   const ratio=crop.ratio==='original'?`${image.width}/${image.height}`:crop.ratio==='free'?`${crop.width}/${crop.height}`:crop.ratio.replace(':','/')
   rules.push(`${target} [data-block="${block.id}"] img{aspect-ratio:${ratio};object-fit:cover;object-position:${crop.x}% ${crop.y}%}`)
  }
@@ -19,7 +20,7 @@ export function layoutRules(sections){return sections.flatMap(section=>{
 })}
 export function layoutCss(sections){return layoutRules(sections).join('')}
 function blockMarkup(block,index,imageUrl){
- if(block.kind==='image'){const image=block.image;return `<div data-block="${escape(block.id)}" data-reading-index="${index}" data-image-block><img src="${escape(imageUrl?imageUrl(block.id,0):image.src)}"${image.renditions?.length?` srcset="${image.renditions.map(item=>escape(imageUrl?imageUrl(block.id,item.width):item.src)+' '+item.width+'w').join(', ')}" sizes="(max-width: 700px) 100vw, 1100px"`: ''} loading="lazy" decoding="async" width="${image.width}" height="${image.height}" alt="${escape(image.decorative?'':image.alt??'')}"${image.decorative?' role="presentation"':''}></div>`}
+ if(block.kind==='image'){const image=block.image;return `<div data-block="${escape(block.id)}" data-reading-index="${index}" data-image-block><img src="${escape(imageUrl?imageUrl(block.id,0):image.src)}"${image.renditions?.length?` srcset="${image.renditions.map(item=>escape(imageUrl?imageUrl(block.id,item.width):item.src)+' '+item.width+'w').join(', ')}" sizes="(max-width: 700px) 100vw, 1100px"`: ''} loading="${imageUrl?'lazy':'eager'}" decoding="async" width="${image.width}" height="${image.height}" alt="${escape(image.decorative?'':image.alt??'')}"${image.decorative?' role="presentation"':''}></div>`}
  const format=block.format??'p',tag=['p-large','p-small'].includes(format)?'p':format
  return `<${tag} data-block="${escape(block.id)}" data-reading-index="${index}"${tag!==format?` class="pane-${format}"`:''}>${block.content?richMarkup(block.content):escape(block.text)}</${tag}>`
 }

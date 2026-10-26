@@ -568,7 +568,7 @@
       "executable": false
     },
     "public/pane-layout.mjs": {
-      "sha256": "21055b7003f42aca2c7e20414d399f2152ca855bb20793384fbedf8a03280885",
+      "sha256": "654f47e1fb47f72ae2e983bc31e5f61648124eac46f9bf7fd81c70aa8e609cb7",
       "executable": false
     },
     "public/pane-organization.js": {
@@ -1220,7 +1220,7 @@
       "executable": false
     },
     "scripts/privacy-journey.mjs": {
-      "sha256": "66a0c935a119c8921462975a4de8987ca9630f3a338e3cfb4589221e77c2d324",
+      "sha256": "3050dd8635998c8df11a2eaec5d733991da32ed1ee05b1abbeb28c4e56b09bad",
       "executable": false
     },
     "scripts/promotions-journey.mjs": {
