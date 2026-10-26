@@ -1150,13 +1150,13 @@ No desk homepage claims file (`CLAIMS.md`) exists for Pane on 17 October 2026. W
 
 ## Status
 
-Judged from the code and tests at commit `57911f06018582251d41429c9cec40750ae17734` (26 October 2026). AI-003 has complete loaded builder proof including the two remaining CT counterexamples and is marked done in this candidate for CT to confirm. AI-002 now has native editor and own-post author initiation proof under the existing scope clarification. CMS-004 now has a private own-post foundation and remains partial. Unchanged rows retain their previous judgments.
+CT ruled AI-002 STAYS PARTIAL at reviewed commit `9c68cb4775d6668b3bd3424bd2d3c9946df87900` on 26 October 2026 at 22:30Z. This candidate restores that judgment and adds the bounded assertions for a fresh judgment after landing. CMS-004 retains its private own-post foundation and remains partial. Unchanged rows retain their previous judgments.
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 16 | 0 | 0 | 16 |
-| Target and push further | 32 | 27 | 52 | 111 |
-| All | 48 | 27 | 52 | 127 |
+| Target and push further | 31 | 28 | 52 | 111 |
+| All | 47 | 28 | 52 | 127 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
