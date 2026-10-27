@@ -93,7 +93,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [core, canvas]
+        shard: [core, canvas, templates]
     # Includes Chromium 1243 and its system libraries for @playwright/test 1.63.0.
     # Keep dependency installation out of the browser journey's time budget.
     container:
