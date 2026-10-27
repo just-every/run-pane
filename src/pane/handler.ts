@@ -1,3 +1,4 @@
+import {collectionPrivateResponse} from './collection-handlers'
 import {contentTrash,contentHistory,deleteContent,restoreContent} from './lifecycle-store'
 import {trashScreen,historyScreen} from './ui/lifecycle'
 import {latestContent,ownPost,postView,PostDenied,savePost,publishPost} from './posts'
@@ -60,9 +61,10 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
     path==='/api/pane/prepare'||path==='/api/pane/autosave'?'draft:write':path.startsWith('/api/pane/import/')?'imports:write':undefined
    if(!required||!scopes.includes(required))return json({error:'Token scope refused.'},403)
   }
+  const collectionReply=await collectionPrivateResponse(request,env,actor,!!scopes);if(collectionReply)return collectionReply
   if(request.method==='GET'&&['/app/content/trash','/api/pane/content/trash','/app/content/history','/api/pane/content/history'].includes(path)){
    const query=Object.fromEntries(url.searchParams),kind=query.kind??(caps.includes('pages:write')?'page':'post')
-   const result=path.endsWith('/trash')?await contentTrash(env.DB,actor,kind):await contentHistory(env.DB,actor,query)
+   const result=path.endsWith('/trash')?await contentTrash(env.DB,actor,kind,query.collection):await contentHistory(env.DB,actor,query)
    if(api)return json(result)
    const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps,actor)
    if(!owner&&actor.role!=='admin'){data.team=[{name:actor.displayName,role:caps.includes('pages:write')?'editor':'author'}];data.people={}}
@@ -70,7 +72,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    if('target' in result){
     return document('Content history',historyScreen(data,result.base,result.target,result.rows,query.revision,query.before,result.next))
    }
-   return document('Trash',trashScreen(data,result.base,result.rows,kind as 'page'|'post'))
+   return document('Trash',trashScreen(data,result.base,result.rows,kind as 'page'|'post'|'item',query.collection))
   }
   if(request.method==='GET'&&(path.startsWith('/app/files/')||path.startsWith('/api/pane/files/')))return privateFile(env.DB,decodeURIComponent(path.split('/').at(-1)!))
   if(request.method==='GET'&&['/app/posts','/app/posts/canvas'].includes(path)){
@@ -111,7 +113,6 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    const row=await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
    return json({revision:row?.id??null,pages:row?activePages(revision(row).site):[]})
   }
-  if(request.method==='GET'&&path==='/api/pane/collections')return json({error:'Collections await CMS-001.'},501)
   if(preview) {
    if(!editor)return json({error:'An owner or admin must preview.'},403)
    const [, ,id,...parts]=path.split('/'),row=await env.DB.prepare('SELECT * FROM pane_revisions WHERE id=?').bind(id).first()
@@ -160,7 +161,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    const deleting=path.endsWith('/delete'),retained=deleting?await deleteContent(env.DB,actor,input):await restoreContent(env.DB,actor,input)
    result=editor?visibleRevision(retained,caps,actor):postView(retained,actor.id,false)
    notice=deleting?'Moved to trash as a draft. Owner publication is separate.':'Restored as a draft. Submit a restored post for owner review before publication.'
-   back='/app/content/trash?kind='+encodeURIComponent(String(input.kind))
+   back='/app/content/trash?kind='+encodeURIComponent(String(input.kind))+(input.kind==='item'?'&collection='+encodeURIComponent(String(input.collection)):'')
   }else if(['/api/pane/posts/publish','/app/posts/publish'].includes(path)){
    const selected={base:String(input.base),id:String(input.id),review:String(input.review)}
    result=env.PANE_LIVE?await liveCall(env,'/post-publish',{actor:{id:actor.id,role:actor.role},...selected}):await publishPost(env.DB,actor,selected)
@@ -248,6 +249,8 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   } else if(action==='prepare'||action==='autosave') {
    const currentAccess=await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
    const previousAccess=currentAccess?revision(currentAccess).site:null
+   if((!caps.includes('collections:write')||scopes)&&input.site?.collections!==undefined&&JSON.stringify(input.site.collections)!==JSON.stringify(previousAccess?.collections))return json({error:'Your grants do not allow collection draft changes.'},403)
+   if((!caps.includes('collections:write')||scopes)&&input.site)input.site={...input.site,collections:previousAccess?.collections}
    if(!owner&&actor.role!=='admin'&&input.site?.posts!==undefined)return json({error:'Your role cannot change posts.'},403)
    if(!owner&&input.site&&['blogs','libraryFiles','blogPosts'].some(key=>input.site[key]!==undefined&&JSON.stringify(input.site[key]??null)!==JSON.stringify(previousAccess?.[key as keyof typeof previousAccess]??null)))return json({error:'Only the native owner can change blog settings or the file library.'},403)
    if(input.site)input.site={...input.site,blogPosts:previousAccess?.blogPosts,...(!owner?{blogs:previousAccess?.blogs,libraryFiles:previousAccess?.libraryFiles}:{})}

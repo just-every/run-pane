@@ -1,3 +1,5 @@
+import {normalizeCollections} from './collections'
+import {collectionIntegrity} from './collection-integrity'
 import {normalizeLifecycle} from './lifecycle-normalize'
 import {prepareLifecycle,lifecycleAuditStatements} from './lifecycle-prepare'
 import {normalizeMedia} from './gallery'
@@ -59,6 +61,8 @@ export function normalizeSite(value: unknown): Site {
  Object.assign(site,normalizeLifecycle(input))
  if(input.libraryFiles!==undefined)site.libraryFiles=normalizeLibraryFiles(input.libraryFiles)
  Object.assign(site,normalizePostCollections(input,(page,media=site.media)=>normalizeSite({name:site.name,description:site.description,media,pages:[page]}).pages[0]))
+ if(input.collections!==undefined)site.collections=normalizeCollections(input.collections)
+ collectionIntegrity(site)
  const routes = new Set(activePages(site).map(page => pagePath(site,page.slug)))
  for (const redirect of site.redirects ?? []) if (routes.has(redirect.from) || ['/site/search','/site/visit'].includes(redirect.from)) throw Error(`Redirect ${redirect.from} would replace an existing page or service.`)
  for(const page of site.pages)for(const section of page.sections??[])for(const block of section.blocks)for(const item of block.gallery?.items??[])if(!site.media?.some(asset=>asset.id===item.asset))throw Error('Gallery image is missing from the library.')
@@ -93,7 +97,7 @@ export async function revisionForDraft(db:D1Database,actor:string,value:unknown,
  const row=await draftRevision(crypto.randomUUID(),actor,value,created_at)
  const live=await db.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first()
  const offers=redirectOffers(row.site,live?revision(live).site:null)
- if(offers.length){row.site.redirectOffers=offers;row.hash=await contentHash(row.site)}
+ if(offers.length){const retained=(row.site.redirectOffers??[]).filter(offer=>!offers.some(current=>current.from===offer.from));row.site.redirectOffers=[...retained,...offers];row.hash=await contentHash(row.site)}
  return row
 }
 export async function prepare(db: D1Database, actor: string, value: unknown, expectedBase?: string): Promise<Revision> {
