@@ -25,3 +25,8 @@ export function embedMarkup(embed: Embed, live: boolean, gpc: boolean): string {
  if (!live) return `<section class="external-embed" aria-label="External embed"><h2>${escape(embed.title)}</h2><p>External content from ${escape(origin)} is disabled in workspace and draft previews.</p></section>`
  return `<section class="external-embed" data-embed data-url="${escape(embed.url)}" data-title="${escape(embed.title)}" data-gpc="${gpc ? '1' : '0'}"><h2>${escape(embed.title)}</h2><div data-embed-frame></div><p data-embed-status role="status">External content from ${escape(origin)} stays off until you allow it. The provider may receive your IP address and set its own cookies.</p><div class="form-actions"><button type="button" data-embed-allow${gpc ? ' disabled' : ''}>Allow external content</button><button type="button" class="secondary" data-embed-deny>Keep external content off</button></div></section>`
 }
+/** The declared frame policy follows every consent-gated embed in this document. */
+export function pageEmbedOrigins(page:import('./model').Page):string|undefined {
+ const embeds=[...(page.embed?[page.embed]:[]),...(page.sections??[]).flatMap(section=>section.blocks.flatMap(block=>block.embed?[block.embed]:[]))]
+ return [...new Set(embeds.map(embedOrigin))].join(' ')||undefined
+}

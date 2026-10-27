@@ -132,7 +132,7 @@ try{
   const richBlock=page.locator('[contenteditable=true]').last()
   await richBlock.fill('Bold italic underline strike');await saved()
   async function mark(start,length,label){
-   await richBlock.focus();await page.keyboard.press('Home')
+   await richBlock.focus();await page.keyboard.press(process.platform==='darwin'?'Meta+ArrowLeft':'Home')
    for(let index=0;index<start;index++)await page.keyboard.press('ArrowRight')
    for(let index=0;index<length;index++)await page.keyboard.press('Shift+ArrowRight')
    const control=page.getByRole('button',{name:label,exact:true})

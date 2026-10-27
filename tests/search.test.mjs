@@ -625,7 +625,8 @@ test('native authors write and submit only own posts and use assistance without 
    const outboundBefore=workspace.outbounds.length,sequence=(await ok(await get('/api/pane/activity'))).at(-1)?.sequence??0
    if(path==='/api/pane/ai/propose'&&body.post===post?.id){
     const current=await state()
-    selected={base:body.base,site:current.draft.site,page:current.draft.site.posts.find(item=>item.id===body.post).content,input:body}
+    const target=current.draft.site.posts.find(item=>item.id===body.post)
+    selected={base:body.base,site:{...current.draft.site,media:target.media},page:target.content,input:body}
    }
    const response=await call(path,body,author.cookie)
    if(path.startsWith('/api/pane/ai/')){
@@ -701,17 +702,21 @@ test('native authors write and submit only own posts and use assistance without 
   }
   assert.deepEqual((await read()).posts,final)
   const png=await readFile('public/brand/icon-192.png'),image={src:'data:image/png;base64,'+png.toString('base64'),width:192,height:192,alt:'Existing image',decorative:false}
-  const images=Array.from({length:5},(_,index)=>({id:'image-'+index,kind:'image',image:{...image},text:image.alt,column:1,span:12,row:index+2}))
-  const imageContent={...(await read()).posts.find(item=>item.id===post.id).content,sections:[{id:'post-body',kind:'text',blocks:[{id:'intro',kind:'text',text:selection,column:1,span:12,row:1},...images]}],body:[selection,...images.map(item=>item.text)].join('\n\n')}
-  await write({id:post.id,blog:post.blog,content:imageContent})
-  const alt=await ok(await authorCall('/api/pane/ai/propose',{base:(await read()).base,post:post.id,mode:'alt',images:images.map(item=>'block:'+item.id),consent:true}))
+  const images=Array.from({length:4},(_,index)=>({id:'image-'+index,kind:'image',image:{...image},text:image.alt,column:1,span:12,row:index+2}))
+  const gallery={id:'gallery',kind:'gallery',text:'Workshop photograph',column:1,span:12,row:6,gallery:{layout:'grid',columns:1,phoneColumns:1,gap:12,phoneGap:12,lightbox:false,items:[{asset:'synthetic-pane-own-photo',caption:'Workshop photograph'}]}}
+  const quote={id:'quote',kind:'quote',text:'Care keeps useful objects in service.',attribution:'Workshop team',column:1,span:12,row:7}
+  const imageContent={...(await read()).posts.find(item=>item.id===post.id).content,sections:[{id:'post-body',kind:'text',blocks:[{id:'intro',kind:'text',text:selection,column:1,span:12,row:1},...images,gallery,quote]}],body:[selection,...images.map(item=>item.text),gallery.text,quote.text+'\n'+quote.attribution].join('\n\n')}
+  await write({id:post.id,blog:post.blog,content:imageContent,media:[{id:'synthetic-pane-own-photo',name:'Workshop photo',image:{...image}}]})
+  const alt=await ok(await authorCall('/api/pane/ai/propose',{base:(await read()).base,post:post.id,mode:'alt',images:[...images.map(item=>'block:'+item.id),'asset:synthetic-pane-own-photo'],consent:true}))
   const mixed=decision(alt);mixed.decisions=mixed.decisions.map((item,index)=>({...item,accept:index<2}))
   await ok(await authorCall('/api/pane/ai/decide',mixed))
-  for(const [index,item] of (await read()).posts.find(item=>item.id===post.id).content.sections[0].blocks.slice(1).entries())assert.equal(item.image.alt,index<2?alt.suggestions[index].after:'Existing image')
+  for(const [index,item] of (await read()).posts.find(item=>item.id===post.id).content.sections[0].blocks.filter(item=>item.image).entries())assert.equal(item.image.alt,index<2?alt.suggestions[index].after:'Existing image')
+  assert.equal((await read()).posts.find(item=>item.id===post.id).media[0].image.alt,'Existing image','A rejected owned gallery image remains unchanged')
   const untranslated=structuredClone((await read()).posts)
   const translated=await ok(await authorCall('/api/pane/ai/propose',{base:(await read()).base,post:post.id,mode:'translate',language:'Spanish',consent:true}))
   await ok(await authorCall('/api/pane/ai/decide',decision(translated)))
   const spanish=(await read()).posts.find(item=>item.content.slug.startsWith('es/'))
+  assert.match(spanish.content.sections[0].blocks.find(block=>block.kind==='quote').text,/^Texto del taller /);assert.match(spanish.content.sections[0].blocks.find(block=>block.kind==='quote').attribution,/^Texto del taller /);assert.match(spanish.media[0].image.alt,/^Texto del taller /)
   assert.equal(spanish.author,author.operatorId);assert.equal(spanish.state,'draft');assert.ok(spanish.content.hidden)
   for(const original of untranslated)assert.deepEqual((await read()).posts.find(item=>item.id===original.id),original)
   assert.equal((await authorGet('/site/'+spanish.content.slug)).status,404)
@@ -732,7 +737,7 @@ test('native authors write and submit only own posts and use assistance without 
   assert.ok(composite.roles.includes('author'))
   const compositeState=await ok(await authorGet('/api/pane'));assert.equal(compositeState.draft.site.posts.length,7);assert.ok(!JSON.stringify(compositeState).includes(otherPost))
   await ok(await call('/api/pane/roles/set',{operatorId:author.operatorId,roles:['reporting']}))
-  for(const path of ['/api/pane/posts','/api/pane/ai/history?post='+post.id])assert.equal((await authorGet(path)).status,403)
+  for(const path of ['/api/pane/posts','/api/pane/ai/history?post='+post.id,'/app/posts','/app/posts/canvas?id='+post.id])assert.equal((await authorGet(path)).status,403)
   assert.equal((await authorCall('/api/pane/ai/decide',decision(pending))).status,403)
   assert.equal((await state()).live.id,live)
   // Approving the ordinary website pages cannot expose the private post store.

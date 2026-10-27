@@ -79,7 +79,7 @@ export async function signIn(page,email=settings.OWNER_EMAIL){
  // The existing auth tests use this network-edge mail fixture too. No cookie or
  // browser profile is copied: the browser consumes and confirms a native link.
  let message
- const auth=createOperatorAuth({db:f.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{message=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+ const auth=createOperatorAuth({clock:()=>process.env.PANE_BROWSER_NOW?Date.parse(process.env.PANE_BROWSER_NOW):Date.now(),db:f.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{message=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
  await auth.requestMagicLink(new Request(origin+'/auth/magic-link',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin}}),{email,returnTo:'/app'})
  assert.ok(message,'The native sign-in flow issued a link to the test mail edge')
  const link=message.text.match(/http:\/\/[^\s]+/)[0]
@@ -95,7 +95,7 @@ export async function advance(iso){const result=await (await f.mf.getWorker()).s
 // Synthetic native invitation at the mail edge; never a real browser profile.
 export async function invitePerson(context,{email,displayName,roles}){
  let message
- const auth=createOperatorAuth({db:f.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{message=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+ const auth=createOperatorAuth({clock:()=>process.env.PANE_BROWSER_NOW?Date.parse(process.env.PANE_BROWSER_NOW):Date.now(),db:f.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{message=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
  await auth.invite(new Request(origin+'/auth/invite',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin,Cookie:ownerCookie}}),{email,displayName,role:'member'})
  const person=await f.db.prepare('SELECT id FROM oa_operators WHERE email=?').bind(email).first()
  assert.equal((await context.request.post(origin+'/api/pane/roles/set',{headers:{Origin:origin},data:{operatorId:person.id,roles}})).status(),200)

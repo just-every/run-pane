@@ -15,7 +15,7 @@ export async function modelSuggestions(env:AiBindings,site:Site,page:Page,mode:A
  let selection=''
  if(['rewrite','shorten','tone'].includes(mode)){
   selection=bounded(input.selection)
-  if(page.importedHtml?!replaceHtmlSelection(page,selection):page.sections?!page.sections.some(section=>section.blocks.some(block=>block.kind==='text'&&block.text===selection)):!page.body.includes(selection))throw Error('Select text from the saved page; for a canvas page select one complete text block.')
+  if(page.importedHtml?!replaceHtmlSelection(page,selection):page.sections?!page.sections.some(section=>section.blocks.some(block=>['text','quote'].includes(block.kind)&&block.text===selection)):!page.body.includes(selection))throw Error('Select text from the saved page; for a canvas page select one complete text block.')
  }
  const language=mode==='translate'?bounded(input.language??'Spanish',80):'',tone=mode==='tone'?bounded(input.tone??'Friendly',120):''
  const allTargets=pageTextTargets(page,site),targets=mode==='translate'?allTargets.filter(target=>target.text.trim()):allTargets

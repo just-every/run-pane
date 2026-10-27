@@ -1,11 +1,14 @@
-import {latestContent,ownPost,postView,PostDenied,savePost} from './posts'
+import {latestContent,ownPost,postView,PostDenied,savePost,publishPost} from './posts'
+import {postForm} from './post-forms'
+import {postsEditor} from './ui/posts'
+import {uploadLibraryFile,publicLibraryFiles} from './library-files'
 import {aiHistory,undoAiHistory} from './ai-history'
 import {proposeAi,decideAi} from './ai'
 import {canvasEditor} from './ui/canvas'
 import { parseImportDocument } from './import-formats'
 import { createComponent } from './components'
 import { normalizeForms, privateFile } from './forms'
-import { accessFromForm } from './access'
+import { accessFromForm,isProtected } from './access'
 import { changeRejected } from './rejected-content'
 import { requestPageReview, publishPage } from './page-review'
 import { findPersonData,erasePersonData,personEmail } from './privacy'
@@ -43,7 +46,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
  if(!['owner','admin','member'].includes(actor.role))return json({error:'Role has no access.'},403)
  try {
   if(path==='/app'&&request.method==='GET'&&!caps.includes('pages:read')){
-   const home=caps.includes('inbox:read')?'/app/inquiries':caps.includes('reports:read')?'/app/sites':null
+   const home=caps.includes('posts:write')?'/app/posts':caps.includes('inbox:read')?'/app/inquiries':caps.includes('reports:read')?'/app/sites':null
    if(home)return new Response(null,{status:303,headers:{location:home}})
   }
   const requiredCapability=routeCapability(path,request.method)
@@ -56,6 +59,25 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    if(!required||!scopes.includes(required))return json({error:'Token scope refused.'},403)
   }
   if(request.method==='GET'&&(path.startsWith('/app/files/')||path.startsWith('/api/pane/files/')))return privateFile(env.DB,decodeURIComponent(path.split('/').at(-1)!))
+  if(request.method==='GET'&&['/app/posts','/app/posts/canvas'].includes(path)){
+   const current=await latestContent(env.DB),data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps,actor)
+   if(current){
+    const own=postView(current,actor.id,owner||actor.role==='admin')
+    data.draft={...current,site:owner||actor.role==='admin'?current.site:{name:current.site.name,description:current.site.description,pages:[],blogs:current.site.blogs,blogPosts:current.site.blogPosts,posts:own.posts}}
+   }
+   const targetRow=await env.DB.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first()
+   if(data.draft&&!owner&&actor.role!=='admin'&&targetRow){const approved=revision(targetRow).site;data.draft.site.brand=approved.brand;data.draft.site.libraryFiles=publicLibraryFiles(approved)}
+   const destinationSite=owner?current?.site:targetRow?revision(targetRow).site:null
+   data.postDestinations=destinationSite?.pages.filter(page=>!page.deleted&&(owner||!page.hidden&&!isProtected(destinationSite,page))).map(page=>({id:page.id??page.slug,slug:page.slug,title:page.title}))??[]
+   if(!owner&&actor.role!=='admin'){data.team=[{name:actor.displayName,role:'author'}];data.people={}}
+   if(path.endsWith('/canvas')){
+    if(!current)throw Error('Save a post first.')
+    ownPost(current.site,url.searchParams.get('id'),actor.id,owner||actor.role==='admin')
+    return document('Post body',canvasEditor(data,'',url.searchParams.get('id')??''),'site')
+   }
+   data.notice=url.searchParams.get('notice')??undefined
+   return document('Posts',shell(data,'posts',postsEditor(data,url.searchParams.get('id')??'')))
+  }
   if(request.method==='GET'&&path==='/api/pane/posts')return json(postView(await latestContent(env.DB),actor.id,owner||actor.role==='admin'))
   if(request.method==='GET'&&path==='/api/pane/ai/history'){
    const post=url.searchParams.get('post')
@@ -111,8 +133,29 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    const imported=parseImportDocument(typeof input.source==='string'?input.source:JSON.stringify(input.source)).site
    if(imported?.customCode||imported?.pages.some(page=>page.customCode))return json({error:'Only a native owner authors custom code, including imports.'},403)
   }
-  if(path.endsWith('/posts/save')||path.endsWith('/posts/submit'))return json(postView(await savePost(env.DB,actor.id,input,owner||actor.role==='admin',path.endsWith('/posts/submit')),actor.id,owner||actor.role==='admin'))
-  if(action.startsWith('ai/')){
+  if(path.endsWith('/posts/save')||path.endsWith('/posts/submit')){
+   const current=await latestContent(env.DB)
+   const fields=formData&&path.endsWith('/posts/save')&&current?postForm(current,actor.id,owner||actor.role==='admin',input):input
+   const saved=postView(await savePost(env.DB,actor.id,fields,owner||actor.role==='admin',path.endsWith('/posts/submit')),actor.id,owner||actor.role==='admin')
+   if(api||request.headers.get('Accept')?.includes('application/json'))return json(saved)
+   const id=String(input.id??saved.posts.at(-1)?.id??'')
+   return new Response(null,{status:303,headers:{location:'/app/posts?id='+encodeURIComponent(id)}})
+  }
+  if(['/api/pane/posts/publish','/app/posts/publish'].includes(path)){
+   const selected={base:String(input.base),id:String(input.id),review:String(input.review)}
+   result=env.PANE_LIVE?await liveCall(env,'/post-publish',{actor:{id:actor.id,role:actor.role},...selected}):await publishPost(env.DB,actor,selected)
+   notice='Post published. Other private drafts are unchanged.';back='/app/posts?id='+encodeURIComponent(String(input.id))
+  }else if(['/api/pane/blogs/save','/app/blogs/save'].includes(path)){
+   if(!owner||scopes)return json({error:'Native owner only.'},403)
+   const current=await latestContent(env.DB);if(!current)throw Error('Prepare the site first.')
+   const blog={id:String(input.id),title:String(input.title),prefix:String(input.prefix),pageSize:Number(input.pageSize??10),comments:false}
+   result=await prepare(env.DB,actor.id,{...current.site,blogs:[...(current.site.blogs??[]).filter(item=>item.id!==blog.id),blog]},String(input.base))
+   notice='Blog settings saved as a draft.';back='/app/posts'
+  }else if(['/api/pane/library/upload','/app/library/upload'].includes(path)){
+   if(!owner||scopes)return json({error:'Native owner only.'},403)
+   const file=formData?.get('file');if(!(file instanceof File))throw Error('Choose a PDF file.')
+   result=await uploadLibraryFile(env.DB,actor.id,String(input.base),file);notice='PDF saved privately. Link it from a post for review.';back='/app/posts'
+  }else if(action.startsWith('ai/')){
    const retained=path.endsWith('/ai/propose')?null:await env.DB.prepare('SELECT post_id,mode,suggestions FROM pane_ai_proposals WHERE id=? AND actor=?').bind(String(input.id??''),actor.id).first<{post_id:string|null;mode:string;suggestions:string}>()
    const post=path.endsWith('/ai/propose')?input.post:retained?.post_id
    if(post&&(path.endsWith('/ai/propose')?input.mode:retained?.mode)==='search')return json({error:'Post assistance supports writing, image descriptions and separate translated drafts.'},403)
@@ -186,6 +229,8 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    const currentAccess=await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
    const previousAccess=currentAccess?revision(currentAccess).site:null
    if(!owner&&actor.role!=='admin'&&input.site?.posts!==undefined)return json({error:'Your role cannot change posts.'},403)
+   if(!owner&&input.site&&['blogs','libraryFiles','blogPosts'].some(key=>input.site[key]!==undefined&&JSON.stringify(input.site[key]??null)!==JSON.stringify(previousAccess?.[key as keyof typeof previousAccess]??null)))return json({error:'Only the native owner can change blog settings or the file library.'},403)
+   if(input.site)input.site={...input.site,blogPosts:previousAccess?.blogPosts,...(!owner?{blogs:previousAccess?.blogs,libraryFiles:previousAccess?.libraryFiles}:{})}
    const proposed=normalizeSite(input.site?{...input.site,...(!owner&&actor.role!=='admin'&&previousAccess?.posts?{posts:previousAccess.posts}:{})}:await siteFromForm(env.DB,input))
    if((!owner||scopes)&&(JSON.stringify(proposed.customCode??null)!==JSON.stringify(previousAccess?.customCode??null)||proposed.pages.some(page=>JSON.stringify(page.customCode??null)!==JSON.stringify(previousAccess?.pages.find(old=>(old.id??old.slug)===(page.id??page.slug))?.customCode??null))))return json({error:'Only the owner authors custom code.'},403)
    if(!owner&&(JSON.stringify(proposed.forms??null)!==JSON.stringify(previousAccess?.forms??null)||JSON.stringify(proposed.access??null)!==JSON.stringify(previousAccess?.access??null)||proposed.pages.some(page=>JSON.stringify(page.access??null)!==JSON.stringify(previousAccess?.pages.find(old=>(old.id??old.slug)===(page.id??page.slug))?.access??null))))return json({error:'Only the owner changes access.'},403)
@@ -193,7 +238,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
     const latest=await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
     const current=latest?revision(latest).site:null
     if(latest&&input.base!==latest.id)throw new DraftConflict(latest?revision(latest):null)
-    for(const key of ['posts','brand','promotion','locale','automations','goals','analyticsCampaigns','analytics','responseDays','robots'] as const)if(JSON.stringify(proposed[key]??null)!==JSON.stringify(current?.[key]??null))return json({error:'Only owners and admins can change business settings.'},403)
+    for(const key of ['posts','blogs','libraryFiles','brand','promotion','locale','automations','goals','analyticsCampaigns','analytics','responseDays','robots'] as const)if(JSON.stringify(proposed[key]??null)!==JSON.stringify(current?.[key]??null))return json({error:'Only owners and admins can change business settings.'},403)
    }
    result=await prepare(env.DB,actor.id,proposed, action==='autosave' ? String(input.base??'') : typeof input.base==='string' ? input.base : undefined)
    if(action==='autosave')return json(visibleRevision(result as import('./model').Revision,caps,actor))

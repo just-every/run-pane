@@ -1,12 +1,14 @@
+import {normalizeBodyLink,type BodyLink} from '../../public/pane-body-links.mjs'
+import {normalizeEmbed,type Embed} from './embeds'
 import {normalizeGallery,type Gallery} from './gallery'
 import {normalizeImage,type ImageContent} from './images'
 import {richText} from '../../public/pane-rich.mjs'
 /** Revision data for the first native section door. Media and visual controls follow. */
-export type RichNode = {tag:'text';text:string} | {tag:'p'|'p-large'|'p-small'|'h1'|'h2'|'h3'|'h4'|'blockquote'|'pre'|'ul'|'ol'|'li'|'strong'|'em'|'u'|'s'|'br';children:RichNode[];align?:'left'|'center'|'right'|'justify'}
+export type RichNode = {tag:'text';text:string} | {tag:'a';href:string;newTab:boolean;children:RichNode[]} | {tag:'p'|'p-large'|'p-small'|'h1'|'h2'|'h3'|'h4'|'blockquote'|'pre'|'ul'|'ol'|'li'|'strong'|'em'|'u'|'s'|'br';children:RichNode[];align?:'left'|'center'|'right'|'justify'}
 export type PhoneBlock = {column?:number;span?:number;row?:number;order?:number;align?:TextBlock['align'];vertical?:TextBlock['vertical'];hidden?:boolean}
 export type TextBlock = {
  phone?: PhoneBlock;
- id: string; kind: 'text'|'image'|'gallery'; gallery?:Gallery; image?:ImageContent; text: string; format?: 'p'|'h1'|'h2'|'h3'|'h4'|'blockquote'|'pre'|'p-large'|'p-small'|'div'; content?: RichNode[];
+ id: string; kind: 'text'|'image'|'gallery'|'quote'|'video'|'button'; caption?:string; attribution?:string; link?:BodyLink; embed?:Embed; gallery?:Gallery; image?:ImageContent; text: string; format?: 'p'|'h1'|'h2'|'h3'|'h4'|'blockquote'|'pre'|'p-large'|'p-small'|'div'; content?: RichNode[];
  column: number; span: number; row: number; order: number;
  align: 'left' | 'center' | 'right' | 'justify'; vertical: 'start' | 'center' | 'end';
 }
@@ -48,9 +50,9 @@ function phone(value:unknown, block:boolean):Record<string,unknown>|undefined {
 /** Validate the tree rather than accepting author HTML or CSS. */
 function normalizeRich(value:unknown, document:boolean):RichNode[] {
  let count=0
- const inline=['text','strong','em','u','s','br']
+ const inline=['text','a','strong','em','u','s','br']
  const blocks=['p','p-large','p-small','h1','h2','h3','h4','blockquote','pre','ul','ol']
- function walk(value:unknown,allowed:string[],depth:number,lists:number):RichNode[] {
+ function walk(value:unknown,allowed:string[],depth:number,lists:number,inLink=false):RichNode[] {
   if(!Array.isArray(value)||depth>10)throw Error('Invalid rich text structure.')
   return value.map(raw=>{
    const node=object(raw)
@@ -59,12 +61,13 @@ function normalizeRich(value:unknown, document:boolean):RichNode[] {
     if(Object.keys(node).some(key=>!['tag','text'].includes(key))||typeof node.text!=='string')throw Error('Invalid rich text leaf.')
     return {tag:'text',text:node.text.normalize('NFC')} as RichNode
    }
+   if(node.tag==='a'){if(inLink)throw Error('Links cannot contain other links.');const link=normalizeBodyLink({href:node.href,newTab:node.newTab});if(Object.keys(node).some(key=>!['tag','children','href','newTab'].includes(key)))throw Error('Unsupported link field.');return {tag:'a',...link,children:walk(node.children,inline.filter(tag=>tag!=='a'),depth+1,lists,true)} as RichNode}
    const paragraph=['p','p-large','p-small','h1','h2','h3','h4','blockquote','pre','li'].includes(node.tag)
    if(Object.keys(node).some(key=>!['tag','children',...(paragraph?['align']:[])].includes(key)))throw Error('Unsupported rich text field.')
    const align=node.align===undefined?undefined:choice(node.align,['left','center','right','justify'] as const,'left')
    const list=node.tag==='ul'||node.tag==='ol'
    if(list&&lists>=2)throw Error('Lists support one level of nesting.')
-   const children=walk(node.children,list?['li']:node.tag==='li'?[...inline,'ul','ol']:inline,depth+1,lists+(list?1:0))
+   const children=walk(node.children,list?['li']:node.tag==='li'?[...inline,'ul','ol']:inline,depth+1,lists+(list?1:0),inLink)
    if(node.tag==='br'&&children.length)throw Error('A line break has no children.')
    return {tag:node.tag,children,...(align?{align}:{})} as RichNode
   })
@@ -90,23 +93,33 @@ export function normalizeSections(value: unknown): Section[] | undefined {
   if (section.background !== undefined && (typeof section.background !== 'string' || !/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(section.background))) throw Error('Use a hex section background with 3, 4, 6 or 8 digits.')
   const blocks = section.blocks.map(raw => {
    const block = object(raw)
-   if (Object.keys(block).some(key => !['phone','gallery','image','id','kind','text','column','span','row','order','align','vertical','format','content'].includes(key))) throw Error('Unsupported block field.')
-   if (!['text','image','gallery'].includes(String(block.kind)) || typeof block.text !== 'string' || (block.kind==='text'&&!block.text.trim())) throw Error('Choose a text block with content or a prepared image.')
+   if (Object.keys(block).some(key => !['caption','attribution','link','embed','phone','gallery','image','id','kind','text','column','span','row','order','align','vertical','format','content'].includes(key))) throw Error('Unsupported block field.')
+   if (!['text','image','gallery','quote','video','button'].includes(String(block.kind)) || typeof block.text !== 'string' || (['text','quote','video','button'].includes(String(block.kind))&&!block.text.trim())) throw Error('Choose a text block with content or a prepared image.')
    const gallery=block.kind==='gallery'?normalizeGallery(block.gallery):undefined
    const image=block.kind==='image'?normalizeImage(block.image):undefined
-   if(block.kind==='text'&&block.image!==undefined)throw Error('Text blocks cannot contain an image.')
+   if(block.image!==undefined&&block.kind!=='image'||block.gallery!==undefined&&block.kind!=='gallery')throw Error('Media must match its block type.')
+   const link=block.link===undefined?undefined:normalizeBodyLink(block.link)
+   if(link&&!['image','button'].includes(String(block.kind)))throw Error('This block does not support a destination.')
+   if(block.kind==='button'&&!link)throw Error('Choose a button destination.')
+   const embed=block.kind==='video'?normalizeEmbed(block.embed):undefined
+   if(block.embed!==undefined&&block.kind!=='video'||block.kind==='video'&&!embed)throw Error('Provide a video title and YouTube embed URL.')
+   if(embed&&!['www.youtube.com','www.youtube-nocookie.com'].includes(new URL(embed.url).hostname))throw Error('Choose a YouTube embed URL.')
+   const fieldText=(value:unknown,label:string)=>{if(typeof value!=='string'||value.length>1000)throw Error(label+' must contain at most 1,000 characters.');return value.normalize('NFC').trim()}
+   const caption=block.caption===undefined?undefined:fieldText(block.caption,'Caption'),attribution=block.attribution===undefined?undefined:fieldText(block.attribution,'Attribution')
+   if(caption!==undefined&&block.kind!=='image'||attribution!==undefined&&block.kind!=='quote'&&block.format!=='blockquote')throw Error('Caption or attribution does not match this block.')
+   if(block.content!==undefined&&!['text','quote'].includes(String(block.kind))||block.format!==undefined&&!['text','quote'].includes(String(block.kind)))throw Error('Rich text requires a text or quote block.')
    if(image&&(block.content!==undefined||block.format!==undefined||block.text.normalize('NFC').trim()!==(image.decorative?'':image.alt??'')))throw Error('Image reading text must match its alternative text.')
    const content=block.content===undefined?undefined:normalizeRich(block.content,block.format==='div')
    const text = block.text.normalize('NFC').trim()
    if(content&&richText(content).trim()!==text)throw Error('Rich text and reading text must match.')
-   characters += text.length
+   characters += text.length+(caption?.length??0)+(attribution?.length??0)
    if (characters > 20000) throw Error('Section text exceeds 20,000 characters.')
    const column = number(block.column,1,12,1), span = number(block.span,1,12,12)
    if (column + span > 13) throw Error('A block must fit the twelve-column grid.')
-   return {...(block.phone===undefined?{}:{phone:phone(block.phone,true)}),id:identity(block.id),kind:block.kind as 'text'|'image'|'gallery',...(gallery?{gallery}:{}),...(image?{image}:{}),...(content?{content}:{}),...(block.format===undefined?{}:{format:choice(block.format,['p','h1','h2','h3','h4','blockquote','pre','p-large','p-small','div'] as const,'p')}),text,column,span,row:number(block.row,1,100,1),order:number(block.order,0,100,0),align:choice(block.align,['left','center','right','justify'] as const,'left'),vertical:choice(block.vertical,['start','center','end'] as const,'start')}
+   return {...(block.phone===undefined?{}:{phone:phone(block.phone,true)}),id:identity(block.id),kind:block.kind as TextBlock['kind'],...(caption===undefined?{}:{caption}),...(attribution===undefined?{}:{attribution}),...(link?{link}:{}),...(embed?{embed}:{}),...(gallery?{gallery}:{}),...(image?{image}:{}),...(content?{content}:{}),...(block.format===undefined?{}:{format:choice(block.format,['p','h1','h2','h3','h4','blockquote','pre','p-large','p-small','div'] as const,'p')}),text,column,span,row:number(block.row,1,100,1),order:number(block.order,0,100,0),align:choice(block.align,['left','center','right','justify'] as const,'left'),vertical:choice(block.vertical,['start','center','end'] as const,'start')}
   })
   return {id,...(section.phone===undefined?{}:{phone:phone(section.phone,false)}),...(section.height===undefined?{}:{height:choice(section.height,['auto','small','medium','large','full'] as const,'auto')}),...(section.component ? {component:String(section.component)} : {}),kind:choice(section.kind,['text','columns'] as const,'text'),ratio:choice(section.ratio,['1:1','1:2','2:1','1:1:1'] as const,'1:1'),gap:number(section.gap,0,160,24),paddingTop:number(section.paddingTop,0,240,32),paddingBottom:number(section.paddingBottom,0,240,32),...(section.background === undefined ? {} : {background:String(section.background).toLowerCase()}),blocks}
  })
 }
 /** Canonical reading order is the stored order, independent of visual overlap. */
-export const sectionText = (sections: Section[]) => sections.flatMap(section => section.blocks.map(block => block.text).filter(Boolean)).join('\n\n')
+export const sectionText = (sections: Section[]) => sections.flatMap(section => section.blocks.map(block => [block.text,block.caption,block.attribution].filter(Boolean).join('\n')).filter(Boolean)).join('\n\n')

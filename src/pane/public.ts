@@ -1,4 +1,7 @@
+import {preparedImageResponse} from './image-response'
 import {tags,tagSource,tagSources} from './tags'
+import {blogResponse} from './blog-public'
+import {blogPostPath} from './post-links'
 import { customCodeSource, codeConfirmation } from './custom-code'
 import { typedForm,validateForm,boundedForm,uploadStatements,type Upload } from './forms'
 import { accessResponse, pageRules } from './access'
@@ -12,7 +15,7 @@ import { visitDimensions } from './visit-dimensions'
 import { recordGoal } from './goal-data'
 import { followUpDue } from './followups'
 import { deliverAcknowledgment } from './acknowledgment'
-import { embedOrigin } from './embeds'
+import { pageEmbedOrigins } from './embeds'
 import { runtimeBindings, type Bindings } from '../auth.server'
 import { slugs, revision } from './content'
 import { document } from './views'
@@ -68,7 +71,8 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
  if(request.method==='POST'&&url.searchParams.has('unlock'))return new Response(null,{status:303,headers:{location:path,'cache-control':'private, no-store'}})
  const redirect=site.redirects?.find(redirect=>redirect.from===path)
  if (redirect && ['GET','HEAD'].includes(request.method)) return new Response(null,{status:redirect.status,headers:{location:redirect.to,'cache-control':'no-store'}})
- const page=activePages(site).find(page=>page.slug===slug)
+ const approvedPost=site.blogPosts?.find(post=>blogPostPath(site,post)===path)
+ const page=activePages(site).find(page=>page.slug===slug)??approvedPost?.content
  if(url.searchParams.has('pane-brand')){
   const key=url.searchParams.get('pane-brand'),image=key&&['logo','favicon','social'].includes(key)?site.brand?.[key as keyof NonNullable<typeof site.brand>]:undefined
   if(!image||!['GET','HEAD'].includes(request.method))return new Response(null,{status:404,headers:{'cache-control':'private, no-store'}})
@@ -80,11 +84,10 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   const [blockId,assetId]=(url.searchParams.get('pane-image')??'').split(':')
   const block=page.sections?.flatMap(section=>section.blocks).find(block=>block.id===blockId)
   const image=assetId&&block?.gallery?.items.some(item=>item.asset===assetId)?site.media?.find(asset=>asset.id===assetId)?.image:block?.image
-  const width=url.searchParams.get('width'),source=width==='0'?image?.src:image?.renditions?.find(item=>String(item.width)===width)?.src
-  if(!source)return new Response(null,{status:404,headers:{'cache-control':'private, no-store'}})
-  const bytes=Uint8Array.from(atob(source.split(',')[1]),c=>c.charCodeAt(0))
-  return new Response(request.method==='HEAD'?null:bytes,{headers:{'content-type':width==='0'?'image/png':'image/webp','content-length':String(bytes.length),'cache-control':'private, no-store','x-content-type-options':'nosniff','vary':'Cookie'}})
+  return preparedImageResponse(image,url.searchParams.get('width'),request.method==='HEAD')
  }
+
+ const blog=await blogResponse(request,site);if(blog)return blog
 
  if(path==='/site/visit' && request.method==='POST') {
   if(optedOut(request))return new Response(null,{status:204})
@@ -159,13 +162,13 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   const missing=site.notFound && activePages(site).find(page=>page.slug===site.notFound)
   if(!missing)return notFound()
   const missingGate=await accessResponse(request,env,site,missing);if(missingGate)return missingGate
-  const response=await document(site.name,announcements+publicPage(site,missing.slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY),'site',missing.embed ? embedOrigin(missing.embed) : undefined,optedOut(request) ? undefined : site.analytics,site.locale?.locale,optedOut(request)?'':customCodeSource(site,missing)+tags(site).map(tagSource).join(''),optedOut(request)?undefined:tagSources(site))
+  const response=await document(site.name,announcements+publicPage(site,missing.slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY),'site',pageEmbedOrigins(missing),optedOut(request) ? undefined : site.analytics,site.locale?.locale,optedOut(request)?'':customCodeSource(site,missing)+tags(site).map(tagSource).join(''),optedOut(request)?undefined:tagSources(site))
   const headers=new Headers(response.headers);headers.set('x-robots-tag','noindex, nofollow')
   return new Response(request.method==='HEAD'?null:response.body,{status:404,headers})
  }
  const notice=(form||page.kind==='contact'||slug==='contact')&&url.searchParams.has('sent')?'<div class="public-site public-sent"><div class="public-shell"><p class="notice" role="status">'+escape(form?.confirmation??'Thank you. Your message has been received.')+'</p></div></div>':''
  const embed=page.embed
- const response=await document(site.name,announcements+notice+publicPage(site,slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY)+promotionMarkup(site,slug),'site',embed ? embedOrigin(embed) : undefined,optedOut(request) ? undefined : site.analytics,site.locale?.locale,optedOut(request)?'':customCodeSource(site,page!)+tags(site).map(tagSource).join(''),optedOut(request)?undefined:tagSources(site))
+ const response=await document(site.name,announcements+notice+publicPage(site,slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY)+promotionMarkup(site,slug),'site',pageEmbedOrigins(page),optedOut(request) ? undefined : site.analytics,site.locale?.locale,optedOut(request)?'':customCodeSource(site,page!)+tags(site).map(tagSource).join(''),optedOut(request)?undefined:tagSources(site))
  if(form||page.kind==='contact'||slug==='contact'){
   const headers=new Headers(response.headers);headers.set('vary','Cookie');headers.set('cache-control','private, no-store');const policy=headers.get('content-security-policy')!
   headers.set('content-security-policy',policy.replace("script-src 'self'","script-src 'self' https://challenges.cloudflare.com").replace("connect-src 'self'","connect-src 'self' https://challenges.cloudflare.com")+(embed||(!optedOut(request)&&(site.customCode||page.customCode))?' https://challenges.cloudflare.com':'; frame-src https://challenges.cloudflare.com'))

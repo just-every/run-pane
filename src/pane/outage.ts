@@ -1,9 +1,10 @@
+import {publishPost,PostDenied} from './posts'
 import { uploadStatements,type Upload } from './forms'
 import { findPersonData,erasePersonData } from './privacy'
 import { DurableObject } from 'cloudflare:workers'
 import type { Bindings } from '../auth.server'
 import type { Revision } from './model'
-import { publish, revokePublication } from './content'
+import { publish, revokePublication, DraftConflict } from './content'
 import { auditedDatabase } from './audit'
 import { deliverAcknowledgment } from './acknowledgment'
 import { recordGoal } from './goal-data'
@@ -20,6 +21,8 @@ export async function liveSnapshot(env:Bindings):Promise<(Revision&{banners?:{te
 export async function liveCall(env:Bindings,path:string,value:unknown){
  const response=await liveStore(env).fetch('https://pane.internal'+path,{method:'POST',body:JSON.stringify(value)})
  const result=await response.json() as any
+ if(path==='/post-publish'&&response.status===409)throw new DraftConflict(result.latest??null)
+ if(path==='/post-publish'&&response.status===403)throw new PostDenied(result.error??'Post publication refused.')
  if(!response.ok)throw Error(result.error??'Live storage unavailable.')
  return result
 }
@@ -53,6 +56,16 @@ export class PaneLive extends DurableObject<Bindings>{
    const live=await storage.get<Revision>('live')
    if(live?.id===input.id)await storage.delete('live')
    return Response.json(result)
+  })
+  if(path==='/post-publish')return this.ctx.blockConcurrencyWhile(async()=>{
+   try{
+    const live=await publishPost(auditedDatabase(this.env.DB,input.actor.id,'workspace.change'),input.actor,input)
+    await storage.put({live,banners:[]})
+    return Response.json(live)
+   }catch(error){
+    if(error instanceof DraftConflict)return Response.json({error:error.message,latest:error.latest},{status:409})
+    return Response.json({error:error instanceof Error?error.message:'Post publication failed.'},{status:error instanceof PostDenied?403:400})
+   }
   })
   if(path==='/publish')return this.ctx.blockConcurrencyWhile(async()=>{
    const db=auditedDatabase(this.env.DB,input.actor,'workspace.change')

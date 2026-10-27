@@ -1,3 +1,5 @@
+import {canvasBody} from './pane-canvas-body.mjs'
+import {safeBodyHref} from './pane-body-links.mjs'
 import {galleryEditor} from './pane-gallery-editor.mjs'
 import {syncReadingOrder} from './pane-reading-order.mjs'
 import {readImage,prepareImage} from './pane-image.mjs'
@@ -22,9 +24,9 @@ function selectedParagraph(node){
  const paragraph=element?.closest('p,h1,h2,h3,h4,blockquote,pre,li')
  return paragraph&&paragraph!==node&&node.contains(paragraph)?paragraph:null
 }
-let galleries
+let galleries,bodyControls
 function settings(){
- galleries?.refresh()
+ galleries?.refresh();bodyControls?.refresh()
  const image=block()?.image,panel=form.querySelector('[data-image-settings]');panel.hidden=!image
  if(image){form.querySelector('[data-image-alt]').value=image.alt??'';form.querySelector('[data-image-decorative]').checked=image.decorative;form.querySelector('[data-image-alt]').disabled=image.decorative;form.querySelector('[data-image-status]').textContent=!image.decorative&&!image.alt?.trim()?'Add alternative text or mark this image decorative before publishing.':'Image description is ready.'}
  if(image){form.querySelector('[data-image-rotation]').value=image.rotation??0;const crop=image.crop??{ratio:'original',width:4,height:3,x:50,y:50};for(const input of form.querySelectorAll('[data-image-crop]')){const key=input.dataset.imageCrop;input.value=crop[key];input.disabled=['width','height'].includes(key)&&crop.ratio!=='free'}}
@@ -37,7 +39,7 @@ function settings(){
   const value=isPhone()&&target&&phoneKey?(sectionFields.includes(key)?{...target,...target.phone}:key==='hidden'?{...target,...target.phone}:mobileBlock(current(),target))[key]:target?.[key]
   if(key==='hidden')input.checked=!!(block()??current()).phone?.hidden;else input.value=(key==='align'&&block()?.format==='div'?selectedParagraph(canvas.querySelector(`[data-block="${blockId}"]`))?.dataset.textAlign:undefined)??value??({height:'auto',background:'',format:'p'}[key]??'')
  }
- for(const button of form.querySelectorAll('[data-text-command]'))button.disabled=block()?.kind!=='text'
+ for(const button of form.querySelectorAll('[data-text-command]'))button.disabled=!['text','quote'].includes(block()?.kind)
  for(const item of sections){const node=canvas.querySelector(`[data-section="${item.id}"]`);node?.toggleAttribute('data-phone-override',!!item.phone);for(const text of item.blocks)canvas.querySelector(`[data-block="${text.id}"]`)?.toggleAttribute('data-phone-override',!!text.phone)}
  form.querySelector('[data-device-status]').textContent=isPhone()?'Phone settings are independent. Outlined selections with a phone override keep their layout when desktop changes.':'Desktop and tablet use desktop settings. Phone overrides are preserved.'
  form.querySelector('[data-layout-selection]').textContent=((block()??current()).phone?'Phone override · ':'')+(blockId?(block()?.format==='div'?'Text block selected. Place the caret in a paragraph to align it independently.':'Text block selected. Edit text on the page or change its layout.'):'Section selected. Drag it or use Move earlier and Move later.')
@@ -49,8 +51,9 @@ function render(){
  for(const node of [...content.children])if(node!==style)node.remove()
  content.insertAdjacentHTML('beforeend',layoutMarkup(sections,undefined,galleries?.media()??JSON.parse(form.querySelector('[data-media-state]').value)))
  for(const section of content.querySelectorAll('[data-section]')){section.draggable=true;section.tabIndex=0;section.setAttribute('aria-label','Section '+(sections.findIndex(item=>item.id===section.dataset.section)+1))}
- for(const node of content.querySelectorAll('[data-image-block],[data-gallery]')){node.tabIndex=0;node.setAttribute('aria-label',node.hasAttribute('data-gallery')?'Gallery block':'Image block')}
- for(const node of content.querySelectorAll('[data-block]:not([data-image-block]):not([data-gallery])')){node.contentEditable='true';node.draggable=true;node.setAttribute('role','textbox');node.setAttribute('aria-label','Block text');node.setAttribute('aria-multiline','true')}
+ for(const node of content.querySelectorAll('[data-image-block],[data-gallery],[data-video-block],[data-button-block],[data-quote-block]')){node.tabIndex=0;node.setAttribute('aria-label',node.hasAttribute('data-gallery')?'Gallery block':'Image block')}
+ for(const node of content.querySelectorAll('[data-block]:not([data-image-block]):not([data-gallery]):not([data-video-block]):not([data-button-block]):not([data-quote-block]),[data-block-text]')){node.contentEditable='true';node.draggable=true;node.setAttribute('role','textbox');node.setAttribute('aria-label','Block text');node.setAttribute('aria-multiline','true')}
+ for(const node of content.querySelectorAll('[data-quote-block]'))node.draggable=true
  for(const button of content.querySelectorAll('[data-gallery-open]')){button.removeAttribute('data-gallery-open');button.dataset.tip='Select image';button.setAttribute('aria-label','Select '+button.getAttribute('aria-label').replace(/^Enlarge /,''))}
  syncReadingOrder(content);settings()
 }
@@ -60,7 +63,7 @@ canvas.addEventListener('focusin',event=>{const section=event.target.closest('[d
 // Only these semantic nodes cross the authoring boundary. Pasted scripts and
 // active content are discarded, including their text; attributes never survive.
 function readRich(root){
- const inline=new Set(['strong','em','u','s','br']),blocks=new Set(['p','p-large','p-small','h1','h2','h3','h4','blockquote','pre','ul','ol','li'])
+ const inline=new Set(['a','strong','em','u','s','br']),blocks=new Set(['p','p-large','p-small','h1','h2','h3','h4','blockquote','pre','ul','ol','li'])
  function read(node){
   if(node.nodeType===3)return [{tag:'text',text:node.textContent}]
   if(node.nodeType!==1)return []
@@ -97,6 +100,7 @@ function readRich(root){
   if(tag!=='li'&&tag!=='ul'&&tag!=='ol'&&children.some(child=>blocks.has(child.tag))){
    return children.flatMap(child=>blocks.has(child.tag)?[child]:inline.has(tag)||blocks.has(tag)?[{tag,children:[child]}]:[child])
   }
+  if(tag==='a'){const href=safeBodyHref(node.dataset.bodyHref??node.getAttribute('href'));return href?[{tag:'a',href,newTab:node.target==='_blank',children}]:children}
   const align=node.dataset?.textAlign
   return inline.has(tag)||blocks.has(tag)?[{tag,children,...(['p','p-large','p-small','h1','h2','h3','h4','blockquote','pre','li'].includes(tag)&&['left','center','right','justify'].includes(align)?{align}:{})}]:children
  }
@@ -114,8 +118,9 @@ function documentBlock(node){
  return replacement
 }
 function record(node){
- const target=sections.flatMap(section=>section.blocks).find(block=>block.id===node.dataset.block)
- if(target.kind!=='text')return
+ const target=sections.flatMap(section=>section.blocks).find(block=>block.id===(node.closest('[data-block]')?.dataset.block))
+ if(!target||!['text','quote'].includes(target.kind))return
+ node=node.querySelector('[data-block-text]')??node
  const content=readRich(node)
  target.content=content;target.text=richText(content)
  if(content.some(node=>['p','h1','h2','h3','h4','blockquote','pre','ul','ol'].includes(node.tag)))target.format='div'
@@ -123,7 +128,8 @@ function record(node){
 }
 canvas.addEventListener('input',event=>{const node=event.target.closest('[data-block]');if(node)record(node)})
 canvas.addEventListener('paste',event=>{
- let node=event.target.closest('[data-block]');if(!node)return
+ let node=event.target.closest('[data-block]');if(!node||!['text','quote'].includes(block()?.kind))return
+ if(node.hasAttribute('data-quote-block')){event.preventDefault();document.execCommand('insertText',false,event.clipboardData.getData('text/plain'));record(node);return}
  event.preventDefault()
  const html=event.clipboardData.getData('text/html')
  if(html){
@@ -138,7 +144,7 @@ canvas.addEventListener('paste',event=>{
  }
  else document.execCommand('insertText',false,event.clipboardData.getData('text/plain'))
  record(node)
- form.querySelector('[data-layout-selection]').textContent='Pasted text styles kept. Links and media are not supported yet.'
+ form.querySelector('[data-layout-selection]').textContent='Pasted text styles and safe links kept.'
 })
 // Pointer activation must not replace the selected text with a toolbar caret.
 // Keyboard activation restores the same saved range after focusing its block.
@@ -156,11 +162,12 @@ document.addEventListener('selectionchange',rememberSelection)
 canvas.addEventListener('keyup',rememberSelection)
 canvas.addEventListener('mouseup',rememberSelection)
 form.addEventListener('click',event=>{
- const command=event.target.dataset.textCommand;if(!command||!block()||block().kind!=='text')return
- let node=canvas.querySelector(`[data-block="${blockId}"]`)
+ const command=event.target.dataset.textCommand;if(!command||!block()||!['text','quote'].includes(block().kind))return
+ let node=canvas.querySelector(`[data-block="${blockId}"]`);node=node.querySelector('[data-block-text]')??node
  const range=selection&&node.contains(selection.commonAncestorContainer)?selection.cloneRange():null
  node.focus()
  if(range){const current=window.getSelection();current.removeAllRanges();current.addRange(range)}
+ if(block().kind==='quote'&&['insertUnorderedList','insertOrderedList','indent','outdent'].includes(command))return
  if(['insertUnorderedList','insertOrderedList','indent','outdent'].includes(command))node=documentBlock(node)
  document.execCommand(command,false)
  record(node)
@@ -187,6 +194,7 @@ form.addEventListener('input',event=>{
   }
   record(node);render();return
  }
+ if(key==='format'&&target.kind==='text'&&value!=='blockquote')delete target.attribution
  if(key==='background'&&!value)delete target.background;else target[key]=key==='hidden'?event.target.checked:numeric.includes(key)?Number(value):value
  if(key==='column')target.span=Math.min(target.span,13-target.column)
  if(key==='span')target.column=Math.min(target.column,13-target.span)
@@ -270,5 +278,11 @@ for(const input of form.querySelectorAll('[data-image-alt],[data-image-decorativ
 device.addEventListener('change',()=>{const sheet=document.querySelector('style[data-pane-layout]').sheet;while(sheet.cssRules.length)sheet.deleteRule(0);if(device.value!=='fit')sheet.insertRule(`[data-layout-canvas]{width:${Number(device.value)}px}`,0);syncReadingOrder(content);settings()})
 // Active links belong to the live page; the editing surface keeps selection local.
 canvas.addEventListener('click',event=>{if(event.target.closest('a'))event.preventDefault()})
+bodyControls=canvasBody(form,{block,section:current,newBlock,commit,select:id=>{blockId=id},record,textSelection:()=>{
+ if(!['text','quote'].includes(block()?.kind))return null
+ let node=canvas.querySelector(`[data-block="${blockId}"]`);node=node.querySelector('[data-block-text]')??node
+ if(!selection||!node.contains(selection.commonAncestorContainer))return null
+ node.focus();const current=window.getSelection();current.removeAllRanges();current.addRange(selection.cloneRange());return node
+}})
 galleries=galleryEditor(form,{block,section:current,newBlock,commit:id=>{if(id)blockId=id;commit()}})
 render()

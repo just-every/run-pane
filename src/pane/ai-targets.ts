@@ -19,7 +19,7 @@ export function requestedImages(site:Site,page:Page,names:unknown){
 
 export function pageTextTargets(page:Page,site?:Site):{target:string;text:string}[]{
  const body=page.importedHtml?htmlTargets(page):page.sections?page.sections.flatMap(section=>section.blocks.flatMap(block=>
-  block.kind==='text'?[{target:'block:'+block.id,text:block.text}]:block.image?[{target:'alt:'+block.id,text:block.image.alt??''}]:[]
+  ['text','quote','button'].includes(block.kind)?[{target:'block:'+block.id,text:block.text}]:block.image?[{target:'alt:'+block.id,text:block.image.alt??''}]:[]
  )):[{target:'body',text:page.body}]
  const captions=(page.sections??[]).flatMap(section=>section.blocks.flatMap(block=>
   (block.gallery?.items??[]).map((item,index)=>({target:'caption:'+block.id+':'+index,text:item.caption}))
@@ -27,7 +27,8 @@ export function pageTextTargets(page:Page,site?:Site):{target:string;text:string
  const galleryAlts=(site?.media??[]).filter(asset=>page.sections?.some(section=>section.blocks.some(block=>
   block.gallery?.items.some(item=>item.asset===asset.id)
  ))).map(asset=>({target:'asset-alt:'+asset.id,text:asset.image.alt??''}))
- return [{target:'title',text:page.title},...body,...captions,...galleryAlts,
+ const labels=(page.sections??[]).flatMap(section=>section.blocks.flatMap(block=>[...(block.caption?[{target:'image-caption:'+block.id,text:block.caption}]:[]),...(block.attribution?[{target:'attribution:'+block.id,text:block.attribution}]:[]),...(block.embed?[{target:'video-title:'+block.id,text:block.embed.title}]:[])]))
+ return [{target:'title',text:page.title},...body,...captions,...galleryAlts,...labels,
   ...(page.embed?[{target:'embed-title',text:page.embed.title}]:[]),
   ...(page.links??[]).map((link,index)=>({target:'link:'+index,text:link.label})),
   ...(page.search?.title?[{target:'search-title',text:page.search.title}]:[]),
@@ -38,9 +39,10 @@ export function replaceText(page:Page,target:string,text:string){
  if(target==='title')page.title=text
  else if(target==='body')page.body=text
  else if(target.startsWith('html:'))replaceHtmlTarget(page,target,text)
- else if(target.startsWith('block:')){const block=page.sections?.flatMap(section=>section.blocks).find(block=>block.id===target.slice(6));if(!block||block.kind!=='text')throw Error('Text block no longer exists.');block.text=text;delete block.content}
+ else if(target.startsWith('block:')){const block=page.sections?.flatMap(section=>section.blocks).find(block=>block.id===target.slice(6));if(!block||!['text','quote','button'].includes(block.kind))throw Error('Text block no longer exists.');block.text=text;delete block.content}
+ else if(['image-caption:','attribution:','video-title:'].some(prefix=>target.startsWith(prefix))){const [kind,id]=target.split(':'),block=page.sections?.flatMap(section=>section.blocks).find(block=>block.id===id);if(!block)throw Error('Body label no longer exists.');if(kind==='image-caption')block.caption=text;else if(kind==='attribution')block.attribution=text;else if(block.embed){block.embed.title=text;block.text=text;}else throw Error('Video no longer exists.')}
  else if(target.startsWith('alt:')){const block=page.sections?.flatMap(section=>section.blocks).find(block=>block.id===target.slice(4));if(!block?.image)throw Error('Image no longer exists.');block.image.alt=text;block.image.decorative=!text;block.text=text}
- else if(target.startsWith('caption:')){const [,id,index]=target.split(':');const block=page.sections?.flatMap(section=>section.blocks).find(block=>block.id===id);if(!block?.gallery?.items[Number(index)])throw Error('Gallery caption no longer exists.');block.gallery.items[Number(index)].caption=text}
+ else if(target.startsWith('caption:')){const [,id,index]=target.split(':');const block=page.sections?.flatMap(section=>section.blocks).find(block=>block.id===id);if(!block?.gallery?.items[Number(index)])throw Error('Gallery caption no longer exists.');block.gallery.items[Number(index)].caption=text;block.text=block.gallery.items.map(item=>item.caption).filter(Boolean).join('\n')}
  else if(target.startsWith('link:'))page.links![Number(target.slice(5))].label=text
  else if(target==='embed-title')page.embed!.title=text
  else if(target==='search-title')page.search={...page.search,title:text}

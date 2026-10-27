@@ -18,11 +18,11 @@ export async function proposeAi(env:Bindings&AiBindings,actor:string,input:Recor
  const row=await current(env.DB,input.base),post=input.post?row.site.posts?.find(post=>post.id===input.post):undefined,page=input.post?post?.content:row.site.pages.find(page=>!page.deleted&&page.slug===input.slug)
  if(!page)throw Error('Choose a current page.')
  const id=crypto.randomUUID(),mode=input.mode as AiMode
- const images=mode==='alt'?requestedImages(row.site,page,input.images).map(image=>image.target):[]
+ const images=mode==='alt'?requestedImages(post?{...row.site,media:post.media}:row.site,page,input.images).map(image=>image.target):[]
  // Persist explicit consent before the one outbound attempt, including failed calls.
  await env.DB.prepare('INSERT INTO pane_ai_proposals(id,actor,base,slug,mode,model,images,suggestions,created_at,post_id) VALUES(?,?,?,?,?,?,?,?,?,?)').bind(id,actor,row.id,page.slug,mode,(env as AiBindings).AI_MODEL||'gpt-4.1-mini',JSON.stringify(images),'[]',new Date().toISOString(),post?.id??null).run()
  try{
-  const output=await modelSuggestions(env,post?{name:row.site.name,description:row.site.description,pages:[page,...(row.site.posts??[]).filter(item=>item.blog===post.blog&&item.id!==post.id).map(item=>({slug:item.content.slug,title:'',body:''}))]}:row.site,page,mode,input)
+  const output=await modelSuggestions(env,post?{name:row.site.name,description:row.site.description,media:post.media,pages:[page,...(row.site.posts??[]).filter(item=>item.blog===post.blog&&item.id!==post.id).map(item=>({slug:item.content.slug,title:'',body:''}))]}:row.site,page,mode,input)
   const proposal:Proposal={...(post?{post:post.id}:{}),id,base:row.id,slug:page.slug,mode,suggestions:output.suggestions}
   const saved=await env.DB.prepare(`UPDATE pane_ai_proposals SET suggestions=?,status='ready' WHERE id=? AND (SELECT id FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1)=?`).bind(JSON.stringify(proposal.suggestions),id,row.id).run()
   if(!saved.meta.changes)throw new DraftConflict(await latest(env.DB))
@@ -44,7 +44,7 @@ function applySuggestion(site:Site,slug:string,suggestion:Suggestion){
  else if(kind==='link'){const url=nativeLink(site,target),destination=site.pages.find(page=>pageId(page)===target)!,index=page.links?.findIndex(link=>link.url===url||link.url===pagePath(site,destination.slug))??-1;if(index>=0)page.links![index]={label:after,url};else page.links=[...(page.links??[]),{label:after,url}]}
  else if(kind==='text'){
   if(page.importedHtml){if(!replaceHtmlSelection(page,suggestion.before!,after))throw Error('The selected imported text no longer exists.')}
-  else if(page.sections){const block=page.sections.flatMap(section=>section.blocks).find(block=>block.kind==='text'&&block.text===suggestion.before);if(!block)throw Error('The selected text no longer exists.');detachTarget(page,'block:'+block.id);replaceText(page,'block:'+block.id,after)}
+  else if(page.sections){const block=page.sections.flatMap(section=>section.blocks).find(block=>['text','quote'].includes(block.kind)&&block.text===suggestion.before);if(!block)throw Error('The selected text no longer exists.');detachTarget(page,'block:'+block.id);replaceText(page,'block:'+block.id,after)}
   else {if(!suggestion.before||!page.body.includes(suggestion.before))throw Error('The selected text no longer exists.');page.body=page.body.replace(suggestion.before,after)}
  }else if(kind==='alt'){
   detachTarget(page,target)
@@ -73,10 +73,10 @@ export async function decideAi(env:Bindings,actor:string,input:Record<string,unk
  if(proposal.post_id){
   const post=site.posts?.find(post=>post.id===proposal.post_id)
   if(!post)throw Error('Post no longer exists.')
-  const local:Site={name:site.name,description:site.description,pages:[post.content]}
+  const local:Site={name:site.name,description:site.description,media:post.media,pages:[post.content]}
   for(const suggestion of accepted)applySuggestion(local,proposal.slug,suggestion)
   if(accepted.some(item=>item.kind!=='translation'))post.state='draft'
-  for(const page of local.pages.slice(1))site.posts!.push({id:page.id!,author:post.author,blog:post.blog,state:'draft',content:page})
+  for(const page of local.pages.slice(1)){const ids=new Set(page.sections?.flatMap(section=>section.blocks.flatMap(block=>block.gallery?.items.map(item=>item.asset)??[]))??[]);site.posts!.push({...post,id:page.id!,state:'draft',content:page,review:undefined,...(local.media?{media:local.media.filter(asset=>ids.has(asset.id))}:{})})}
  }else for(const suggestion of accepted)applySuggestion(site,proposal.slug,suggestion)
  if(!accepted.length){
   const result=await env.DB.prepare(`UPDATE pane_ai_proposals SET decisions=? WHERE id=? AND decisions IS NULL AND (SELECT id FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1)=?`).bind(JSON.stringify(decisions),proposal.id,base.id).run()

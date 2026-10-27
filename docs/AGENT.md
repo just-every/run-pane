@@ -179,14 +179,15 @@ API to detect concurrent edits; a 409 returns the latest full snapshot for
 comparison. Publication still requires owner approval, and rollback restores
 section data with the rest of the immutable revision.
 
-## Private own-post writing and assistance
+## Native post writing, review and assistance
 
 An assigned native author can write and submit their own posts through the
-helper or the matching native HTTP API. This is the private CMS-004 foundation:
-public blog pages, owner publication, feeds, taxonomy and the complete CMS-011
-body workflow remain unimplemented. Submitting records a review state without
-publishing or sending notifications. ROLE-002 retains those notification and
-delegated-publication obligations.
+helper, the Posts screen or the matching native HTTP API. Posts use the shared
+section editor, with durable saves, five-step undo and redo, retained conflict
+copies and explicit latest-draft selection. Submitting records a review state
+without publishing or sending notifications. The native owner separately reviews
+and approves that exact submitted version. ROLE-002 retains notification and
+delegated-publication obligations; CMS-010 retains visitor comments.
 
 `posts` reads `GET /api/pane/posts` and returns `base` and the caller's posts.
 Owners and native admins can read all posts; assigned authors see only their
@@ -206,15 +207,32 @@ A new post input has this shape. For an edit, also include its returned `id`.
 The server assigns authorship and the immutable revision; the caller cannot
 impersonate another author. Content accepts native text and raster sections,
 inert imported text, links and search fields; it does not accept forms,
-executable code, access settings or shared library assets.
+executable code or access settings. A post owns its gallery assets. Referenced
+PDFs are uploaded by the owner and remain private until an explicitly published
+public page or post references them. Authors can choose those already-public
+PDFs in the native body destination picker; private uploads stay owner-only.
 
 ```json
 {"base":"CURRENT_REVISION","blog":"news","content":{"slug":"workshop-story","title":"Workshop story","body":"The paragraph to review."}}
 ```
 
 Submission takes `{"base":"CURRENT_REVISION","id":"POST_ID"}`. Posts and
-translated posts remain private even when the owner publishes the current
-website pages; a native post publishing door remains CMS-004 work.
+translated posts remain private when the owner publishes website pages. An
+owner publishes one submitted post with `POST /api/pane/posts/publish`, sending
+its current `base`, `id` and `review` token. The server refuses stale or changed
+submissions and preserves unrelated live content and newer private drafts.
+
+In Posts, owners configure each blog title, URL prefix and page size under
+Settings, and upload bounded PDFs under PDF library. Authors choose a blog,
+write their post, supply an explicit public byline and author-page slug, and
+submit for review. Account identifiers and sign-in addresses are never used as
+public bylines. A published blog serves its own index, RSS feed, category, tag,
+author and month archive routes. Post references follow a renamed post URL.
+Share links contact a network only after the visitor selects one. The published
+post body supports semantic headings and nested lists, formatting, captioned
+images, attributed quotes, consent-gated YouTube video, page buttons and links
+to posts, published PDFs and telephone numbers. Collection-item bodies and the
+remaining general block catalog still belong to CMS-001 and CMS-011 and PAGE-014.
 
 For assistance, native page writers use the existing Pages AI panel or
 `ai-propose`. Authors can use `ai-propose` for their own post, including its

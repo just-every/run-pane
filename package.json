@@ -26,7 +26,7 @@
     "check": "rer check",
     "deps": "rer install",
     "rer": "rer",
-    "test": "rer queue test:pane -- node --test --test-concurrency=1 tests/pane.test.mjs tests/demo.test.mjs tests/site.test.mjs tests/search.test.mjs tests/pane-imports.test.mjs tests/mail.test.mjs",
+    "test": "rer queue test:pane -- node --test --test-concurrency=1 tests/pane.test.mjs tests/demo.test.mjs tests/site.test.mjs tests/search.test.mjs tests/pane-imports.test.mjs tests/mail.test.mjs tests/posts.test.mjs",
     "delivery:spec": "node scripts/build-deployment-spec.mjs",
     "check:deployment-spec": "node scripts/build-deployment-spec.mjs --check"
   },
