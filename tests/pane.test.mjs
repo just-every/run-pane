@@ -1078,7 +1078,14 @@ test('an oversized connection callback is refused before its whole body is read'
 })
 
 test('starter layouts and duplicates retain editable content and shared published styles',async()=>{
- const initial=await (await json('/api/pane/prepare',{site:fixture})).json()
+ const f=await runtime();let owner
+ const json=(path,body)=>f.request(path,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',Cookie:owner??''},body:JSON.stringify(body),redirect:'manual'})
+ const data=async()=>{const response=await f.request('/api/pane',{headers:{Cookie:owner}});assert.equal(response.status,200);return response.json()}
+ try{
+ const signed=await json('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Template owner'});assert.equal(signed.status,303);owner=signed.headers.get('set-cookie').split(';')[0]
+ assert.equal((await f.request('/setup',{method:'POST',headers:{Origin:origin,Cookie:owner,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes',redirect:'manual'})).status,303)
+ assert.equal((await json('/api/pane/prepare',{site:fixture})).status,200)
+
  const layouts=['landing','service','team','menu','pricing','faq','location']
  for(const layout of layouts){
   await json('/api/pane/prepare',{site:fixture})
@@ -1107,6 +1114,7 @@ test('starter layouts and duplicates retain editable content and shared publishe
  const edit=await (await json('/api/pane/prepare',{site:changed,base:draft.id})).json()
  assert.equal(edit.site.pages.find(page=>page.slug==='services').body,source.body)
  assert.equal((await json('/api/pane/prepare',{site:{...changed,pages:changed.pages.map(page=>({...page,layout:'unsupported'}))}})).status,400)
+ }finally{await f.mf.dispose()}
 })
 
 test('page review binds the exact content and selective owner approval keeps other drafts and records an immutable revision',async()=>{
