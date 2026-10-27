@@ -14,12 +14,19 @@ try{
  await context.route('https://vane.example.test/**',route=>route.fulfill({contentType:'application/javascript',body:''}))
  const site=JSON.parse(await readFile('fixtures/static-site.json','utf8'))
  site.analytics={ga4:'G-SYNTH12345',vane:{origin:'https://vane.example.test',site:'synthetic-pane-1'}}
+ const prepared=await context.request.post(origin+'/api/pane/prepare',{headers:{Origin:origin},data:{site}});assert.equal(prepared.status(),200)
+ await context.request.post(origin+'/api/pane/publish',{headers:{Origin:origin},data:{revision:(await prepared.json()).id}})
  for(const width of [1440,390]){
   await page.setViewportSize({width,height:1000})
-  const prepared=await context.request.post(origin+'/api/pane/prepare',{headers:{Origin:origin},data:{site}});assert.equal(prepared.status(),200)
-  await context.request.post(origin+'/api/pane/publish',{headers:{Origin:origin},data:{revision:(await prepared.json()).id}})
   await page.goto(origin+'/app/sites');await page.getByRole('region',{name:'Policy starters',exact:true}).scrollIntoViewIfNeeded();await capture(page,'policy-generate-'+width)
-  await Promise.all([page.waitForURL(url=>url.pathname==='/app'&&url.searchParams.get('page')==='privacy-policy'),page.getByRole('button',{name:'Generate policy starters',exact:true}).click()])
+  if(width===1440)await Promise.all([page.waitForURL(url=>url.pathname==='/app'&&url.searchParams.get('page')==='privacy-policy'),page.getByRole('button',{name:'Generate policy starters',exact:true}).click()])
+  else{
+   const before=await (await context.request.get(origin+'/api/pane')).json()
+   const refused=await context.request.post(origin+'/api/pane/policies/generate',{headers:{Origin:origin},data:{base:before.draft.id}})
+   assert.equal(refused.status(),400,'Generating policy starters never overwrites existing owner content')
+   assert.deepEqual(await (await context.request.get(origin+'/api/pane')).json(),before,'Refused policy regeneration leaves every retained revision exact')
+   await page.goto(origin+'/app?page=privacy-policy')
+  }
   const text=page.getByLabel('Text',{exact:true});assert.match(await text.inputValue(),/Google Analytics 4 \(GA4\)/);assert.match(await text.inputValue(),/Vane/)
   await text.fill((await text.inputValue())+'\n\nContact the studio for a privacy request.');await page.waitForFunction(()=>document.querySelector('[data-save-status]').textContent==='Draft saved. Not published.')
   await capture(page,'policy-edit-'+width)
