@@ -165,13 +165,13 @@ test('trash and single-item history restore preserve unrelated published edits a
 test('typed service collections validate thirty items and publish rich descriptions with selective item restoration',async()=>{
  const {serviceFields,serviceItem}=await import('./collection-fixture.mjs')
  let clock=Date.parse('2026-10-15T16:00:00Z'),owner,admin,editor,reporter
- const mail=[],outbounds=[]
+ const mail=[],outbounds=[],collectionWrites=[]
  const origin='https://pane.example.test',f=await runtime({isolatedLive:true,now:()=>clock,observeOutbound:request=>outbounds.push(request.url),bindings:{AUTH_ORIGIN:origin,AUTH_LOCAL:'false',MAIL_PROVIDER:'sendgrid',MAIL_API_KEY:'synthetic-pane-9'},outboundService:async request=>{assert.equal(new URL(request.url).origin,'https://api.sendgrid.com');mail.push(await request.json());return new Response(null,{status:202})}})
  const call=(path,input,cookie=owner)=>f.request(origin+path,{method:'POST',headers:{Origin:origin,Cookie:cookie??'','Content-Type':'application/json'},body:JSON.stringify(input)})
  const get=(path,cookie=owner)=>f.request(origin+path,{headers:{Cookie:cookie??''}})
  const ok=async response=>{assert.equal(response.status,200,await response.clone().text());return response.json()}
  const state=()=>get('/api/pane').then(ok)
- const save=async(path,input)=>ok(await call('/api/pane/collections'+path,{base:(await state()).draft.id,...input}))
+ const save=async(path,input)=>{const result=await ok(await call('/api/pane/collections'+path,{base:(await state()).draft.id,...input}));collectionWrites.push({id:result.id,action:path==='/items/publish'?'publish':'edit'});return result}
  try{
   const signed=await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Collection owner'},'');assert.equal(signed.status,303);owner=signed.headers.get('set-cookie').split(';')[0]
   assert.equal((await f.request(origin+'/setup',{method:'POST',headers:{Origin:origin,Cookie:owner,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})).status,303)
@@ -257,6 +257,10 @@ test('typed service collections validate thirty items and publish rich descripti
   assert.equal((await get('/site/service-directory/service-1','')).status,200,'Owner approval restores the original item URL');assert.deepEqual(approved.site.navigation.footer,starterSite.navigation.footer,'Item restoration retains the original menu place');assert.ok(!approved.site.redirects.some(row=>row.from==='/site/service-directory/service-1'));assert.ok(approved.site.redirects.some(row=>row.from==='/site/old-care'&&row.to==='/site/about'));assert.deepEqual((await state()).revisions.find(row=>row.id===original.id),original,'Item restoration leaves the original source snapshot and hash exact')
   assert.equal(outbounds.length,3,'Collection editing and publication send no outbound request')
   const activity=await ok(await get('/api/pane/activity')),restores=activity.filter(event=>['content.restore','content.restore-version'].includes(event.action));assert.deepEqual(restores.map(event=>[event.action,event.subject,event.actor,event.created_at]),[['content.restore','item:services:service-1','Collection editor',new Date(clock).toISOString()],['content.restore-version','item:services:service-1','Collection owner',new Date(clock).toISOString()]],'Item restores record the exact native actor and server time');for(const event of restores)assert.deepEqual(Object.keys(JSON.parse(event.details)).sort(),(event.action==='content.restore'?['kind','id','collection','sourceRevision','sourceDeletion']:['kind','id','collection','sourceRevision']).sort())
+  for(const write of collectionWrites){const rows=activity.filter(event=>event.action===write.action&&event.subject==='revision:'+write.id);assert.equal(rows.length,1,'Every successful collection write has one transactional activity event');assert.equal(rows[0].actor,'Collection owner');assert.ok(Number.isFinite(Date.parse(rows[0].created_at)))}
+  assert.equal(activity.find(event=>event.action==='edit'&&event.subject==='revision:'+editorDraft.id).actor,'Collection editor','Collection edits retain the native editor attribution')
+  const itemApproval=activity.filter(event=>event.action==='collection.item.publish'&&event.subject==='item:services:service-1');assert.equal(itemApproval.length,1);assert.equal(itemApproval[0].actor,'Collection owner');assert.deepEqual(JSON.parse(itemApproval[0].details),{kind:'item',collection:'services',id:'service-1',revision:approved.id},'Selected-item publication records only its exact decision metadata')
+  for(const privateValue of ['Fold gently','synthetic-pane-private-owner-post','synthetic-pane-editor@example.test'])assert.ok(!JSON.stringify(activity).includes(privateValue),'Collection activity excludes content and private addresses')
   await ok(await call('/api/pane/content/delete',{kind:'item',collection:'services',id:'service-29',base:(await state()).draft.id}))
   clock+=31*86400000;assert.equal((await call('/auth/magic-link',{email:settings.OWNER_EMAIL,returnTo:'/app'},'')).status,202)
   const refreshMessage=mail.at(-1).content.find(part=>part.type==='text/plain').value,refresh=await call('/auth/confirm',{token:new URL(refreshMessage.match(/https:\/\/[^\s]+/)[0]).searchParams.get('token')},'');assert.equal(refresh.status,303);owner=refresh.headers.get('set-cookie').split(';')[0]
