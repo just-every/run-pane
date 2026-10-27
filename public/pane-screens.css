@@ -129,3 +129,5 @@
 .pane [aria-label="Site ownership"] { overflow-wrap: anywhere; }
 .pane [aria-label="Site ownership"] select, .pane [aria-label="Site ownership"] input[type=email] { width: 100%; }
 .pane [aria-label="Site ownership"] button { max-width: 100%; white-space: normal; }
+
+.pane .schedule-status code { font-size: 1em; }

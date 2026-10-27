@@ -44,7 +44,7 @@ html.rer-themed body.pane-site { background: var(--pn-white); }
 .rer-themed .pane textarea { resize: vertical; field-sizing: content; min-height: 4.5lh; max-height: 18lh; }
 .rer-themed .pane textarea.code-input { background: color-mix(in srgb, var(--pn-tint) 45%, white); font: 400 13px/1.55 var(--pn-mono); tab-size: 2; }
 .rer-themed .pane input:not([type=checkbox]):not([type=hidden]):not([type=radio]):focus, .rer-themed .pane textarea:focus { border-color: var(--pn-action); box-shadow: 0 0 0 3px rgb(232 23 110 / .16); outline: none; }
-.pane .help { color: var(--pn-muted); font-size: 12px; line-height: 1.45; }
+.pane .help { color: var(--pn-muted); font-size: 13px; line-height: 1.45; }
 .pane .access-note { color: var(--pn-muted); font-size: 14px; }
 
 /* cards, pills, empty states */
@@ -88,7 +88,7 @@ html.rer-themed body.pane-site { background: var(--pn-white); }
 .pane .count { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: var(--pn-pink-soft); color: var(--pn-fuchsia-deep); font-size: 12px; font-weight: 700; text-align: center; }
 .pane .account { margin-left: auto; }
 .pane .avatar { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid color-mix(in srgb, var(--pn-aqua) 45%, white); border-radius: 50%; background: color-mix(in srgb, var(--pn-aqua) 14%, white); color: var(--pn-ink); font-size: 13px; font-weight: 700; }
-.pane .avatar-sm { width: 28px; height: 28px; font-size: 11px; }
+.pane .avatar-sm { width: 28px; height: 28px; font-size: 13px; }
 .pane .account-pop { right: 0; width: 280px; }
 .pane .account-pop > strong { font-size: 16px; font-weight: 800; }
 .pane .role { color: var(--pn-muted); font-size: 13px; text-transform: capitalize; }

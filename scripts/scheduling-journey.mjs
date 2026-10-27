@@ -4,6 +4,7 @@ import {resolve} from 'node:path'
 import {chromium} from '@playwright/test'
 // Approval timestamps predate the first review cutoff, independent of the host clock.
 process.env.PANE_BROWSER_NOW='2026-10-01T12:00:00Z'
+process.env.PANE_LIVE_FIXTURE='1'
 const fixture=await import('../tests/browser-runtime.mjs')
 const browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH}:{}),args:['--no-sandbox','--use-mock-keychain','--password-store=basic']})
 const context=await browser.newContext(),page=await context.newPage(),origin=fixture.origin
@@ -62,6 +63,19 @@ try {
  await tick('2026-10-03T13:59:00Z');assert.equal((await context.request.get(origin+'/site/news/morning-news')).status(),200)
  await tick('2026-10-03T14:00:00Z');assert.equal((await context.request.get(origin+'/site/news/morning-news')).status(),404)
  assert.equal((await dashboard()).schedules.history.filter(event=>event.kind==='post-unpublished').length,1)
+ const {invalidatedSchedules}=await import('../tests/post-schedule-proof.mjs')
+ const response=async value=>({status:value.status(),json:()=>value.json(),text:()=>value.text(),clone:()=>({text:()=>value.text()})})
+ await invalidatedSchedules({post:async(path,data)=>response(await post(path,data)),get:async path=>response(await context.request.get(origin+path)),tick,expiry:true,day:'2026-10-04',utcHour:'14'})
+ for(const width of [1440,390]){
+  await page.setViewportSize({width,height:1000});await page.goto(origin+'/app/sites')
+  const region=page.getByRole('region',{name:'Schedules and reviews'})
+  await region.getByText('Schedule event history',{exact:true}).click()
+  await region.getByText('post publication failed',{exact:true}).waitFor()
+  await region.scrollIntoViewIfNeeded();await capture('failed-post-with-successful-expiry',width)
+  const small=await page.locator('.schedule-status code,.pane .help,.pane .avatar-sm').evaluateAll(nodes=>nodes.filter(node=>node.getClientRects().length&&parseFloat(getComputedStyle(node).fontSize)<13).map(node=>node.textContent))
+  assert.deepEqual(small,[],'Changed screens use text of at least 13px')
+ }
+
  for(const [width,year,thanksgiving] of [[1440,2026,26],[390,2028,23]]){
   await page.setViewportSize({width,height:1000})
   const clean=await (await post('/api/pane/prepare',{site:source})).json()
