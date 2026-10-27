@@ -30,7 +30,7 @@ export function htmlBlockMarkup(block:HtmlBlock,live:boolean,quiet:boolean):stri
  const title=escape(block.text)
  if(!live)return htmlBlockPreview(block)
  const source=customCodeWrapper(htmlBlockSource(block))
- return `<section class="external-embed html-block" data-html-block="${escape(block.id)}" data-html-source="${escape(source)}" data-html-title="${title}" data-html-quiet="${quiet?'1':'0'}" aria-label="${title}"><h2>${title}</h2><p data-html-status role="status">${quiet?'Your privacy choice keeps HTML code off.':'HTML code stays off until you allow this block. You can turn it off at any time.'}</p><div data-html-frame></div><div class="form-actions"><button type="button" data-html-allow${quiet?' disabled':''}>Allow HTML code</button><button type="button" class="secondary" data-html-deny>Keep HTML code off</button></div></section>`
+ return `<section class="external-embed html-block" data-html-block="${escape(block.id)}" data-html-source="${escape(source)}" data-html-title="${title}" data-html-quiet="${quiet?'1':'0'}"><h2>${title}</h2><p data-html-status role="status">${quiet?'Your privacy choice keeps HTML code off.':'HTML code stays off until you allow this block. You can turn it off at any time.'}</p><div data-html-frame></div><div class="form-actions"><button type="button" data-html-allow${quiet?' disabled':''}>Allow HTML code</button><button type="button" class="secondary" data-html-deny>Keep HTML code off</button></div></section>`
 }
 
 /** Preserve every occurrence so additions, duplication and removal affect authorization. */
