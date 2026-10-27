@@ -17,7 +17,7 @@ export function collectionTemplateHead(collection:Collection,item:CollectionItem
  const width=image?.renditions?.at(-1)?.width??0
  const imageUrl=image?canonical+'?pane-collection-social=1&width='+width:undefined
  const meta=(attribute:'name'|'property',name:string,value:string)=>`<meta ${attribute}="${name}" content="${escape(value)}">`
- const priceFields=collection.fields.filter(field=>field.type==='price'&&item.values[field.id]!==undefined)
+ const priceFields=collection.fields.filter(field=>field.type==='price'&&collection.template?.fields.includes(field.id)&&item.values[field.id]!==undefined)
  const offers=priceFields.map(field=>({'@type':'Offer',name:field.label,price:item.values[field.id],priceCurrency:'USD',url:canonical}))
  const service={'@context':'https://schema.org','@type':'Service',name:page.title,url:canonical,...(description?{description}:{}),...(imageUrl?{image:imageUrl}:{}),...(offers.length?{offers}:{})}
  const json=JSON.stringify(service).replace(/</g,'\\u003c').replace(/>/g,'\\u003e').replace(/&/g,'\\u0026')

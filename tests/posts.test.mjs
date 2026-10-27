@@ -222,3 +222,34 @@ test('typed service collections validate thirty items and publish rich descripti
   assert.deepEqual((await ok(await get('/api/pane/content/trash?kind=item&collection=services'))).rows,[],'Collection item trash expires after 31 days');assert.equal((await call('/api/pane/content/restore',{kind:'item',collection:'services',id:'service-29',base:(await state()).draft.id})).status,400,'Expired collection items cannot be restored')
  }finally{await f.mf.dispose()}
 })
+
+test('designed collection templates publish every item with exact metadata and prepared social images',async()=>{
+ const {serviceFields,serviceItem}=await import('./collection-fixture.mjs'),origin=settings.AUTH_ORIGIN,f=await runtime({isolatedLive:true,now:Date.parse('2026-10-15T16:00:00Z')});let cookie
+ const call=(path,input)=>f.request(origin+path,{method:'POST',headers:{Origin:origin,Cookie:cookie??'','Content-Type':'application/json'},body:JSON.stringify(input)})
+ const get=path=>f.request(origin+path,{headers:{Cookie:cookie??''}})
+ const ok=async response=>{assert.equal(response.status,200,await response.clone().text());return response.json()}
+ const state=()=>get('/api/pane').then(ok),save=async(path,input)=>ok(await call('/api/pane/collections'+path,{base:(await state()).draft.id,...input}))
+ try{
+  const signed=await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Template owner'});assert.equal(signed.status,303);cookie=signed.headers.get('set-cookie').split(';')[0]
+  assert.equal((await f.request(origin+'/setup',{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})).status,303)
+  const initial=await ok(await call('/api/pane/prepare',{site:JSON.parse(await readFile('fixtures/static-site.json','utf8'))}));await ok(await call('/api/pane/publish',{revision:initial.id}))
+  await save('/schema',{id:'team',title:'Team',prefix:'team',fields:[{id:'name',label:'Name',type:'text',required:true}]});await save('/items/save',{collection:'team',id:'june',slug:'june',title:'June Ellis',values:{name:'June Ellis'}})
+  await save('/schema',{id:'services',title:'Services',prefix:'service-directory',fields:serviceFields})
+  const image={src:'data:image/png;base64,'+(await readFile('public/brand/icon-192.png')).toString('base64'),width:192,height:192,alt:'A repaired timber chair',decorative:false}
+  for(let index=1;index<=30;index++)await save('/items/save',{collection:'services',...serviceItem(index),values:{...serviceItem(index).values,name:'Repair </script> & care '+index,notes:'Service details & care '+index,image}})
+  const draft=(await state()).draft;await ok(await call('/api/pane/publish',{revision:draft.id}));const unchanged=structuredClone((await state()).live)
+  const template={fields:['notes','description','price','image'],titleField:'name',descriptionField:'notes',imageField:'image'}
+  const designed=await save('/template',{collection:'services',template})
+  assert.equal((await call('/api/pane/collections/items/publish',{base:designed.id,collection:'services',id:'service-1'})).status,400,'Shared template changes require whole-site owner approval');assert.deepEqual((await state()).live,unchanged)
+  for(const invalid of [{...template,titleField:'image'},{...template,fields:['notes','notes']},{...template,fields:['missing']}]){const before=await state();assert.equal((await call('/api/pane/collections/template',{base:before.draft.id,collection:'services',template:invalid})).status,400);assert.deepEqual(await state(),before)}
+  const published=await ok(await call('/api/pane/publish',{revision:designed.id}));assert.deepEqual(published.site.collections.find(collection=>collection.id==='services').template,template)
+  for(let index=1;index<=30;index++){
+   const path='/site/service-directory/service-'+index,response=await get(path);assert.equal(response.status,200,'Every service item has its own public URL');const html=await response.text()
+   assert.ok(html.includes('<title>Repair &lt;/script&gt; &amp; care '+index+' · Cedar Street Studio</title>'),'The template binds the exact item search title');assert.ok(html.includes('name="description" content="Service details &amp; care '+index+'"'),'The template binds the exact item description')
+   const data=JSON.parse(html.match(/<script type="application\/ld\+json">([^<]+)<\/script>/)[1]);assert.equal(data['@type'],'Service');assert.equal(data.name,'Repair </script> & care '+index,'Structured data preserves the item title safely');assert.equal(data.description,'Service details & care '+index);assert.equal(data.url,origin+path);assert.equal(data.offers[0].price,125.5);assert.equal(data.offers[0].priceCurrency,'USD');assert.equal(data.image,origin+path+'?pane-collection-social=1&width=0')
+   assert.ok(html.indexOf('Service details &amp; care '+index)<html.indexOf('Thoughtful repairs for well-loved furniture.'),'The designed field reading order is rendered')
+   const social=await get(path+'?pane-collection-social=1&width=0');assert.equal(social.status,200);assert.match(social.headers.get('content-type'),/^image\//);assert.ok((await social.arrayBuffer()).byteLength>100);assert.equal((await get(path+'?pane-collection-social=1&width=invalid')).status,404)
+  }
+  const changed=await save('/items/save',{collection:'services',...serviceItem(2),values:{...serviceItem(2).values,name:'Updated repair',notes:'Updated service details',image}});await save('/items/publish',{collection:'services',id:'service-2'});assert.ok((await (await get('/site/service-directory/service-2')).text()).includes('<title>Updated repair ·'));assert.ok((await (await get('/site/service-directory/service-1')).text()).includes('Repair &lt;/script&gt; &amp; care 1'));assert.deepEqual((await state()).revisions.find(row=>row.id===designed.id),designed,'Template approval retains its immutable source')
+ }finally{await f.mf.dispose()}
+})
