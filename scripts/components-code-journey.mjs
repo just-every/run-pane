@@ -243,7 +243,8 @@ try{
   await page.reload();await page.locator('[data-image-block]').click();assert.equal(await page.getByLabel('Image rotation',{exact:true}).inputValue(),'270')
   await page.getByRole('button',{name:'Reset image crop',exact:true}).click();await saved();assert.equal((await selectedImage()).src,originalImage.src);assert.equal((await selectedImage()).rotation,0)
   for(const ratio of ['1:1','4:3','3:2','16:9','free']){
-   await page.getByLabel('Image aspect ratio',{exact:true}).selectOption(ratio)
+   const aspect=page.getByLabel('Image aspect ratio',{exact:true})
+   if(ratio==='1:1'){await aspect.focus();for(let step=0;step<6;step++)await page.keyboard.press('ArrowUp');await page.keyboard.press('ArrowDown');assert.equal(await aspect.inputValue(),'1:1','Native keyboard selects a square crop')}else await aspect.selectOption(ratio)
    if(ratio==='free'){await page.getByLabel('Free crop width',{exact:true}).fill('5');await page.getByLabel('Free crop height',{exact:true}).fill('4')}
    await saved();const expected=ratio==='free'?1.25:Number(ratio.split(':')[0])/Number(ratio.split(':')[1])
    assert.ok(Math.abs(await page.locator('[data-image-block] img').evaluate(node=>node.getBoundingClientRect().width/node.getBoundingClientRect().height)-expected)<0.01,'Chosen image crop ratio')

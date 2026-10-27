@@ -160,7 +160,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "8c40d11af62908bb7504411d2178d52e839a3d7b872737555339479df31661ac",
+      "sha256": "88b571e8048334f2fb2fb2ff50b0770802d05d3f7ce07f4652a94af092870616",
       "executable": false
     },
     "deploy-demo.json": {
@@ -196,7 +196,7 @@
       "executable": false
     },
     "docs/evidence/ai-riders.md": {
-      "sha256": "68a799bf8cfbe8c1124fd2764c8422e2ef02a19d10dc9d6e4dfa1aee1b1f8bda",
+      "sha256": "7ed8463aac489b5c81690671be4ff66c64541dd5c0186110946f3001d317e199",
       "executable": false
     },
     "docs/FORMS-AND-ACCESS.md": {
@@ -1072,7 +1072,7 @@
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
-      "sha256": "be8f5c14569a7ab81f014a4239b4207838b47a71b0943dbf5726ba4350bfb1ac",
+      "sha256": "19a360cb11f79445976902a659c5673cea03477774278a7088f3725fdf12b042",
       "executable": false
     },
     "scripts/custody-journey.mjs": {
