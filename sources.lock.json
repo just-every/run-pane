@@ -1116,7 +1116,7 @@
       "executable": false
     },
     "scripts/catalog-media.mjs": {
-      "sha256": "ae9750a0cf95186b503029783393233375474c0226f310ff8eba16c85328ee95",
+      "sha256": "6ea43798eb6d263fddb71a154e98daca70bb66395066dc4b4096e71867b93687",
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
