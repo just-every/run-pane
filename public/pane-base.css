@@ -44,7 +44,7 @@ html.rer-themed body.pane-site { background: var(--pn-white); }
 .rer-themed .pane textarea { resize: vertical; field-sizing: content; min-height: 4.5lh; max-height: 18lh; }
 .rer-themed .pane textarea.code-input { background: color-mix(in srgb, var(--pn-tint) 45%, white); font: 400 13px/1.55 var(--pn-mono); tab-size: 2; }
 .rer-themed .pane input:not([type=checkbox]):not([type=hidden]):not([type=radio]):focus, .rer-themed .pane textarea:focus { border-color: var(--pn-action); box-shadow: 0 0 0 3px rgb(232 23 110 / .16); outline: none; }
-.pane .help { color: var(--pn-muted); font-size: 12px; line-height: 1.45; }
+.pane .help { color: var(--pn-muted); font-size: 13px; line-height: 1.45; }
 .pane .access-note { color: var(--pn-muted); font-size: 14px; }
 
 /* cards, pills, empty states */
@@ -53,7 +53,7 @@ html.rer-themed body.pane-site { background: var(--pn-white); }
 .pane .pill { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 3px 12px; border: 1px solid var(--pn-line-strong); border-radius: 999px; background: var(--pn-white); color: var(--pn-ink); font-size: 13px; font-weight: 600; white-space: nowrap; }
 .pane .pill-state { border-color: transparent; background: color-mix(in srgb, var(--pn-line) 70%, white); color: var(--pn-body); }
 .pane .pill-live-state { border-color: transparent; background: var(--pn-green-soft); color: #00663f; }
-.pane .pill-new { min-height: 22px; padding: 2px 8px; border: 0; background: var(--pn-pink-soft); color: var(--pn-fuchsia-deep); font-size: 11px; font-weight: 700; }
+.pane .pill-new { min-height: 22px; padding: 2px 8px; border: 0; background: var(--pn-pink-soft); color: var(--pn-fuchsia-deep); font-size: 13px; font-weight: 700; }
 .pane .empty { padding: 28px 16px; text-align: center; }
 .pane .empty strong { display: block; color: var(--pn-ink); font-size: 20px; font-weight: 900; letter-spacing: -.01em; word-spacing: .05em; }
 .rer-themed .pane .empty p { max-width: 420px; margin: 6px auto 0; color: var(--pn-muted); font-size: 14px; }
@@ -80,15 +80,15 @@ html.rer-themed body.pane-site { background: var(--pn-white); }
 .rer-themed .pane .mini-site p { padding: 10px 14px 12px; font-size: 13px; }
 .rer-themed .pane .mini-status { display: flex; align-items: center; gap: 6px; color: var(--pn-ink); font-size: 14px; font-weight: 700; }
 .pane .mini-status svg { width: 18px; height: 18px; color: var(--pn-green); }
-.rer-themed .pane .popover-note { color: var(--pn-muted); font-size: 12px; }
+.rer-themed .pane .popover-note { color: var(--pn-muted); font-size: 13px; }
 .pane .tabs { display: flex; align-items: stretch; gap: 6px; height: 100%; margin-left: 12px; }
 .pane .tabs a { display: flex; align-items: center; gap: 8px; padding: 0 14px; border-bottom: 3px solid transparent; color: var(--pn-ink); font-size: 16px; font-weight: 500; text-decoration: none; }
 .pane .tabs a:hover { border-bottom-color: var(--pn-line-strong); }
 .pane .tabs a[aria-current] { border-bottom-color: var(--pn-action); font-weight: 800; }
-.pane .count { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: var(--pn-pink-soft); color: var(--pn-fuchsia-deep); font-size: 12px; font-weight: 700; text-align: center; }
+.pane .count { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: var(--pn-pink-soft); color: var(--pn-fuchsia-deep); font-size: 13px; font-weight: 700; text-align: center; }
 .pane .account { margin-left: auto; }
 .pane .avatar { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid color-mix(in srgb, var(--pn-aqua) 45%, white); border-radius: 50%; background: color-mix(in srgb, var(--pn-aqua) 14%, white); color: var(--pn-ink); font-size: 13px; font-weight: 700; }
-.pane .avatar-sm { width: 28px; height: 28px; font-size: 11px; }
+.pane .avatar-sm { width: 28px; height: 28px; font-size: 13px; }
 .pane .account-pop { right: 0; width: 280px; }
 .pane .account-pop > strong { font-size: 16px; font-weight: 800; }
 .pane .role { color: var(--pn-muted); font-size: 13px; text-transform: capitalize; }

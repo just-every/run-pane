@@ -117,14 +117,20 @@ test('native comment moderation protects notifications, threaded replies, closur
   assert.match(await (await get('/site/news/story','')).text(),/data-like-count>0<\/span>/)
   const liked=await f.request(origin+'/site/news/story?like=1',{method:'POST',headers:{Origin:origin}});assert.equal(liked.status,303);assert.equal(liked.headers.get('set-cookie'),null)
   await f.request(origin+'/site/news/story?like=1',{method:'POST',headers:{Origin:origin}});assert.match(await (await get('/site/news/story','')).text(),/data-like-count>1<\/span>/,'Repeat likes from the same request network are bounded without cookies')
-  assert.equal((await visitor('Honeypot comment',{website:'bot'})).status,403)
+  await ok(await call('/api/pane/spam/settings',{enabled:'on',confirm:'change-retention'}))
+  const rejectedId=crypto.randomUUID();assert.equal((await visitor('Honeypot comment',{website:'bot',idempotency:rejectedId})).status,403)
   assert.equal((await visitor('Bad verification',{'cf-turnstile-response':'synthetic-pane-invalid'})).status,403)
   assert.equal((await visitor('A visitor <img src=x onerror=alert(1)> comment',{idempotency:commentId})).status,303)
   const spamId=crypto.randomUUID();assert.equal((await visitor('https://a.test https://b.test https://c.test https://d.test https://e.test https://f.test',{idempotency:spamId})).status,303)
   const queue=await ok(await get('/api/pane/comments',moderator));assert.deepEqual(queue.map(row=>[row.id,row.state]).sort(),[[commentId,'pending'],[spamId,'spam']].sort())
   assert.ok(!(await (await get('/site/news/story','')).text()).includes('A visitor &lt;img'))
   const notifications=mail.slice(4);assert.equal(notifications.length,6);assert.deepEqual([...new Set(notifications.flatMap(message=>message.personalizations.flatMap(item=>item.to.map(to=>to.email))))].sort(),['owner@example.test','synthetic-pane-admin@example.test','synthetic-pane-moderator@example.test'])
-  for(const message of notifications)assert.ok(!JSON.stringify(message).includes('synthetic-pane-commenter@example.test'),'Notifications omit commenter addresses')
+  for(const message of notifications){
+   assert.ok(!JSON.stringify(message).includes('synthetic-pane-commenter@example.test'),'Notifications omit commenter addresses')
+   const text=message.content.find(part=>part.type==='text/plain').value,html=message.content.find(part=>part.type==='text/html').value
+   const link=text.match(/https:\/\/[^\s]+/)[0]
+   assert.ok(html.includes('href="'+link+'"'),'HTML notifications carry the same private review link as plain text')
+  }
   const text=notifications.find(message=>message.content.find(part=>part.type==='text/plain').value.includes(commentId)).content.find(part=>part.type==='text/plain').value,notification=new URL(text.match(/https:\/\/[^\s]+/)[0]);assert.equal(notification.pathname,'/app/comments');assert.equal(notification.searchParams.get('comment'),commentId)
   assert.equal((await get(notification.pathname+notification.search,moderator)).status,200)
   assert.equal((await get('/api/pane/comments',admin)).status,200)
@@ -151,7 +157,12 @@ test('native comment moderation protects notifications, threaded replies, closur
   const restored=await runtime();try{const target=await createPortability({db:restored.db,policy:productPolicy}),id=await target.imports.create(older[0]);for(const part of older.filter(record=>record.kind==='part'))await target.imports.uploadPart(id,part.index,part);await assert.rejects(target.imports.finalize(id,{contentHash:older.at(-1).contentHash,archiveHash:older.at(-1).archiveHash,laterJournal:later[0]}),/erased_row|erasure_epoch/)}finally{await restored.mf.dispose()}
   assert.deepEqual((await ok(await call('/api/pane/privacy/find',{email:'synthetic-pane-commenter@example.test'}))).comments,[])
   assert.ok(!(await (await get('/site/news/story','')).text()).includes('A visitor &lt;img'))
-  await ok(await call('/api/pane/comments/close',{post:post.id,closed:'off'}));await visitor('Replay erased content',{idempotency:commentId});assert.ok(!(await ok(await get('/api/pane/comments',moderator))).some(row=>row.id===commentId))
+  await ok(await call('/api/pane/comments/close',{post:post.id,closed:'off'}))
+  await visitor('Replay accepted content as rejected',{idempotency:commentId,website:'bot'})
+  await visitor('Replay rejected content as accepted',{idempotency:rejectedId})
+  const replayed=await ok(await call('/api/pane/privacy/find',{email:'synthetic-pane-commenter@example.test'}))
+  assert.deepEqual([replayed.rejected.filter(row=>row.id===commentId).length,replayed.comments.filter(row=>row.id===rejectedId).length],[0,0],'Erased accepted and rejected comments cannot return through the opposite store')
+  await visitor('Replay erased content',{idempotency:commentId});assert.ok(!(await ok(await get('/api/pane/comments',moderator))).some(row=>row.id===commentId))
   for(let attempt=0;attempt<20;attempt++)await visitor('Burst',{'cf-turnstile-response':'synthetic-pane-invalid'})
   assert.equal((await visitor('Over the rate limit')).status,429)
   const activity=await ok(await get('/api/pane/activity'));assert.ok(activity.some(event=>event.subject==='comment:'+commentId&&event.action==='comment.approved'&&event.actor==='Comment moderator'));for(const value of ['synthetic-pane-commenter@example.test','A visitor <img'])assert.ok(!JSON.stringify(activity).includes(value),'Comment audit is metadata only')
@@ -161,7 +172,10 @@ test('native comment moderation protects notifications, threaded replies, closur
   const beforeDigest=mail.length,digestId=crypto.randomUUID();assert.equal((await visitor('A comment for the daily review',{idempotency:digestId})).status,303);assert.equal(mail.length,beforeDigest,'Daily notifications wait for the scheduled sweep')
   const early=await (await f.mf.getWorker()).scheduled({scheduledTime:clock+23*3600000,cron:'* * * * *'});assert.equal(early.outcome,'ok');assert.equal(mail.length,beforeDigest)
   clock+=86400000
-  const tick=async()=>assert.equal((await (await f.mf.getWorker()).scheduled({scheduledTime:clock,cron:'* * * * *'})).outcome,'ok');await tick();assert.equal(mail.length,beforeDigest+2,'Only the active owner and admin receive the daily digest after moderator revocation');for(const message of mail.slice(beforeDigest))assert.ok(message.content.find(part=>part.type==='text/plain').value.includes(digestId));await tick();assert.equal(mail.length,beforeDigest+2,'A repeated sweep cannot send the digest twice')
+  const tick=async()=>assert.equal((await (await f.mf.getWorker()).scheduled({scheduledTime:clock,cron:'* * * * *'})).outcome,'ok');await tick();assert.equal(mail.length,beforeDigest+2,'Only the active owner and admin receive the daily digest after moderator revocation');for(const message of mail.slice(beforeDigest)){
+   assert.ok(message.content.find(part=>part.type==='text/plain').value.includes(digestId))
+   assert.ok(message.content.find(part=>part.type==='text/html').value.includes('href="'+origin+'/app/comments?comment='+digestId+'"'),'HTML digests link each comment to review')
+  }await tick();assert.equal(mail.length,beforeDigest+2,'A repeated sweep cannot send the digest twice')
   assert.ok(!(await (await get('/site/news/story','')).text()).includes('Submit comment'));assert.equal((await visitor('After automatic expiry')).status,403)
   await ok(await call('/api/pane/comments/settings',{blog:'news',enabled:'on',approval:'off',notificationMode:'daily',blockedWords:'forbidden'}))
   const known=crypto.randomUUID(),unknown=crypto.randomUUID(),blocked=crypto.randomUUID();assert.equal((await visitor('A returning approved writer',{idempotency:known,email:'synthetic-pane-author@example.test'})).status,303);assert.equal((await visitor('A new unapproved writer',{idempotency:unknown})).status,303);assert.equal((await visitor('A forbidden phrase',{idempotency:blocked,email:'synthetic-pane-author@example.test'})).status,303)

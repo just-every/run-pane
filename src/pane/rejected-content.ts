@@ -14,8 +14,9 @@ export async function retainRejected(env:Bindings,form:string,reason:string,fiel
   await expireRejected(env.DB)
   await env.DB.prepare(`INSERT OR IGNORE INTO pane_rejected_content(id,form,reason,name,email,message,created_at,expires_at)
    SELECT ?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM pane_spam_settings WHERE id=1 AND enabled=1)
-   AND NOT EXISTS(SELECT 1 FROM pane_erased_messages WHERE id=?) AND NOT EXISTS(SELECT 1 FROM pane_messages WHERE id=?)`)
-   .bind(id,form,reason,name,email,message,new Date(received).toISOString(),received+30*86400000,id,id).run()
+   AND NOT EXISTS(SELECT 1 FROM pane_erased_messages WHERE id=?) AND NOT EXISTS(SELECT 1 FROM pane_messages WHERE id=?)
+   AND NOT EXISTS(SELECT 1 FROM pane_erased_comments WHERE id=?) AND NOT EXISTS(SELECT 1 FROM pane_comments WHERE id=?)`)
+   .bind(id,form,reason,name,email,message,new Date(received).toISOString(),received+30*86400000,id,id,id,id).run()
  }catch{ /* Keep only the rejection metadata when workspace storage is unavailable. */ }
 }
 export async function reviewRejected(db:D1Database){
