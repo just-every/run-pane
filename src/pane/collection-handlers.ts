@@ -4,7 +4,7 @@ import {DraftConflict} from './content'
 import {latestContent,PostDenied} from './posts'
 import {capabilities,permittedDashboard,visibleRevision} from './roles'
 import {liveCall} from './outage'
-import {collectionTarget,saveCollectionSchema,saveCollectionItem,saveCollectionBody,addStarterCollections,publishCollectionItem} from './collection-store'
+import {collectionTarget,saveCollectionTemplate,saveCollectionSchema,saveCollectionItem,saveCollectionBody,addStarterCollections,publishCollectionItem} from './collection-store'
 import {collectionsEditor} from './ui/collections'
 import {canvasEditor} from './ui/canvas'
 import {shell} from './ui/shell'
@@ -12,7 +12,7 @@ import {document} from './views'
 
 export type CollectionActor={id:string;role:string;displayName?:string}
 const json=(value:unknown,status=200)=>Response.json(value,{status,headers:{'cache-control':'no-store'}})
-const paths=['','/schema','/items/save','/body','/items/publish','/starters','/canvas']
+const paths=['','/schema','/template','/items/save','/body','/items/publish','/starters','/canvas']
 const parsed=(value:unknown)=>typeof value==='string'?JSON.parse(value):value
 async function inputs(request:Request):Promise<Record<string,unknown>>{
  const input=request.headers.get('content-type')?.includes('application/json')?await request.json():Object.fromEntries(await request.formData())
@@ -50,11 +50,13 @@ export async function collectionPrivateResponse(request:Request,env:Bindings,act
    }
    return document('Collections',shell(data,'collections',collectionsEditor(data,collection,item)))
   }
-  if(request.method!=='POST'||!['/schema','/items/save','/body','/items/publish','/starters'].includes(action))return json({error:'Method not allowed.'},405)
+  if(request.method!=='POST'||!['/schema','/template','/items/save','/body','/items/publish','/starters'].includes(action))return json({error:'Method not allowed.'},405)
   const input=await inputs(request),db=env.DB
   let result,back='/app/collections'
   if(action==='/schema'){
    allow(input,['id','title','prefix','fields']);result=await saveCollectionSchema(db,actor.id,{...input,fields:parsed(input.fields)});back=destination(input.id)
+  }else if(action==='/template'){
+   allow(input,['collection','template']);result=await saveCollectionTemplate(db,actor.id,{...input,template:parsed(input.template)});back=destination(input.collection)
   }else if(action==='/items/save'){
    allow(input,['collection','id','slug','title','values']);result=await saveCollectionItem(db,actor.id,{...input,values:parsed(input.values)});back=destination(input.collection,input.id)
   }else if(action==='/body'){

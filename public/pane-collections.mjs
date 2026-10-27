@@ -1,3 +1,4 @@
+import {bindCollectionTemplate} from './pane-collection-template.mjs'
 import {readImage} from './pane-image.mjs'
 const editor=document.querySelector('[data-collections-editor]')
 if(editor){
@@ -36,6 +37,7 @@ if(editor){
   })()
   pending.set(form,request);return request
  }
+ bindCollectionTemplate(editor,{changed,save})
  function fieldOptions(row){
   const type=row.querySelector('[data-field-key="type"]').value
   for(const [selector,active] of [['[data-option-settings]',type==='option'],['[data-reference-settings]',type==='reference']]){
