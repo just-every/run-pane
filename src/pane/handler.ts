@@ -1,3 +1,4 @@
+import {htmlCodeIdentity,siteHtmlIdentity} from './html-blocks'
 import {latestContent,ownPost,postView,PostDenied,savePost,publishPost} from './posts'
 import {postForm} from './post-forms'
 import {postsEditor} from './ui/posts'
@@ -131,7 +132,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   if(!routeCapability(path,'POST')||!caps.includes(routeCapability(path,'POST')!))return json({error:'Your role cannot perform this action.'},403)
   if((!owner||scopes)&&['/api/pane/import/dry-run','/api/pane/import/apply','/app/import/dry-run','/app/import/apply'].includes(path)&&input.source){
    const imported=parseImportDocument(typeof input.source==='string'?input.source:JSON.stringify(input.source)).site
-   if(imported?.customCode||imported?.pages.some(page=>page.customCode))return json({error:'Only a native owner authors custom code, including imports.'},403)
+   if(imported?.customCode||imported?.pages.some(page=>page.customCode||htmlCodeIdentity(page).length))return json({error:'Only a native owner authors custom code, including imports.'},403)
   }
   if(path.endsWith('/posts/save')||path.endsWith('/posts/submit')){
    const current=await latestContent(env.DB)
@@ -173,7 +174,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
     // Duplicating owner-authored executable code is outside an editor's grant.
     if(mode==='translate'&&!post){
      const source=path.endsWith('/ai/propose')?await env.DB.prepare('SELECT site FROM pane_revisions WHERE id=?').bind(String(input.base??'')).first<{site:string}>():null
-     if((source&&JSON.parse(source.site).pages.some((page:{slug:string;customCode?:unknown})=>page.slug===input.slug&&page.customCode))||(proposal&&JSON.parse(proposal.suggestions).some((item:{page?:{customCode?:unknown}})=>item.page?.customCode)))return json({error:'Only the owner may duplicate a page containing custom code.'},403)
+     if((source&&JSON.parse(source.site).pages.some((page:{slug:string;customCode?:unknown})=>page.slug===input.slug&&(page.customCode||htmlCodeIdentity(page as import('./model').Page).length)))||(proposal&&JSON.parse(proposal.suggestions).some((item:{page?:{customCode?:unknown}})=>item.page?.customCode)))return json({error:'Only the owner may duplicate a page containing custom code.'},403)
     }
    }
    result=path.endsWith('/ai/propose')?await proposeAi(env,actor.id,input):path.endsWith('/ai/decide')?await decideAi(env,actor.id,input):path.endsWith('/ai/undo')?await undoAiHistory(env,actor.id,input):undefined
@@ -232,6 +233,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    if(!owner&&input.site&&['blogs','libraryFiles','blogPosts'].some(key=>input.site[key]!==undefined&&JSON.stringify(input.site[key]??null)!==JSON.stringify(previousAccess?.[key as keyof typeof previousAccess]??null)))return json({error:'Only the native owner can change blog settings or the file library.'},403)
    if(input.site)input.site={...input.site,blogPosts:previousAccess?.blogPosts,...(!owner?{blogs:previousAccess?.blogs,libraryFiles:previousAccess?.libraryFiles}:{})}
    const proposed=normalizeSite(input.site?{...input.site,...(!owner&&actor.role!=='admin'&&previousAccess?.posts?{posts:previousAccess.posts}:{})}:await siteFromForm(env.DB,input))
+   if((!owner||scopes)&&siteHtmlIdentity(proposed)!==siteHtmlIdentity(previousAccess))return json({error:'Only the native owner authors HTML blocks.'},403)
    if((!owner||scopes)&&(JSON.stringify(proposed.customCode??null)!==JSON.stringify(previousAccess?.customCode??null)||proposed.pages.some(page=>JSON.stringify(page.customCode??null)!==JSON.stringify(previousAccess?.pages.find(old=>(old.id??old.slug)===(page.id??page.slug))?.customCode??null))))return json({error:'Only the owner authors custom code.'},403)
    if(!owner&&(JSON.stringify(proposed.forms??null)!==JSON.stringify(previousAccess?.forms??null)||JSON.stringify(proposed.access??null)!==JSON.stringify(previousAccess?.access??null)||proposed.pages.some(page=>JSON.stringify(page.access??null)!==JSON.stringify(previousAccess?.pages.find(old=>(old.id??old.slug)===(page.id??page.slug))?.access??null))))return json({error:'Only the owner changes access.'},403)
    if(!caps.includes('settings:write')){

@@ -1,3 +1,4 @@
+import {htmlBlockPreview} from './pane-html-preview.mjs'
 import {formPreview} from './pane-canvas-forms.mjs'
 import {canvasBody} from './pane-canvas-body.mjs'
 import {safeBodyHref} from './pane-body-links.mjs'
@@ -50,7 +51,7 @@ function render(){
  while(sheet.cssRules.length)sheet.deleteRule(0)
  for(const rule of layoutRules(sections))sheet.insertRule(rule,sheet.cssRules.length)
  for(const node of [...content.children])if(node!==style)node.remove()
- content.insertAdjacentHTML('beforeend',layoutMarkup(sections,undefined,galleries?.media()??JSON.parse(form.querySelector('[data-media-state]').value),{formMarkup:(id,instance)=>formPreview(form,id,instance),socialMarkup:()=>form.querySelector('[data-body-social]').innerHTML,audioFile:id=>{const file=[...form.querySelector('[data-body-audio-file]').options].find(option=>option.value===id);return file?{url:file.dataset.audioUrl,name:file.dataset.audioName}:undefined}}))
+ content.insertAdjacentHTML('beforeend',layoutMarkup(sections,undefined,galleries?.media()??JSON.parse(form.querySelector('[data-media-state]').value),{htmlMarkup:htmlBlockPreview,formMarkup:(id,instance)=>formPreview(form,id,instance),socialMarkup:()=>form.querySelector('[data-body-social]').innerHTML,audioFile:id=>{const file=[...form.querySelector('[data-body-audio-file]').options].find(option=>option.value===id);return file?{url:file.dataset.audioUrl,name:file.dataset.audioName}:undefined}}))
  for(const section of content.querySelectorAll('[data-section]')){section.draggable=true;section.tabIndex=0;section.setAttribute('aria-label','Section '+(sections.findIndex(item=>item.id===section.dataset.section)+1))}
  for(const node of content.querySelectorAll('[data-image-block],[data-gallery],[data-video-block],[data-button-block],[data-quote-block]')){node.tabIndex=0;node.setAttribute('aria-label',node.hasAttribute('data-gallery')?'Gallery block':node.dataset.blockType+' block')}
  for(const node of content.querySelectorAll('[data-block]:not([data-catalog-block]):not([data-image-block]):not([data-gallery]):not([data-video-block]):not([data-button-block]):not([data-quote-block]),[data-block-text]')){node.contentEditable='true';node.draggable=true;node.setAttribute('role','textbox');node.setAttribute('aria-label','Block text');node.setAttribute('aria-multiline','true')}

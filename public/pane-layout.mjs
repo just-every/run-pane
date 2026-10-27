@@ -13,6 +13,7 @@ export function layoutRules(sections){return sections.flatMap(section=>{
   return `${target} [data-block="${block.id}"]{display:${p.hidden?'none':'block'};grid-column:${p.column??1}/span ${p.span??12};grid-row:${p.row??index+1};z-index:${p.order??block.order};text-align:${p.align??block.align};align-self:${p.vertical??block.vertical}}`
  }).join('')
  for(const block of section.blocks){
+  if(block.html)rules.push(`${target} [data-html-block="${block.id}"] [data-html-frame] iframe{display:block;width:100%;height:${block.html.height}px;border:0}`)
   if(block.kind==='spacer')rules.push(`${target} [data-block="${block.id}"]{height:${block.size}px}`)
   if(block.gallery){const g=block.gallery;rules.push(`${target} [data-block="${block.id}"]{--gallery-columns:${g.columns};--gallery-phone-columns:${g.phoneColumns};--gallery-gap:${g.gap}px;--gallery-phone-gap:${g.phoneGap}px}`)}
   const image=block.image,crop=image?.crop
@@ -30,6 +31,7 @@ function blockMarkup(block,index,imageUrl,media,options){
  const catalog=catalogMarkup(block,attributes,options);if(catalog)return catalog
  if(block.kind==='audio'&&block.embed)return `<div ${attributes} data-video-block>${bodyEmbed(block,options?.embedMarkup)}</div>`
  if(block.kind==='audio'){const file=options?.audioFile?.(block.audio.file);return `<figure ${attributes} data-catalog-block><figcaption>${escape(block.text)}</figcaption>${file?`<audio controls preload="metadata" aria-label="${escape(block.text)}" src="${escape(file.url)}"></audio><a href="${escape(file.url)}" download="${escape(file.name)}">Download ${escape(block.text)}</a>`:'<p>Choose a library audio file.</p>'}</figure>`}
+ if(block.kind==='html')return `<div ${attributes} data-catalog-block>${options?.htmlMarkup?.(block)??''}</div>`
  if(block.kind==='form')return `<div ${attributes} data-catalog-block>${options?.formMarkup?.(block.form,block.id)??''}</div>`
  if(block.kind==='line')return `<hr ${attributes} data-catalog-block>`
  if(block.kind==='spacer')return `<div ${attributes} data-catalog-block aria-hidden="true"></div>`

@@ -9,6 +9,7 @@ export function canvasBody(form,{block,section,newBlock,commit,select,textSelect
   input('caption').value=item?.caption??''
   input('attribution').disabled=!(item?.kind==='quote'||item?.format==='blockquote')
   input('attribution').value=item?.attribution??''
+  if(item?.html&&input('html-source')){input('html-source').value=item.html.source;input('html-title').value=item.text;input('html-height').value=item.html.height}
   if(item?.form)input('form').value=item.form
   if(item?.audio){input('audio-title').value=item.text;input('audio-file').value=item.audio.file}
   if(item?.kind==='button'){input('button-label').value=item.text;input('button-style').value=item.buttonStyle??'primary'}
@@ -62,6 +63,12 @@ export function canvasBody(form,{block,section,newBlock,commit,select,textSelect
     const value={form:choice.value,text:choice.textContent}
     if(action==='form')add({...newBlock(),kind:'form',...value})
     else{if(item?.kind!=='form')throw Error('Select a form block first.');Object.assign(item,value);commit()}
+   }
+   if(action==='html'||action==='update-html'){
+    const source=input('html-source').value,text=input('html-title').value.trim(),height=Number(input('html-height').value)
+    if(!source.trim()||!text||!Number.isInteger(height)||height<160||height>1200)throw Error('Enter an HTML title, source and a frame height from 160 to 1,200 pixels.')
+    if(action==='html')add({...newBlock(),kind:'html',text,html:{source,height}})
+    else{if(item?.kind!=='html')throw Error('Select an HTML block first.');item.text=text;item.html={source,height};commit()}
    }
    if(action==='quote')add({...newBlock(),kind:'quote',text:'Quote',attribution:''})
    if(action==='destination'||action==='remove-destination'){

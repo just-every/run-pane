@@ -1,3 +1,4 @@
+import {pageHtmlPolicySource} from './html-blocks'
 import {preparedImageResponse} from './image-response'
 import {tags,tagSource,tagSources} from './tags'
 import {blogResponse} from './blog-public'
@@ -204,13 +205,13 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   const missing=site.notFound && activePages(site).find(page=>page.slug===site.notFound)
   if(!missing)return notFound()
   const missingGate=await accessResponse(request,env,site,missing);if(missingGate)return missingGate
-  const response=await document(site.name,announcements+publicPage(site,missing.slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY),'site',pageEmbedOrigins(missing),optedOut(request) ? undefined : site.analytics,site.locale?.locale,optedOut(request)?'':customCodeSource(site,missing)+tags(site).map(tagSource).join(''),optedOut(request)?undefined:tagSources(site))
+  const response=await document(site.name,announcements+publicPage(site,missing.slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY),'site',pageEmbedOrigins(missing),optedOut(request) ? undefined : site.analytics,site.locale?.locale,optedOut(request)?'':customCodeSource(site,missing)+pageHtmlPolicySource(missing)+tags(site).map(tagSource).join(''),optedOut(request)?undefined:tagSources(site))
   const headers=new Headers(response.headers);headers.set('x-robots-tag','noindex, nofollow')
   if(typedForm(site,missing.slug)||hasGridForm(site,missing,missing.slug)||missing.kind==='contact'||missing.slug==='contact')formHeaders(headers)
   return new Response(request.method==='HEAD'?null:response.body,{status:404,headers})
  }
  const notice=sentNotice(site,page,slug,url)
- const response=await document(site.name,announcements+notice+publicPage(site,slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY)+promotionMarkup(site,slug),'site',pageEmbedOrigins(page),optedOut(request) ? undefined : site.analytics,site.locale?.locale,optedOut(request)?'':customCodeSource(site,page!)+tags(site).map(tagSource).join(''),optedOut(request)?undefined:tagSources(site))
+ const response=await document(site.name,announcements+notice+publicPage(site,slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY)+promotionMarkup(site,slug),'site',pageEmbedOrigins(page),optedOut(request) ? undefined : site.analytics,site.locale?.locale,optedOut(request)?'':customCodeSource(site,page!)+pageHtmlPolicySource(page!)+tags(site).map(tagSource).join(''),optedOut(request)?undefined:tagSources(site))
  if(hasForm||legacyContact){
   const headers=formHeaders(new Headers(response.headers))
   return new Response(request.method==='HEAD'?null:response.body,{status:response.status,headers})

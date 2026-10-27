@@ -1770,10 +1770,12 @@ test('custom code requires owner authoring and approved immutable live revisions
  try{
   cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic code owner'})).headers.get('set-cookie').split(';')[0]
   const site=structuredClone(fixture);site.customCode={tags:JSON.stringify([{provider:'plausible',category:'analytics',account:'synthetic-pane-1.test'},{provider:'meta',category:'advertising',account:'synthetic-pane-2'}]),css:'.proof { color: rgb(120, 20, 60) }',html:'<p class="proof">Synthetic embed</p>',header:'<meta name="synthetic-verification" content="synthetic-pane-1">',footer:'<script>window.syntheticFooter=true</script>'};site.pages[4].customCode={header:'<script>window.syntheticThankYou=true</script>'}
+  const htmlPage=site.pages.find(page=>page.slug==='services');htmlPage.body='Workshop HTML';htmlPage.sections=[{id:'synthetic-html-section',blocks:[{id:'synthetic-html-block',kind:'html',text:'Workshop HTML',html:{source:'<h2>Approved workshop HTML</h2><script>window.syntheticNativeHtml=true</script>',height:320}}]}]
   const response=await call('/api/pane/prepare',{site,base:''});assert.equal(response.status,200,await response.clone().text());const prepared=await response.json()
   const preview=await app.request('/preview/'+prepared.id+'/contact',{headers:{Cookie:cookie}})
   assert.doesNotMatch(await preview.text(),/data-custom-code|data-marketplace|pane-custom-code.js|pane-tags.js|syntheticThankYou/)
   assert.doesNotMatch(preview.headers.get('content-security-policy'),/unsafe-inline/)
+  assert.doesNotMatch(await (await app.request('/preview/'+prepared.id+'/services',{headers:{Cookie:cookie}})).text(),/data-html-block|syntheticNativeHtml/,'HTML grid blocks stay inert in private previews')
   assert.equal((await call('/api/pane/publish',{revision:prepared.id})).status,200)
   const live=await app.request('/site/contact'),html=await live.text()
   assert.match(html,/data-marketplace/);assert.match(live.headers.get('content-security-policy'),/connect.facebook.net/);assert.match(html,/data-custom-code/);assert.match(html,/syntheticThankYou/)
@@ -1787,6 +1789,12 @@ test('custom code requires owner authoring and approved immutable live revisions
   await auth.invite(new Request(origin+'/auth/invite',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin,Cookie:cookie}}),{email:'synthetic-pane-code-admin@example.test',displayName:'Synthetic admin',role:'admin'})
   const token=new URL(mail.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token')
   const adminCookie=(await call('/auth/confirm',{token})).headers.get('set-cookie').split(';')[0]
+  const htmlEdit=structuredClone(prepared.site);htmlEdit.pages.find(page=>page.slug==='services').sections[0].blocks[0].html.source='<p>Unapproved HTML block replacement</p>'
+  assert.equal((await app.request('/api/pane/prepare',{method:'POST',headers:{Cookie:adminCookie,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({site:htmlEdit,base:prepared.id})})).status,403,'An admin cannot author HTML grid source')
+  const scoped=(await (await call('/api/pane/tokens/create',{name:'synthetic-pane-83',scopes:['pages:read','pages:write']})).json()).token
+  assert.equal((await app.request('/api/pane/pages',{headers:{Authorization:'Bearer '+scoped}})).status,200,'The HTML refusal uses an active page-writing token')
+  assert.equal((await app.request('/api/pane/prepare',{method:'POST',headers:{Authorization:'Bearer '+scoped,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({site:htmlEdit,base:prepared.id})})).status,403,'A token cannot borrow native-owner HTML authoring authority')
+  const htmlLive=await app.request('/site/services');assert.match(await htmlLive.text(),/data-html-block="synthetic-html-block"/);assert.match(htmlLive.headers.get('content-security-policy'),/frame-src about:/)
   const changed=structuredClone(prepared.site);changed.customCode.html='<p>Unapproved replacement</p>'
   const denied=await app.request('/api/pane/prepare',{method:'POST',headers:{Cookie:adminCookie,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({site:changed,base:prepared.id})})
   assert.equal(denied.status,403)
