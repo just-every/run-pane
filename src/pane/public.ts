@@ -172,7 +172,7 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   // Pencil's immutable original receipt: retries cannot replace an earlier answer, and spend no quota.
   const sender=await visitor(request,env.SESSION_SECRET)
   if(env.PANE_LIVE?(await liveCall(env,'/rate',{form:slug,visitor:sender,id})).limited:await contactLimited(env.DB,slug,sender,id))return rejectForm(env,slug,'rate',f)
-  const verification=await verifyForm(env,String(f.get('cf-turnstile-response')??''),id,form?(path.slice(6)||'home'):slug)
+  const verification=await verifyForm(env,String(f.get('cf-turnstile-response')??''),id,slug)
   if(verification!=='verified')return rejectForm(env,slug,verification,f)
   const acknowledgment=page?.acknowledgment,received=Date.now()
   if(env.PANE_LIVE){

@@ -3508,7 +3508,7 @@
       "executable": false
     },
     "src/pane/public.ts": {
-      "sha256": "05ea7c5c630808341c862e31338a6e857af89a3bb96385e3c84d7e43582ccecc",
+      "sha256": "9e18737fd3e6e6125b81add931e80ddac4ec13e7b761480d5b88664f35f231da",
       "executable": false
     },
     "src/pane/redirects.ts": {
