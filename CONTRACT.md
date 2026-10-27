@@ -1157,7 +1157,7 @@ The generated `docs/CLAIMS.md` register maps every implementation status to its 
 
 ## Status
 
-Judged from the code and tests at commit `981c8f165b179781113f8b4d6dd5b963af5771c5` (27 October 2026). CMS-001 and CMS-002 use the native collection routes and shared body editor. Their source and public-door assertions are unchanged by subsequent generated-document and source-lock edits. The target acceptance sentences are unchanged. Other clause statuses retain their earlier judgments; PAGE-015 and API-001 remain partial.
+Judged from the code and tests at commit `981c8f165b179781113f8b4d6dd5b963af5771c5` (27 October 2026). CMS-001 and CMS-002 use the native collection routes and shared body editor. The collection implementation remains at that source revision; subsequent route proof observes all outbound requests before network fixture handling. Generated-document and source-lock edits preserve the original target acceptance. The target acceptance sentences are unchanged. Other clause statuses retain their earlier judgments; PAGE-015 and API-001 remain partial.
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |

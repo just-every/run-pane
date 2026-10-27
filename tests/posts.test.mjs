@@ -166,7 +166,7 @@ test('typed service collections validate thirty items and publish rich descripti
  const {serviceFields,serviceItem}=await import('./collection-fixture.mjs')
  let clock=Date.parse('2026-10-15T16:00:00Z'),owner,admin,editor
  const mail=[],outbounds=[]
- const origin='https://pane.example.test',f=await runtime({isolatedLive:true,now:()=>clock,bindings:{AUTH_ORIGIN:origin,AUTH_LOCAL:'false',MAIL_PROVIDER:'sendgrid',MAIL_API_KEY:'synthetic-pane-9'},outboundService:async request=>{outbounds.push(request.url);assert.equal(new URL(request.url).origin,'https://api.sendgrid.com');mail.push(await request.json());return new Response(null,{status:202})}})
+ const origin='https://pane.example.test',f=await runtime({isolatedLive:true,now:()=>clock,observeOutbound:request=>outbounds.push(request.url),bindings:{AUTH_ORIGIN:origin,AUTH_LOCAL:'false',MAIL_PROVIDER:'sendgrid',MAIL_API_KEY:'synthetic-pane-9'},outboundService:async request=>{assert.equal(new URL(request.url).origin,'https://api.sendgrid.com');mail.push(await request.json());return new Response(null,{status:202})}})
  const call=(path,input,cookie=owner)=>f.request(origin+path,{method:'POST',headers:{Origin:origin,Cookie:cookie??'','Content-Type':'application/json'},body:JSON.stringify(input)})
  const get=(path,cookie=owner)=>f.request(origin+path,{headers:{Cookie:cookie??''}})
  const ok=async response=>{assert.equal(response.status,200,await response.clone().text());return response.json()}
