@@ -1388,7 +1388,7 @@
       "executable": false
     },
     "scripts/templates-journey.mjs": {
-      "sha256": "738d76fea3dd59fbc75c40f128b43a91171fa3fb2acc608f2ae8490904d241d8",
+      "sha256": "af0bd7366e545174861a64f4fef614b01144d957be28bda94bba3789dac05336",
       "executable": false
     },
     "scripts/traffic-journey.mjs": {
