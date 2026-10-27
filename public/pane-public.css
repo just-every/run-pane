@@ -117,4 +117,7 @@
 .brand-settings img{max-width:100%;height:auto}.public-brand-logo{object-fit:contain;max-width:180px;max-height:56px}
 
 /* Native body actions inherit the existing accessible brand action color. */
-.rer-themed .pane .public-site :is([data-block] [data-embed-allow],.button[data-body-href]){background:var(--pn-fuchsia-deep);border-color:var(--pn-fuchsia-deep)}
+.rer-themed .pane .public-site :is([data-block] [data-embed-allow],.button[data-body-href]:not(.secondary):not(.tertiary)){background:var(--pn-fuchsia-deep);border-color:var(--pn-fuchsia-deep)}
+
+.rer-themed .pane .public-site .button[data-body-href].secondary{background:transparent;color:var(--pn-fuchsia-deep);border-color:var(--pn-fuchsia-deep)}
+.rer-themed .pane .public-site .button[data-body-href].tertiary{background:transparent;color:var(--pn-fuchsia-deep);border-color:transparent;text-decoration:underline}

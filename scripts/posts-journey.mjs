@@ -35,7 +35,7 @@ async function editBody(post,linked,file,width){
  await author.getByRole('button',{name:'Add quote',exact:true}).click()
  await author.locator('[data-quote-block] [contenteditable=true]').fill('A celebration starts with something made with care.')
  await author.getByLabel('Attribution',{exact:true}).fill('Riverbend baking team');await saved()
- await author.getByLabel('Video title',{exact:true}).fill('How to decorate a cake');await author.getByLabel('YouTube embed URL',{exact:true}).fill('https://www.youtube-nocookie.com/embed/syntheticPane1');await author.getByRole('button',{name:'Add video',exact:true}).click();await saved()
+ await author.getByLabel('Embed block type',{exact:true}).selectOption('video');await author.getByLabel('Embed title',{exact:true}).fill('How to decorate a cake');await author.getByLabel('Provider embed URL',{exact:true}).fill('https://www.youtube-nocookie.com/embed/syntheticPane1');await author.getByRole('button',{name:'Add external embed',exact:true}).click();await saved()
  await author.getByLabel('Button label',{exact:true}).fill('Meet the bakers');await author.getByLabel('Page, post or file',{exact:true}).selectOption('page:about');await author.getByRole('button',{name:'Add button',exact:true}).click();await saved()
  // Five durable saves through the shared section editor support undo, redo and reopen.
  const title=author.getByLabel('Post title',{exact:true})

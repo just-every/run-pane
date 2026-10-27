@@ -1998,3 +1998,30 @@ test('native canvas publishes typed destinations and stable section anchors whil
   assert.match(await read(),/href="\/site\/our-studio#find-us"/,'Unpublished target deletion does not change the live revision')
  }finally{await app.mf.dispose()}
 })
+
+
+test('native owners publish uploaded audio only through referenced public pages',async()=>{
+ const app=await runtime();let cookie=''
+ const call=(path,body)=>app.request(path,{method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)})
+ const ok=async response=>{assert.equal(response.status,200,await response.clone().text());return response.json()}
+ try{
+  cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Workshop owner'})).headers.get('set-cookie').split(';')[0]
+  await app.request('/setup',{method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
+  let draft=await ok(await call('/api/pane/prepare',{site:fixture}))
+  const files=[]
+  for(const [name,type] of [['workshop.mp3','audio/mpeg'],['workshop.m4a','audio/mp4']]){
+   const bytes=await readFile('fixtures/audio/'+name),body=new FormData();body.set('base',draft.id);body.set('file',new File([bytes],name,{type}))
+   assert.equal((await app.request('/api/pane/library/upload',{method:'POST',headers:{Origin:origin},body})).status,401)
+   assert.equal((await app.request('/api/pane/library/upload',{method:'POST',headers:{Cookie:cookie,Origin:'https://elsewhere.invalid'},body})).status,403)
+   draft=await ok(await app.request('/api/pane/library/upload',{method:'POST',headers:{Cookie:cookie,Origin:origin},body}));const file=draft.site.libraryFiles.at(-1);files.push({file,bytes})
+   assert.equal((await app.request('/site/files/'+file.id)).status,404,'An unapproved upload stays private')
+  }
+  const bad=new FormData();bad.set('base',draft.id);bad.set('file',new File(['<script>unsafe</script>'],'bad.mp3',{type:'audio/mpeg'}));assert.equal((await app.request('/api/pane/library/upload',{method:'POST',headers:{Cookie:cookie,Origin:origin},body:bad})).status,400,'A MIME label does not admit non-audio bytes')
+  const site=structuredClone(draft.site),home=site.pages.find(page=>page.slug==='home');home.sections=[{id:'audio-section',blocks:files.map(({file},index)=>({id:'audio-'+index,kind:'audio',text:index?'Workshop M4A':'Workshop MP3',audio:{file:file.id},row:index+1}))}];home.body='Workshop MP3\n\nWorkshop M4A'
+  draft=await ok(await call('/api/pane/prepare',{site,base:draft.id}));await ok(await call('/api/pane/publish',{revision:draft.id}))
+  const response=await app.request('/site'),html=await response.text();assert.equal((html.match(/data-block-type="audio"/g)??[]).length,2);assert.match(html,/<audio controls preload="metadata"/);assert.match(html,/download="workshop.mp3"/);assert.match(response.headers.get('content-security-policy'),/media-src 'self'/)
+  for(const {file,bytes} of files){const download=await app.request('/site/files/'+file.id);assert.equal(download.status,200);assert.equal(download.headers.get('content-type'),file.type);assert.deepEqual(Buffer.from(await download.arrayBuffer()),bytes)}
+  const hidden=structuredClone(draft.site);hidden.pages.find(page=>page.slug==='home').hidden=true
+  draft=await ok(await call('/api/pane/prepare',{site:hidden,base:draft.id}));await ok(await call('/api/pane/publish',{revision:draft.id}));for(const {file} of files)assert.equal((await app.request('/site/files/'+file.id)).status,404,'Hiding the only public reference withdraws audio delivery')
+ }finally{await app.mf.dispose()}
+})

@@ -3,7 +3,8 @@ import {tags,tagSource,tagSources} from './tags'
 import {blogResponse} from './blog-public'
 import {blogPostPath} from './post-links'
 import { customCodeSource, codeConfirmation } from './custom-code'
-import { typedForm,validateForm,boundedForm,uploadStatements,type Upload } from './forms'
+import { typedForm,validateForm,boundedForm,uploadStatements,type Upload,type SiteForm } from './forms'
+import type { Site,Page } from './model'
 import { accessResponse, pageRules } from './access'
 import { promotionMarkup } from './promotions'
 import { liveCall, liveSnapshot } from './outage'
@@ -24,6 +25,30 @@ import { siteSearch } from './site-search'
 const json = (v:unknown,status=200) => Response.json(v,{status,headers:{'cache-control':'no-store'}})
 const notFound = () => document('Not found','<div class="public-site"><div class="public-shell"><main class="public-main" id="main"><h1>Page not found</h1><p><a href="/site">Back to the home page</a></p></main></div></div>','site').then(r=>new Response(r.body,{status:404,headers:r.headers}))
 const optedOut=(request:Request)=>request.headers.get('DNT')==='1'||request.headers.get('Sec-GPC')==='1'
+const hasGridForm=(site:Site,page:Page,slug:string)=>page.sections?.some(section=>section.blocks.some(block=>block.kind==='form'&&!!block.form&&!!typedForm(site,slug,block.form)))??false
+/** Append the provider to its own directives, preserving every existing embed origin. */
+function formHeaders(headers:Headers){
+ const directives=(headers.get('content-security-policy')??'').split(';').map(part=>part.trim().split(/\s+/)).filter(parts=>parts[0])
+ for(const name of ['script-src','connect-src','frame-src']){
+  let directive=directives.find(parts=>parts[0]===name)
+  if(!directive){directive=[name,...(directives.find(parts=>parts[0]==='default-src')?.slice(1)??[])];directives.push(directive)}
+  const sources=directive.slice(1).filter(source=>source!=="'none'")
+  directive.splice(1,directive.length-1,...new Set([...sources,'https://challenges.cloudflare.com']))
+ }
+ headers.set('content-security-policy',directives.map(parts=>parts.join(' ')).join('; '))
+ headers.set('vary','Cookie');headers.set('cache-control','private, no-store')
+ return headers
+}
+function sentNotice(site:Site,page:Page,slug:string,url:URL){
+ if(!url.searchParams.has('sent'))return ''
+ const requested=url.searchParams.get('_pane_form'),form=requested===null?typedForm(site,slug):typedForm(site,slug,requested)
+ if(!form&&(requested!==null||page.kind!=='contact'&&slug!=='contact'))return ''
+ return '<div class="public-site public-sent"><div class="public-shell"><p class="notice" role="status">'+escape(form?.confirmation??'Thank you. Your message has been received.')+'</p></div></div>'
+}
+function formConfirmation(site:Site,slug:string,form?:SiteForm){
+ const location=codeConfirmation(site,slug,form?.redirect)
+ return form&&!form.redirect&&form.id!==typedForm(site,slug)?.id?location+'&_pane_form='+encodeURIComponent(form.id):location
+}
 async function limited(db:D1Database,key:string,limit:number) {
  const minute = new Date().toISOString().slice(0,16)
  // Only this minute's counts matter, so earlier buckets are dropped as each count is taken.
@@ -87,7 +112,16 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   return preparedImageResponse(image,url.searchParams.get('width'),request.method==='HEAD')
  }
 
- const blog=await blogResponse(request,site);if(blog)return blog
+ const legacyForm=typedForm(site,slug),gridForm=!!page&&hasGridForm(site,page,slug),hasForm=!!legacyForm||gridForm,legacyContact=!!page&&(page.kind==='contact'||slug==='contact')
+ const blog=await blogResponse(request,site)
+ if(blog){
+  if(!approvedPost||!hasForm||url.searchParams.has('featured'))return blog
+  const headers=formHeaders(new Headers(blog.headers))
+  if(request.method==='HEAD')return new Response(null,{status:blog.status,headers})
+  // Published posts use their blog shell; supply its public verification key and notice here.
+  const body=(await blog.text()).replace(/(<form\b[^>]*\bdata-turnstile-key=")[^"]*(")/g,(_match,start,end)=>start+escape(env.TURNSTILE_SITE_KEY??'')+end).replace('<div class="public-site">',sentNotice(site,page!,slug,url)+'<div class="public-site">')
+  return new Response(body,{status:blog.status,headers})
+ }
 
  if(path==='/site/visit' && request.method==='POST') {
   if(optedOut(request))return new Response(null,{status:204})
@@ -107,19 +141,27 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   await recordGoal(env.DB,goal.id,body.path,visitDimensions(request,body,site.analyticsCampaigns))
   return new Response(null,{status:204})
  }
- const form=typedForm(site,slug)
- if((form||page?.kind==='contact'||(page && slug==='contact'))&&request.method==='POST') {
-  if(!form&&Number(request.headers.get('content-length')??0)>100000)return json({error:'Message too large.'},413)
+ if(page&&request.method==='POST') {
+  if(!hasForm&&Number(request.headers.get('content-length')??0)>100000)return json({error:'Message too large.'},413)
   let f:FormData
-  try{f=form?await boundedForm(request):await request.formData()}catch{return json({error:'Submission exceeds 6 MB or has invalid form data.'},413)}
+  try{f=await boundedForm(request)}catch{return json({error:'Submission exceeds 6 MB or has invalid form data.'},413)}
+  const requested=f.getAll('_pane_form')
+  const form=requested.length===0?legacyForm:requested.length===1&&typeof requested[0]==='string'?typedForm(site,slug,requested[0]):undefined
+  if(requested.length&&!form)return json({error:'Choose a form on this page.'},400)
+  if(!form&&!legacyContact)return json({error:hasForm?'Choose a form on this page.':'Method not allowed.'},hasForm?400:405)
+  if(!form&&Number(request.headers.get('content-length')??0)>100000)return json({error:'Message too large.'},413)
+  const instances=f.getAll('_pane_form_instance'),instance=instances[0]
+  if(instances.length&&(instances.length!==1||typeof instance!=='string'||!form||!page.sections?.some(section=>section.blocks.some(block=>block.kind==='form'&&block.form===form.id&&block.id===instance))))return json({error:'Choose a form on this page.'},400)
   const id=String(f.get('idempotency')??'')
   let name=String(f.get('name')??'').trim(),email=String(f.get('email')??'').trim(),message=String(f.get('message')??'').trim(),uploads:Upload[]=[]
   if(form){
    if(!/^[a-f0-9-]{36}$/.test(id))return json({error:'Invalid submission receipt.'},400)
    const checked=await validateForm(form,f,id)
+   checked.state.instance=typeof instance==='string'?instance:''
    if(Object.keys(checked.state.errors).length){
-    const response=await document(site.name,publicPage(site,slug,'live',false,true,env.TURNSTILE_SITE_KEY,checked.state),'site')
-    const headers=new Headers(response.headers);headers.set('content-security-policy',headers.get('content-security-policy')!.replace("script-src 'self'","script-src 'self' https://challenges.cloudflare.com").replace("connect-src 'self'","connect-src 'self' https://challenges.cloudflare.com")+'; frame-src https://challenges.cloudflare.com');headers.set('x-robots-tag','noindex, nofollow');headers.set('cache-control','private, no-store')
+    const renderSite=approvedPost&&!selectedPage?{...site,pages:[...site.pages.filter(candidate=>candidate.slug!==slug),{...page,slug}]}:site
+    const response=await document(site.name,publicPage(renderSite,slug,'live',false,true,env.TURNSTILE_SITE_KEY,checked.state),'site',pageEmbedOrigins(page),undefined,site.locale?.locale)
+    const headers=formHeaders(new Headers(response.headers));headers.set('x-robots-tag','noindex, nofollow')
     return new Response(response.body,{status:400,headers})
    }
    ({name,email,message,uploads}=checked);f.set('name',name);f.set('email',email);f.set('message',message)
@@ -129,13 +171,13 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   // Pencil's immutable original receipt: retries cannot replace an earlier answer, and spend no quota.
   const sender=await visitor(request,env.SESSION_SECRET)
   if(env.PANE_LIVE?(await liveCall(env,'/rate',{form:slug,visitor:sender,id})).limited:await contactLimited(env.DB,slug,sender,id))return rejectForm(env,slug,'rate',f)
-  const verification=await verifyForm(env,String(f.get('cf-turnstile-response')??''),id,slug)
+  const verification=await verifyForm(env,String(f.get('cf-turnstile-response')??''),id,form?(path.slice(6)||'home'):slug)
   if(verification!=='verified')return rejectForm(env,slug,verification,f)
   const acknowledgment=page?.acknowledgment,received=Date.now()
   if(env.PANE_LIVE){
    let attribution:unknown={};try{const text=String(f.get('attribution')??'');if(text.length<=2000)attribution=JSON.parse(text||'{}')}catch{}
    await liveCall(env,'/accept',{id,name,email,message,received:new Date(received).toISOString(),acknowledgment:acknowledgment??null,followUp:followUpDue(site,received),goals:optedOut(request)?[]:(site.goals??[]).filter(goal=>goal.type==='form'&&goal.page===slug).map(goal=>({id:goal.id,page:slug})),dimensions:visitDimensions(request,attribution,site.analyticsCampaigns),uploads})
-   return new Response(null,{status:303,headers:{location:codeConfirmation(site,slug,form?.redirect)}})
+   return new Response(null,{status:303,headers:{location:formConfirmation(site,slug,form)}})
   }
   const messageStatement=env.DB.prepare('INSERT OR IGNORE INTO pane_messages(id,name,email,message,created_at,acknowledgment,acknowledgment_status,follow_up_at) SELECT ?,?,?,?,?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM pane_erased_messages WHERE id=?)').bind(id,name,email,message,new Date(received).toISOString(),acknowledgment ? JSON.stringify(acknowledgment) : null,acknowledgment ? 'pending' : 'not_requested',followUpDue(site,received),id)
   const [stored]=await env.DB.batch([messageStatement,...uploadStatements(env.DB,id,message,uploads)])
@@ -148,7 +190,7 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
    for(const goal of goals) await recordGoal(env.DB,goal.id,slug,dimensions)
   }
   await deliverAcknowledgment(env,id)
-  return new Response(null,{status:303,headers:{location:codeConfirmation(site,slug,form?.redirect)}})
+  return new Response(null,{status:303,headers:{location:formConfirmation(site,slug,form)}})
  }
  if(!['GET','HEAD'].includes(request.method))return json({error:'Method not allowed.'},405)
  const banners=snapshot?snapshot.banners??[]:await activeBanners(env.DB,String(row.id))
@@ -164,14 +206,13 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   const missingGate=await accessResponse(request,env,site,missing);if(missingGate)return missingGate
   const response=await document(site.name,announcements+publicPage(site,missing.slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY),'site',pageEmbedOrigins(missing),optedOut(request) ? undefined : site.analytics,site.locale?.locale,optedOut(request)?'':customCodeSource(site,missing)+tags(site).map(tagSource).join(''),optedOut(request)?undefined:tagSources(site))
   const headers=new Headers(response.headers);headers.set('x-robots-tag','noindex, nofollow')
+  if(typedForm(site,missing.slug)||hasGridForm(site,missing,missing.slug)||missing.kind==='contact'||missing.slug==='contact')formHeaders(headers)
   return new Response(request.method==='HEAD'?null:response.body,{status:404,headers})
  }
- const notice=(form||page.kind==='contact'||slug==='contact')&&url.searchParams.has('sent')?'<div class="public-site public-sent"><div class="public-shell"><p class="notice" role="status">'+escape(form?.confirmation??'Thank you. Your message has been received.')+'</p></div></div>':''
- const embed=page.embed
+ const notice=sentNotice(site,page,slug,url)
  const response=await document(site.name,announcements+notice+publicPage(site,slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY)+promotionMarkup(site,slug),'site',pageEmbedOrigins(page),optedOut(request) ? undefined : site.analytics,site.locale?.locale,optedOut(request)?'':customCodeSource(site,page!)+tags(site).map(tagSource).join(''),optedOut(request)?undefined:tagSources(site))
- if(form||page.kind==='contact'||slug==='contact'){
-  const headers=new Headers(response.headers);headers.set('vary','Cookie');headers.set('cache-control','private, no-store');const policy=headers.get('content-security-policy')!
-  headers.set('content-security-policy',policy.replace("script-src 'self'","script-src 'self' https://challenges.cloudflare.com").replace("connect-src 'self'","connect-src 'self' https://challenges.cloudflare.com")+(embed||(!optedOut(request)&&(site.customCode||page.customCode))?' https://challenges.cloudflare.com':'; frame-src https://challenges.cloudflare.com'))
+ if(hasForm||legacyContact){
+  const headers=formHeaders(new Headers(response.headers))
   return new Response(request.method==='HEAD'?null:response.body,{status:response.status,headers})
  }
  const privateHeaders=new Headers(response.headers);privateHeaders.set('cache-control','private, no-store');privateHeaders.set('vary','Cookie')

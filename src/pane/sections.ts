@@ -8,7 +8,7 @@ export type RichNode = {tag:'text';text:string} | {tag:'a';href:string;newTab:bo
 export type PhoneBlock = {column?:number;span?:number;row?:number;order?:number;align?:TextBlock['align'];vertical?:TextBlock['vertical'];hidden?:boolean}
 export type TextBlock = {
  phone?: PhoneBlock;
- id: string; kind: 'text'|'image'|'gallery'|'quote'|'video'|'button'|'line'|'spacer'|'accordion'|'chart'|'shape'|'scrolling-text'|'social-links'; chart?:{type:'bar'|'line'|'pie';rows:[string,number][]}; shape?:{form:'circle'|'square'|'triangle';color:string;outlined:boolean}; summary?:string; size?:number; caption?:string; attribution?:string; link?:BodyLink; embed?:Embed; gallery?:Gallery; image?:ImageContent; text: string; format?: 'p'|'h1'|'h2'|'h3'|'h4'|'blockquote'|'pre'|'p-large'|'p-small'|'div'; content?: RichNode[];
+ id: string; kind: 'text'|'audio'|'image'|'gallery'|'quote'|'video'|'map'|'social-post'|'button'|'line'|'spacer'|'accordion'|'chart'|'shape'|'scrolling-text'|'social-links'|'search'|'form'; form?:string; buttonStyle?:'primary'|'secondary'|'tertiary'; audio?:{file:string}; chart?:{type:'bar'|'line'|'pie';rows:[string,number][]}; shape?:{form:'circle'|'square'|'triangle';color:string;outlined:boolean}; summary?:string; size?:number; caption?:string; attribution?:string; link?:BodyLink; embed?:Embed; gallery?:Gallery; image?:ImageContent; text: string; format?: 'p'|'h1'|'h2'|'h3'|'h4'|'blockquote'|'pre'|'p-large'|'p-small'|'div'; content?: RichNode[];
  column: number; span: number; row: number; order: number;
  align: 'left' | 'center' | 'right' | 'justify'; vertical: 'start' | 'center' | 'end';
 }
@@ -98,8 +98,13 @@ export function normalizeSections(value: unknown): Section[] | undefined {
   if (section.background !== undefined && (typeof section.background !== 'string' || !/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(section.background))) throw Error('Use a hex section background with 3, 4, 6 or 8 digits.')
   const blocks = section.blocks.map(raw => {
    const block = object(raw)
-   if (Object.keys(block).some(key => !['chart','shape','summary','size','caption','attribution','link','embed','phone','gallery','image','id','kind','text','column','span','row','order','align','vertical','format','content'].includes(key))) throw Error('Unsupported block field.')
-   if (!['text','image','gallery','quote','video','button','line','spacer','accordion','chart','shape','scrolling-text','social-links'].includes(String(block.kind)) || typeof block.text !== 'string' || (['text','quote','video','button','accordion','chart','shape','scrolling-text','social-links'].includes(String(block.kind))&&!block.text.trim())) throw Error('Choose a text block with content or a prepared image.')
+   if (Object.keys(block).some(key => !['form','buttonStyle','audio','chart','shape','summary','size','caption','attribution','link','embed','phone','gallery','image','id','kind','text','column','span','row','order','align','vertical','format','content'].includes(key))) throw Error('Unsupported block field.')
+   if (!['text','audio','image','gallery','quote','video','map','social-post','button','line','spacer','accordion','chart','shape','scrolling-text','social-links','search','form'].includes(String(block.kind)) || typeof block.text !== 'string' || (['text','audio','quote','video','map','social-post','button','accordion','chart','shape','scrolling-text','social-links','search','form'].includes(String(block.kind))&&!block.text.trim())) throw Error('Choose a text block with content or a prepared image.')
+   const form=block.kind==='form'?block.form:undefined
+   if(block.kind==='form'&&(typeof form!=='string'||!/^[a-zA-Z0-9-]{1,80}$/.test(form))||block.form!==undefined&&block.kind!=='form')throw Error('Choose a saved form for a form block.')
+   let audio:TextBlock['audio']
+   if(block.kind==='audio'&&block.audio!==undefined){const source=object(block.audio);if(Object.keys(source).some(key=>key!=='file')||typeof source.file!=='string'||!/^[a-f0-9-]{36}$/.test(source.file))throw Error('Choose an audio file from the library.');audio={file:source.file}}
+   else if(block.audio!==undefined)throw Error('Audio settings must match their block type.')
    let chart:TextBlock['chart'],shape:TextBlock['shape']
    if(block.kind==='chart'){
     const source=object(block.chart),type=choice(source.type,['bar','line','pie'] as const,'bar')
@@ -121,9 +126,13 @@ export function normalizeSections(value: unknown): Section[] | undefined {
    const link=block.link===undefined?undefined:normalizeBodyLink(block.link)
    if(link&&!['image','button','shape'].includes(String(block.kind)))throw Error('This block does not support a destination.')
    if(block.kind==='button'&&!link)throw Error('Choose a button destination.')
-   const embed=block.kind==='video'?normalizeEmbed(block.embed):undefined
-   if(block.embed!==undefined&&block.kind!=='video'||block.kind==='video'&&!embed)throw Error('Provide a video title and YouTube embed URL.')
-   if(embed&&!['www.youtube.com','www.youtube-nocookie.com'].includes(new URL(embed.url).hostname))throw Error('Choose a YouTube embed URL.')
+   if(block.buttonStyle!==undefined&&block.kind!=='button')throw Error('Button styles require a button.')
+   const buttonStyle=block.kind==='button'?choice(block.buttonStyle,['primary','secondary','tertiary'] as const,'primary'):undefined
+   const embedded=(['video','map','social-post'].includes(String(block.kind))||block.kind==='audio'&&block.embed!==undefined),embed=embedded?normalizeEmbed(block.embed):undefined
+   if(block.embed!==undefined&&!embedded||embedded&&!embed)throw Error('Provide a title and supported embed URL.')
+   if(block.kind==='audio'&&(!audio&&!embed||audio&&embed))throw Error('Choose one uploaded audio file or provider embed.')
+   const hosts=block.kind==='audio'?['w.soundcloud.com','open.spotify.com']:block.kind==='map'?['www.google.com']:block.kind==='social-post'?['www.instagram.com','www.facebook.com']:['www.youtube.com','www.youtube-nocookie.com','player.vimeo.com']
+   if(embed&&!hosts.includes(new URL(embed.url).hostname))throw Error('Choose a provider URL matching the block type.')
    const fieldText=(value:unknown,label:string)=>{if(typeof value!=='string'||value.length>1000)throw Error(label+' must contain at most 1,000 characters.');return value.normalize('NFC').trim()}
    const caption=block.caption===undefined?undefined:fieldText(block.caption,'Caption'),attribution=block.attribution===undefined?undefined:fieldText(block.attribution,'Attribution')
    if(caption!==undefined&&block.kind!=='image'||attribution!==undefined&&block.kind!=='quote'&&block.format!=='blockquote')throw Error('Caption or attribution does not match this block.')
@@ -136,7 +145,7 @@ export function normalizeSections(value: unknown): Section[] | undefined {
    if (characters > 20000) throw Error('Section text exceeds 20,000 characters.')
    const column = number(block.column,1,12,1), span = number(block.span,1,12,12)
    if (column + span > 13) throw Error('A block must fit the twelve-column grid.')
-   return {...(block.phone===undefined?{}:{phone:phone(block.phone,true)}),id:identity(block.id),kind:block.kind as TextBlock['kind'],...(chart?{chart}:{}),...(shape?{shape}:{}),...(summary?{summary}:{}),...(size!==undefined?{size}:{}),...(caption===undefined?{}:{caption}),...(attribution===undefined?{}:{attribution}),...(link?{link}:{}),...(embed?{embed}:{}),...(gallery?{gallery}:{}),...(image?{image}:{}),...(content?{content}:{}),...(block.format===undefined?{}:{format:choice(block.format,['p','h1','h2','h3','h4','blockquote','pre','p-large','p-small','div'] as const,'p')}),text,column,span,row:number(block.row,1,100,1),order:number(block.order,0,100,0),align:choice(block.align,['left','center','right','justify'] as const,'left'),vertical:choice(block.vertical,['start','center','end'] as const,'start')}
+   return {...(block.phone===undefined?{}:{phone:phone(block.phone,true)}),id:identity(block.id),kind:block.kind as TextBlock['kind'],...(form?{form:String(form)}:{}),...(audio?{audio}:{}),...(buttonStyle?{buttonStyle}:{}),...(chart?{chart}:{}),...(shape?{shape}:{}),...(summary?{summary}:{}),...(size!==undefined?{size}:{}),...(caption===undefined?{}:{caption}),...(attribution===undefined?{}:{attribution}),...(link?{link}:{}),...(embed?{embed}:{}),...(gallery?{gallery}:{}),...(image?{image}:{}),...(content?{content}:{}),...(block.format===undefined?{}:{format:choice(block.format,['p','h1','h2','h3','h4','blockquote','pre','p-large','p-small','div'] as const,'p')}),text,column,span,row:number(block.row,1,100,1),order:number(block.order,0,100,0),align:choice(block.align,['left','center','right','justify'] as const,'left'),vertical:choice(block.vertical,['start','center','end'] as const,'start')}
   })
   return {id,...(anchor?{anchor:String(anchor)}:{}),...(section.phone===undefined?{}:{phone:phone(section.phone,false)}),...(section.height===undefined?{}:{height:choice(section.height,['auto','small','medium','large','full'] as const,'auto')}),...(section.component ? {component:String(section.component)} : {}),kind:choice(section.kind,['text','columns'] as const,'text'),ratio:choice(section.ratio,['1:1','1:2','2:1','1:1:1'] as const,'1:1'),gap:number(section.gap,0,160,24),paddingTop:number(section.paddingTop,0,240,32),paddingBottom:number(section.paddingBottom,0,240,32),...(section.background === undefined ? {} : {background:String(section.background).toLowerCase()}),blocks}
  })

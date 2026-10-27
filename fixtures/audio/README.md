@@ -1,0 +1,1 @@
+These two-second audio fixtures contain a locally generated 440 Hz sine wave, encoded as MP3 and M4A with FFmpeg. They contain no recording or provider content. The native library journeys upload, decode, publish and download these exact files.

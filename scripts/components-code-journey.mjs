@@ -1,3 +1,5 @@
+import {audioJourney} from './audio-journey.mjs'
+import {catalogJourney} from './catalog-journey.mjs'
 import {galleryBrandJourney} from './gallery-brand-journey.mjs'
 import assert from 'node:assert/strict'
 import {readFile,mkdir,writeFile} from 'node:fs/promises'
@@ -20,7 +22,8 @@ const initial=JSON.parse(await readFile('fixtures/static-site.json','utf8'))
 try{
  await fixture.bootstrap(context);await page.goto(origin+'/setup');await page.getByRole('checkbox').check();await Promise.all([page.waitForURL('**/app'),page.getByRole('button',{name:'Finish setup'}).click()])
  await page.addInitScript(()=>{addEventListener('message',event=>{if(event.data?.syntheticCode)window.syntheticCode={...event.data,origin:event.origin};if(event.data?.syntheticGoal){sessionStorage.setItem('syntheticGoal',JSON.stringify(event.data.syntheticGoal));sessionStorage.setItem('syntheticGoals',JSON.stringify([...(JSON.parse(sessionStorage.getItem('syntheticGoals')??'[]')),event.data.syntheticGoal]))}})})
- await catalogJourney()
+ await catalogJourney({page,context,origin,state,call,saved,capture,initial})
+ await audioJourney({page,context,origin,state,call,saved,capture,initial})
  if(!process.env.PANE_CANVAS_ONLY&&!process.env.PANE_CATALOG_ONLY)await galleryBrandJourney({page,context,origin,state,call,saved,folder})
  for(const width of process.env.PANE_GALLERY_ONLY||process.env.PANE_CATALOG_ONLY?[]:[1440,390]){
   await page.setViewportSize({width,height:1000})
@@ -319,63 +322,3 @@ try{
  }
  console.log(process.env.PANE_CATALOG_ONLY?'Native catalog acceptance journey passed.':process.env.PANE_GALLERY_ONLY?'Gallery, brand and content checks journey passed at 1440 and 390.':process.env.PANE_CANVAS_ONLY?'Native canvas and reversible image journey passed at 1440 and 390.':'Reusable components and isolated custom code journey passed at 1440 and 390: five pages, one edit, usage, detached copy, undo and redo, approved live code, CSS, scoped headers, goals, consent, withdrawal, privacy refusals and workspace isolation.')
 }catch(error){await page.screenshot({path:resolve(folder,'failure.png'),fullPage:true});await writeFile(resolve(folder,'failure.html'),(await page.content()).replace(/data:image\/[a-z]+;base64,[A-Za-z0-9+/=]+/g,'[raster bytes omitted]'));await writeFile(resolve(folder,'failure-state.json'),JSON.stringify(await state(),(key,value)=>['src','original','renditions'].includes(key)?'[raster bytes omitted]':value));throw error}finally{await browser.close();await fixture.stop()}
-
-async function catalogJourney(){
- const site=structuredClone(initial),home=site.pages.find(item=>item.slug==='home'),about=site.pages.find(item=>item.slug==='about')
- site.socials={facebook:'https://www.facebook.com/syntheticpaneworkshop',instagram:'https://www.instagram.com/syntheticpaneworkshop/'}
- about.id='synthetic-pane-anchor-page';about.sections=[{id:'synthetic-pane-anchor-section',anchor:'visit',blocks:[{id:'anchor-copy',kind:'text',text:about.body},...Array.from({length:4},(_,index)=>({id:'anchor-space-'+index,kind:'spacer',text:'',size:240,row:index+2}))]}]
- home.body='Begin here';home.sections=[{id:'synthetic-pane-catalog',blocks:[{id:'catalog-copy',kind:'text',text:'Begin here'}]}]
- let draft=await call('/api/pane/prepare',{site})
- const bytes=Buffer.from('%PDF-1.4\nsynthetic-pane-14\n%%EOF'),upload=await context.request.post(origin+'/api/pane/library/upload',{headers:{Origin:origin},multipart:{base:draft.id,file:{name:'visit-guide.pdf',mimeType:'application/pdf',buffer:bytes}}})
- assert.equal(upload.status(),200,await upload.text());draft=await upload.json();const file=draft.site.libraryFiles[0]
- const destinations=[['Page','page:synthetic-pane-anchor-page','/site/about'],['Anchor','anchor:synthetic-pane-anchor-page:synthetic-pane-anchor-section','/site/about#visit'],['External','https://example.test/visit','https://example.test/visit'],['PDF','file:'+file.id,'/site/files/'+file.id],['Email','mailto:hello@example.test?subject=Visit%20the%20studio','mailto:hello@example.test?subject=Visit%20the%20studio'],['Telephone','tel:+13125550123','tel:+13125550123'],['Message','sms:+13125550123?body=Hello%20there','sms:+13125550123?body=Hello%20there']]
- await page.setViewportSize({width:1440,height:1000});await page.goto(origin+'/app/canvas?page=home')
- let text=page.locator('[data-layout-canvas] [contenteditable=true]').first()
- const paste=async(html)=>{await text.evaluate((node,html)=>{node.focus();const range=document.createRange();range.selectNodeContents(node);const selected=getSelection();selected.removeAllRanges();selected.addRange(range);const data=new DataTransfer();data.setData('text/html',html);node.dispatchEvent(new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:data}))},html);await saved()}
- // A literal Google Docs fragment keeps semantic styles and its safe link.
- await paste('<b id="docs-internal-guid-synthetic"><h2>Google Docs heading</h2><ul><li>First item<ul><li>Nested item</li></ul></li></ul><p><span style="font-weight:700">Important</span> <a href="https://example.test/docs">Docs link</a></p><script>throw Error("inert")</script></b>')
- assert.equal(await page.locator('[data-layout-canvas] h2').innerText(),'Google Docs heading');assert.equal(await page.locator('[data-layout-canvas] ul ul li').innerText(),'Nested item');assert.equal(await page.locator('[data-layout-canvas] a').getByText('Docs link',{exact:true}).getAttribute('href'),'https://example.test/docs')
- const fragment='<h1>Heading one</h1><h2>Heading two</h2><h3>Heading three</h3><h4>Heading four</h4><p><strong>Bold</strong> <em>Italic</em> <u>Underline</u> <s>Strike</s></p><ul><li>Bullet<ul><li>Nested bullet</li></ul></li></ul><ol><li>Number<ol><li>Nested number</li></ol></li></ol><p>'+destinations.map(([label,href])=>'<a href="'+href+'"'+(label==='External'?' target="_blank"':'')+'>'+label+' link</a>').join(' ')+'</p>'
- text=page.locator('[data-layout-canvas] [contenteditable=true]').first();await paste(fragment)
- await page.getByText('Links and body blocks',{exact:true}).click()
- for(const [label,href] of destinations){await page.locator('input[data-body-href]').fill(href);await page.locator('[data-body-new-tab]').setChecked(label==='External');await page.locator('[data-body-button-label]').fill(label+' button');await page.getByRole('button',{name:'Add button',exact:true}).click();await saved()}
- for(const kind of ['line','spacer','accordion']){await page.locator('[data-body-native-kind]').selectOption(kind);if(kind==='accordion'){await page.locator('[data-body-native-summary]').fill('Visiting hours');await page.locator('[data-body-native-text]').fill('Open weekdays by appointment.')}await page.getByRole('button',{name:'Add native block',exact:true}).click();await saved()}
- for(const type of ['bar','line','pie']){await page.locator('[data-body-native-kind]').selectOption('chart');await page.locator('[data-body-native-text]').fill('Weekly visits '+type);await page.locator('[data-body-chart-type]').selectOption(type);await page.locator('[data-body-chart-rows]').fill('Monday | 12\nTuesday | 7');await page.getByRole('button',{name:'Add native block',exact:true}).click();await saved()}
- for(const kind of ['shape','scrolling-text','social-links']){await page.locator('[data-body-native-kind]').selectOption(kind);await page.locator('[data-body-native-text]').fill(kind==='shape'?'Workshop marker':'Visit the workshop');await page.getByRole('button',{name:'Add native block',exact:true}).click();await saved()}
- await page.locator('[data-layout-canvas] [data-block-type="line"]').focus();await page.getByRole('button',{name:'Duplicate selection',exact:true}).click();await saved();assert.equal(await page.locator('[data-layout-canvas] [data-block-type="line"]').count(),2)
- await page.getByRole('button',{name:'Delete selection',exact:true}).click();await saved();assert.equal(await page.locator('[data-layout-canvas] [data-block-type="line"]').count(),1)
- // Markdown shortcuts create the same semantic tree as paste and controls.
- for(const [source,selector,expected] of [['# Markdown heading','h1','Markdown heading'],['- Markdown bullet','ul li','Markdown bullet'],['1. Markdown number','ol li','Markdown number'],['**Markdown bold**','strong','Markdown bold']]){
-  await page.getByRole('button',{name:'Add text block',exact:true}).click();text=page.locator('[data-layout-canvas] [data-selected][contenteditable=true]');await text.fill('');await text.pressSequentially(source);await saved();assert.equal(await text.locator(selector).count()||await text.evaluate((node,selector)=>node.matches(selector)?1:0,selector),1,source+' becomes semantic markup');assert.equal(await text.innerText(),expected)
- }
- await page.getByRole('button',{name:'Add text block',exact:true}).click();text=page.locator('[data-layout-canvas] [data-selected][contenteditable=true]');await text.fill('const total = 12');await page.getByText('Layout settings',{exact:true}).click();await page.getByLabel('Paragraph style',{exact:true}).selectOption('pre');await saved()
- draft=(await state()).draft;await call('/api/pane/publish',{revision:draft.id})
- for(const width of [1440,390]){
-  await page.setViewportSize({width,height:1000});await page.goto(origin+'/app/canvas?page=home');await capture('catalog-editor-'+width)
-  const account=page.locator('[data-tip="Account and team"]');if(await account.count()){await account.focus();await page.getByRole('tooltip').getByText('Account and team',{exact:true}).waitFor();await page.keyboard.press('Escape')}
-  await page.goto(origin+'/site');await page.locator('[data-block-type="accordion"] summary').click();await capture('catalog-live-'+width)
-  if(width!==1440)continue
-  assert.equal(await page.locator('[data-block-type="accordion"]').getAttribute('open'),'');assert.equal(await page.locator('[data-block-type="accordion"] p').innerText(),'Open weekdays by appointment.');assert.ok(await page.locator('[data-block-type="line"]').evaluate(node=>node.getBoundingClientRect().width>100),'Divider spans its grid placement')
-  for(const kind of ['text','heading','list','code','button','line','spacer','accordion','chart','shape','scrolling-text','social-links'])assert.ok(await page.locator('.public-content [data-block-type="'+kind+'"]').count(),kind+' is discoverable')
-  for(const tag of ['h1','h2','h3','h4','strong','em','u','s','ul ul','ol ol'])assert.ok(await page.locator('.public-content '+tag).count(),tag+' preserves semantics')
-  for(const [label,,href] of destinations)for(const suffix of ['link','button']){const link=page.locator('.public-content').getByRole('link',{name:label+' '+suffix,exact:true});assert.equal(await link.getAttribute('href'),href);assert.equal(await link.getAttribute('target'),label==='External'?'_blank':null);assert.equal(await link.getAttribute('rel'),label==='External'?'noopener noreferrer':null)}
-  const order=await page.locator('.public-content a,.public-content summary,.public-content [data-scroll-toggle]').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('aria-label')??node.textContent));assert.deepEqual(order,[...destinations.map(([label])=>label+' link'),...destinations.map(([label])=>label+' button'),'Visiting hours','Pause scrolling','Facebook','Instagram'])
-  await page.locator('.public-content a').first().focus();await page.keyboard.press('Tab');await page.keyboard.press('Shift+Tab')
-  for(const [index,label] of order.entries()){assert.equal(await page.evaluate(()=>document.activeElement.getAttribute('aria-label')??document.activeElement.textContent),label);assert.ok(await page.evaluate(()=>{const style=getComputedStyle(document.activeElement);return style.outlineStyle!=='none'&&parseFloat(style.outlineWidth)>0}),'Visible keyboard focus for '+label);if(index<order.length-1)await page.keyboard.press('Tab')}
-  assert.equal(await page.locator('[data-block-type="chart"] table').count(),3);for(const table of await page.locator('[data-block-type="chart"] table').all())assert.deepEqual(await table.locator('tbody tr').evaluateAll(rows=>rows.map(row=>row.textContent)),['Monday12','Tuesday7'])
-  assert.equal(await page.locator('[data-block-type="spacer"]').evaluate(node=>node.getBoundingClientRect().height),32,'Spacer retains its saved height under the live content policy')
-  for(const profile of ['Facebook','Instagram']){const link=page.locator('.public-content').getByRole('link',{name:profile,exact:true});await page.evaluate(()=>document.documentElement.style.scrollBehavior='auto');await link.scrollIntoViewIfNeeded();await link.hover();await page.getByRole('tooltip').getByText(profile+' profile',{exact:true}).waitFor();await page.mouse.move(0,0);await page.keyboard.press('Escape');await link.focus();await page.keyboard.press('Tab');await page.keyboard.press('Shift+Tab');await page.getByRole('tooltip').getByText(profile+' profile',{exact:true}).waitFor();await page.keyboard.press('Escape')}
-  assert.equal(await page.locator('[data-block-type="shape"] svg').getAttribute('fill'),'#333333')
-  await page.locator('[data-scroll-toggle]').click();assert.equal(await page.locator('[data-scroll-toggle]').getAttribute('aria-pressed'),'true');assert.equal(await page.locator('.pane-scroll-line span').evaluate(node=>getComputedStyle(node).animationPlayState),'paused')
-  await page.emulateMedia({reducedMotion:'reduce'});assert.equal(await page.locator('.pane-scroll-line span').evaluate(node=>getComputedStyle(node).animationName),'none');await page.emulateMedia({reducedMotion:'no-preference'})
-  await page.evaluate(await readFile(resolve('node_modules/axe-core/axe.min.js'),'utf8'));assert.deepEqual((await page.evaluate(()=>axe.run(document))).violations.map(item=>item.id),[],'Catalog live accessibility')
-  await page.getByRole('link',{name:'Anchor link',exact:true}).click();await page.waitForURL('**/site/about#visit');assert.equal(await page.locator('#visit').count(),1);await page.waitForFunction(()=>Math.abs(document.querySelector('#visit').getBoundingClientRect().top)<3)
- }
- // Edit the anchor through the native layout field, then rename the page.
- await page.setViewportSize({width:1440,height:1000});await page.goto(origin+'/app/canvas?page=about');await page.getByText('Layout settings',{exact:true}).click();await page.getByLabel('Section anchor ID',{exact:true}).fill('find-us');await saved()
- draft=(await state()).draft;const renamed=structuredClone(draft.site);renamed.pages.find(item=>item.id==='synthetic-pane-anchor-page').slug='our-studio';draft=await call('/api/pane/prepare',{site:renamed,base:draft.id});await call('/api/pane/publish',{revision:draft.id})
- await page.goto(origin+'/site');for(const suffix of ['link','button']){assert.equal(await page.getByRole('link',{name:'Anchor '+suffix,exact:true}).getAttribute('href'),'/site/our-studio#find-us');assert.equal(await page.getByRole('link',{name:'Page '+suffix,exact:true}).getAttribute('href'),'/site/our-studio')}
- const deleted=structuredClone(draft.site);deleted.pages.find(item=>item.id==='synthetic-pane-anchor-page').deleted=true;await call('/api/pane/prepare',{site:deleted,base:draft.id});await page.goto(origin+'/app?page=home');await page.getByRole('status').filter({hasText:'Broken links:'}).waitFor()
- for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await capture('catalog-broken-links-'+width)}
- console.log('Catalog destinations, stable anchors, native blocks, Markdown, styled paste, keyboard and axe passed; changed screens captured at 1440 and 390.')
-}

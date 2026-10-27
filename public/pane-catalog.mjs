@@ -1,6 +1,7 @@
 import {linkedBody} from './pane-body-markup.mjs'
 const escape=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 export const catalogRules=[
+ '[data-block-type="audio"]{margin:0}[data-block-type="audio"] audio{display:block;width:100%;max-width:600px;min-width:0}',
  '[data-block-type="line"]{width:100%;box-sizing:border-box;border:0;border-top:1px solid currentColor}',
  '@keyframes pane-scroll{from{transform:translateX(100%)}to{transform:translateX(-100%)}}',
  '.pane-scroll-line{overflow:hidden}',
@@ -11,6 +12,7 @@ export const catalogRules=[
  '[data-block-type="chart"] th,[data-block-type="chart"] td{text-align:left;padding:8px}'
 ]
 export function catalogMarkup(block,attributes,options){
+ if(block.kind==='search')return `<section ${attributes} data-catalog-block><h2>${escape(block.text)}</h2><form method="get" action="/site/search" role="search" class="contact-form"><label>Search words<input type="search" name="q" maxlength="200"${options?.live?'':' disabled'}></label><button type="submit"${options?.live?'':' disabled'}>Search</button></form></section>`
  if(block.kind==='social-links')return `<div ${attributes} data-catalog-block>${options?.socialMarkup?.()||'<p>Configure social profiles in navigation settings.</p>'}</div>`
  if(block.kind==='scrolling-text')return `<div ${attributes} data-catalog-block><div class="pane-scroll-line"><span>${escape(block.text)}</span></div><button type="button" data-scroll-toggle aria-pressed="false">Pause scrolling</button></div>`
  if(block.kind==='shape'){

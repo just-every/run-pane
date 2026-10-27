@@ -1,6 +1,8 @@
 import { escape } from './ui/kit'
 export type Embed = { title: string; url: string }
 const paths: Record<string, RegExp> = {
+ 'w.soundcloud.com': /^\/player\/?$/,
+ 'open.spotify.com': /^\/embed\/(?:track|playlist|album|episode|show)\/[a-zA-Z0-9]+$/,
  'www.youtube-nocookie.com': /^\/embed\/[a-zA-Z0-9_-]+$/,
  'www.youtube.com': /^\/embed\/[a-zA-Z0-9_-]+$/,
  'player.vimeo.com': /^\/video\/[0-9]+$/,
@@ -15,7 +17,7 @@ export function normalizeEmbed(value: unknown): Embed | undefined {
  if (typeof input.title !== 'string' || !input.title.trim() || input.title.length > 120 || typeof input.url !== 'string' || input.url.length > 4000) throw Error('Provide an embed title and HTTPS embed URL.')
  let url: URL
  try { url = new URL(input.url) } catch { throw Error('Provide an HTTPS embed URL.') }
- if (url.protocol !== 'https:' || url.username || url.password || url.port || !paths[url.hostname]?.test(url.pathname)) throw Error('Use a YouTube, Vimeo, Google Maps, Instagram or Facebook embed URL.')
+ if (url.protocol !== 'https:' || url.username || url.password || url.port || !paths[url.hostname]?.test(url.pathname)) throw Error('Use a supported video, map, social post or audio embed URL.')
  url.hash = ''
  return {title: input.title.normalize('NFC').trim(), url: url.href}
 }

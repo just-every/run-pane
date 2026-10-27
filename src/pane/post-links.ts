@@ -33,7 +33,7 @@ export function bodyLinkResolver(site:Site,mode:'live'|'preview'|'frame',current
 export function missingBodyLinks(site:Site,page:import('./model').Page,pages?:Pick<import('./model').Page,'id'|'slug'|'deleted'|'sections'>[]):string[]{
  const links:string[]=[]
  function walk(nodes:import('./sections').RichNode[]){for(const node of nodes){if(node.tag==='a')links.push(node.href);if('children' in node)walk(node.children)}}
- for(const section of page.sections??[])for(const block of section.blocks){if(block.link)links.push(block.link.href);if(block.content)walk(block.content)}
+ for(const section of page.sections??[])for(const block of section.blocks){if(block.audio)links.push('file:'+block.audio.file);if(block.link)links.push(block.link.href);if(block.content)walk(block.content)}
  const resolve=bodyLinkResolver(site,'live',page.slug,pages)
  return [...new Set(links)].filter(href=>!resolve(href))
 }

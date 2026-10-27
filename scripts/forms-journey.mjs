@@ -1,9 +1,10 @@
+import {gridFormsJourney} from './grid-forms-journey.mjs'
 import assert from 'node:assert/strict'
 import {readFile,mkdir} from 'node:fs/promises'
 import {resolve} from 'node:path'
 import {chromium} from '@playwright/test'
 const fixture=await import('../tests/browser-runtime.mjs')
-const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
+const browser=await chromium.launch({headless:true,executablePath:process.env.PANE_CHROMIUM_PATH,args:['--use-mock-keychain','--password-store=basic']})
 const owner=await browser.newContext({acceptDownloads:true}),visitor=await browser.newContext()
 const page=await owner.newPage(),live=await visitor.newPage(),origin=fixture.origin
 await fixture.protect(visitor)
@@ -57,5 +58,6 @@ try{
   const rescued=await data();assert.equal(rescued.messages.length,beforeRescue+1);assert.deepEqual(rescued.messages.find(row=>row.message.includes('rejected.pdf')).files,[]);await capture(page,'rejected-file-rescued-text',width)
   await page.goto(origin+'/app/inquiries');const control=page.locator('[data-tip="Account and team"]');await control.focus();await page.keyboard.press('Tab');await page.keyboard.press('Shift+Tab');await page.getByRole('tooltip').getByText('Account and team',{exact:true}).waitFor();await capture(page,'inbox-focus-tooltip',width);await control.blur();await control.hover();await page.getByRole('tooltip').getByText('Account and team',{exact:true}).waitFor();await capture(page,'inbox-hover-tooltip',width)
  }
+ await gridFormsJourney({page,live,owner,visitor,origin,data,call,capture,form,publish})
  console.log('Typed form browser journey passed at 1440 and 390: real builder, two placements, required/help/errors with retained answers, private 5 MB PDF, refusals, inbox download, confirmation and tooltips.')
 }catch(error){await page.screenshot({path:resolve(folder,'owner-failure.png'),fullPage:true});await live.screenshot({path:resolve(folder,'visitor-failure.png'),fullPage:true});console.error('Forms state',new URL(page.url()).pathname,new URL(live.url()).pathname);throw error}finally{await browser.close();await fixture.stop()}

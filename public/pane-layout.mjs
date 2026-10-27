@@ -28,11 +28,14 @@ const textBlockType=block=>{const tag=block.format==='div'&&block.content?.lengt
 function blockMarkup(block,index,imageUrl,media,options){
  const resolve=options?.resolveLink,attributes=`data-block="${escape(block.id)}" data-block-type="${block.kind==='text'?textBlockType(block):block.kind}" data-reading-index="${index}"`
  const catalog=catalogMarkup(block,attributes,options);if(catalog)return catalog
+ if(block.kind==='audio'&&block.embed)return `<div ${attributes} data-video-block>${bodyEmbed(block,options?.embedMarkup)}</div>`
+ if(block.kind==='audio'){const file=options?.audioFile?.(block.audio.file);return `<figure ${attributes} data-catalog-block><figcaption>${escape(block.text)}</figcaption>${file?`<audio controls preload="metadata" aria-label="${escape(block.text)}" src="${escape(file.url)}"></audio><a href="${escape(file.url)}" download="${escape(file.name)}">Download ${escape(block.text)}</a>`:'<p>Choose a library audio file.</p>'}</figure>`}
+ if(block.kind==='form')return `<div ${attributes} data-catalog-block>${options?.formMarkup?.(block.form,block.id)??''}</div>`
  if(block.kind==='line')return `<hr ${attributes} data-catalog-block>`
  if(block.kind==='spacer')return `<div ${attributes} data-catalog-block aria-hidden="true"></div>`
  if(block.kind==='accordion')return `<details ${attributes} data-catalog-block><summary>${escape(block.summary)}</summary><p>${escape(block.text)}</p></details>`
- if(block.kind==='video')return `<div ${attributes} data-video-block>${bodyEmbed(block,options?.embedMarkup)}</div>`
- if(block.kind==='button')return `<div ${attributes} data-button-block>${linkedBody(escape(block.text),block.link,resolve,true)}</div>`
+ if(['video','map','social-post'].includes(block.kind))return `<div ${attributes} data-video-block>${bodyEmbed(block,options?.embedMarkup)}</div>`
+ if(block.kind==='button')return `<div ${attributes} data-button-block>${linkedBody(escape(block.text),block.link,resolve,true,block.buttonStyle)}</div>`
  if(block.kind==='quote'||block.attribution!==undefined)return `<figure ${attributes} data-quote-block><blockquote data-block-text>${block.content?richMarkup(block.content,resolve):escape(block.text)}</blockquote>${block.attribution?`<figcaption>${escape(block.attribution)}</figcaption>`:''}</figure>`
  if(block.kind==='gallery')return galleryMarkup(block,index,imageUrl,media)
  if(block.kind==='image'){const image=block.image;const picture=`<img src="${escape(imageUrl?imageUrl(block.id,0):image.src)}"${image.renditions?.length?` srcset="${image.renditions.map(item=>escape(imageUrl?imageUrl(block.id,item.width):item.src)+' '+item.width+'w').join(', ')}" sizes="(max-width: 700px) 100vw, 1100px"`: ''} loading="${imageUrl?'lazy':'eager'}" decoding="async" width="${image.width}" height="${image.height}" alt="${escape(image.decorative?'':image.alt??'')}"${image.decorative?' role="presentation"':''}>`;return `<figure ${attributes} data-image-block>${linkedBody(picture,block.link,resolve)}${block.caption?`<figcaption>${escape(block.caption)}</figcaption>`:''}</figure>`}

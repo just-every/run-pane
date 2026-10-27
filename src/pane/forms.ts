@@ -1,10 +1,11 @@
 import type { Site } from './model'
+import { blogPostPath } from './post-links'
 import { escape,key } from './ui/kit'
 export const fieldTypes=['text','email','phone','address','choice','date','file','consent'] as const
 export type FormField={key:string;type:typeof fieldTypes[number];label:string;help:string;placeholder:string;required:boolean;error?:string;options?:string[]}
 export type SiteForm={id:string;name:string;submit:string;confirmation:string;redirect?:string;fields:FormField[]}
 export type Upload={id:string;name:string;type:string;size:number;hash:string;chunks:string[]}
-export type FormState={values:Record<string,string>;errors:Record<string,string>}
+export type FormState={values:Record<string,string>;errors:Record<string,string>;formId?:string;instance?:string}
 export function normalizeForms(value:unknown):SiteForm[]|undefined{
  if(value===undefined)return undefined
  if(!Array.isArray(value))throw Error('Provide a list of forms.')
@@ -23,18 +24,25 @@ export function normalizeForms(value:unknown):SiteForm[]|undefined{
  if(new Set(forms.map(form=>form.id)).size!==forms.length)throw Error('Use unique form identities.')
  return forms
 }
-export function typedForm(site:Site,slug:string){const page=site.pages.find(page=>page.slug===slug);return site.forms?.find(form=>form.id===page?.formId)}
-export function formMarkup(form:SiteForm,path:string,live:boolean,turnstileKey?:string,state?:FormState){
+/** A form reference grants submission authority only on the page that contains it. */
+export function typedForm(site:Site,slug:string,requestedId?:string){
+ const page=site.pages.find(page=>page.slug===slug&&!page.deleted)??site.blogPosts?.find(post=>blogPostPath(site,post)==='/site/'+slug)?.content
+ const id=requestedId===undefined?page?.formId:requestedId
+ if(!page||!id||id!==page.formId&&!page.sections?.some(section=>section.blocks.some(block=>block.kind==='form'&&block.form===id)))return undefined
+ return site.forms?.find(form=>form.id===id)
+}
+export function formMarkup(form:SiteForm,path:string,live:boolean,turnstileKey?:string,state?:FormState,instance?:string){
+ if(state&&(state.formId!==undefined&&state.formId!==form.id||state.instance!==undefined&&state.instance!==(instance??'')))state=undefined
  const fields=form.fields.map(field=>{
-  const id='field-'+field.key,error=state?.errors[field.key],value=state?.values[field.key]??'',described=[field.help?id+'-help':'',error?id+'-error':''].filter(Boolean).join(' ')
+  const id='field-'+(instance?encodeURIComponent(instance)+'-':'')+field.key,error=state?.errors[field.key],value=state?.values[field.key]??'',described=[field.help?id+'-help':'',error?id+'-error':''].filter(Boolean).join(' ')
   const attrs=`id="${id}" name="${field.key}"${field.error?` data-error-message="${escape(field.error)}"`:''}${field.required?' required aria-required="true"':''}${described?` aria-describedby="${described}"`:''}${error?' aria-invalid="true"':''}`
   const control=field.type==='choice'?`<select ${attrs}><option value="">Choose an option</option>${field.options!.map(option=>`<option${option===value?' selected':''}>${escape(option)}</option>`).join('')}</select>`:field.type==='address'?`<textarea ${attrs} rows="3" maxlength="500" placeholder="${escape(field.placeholder)}">${escape(value)}</textarea>`:field.type==='consent'?`<input ${attrs} type="checkbox" value="yes"${value==='yes'?' checked':''}>`:`<input ${attrs} type="${field.type==='phone'?'tel':field.type==='file'?'file':field.type==='date'?'date':field.type==='email'?'email':'text'}"${field.type==='file'?' accept="application/pdf,.pdf"':` value="${escape(value)}" maxlength="${field.type==='text'?2000:254}" placeholder="${escape(field.placeholder)}"`}${field.type==='phone'?' autocomplete="tel" inputmode="tel"':''}>`
   return `<div class="field"><label for="${id}">${escape(field.label)}${field.required?' (required)':''}</label>${control}${field.help?`<p class="help" id="${id}-help">${escape(field.help)}</p>`:''}${field.type==='file'?'<p class="help">PDF only, up to 5 MB. Files are private to the inbox. Choose the file again after an error.</p>':''}<p class="field-error" id="${id}-error"${error?' role="alert"':' hidden'}>${escape(error??'')}</p></div>`
  }).join('')
- return `<section class="contact-section" aria-label="${escape(form.name)}"><h2>${escape(form.name)}</h2>${!live?'<p class="notice">Draft preview: submissions are disabled.</p>':''}<form method="post" enctype="multipart/form-data" action="${escape(path)}" class="contact-form" data-typed-form${live?` data-turnstile-key="${escape(turnstileKey??'')}" data-form="${escape(path.slice(6)||'home')}"`:''}>${key()}<input type="hidden" name="attribution"><fieldset${live?'':' disabled'}>${fields}<div class="honeypot" aria-hidden="true"><label>Leave this field empty<input name="website" tabindex="-1" autocomplete="off"></label></div>${live?'<p class="help">Sending uses Cloudflare Turnstile to prevent spam without image puzzles.</p><div data-turnstile-slot></div><p role="status" data-verification-status></p>':''}<button type="submit">${escape(form.submit)}</button></fieldset></form></section>`
+ return `<section class="contact-section" aria-label="${escape(form.name)}"><h2>${escape(form.name)}</h2>${!live?'<p class="notice">Draft preview: submissions are disabled.</p>':''}<form method="post" enctype="multipart/form-data" action="${escape(path)}" class="contact-form" data-typed-form${live?` data-turnstile-key="${escape(turnstileKey??'')}" data-form="${escape(path.slice(6)||'home')}"`:''}>${key()}<input type="hidden" name="_pane_form" value="${escape(form.id)}">${instance?`<input type="hidden" name="_pane_form_instance" value="${escape(instance)}">`:''}<input type="hidden" name="attribution"><fieldset${live?'':' disabled'}>${fields}<div class="honeypot" aria-hidden="true"><label>Leave this field empty<input name="website" tabindex="-1" autocomplete="off"></label></div>${live?'<p class="help">Sending uses Cloudflare Turnstile to prevent spam without image puzzles.</p><div data-turnstile-slot></div><p role="status" data-verification-status></p>':''}<button type="submit">${escape(form.submit)}</button></fieldset></form></section>`
 }
 export async function validateForm(form:SiteForm,fields:FormData,id:string){
- const state:FormState={values:{},errors:{}},uploads:Upload[]=[],answers:string[]=[]
+ const state:FormState={values:{},errors:{},formId:form.id},uploads:Upload[]=[],answers:string[]=[]
  for(const field of form.fields){
   const raw=fields.get(field.key),value=typeof raw==='string'?raw.trim():'';state.values[field.key]=value
   if(field.type==='file'){

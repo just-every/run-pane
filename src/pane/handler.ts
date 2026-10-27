@@ -153,8 +153,8 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    notice='Blog settings saved as a draft.';back='/app/posts'
   }else if(['/api/pane/library/upload','/app/library/upload'].includes(path)){
    if(!owner||scopes)return json({error:'Native owner only.'},403)
-   const file=formData?.get('file');if(!(file instanceof File))throw Error('Choose a PDF file.')
-   result=await uploadLibraryFile(env.DB,actor.id,String(input.base),file);notice='PDF saved privately. Link it from a post for review.';back='/app/posts'
+   const file=formData?.get('file');if(!(file instanceof File))throw Error('Choose a library file.')
+   result=await uploadLibraryFile(env.DB,actor.id,String(input.base),file);notice='File saved privately. Add it to a page or post for review.';back='/app/posts'
   }else if(action.startsWith('ai/')){
    const retained=path.endsWith('/ai/propose')?null:await env.DB.prepare('SELECT post_id,mode,suggestions FROM pane_ai_proposals WHERE id=? AND actor=?').bind(String(input.id??''),actor.id).first<{post_id:string|null;mode:string;suggestions:string}>()
    const post=path.endsWith('/ai/propose')?input.post:retained?.post_id
