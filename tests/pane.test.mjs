@@ -29,6 +29,10 @@ test('native owner sign-in and role sessions protect direct handlers',async()=>{
   if(role==='admin')admin=confirmed.headers.get('set-cookie').split(';')[0];else member=confirmed.headers.get('set-cookie').split(';')[0]
   assert.equal((await json('/auth/confirm',{token},'')).status,400)
  }
+ for(const cookie of [admin,member]){
+  for(const path of ['/api/pane/templates/start','/app/templates/start'])assert.equal((await json(path,{template:'restaurant-1',name:'synthetic-pane-1'},cookie)).status,403,'Only the native owner starts a template')
+  assert.equal((await f.request('/app/templates',{headers:{Cookie:cookie}})).status,403)
+ }
  assert.equal((await json('/api/pane/prepare',{site:fixture},member)).status,403)
  assert.equal((await json('/api/pane/review',{page:'home'},member)).status,403)
  assert.equal((await json('/api/pane/publish',{revision:'missing'},admin)).status,403)
