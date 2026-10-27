@@ -632,7 +632,7 @@
       "executable": false
     },
     "public/pane-editor.css": {
-      "sha256": "116aad0ebae9377faa85239f2c263cf72b6e1855cfa3130e13bda76d3fc009e6",
+      "sha256": "a679e6e9543d0ecdf756d87555b51b3d03c428ee415e96dca41b64144bd5247e",
       "executable": false
     },
     "public/pane-embeds.js": {
@@ -1112,7 +1112,7 @@
       "executable": false
     },
     "scripts/catalog-journey.mjs": {
-      "sha256": "86bcc0ab15521ed929f6a8c7edec0ce97e68dc334d62de7c0a4637bde835159f",
+      "sha256": "e1327780e28df2789da2ed79027bb64038a1ab67464295b6091a44895eda141e",
       "executable": false
     },
     "scripts/catalog-media.mjs": {
