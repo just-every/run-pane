@@ -708,7 +708,7 @@
       "executable": false
     },
     "public/pane-public.css": {
-      "sha256": "bea2f6ccce72e1810789dfb5c91470db52146f928432162714b977d97436e3e4",
+      "sha256": "10c8d8d992e8f28d6ee805eb90eda4c03a678fc22849e86bb1a9553eaca43c81",
       "executable": false
     },
     "public/pane-reading-order.mjs": {
@@ -1112,7 +1112,11 @@
       "executable": false
     },
     "scripts/catalog-journey.mjs": {
-      "sha256": "7c5648b56c784717560faa048828a9175c32432ca97c38e02f80deb521fcec5e",
+      "sha256": "68a74ae2e2defc6c92478274b90ae5780e147837ebc6051303b68e05f3d9ffd7",
+      "executable": false
+    },
+    "scripts/catalog-media.mjs": {
+      "sha256": "ae9750a0cf95186b503029783393233375474c0226f310ff8eba16c85328ee95",
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
