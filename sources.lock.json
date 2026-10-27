@@ -1088,7 +1088,7 @@
       "executable": false
     },
     "scripts/collections-journey.mjs": {
-      "sha256": "a22fb2d9e02c6b4a693bbfd57685c87cb02a68571abd56173f33a3fa147f26c1",
+      "sha256": "79f999729a42efd71c3eaa96e08bcc414c84b73d5d082a226c87d673ef03dc34",
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
@@ -3936,7 +3936,7 @@
       "executable": false
     },
     "tests/posts.test.mjs": {
-      "sha256": "27732cafa6bdba2276208f1e3bf9b4b6ac710d261968d96e217487f1cbf41129",
+      "sha256": "6853b025ac73d23f8bf7271f7176803eaa73a335240ed8cb501ed331e6ee477a",
       "executable": false
     },
     "tests/runtime.mjs": {
