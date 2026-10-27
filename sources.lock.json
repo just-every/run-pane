@@ -136,7 +136,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "433da01a46ea717db692c35756292fd41004b5760bad3a0ab8e8ce6b3be2fc67",
+      "sha256": "004069d30b6b6baef8c0fd7b308cc25ede3874472808ae0f50745ffc3303d34a",
       "executable": false
     },
     "AGENTS.md": {
@@ -160,7 +160,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "385ce7415545d713cc1f98f991a92d2910e36f7ec30f4f547678187a73682072",
+      "sha256": "9f524661678a14c0116cfb13c9c962ea48e39e69584847ebd738b74248c643c7",
       "executable": false
     },
     "deploy-demo.json": {
@@ -1096,7 +1096,7 @@
       "executable": false
     },
     "scripts/contract-docs.mjs": {
-      "sha256": "f525d216d4fbdca9fee31d3a2725b716945a20f2d449980177e22610e9931d39",
+      "sha256": "e67cb15d34a00c634fe4ebaff8c2966c1cb71b272fe70c4bf27128b4b3ebf519",
       "executable": false
     },
     "scripts/custody-journey.mjs": {

@@ -15,6 +15,7 @@ for(const area of contract.areas){
  acceptance+=`## ${area.name}\n\n`
  for(const id of area.clauses){
   const clause=contract.clauses.find(value=>value.id===id),row=byId.get(id)
+  if(!clause.text.includes('**Acceptance evidence:**'))throw Error(id+' has no source acceptance journey.')
   for(const path of clause.evidence)if(!existsSync(path))throw Error(id+' evidence path is missing: '+path)
   const text=clause.text.replace(/\*Status:\*\s*(?:done|partial|missing)\./g,'Implementation:').trim()
   acceptance+=`- **${id} — ${clause.title}** (${clause.status}). ${text}${row[4]?` Evidence: ${row[4]}`:''}${clause.gap?` Gap: ${row[5]}`:''}\n`
