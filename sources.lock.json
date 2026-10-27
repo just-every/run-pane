@@ -575,6 +575,10 @@
       "sha256": "414b86156d800c9eb7cdb0b1de8d254c7a62734a89737107a290bf4b23dcb79d",
       "executable": false
     },
+    "public/pane-blog-settings.mjs": {
+      "sha256": "1b585bdff3cdaaa5413964364c73d2c56cd1264664d6003eb6e676b990cfac40",
+      "executable": false
+    },
     "public/pane-body-links.d.mts": {
       "sha256": "5fca7498d25702cbc5b04fec7b79fa6171021447453b7bfccea5950426e21d17",
       "executable": false
@@ -656,7 +660,7 @@
       "executable": false
     },
     "public/pane-post-details.mjs": {
-      "sha256": "0f145849b149f483aadd0753c77384510bb0351ddff66583fc5a752f0025c0e1",
+      "sha256": "ea42cf850b9a279de5e1df4ae69c967c8993d39f09666e104efcb7f63d8941dc",
       "executable": false
     },
     "public/pane-promotion.css": {
@@ -1068,7 +1072,7 @@
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
-      "sha256": "c95e0bded78f3ea7f5aee188dc7c8de3701924401edb05b2986931a4119c3866",
+      "sha256": "be8f5c14569a7ab81f014a4239b4207838b47a71b0943dbf5726ba4350bfb1ac",
       "executable": false
     },
     "scripts/custody-journey.mjs": {
@@ -1316,7 +1320,7 @@
       "executable": false
     },
     "scripts/posts-journey.mjs": {
-      "sha256": "437ae6fb0ea25ef15cbd271d13fcbab47ab57c7e09461807432836a25e9cc51f",
+      "sha256": "c2299eb6fe072f281478819c3ec9581b13fbca0c077007bf127c28274a32ad84",
       "executable": false
     },
     "scripts/privacy-journey.mjs": {
@@ -3515,6 +3519,10 @@
       "sha256": "2dea53b7c556dcbe3c6f85df63ebd8addfba0378072c56cf80f56d64b932d0f8",
       "executable": false
     },
+    "src/pane/ui/blog-settings.ts": {
+      "sha256": "596bae3a2882a12a39e22be6a2bb8b77ba20dec33ddd501cf9f16de6dce40a32",
+      "executable": false
+    },
     "src/pane/ui/canvas-body.ts": {
       "sha256": "f905cf47929881e7964a55ac5c8988043660b8b333989058be09a63bc77c6323",
       "executable": false
@@ -3584,7 +3592,7 @@
       "executable": false
     },
     "src/pane/ui/posts.ts": {
-      "sha256": "e90d92579fe3e978cf6397db2f74a380da75359a80d08e686e80049ec25d77f0",
+      "sha256": "06eca2ea243d3755268311f547064559a7fd339e94b1a5c46d51a3573d227aea",
       "executable": false
     },
     "src/pane/ui/promotion-settings.ts": {
