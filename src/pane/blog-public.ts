@@ -1,3 +1,4 @@
+import {socialLinks} from './navigation'
 import {preparedImageResponse} from './image-response'
 import {layoutMarkup} from '../../public/pane-layout.mjs'
 import {publicPage,paragraphs} from './public-view'
@@ -31,7 +32,7 @@ function metadata(site:Site,post:Published){
 function shell(site:Site,title:string,body:string){return `<div class="public-site"><div class="public-shell"><header class="public-header"><a class="public-brand" href="/site">${escape(site.name)}</a><nav aria-label="Blogs">${(site.blogs??[]).map(blog=>`<a href="/site/${escape(blog.prefix)}">${escape(blog.title)}</a>`).join(' · ')}</nav></header><main class="public-main" id="main"><h1>${escape(title)}</h1>${body}</main></div></div>`}
 function bodyMarkup(site:Site,post:Published,origin:string){
  const path=blogPostPath(site,post),resolve=bodyLinkResolver(site,'live',post.content.slug)
- const markup=post.content.sections?layoutMarkup(post.content.sections,(id:string,width:number)=>absolute(origin,path)+'?pane-image='+encodeURIComponent(id)+'&width='+width,site.media,{resolveLink:(href:string)=>{const result=resolve(href);return result?absolute(origin,result):undefined},embedMarkup:(embed:Parameters<typeof embedMarkup>[0])=>embedMarkup(embed,false,true)}):paragraphs(post.content.body).map(text=>'<p>'+escape(text)+'</p>').join('')
+ const markup=post.content.sections?layoutMarkup(post.content.sections,(id:string,width:number)=>absolute(origin,path)+'?pane-image='+encodeURIComponent(id)+'&width='+width,site.media,{socialMarkup:()=>socialLinks(site),resolveLink:(href:string)=>{const result=resolve(href);return result?absolute(origin,result):undefined},embedMarkup:(embed:Parameters<typeof embedMarkup>[0])=>embedMarkup(embed,false,true)}):paragraphs(post.content.body).map(text=>'<p>'+escape(text)+'</p>').join('')
  return markup.replace(/(?:href|src)="(\/[^"<>]*)"/g,(all:string,path:string)=>all.slice(0,all.indexOf('"')+1)+escape(absolute(origin,path))+'"')
 }
 function rss(site:Site,blog:NonNullable<Site['blogs']>[number],posts:Published[],origin:string){

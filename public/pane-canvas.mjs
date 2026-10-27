@@ -54,6 +54,7 @@ function render(){
  for(const node of content.querySelectorAll('[data-image-block],[data-gallery],[data-video-block],[data-button-block],[data-quote-block]')){node.tabIndex=0;node.setAttribute('aria-label',node.hasAttribute('data-gallery')?'Gallery block':'Image block')}
  for(const node of content.querySelectorAll('[data-block]:not([data-catalog-block]):not([data-image-block]):not([data-gallery]):not([data-video-block]):not([data-button-block]):not([data-quote-block]),[data-block-text]')){node.contentEditable='true';node.draggable=true;node.setAttribute('role','textbox');node.setAttribute('aria-label','Block text');node.setAttribute('aria-multiline','true')}
  for(const node of content.querySelectorAll('[data-quote-block]'))node.draggable=true
+ for(const node of content.querySelectorAll('[data-catalog-block]')){node.tabIndex=0;node.removeAttribute('aria-hidden');node.setAttribute('aria-label',node.dataset.blockType+' block')}
  for(const button of content.querySelectorAll('[data-gallery-open]')){button.removeAttribute('data-gallery-open');button.dataset.tip='Select image';button.setAttribute('aria-label','Select '+button.getAttribute('aria-label').replace(/^Enlarge /,''))}
  syncReadingOrder(content);settings()
 }
@@ -126,7 +127,26 @@ function record(node){
  if(content.some(node=>['p','h1','h2','h3','h4','blockquote','pre','ul','ol'].includes(node.tag)))target.format='div'
  commit(false)
 }
-canvas.addEventListener('input',event=>{const node=event.target.closest('[data-block]');if(node)record(node)})
+// Markdown edits use the same semantic tree and draft history as toolbar edits.
+function endCaret(node){const range=document.createRange();range.selectNodeContents(node);range.collapse(false);const selection=getSelection();selection.removeAllRanges();selection.addRange(range)}
+canvas.addEventListener('keydown',event=>{
+ if(event.key!==' '||event.ctrlKey||event.metaKey||event.altKey)return
+ let node=event.target.closest('[data-block]');if(!node||block()?.kind!=='text')return
+ const marker=node.textContent,heading=/^(#{1,4})$/.exec(marker)
+ if(!heading&&!['-','1.'].includes(marker))return
+ event.preventDefault();node=documentBlock(node)
+ node.innerHTML=heading?`<h${heading[1].length}><br></h${heading[1].length}>`:marker==='-'?'<ul><li><br></li></ul>':'<ol><li><br></li></ol>'
+ endCaret(node.querySelector('h1,h2,h3,h4,li'));selection=getSelection().getRangeAt(0).cloneRange()
+})
+canvas.addEventListener('input',event=>{
+ const node=event.target.closest('[data-block]');if(!node)return
+ const selected=getSelection(),text=selected?.anchorNode,offset=selected?.anchorOffset
+ if(block()?.kind==='text'&&text?.nodeType===3&&node.contains(text)&&!text.parentElement.closest('strong')){
+  const match=/\*\*([^*\n]+)\*\*$/.exec(text.textContent.slice(0,offset))
+  if(match){const range=document.createRange();range.setStart(text,offset-match[0].length);range.setEnd(text,offset);range.deleteContents();const strong=document.createElement('strong');strong.textContent=match[1];range.insertNode(strong);range.setStartAfter(strong);range.collapse(true);selected.removeAllRanges();selected.addRange(range)}
+ }
+ record(node)
+})
 canvas.addEventListener('paste',event=>{
  let node=event.target.closest('[data-block]');if(!node||!['text','quote'].includes(block()?.kind))return
  if(node.hasAttribute('data-quote-block')){event.preventDefault();document.execCommand('insertText',false,event.clipboardData.getData('text/plain'));record(node);return}

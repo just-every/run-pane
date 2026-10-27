@@ -8,7 +8,7 @@ export type RichNode = {tag:'text';text:string} | {tag:'a';href:string;newTab:bo
 export type PhoneBlock = {column?:number;span?:number;row?:number;order?:number;align?:TextBlock['align'];vertical?:TextBlock['vertical'];hidden?:boolean}
 export type TextBlock = {
  phone?: PhoneBlock;
- id: string; kind: 'text'|'image'|'gallery'|'quote'|'video'|'button'|'line'|'spacer'|'accordion'; summary?:string; size?:number; caption?:string; attribution?:string; link?:BodyLink; embed?:Embed; gallery?:Gallery; image?:ImageContent; text: string; format?: 'p'|'h1'|'h2'|'h3'|'h4'|'blockquote'|'pre'|'p-large'|'p-small'|'div'; content?: RichNode[];
+ id: string; kind: 'text'|'image'|'gallery'|'quote'|'video'|'button'|'line'|'spacer'|'accordion'|'chart'|'shape'|'scrolling-text'|'social-links'; chart?:{type:'bar'|'line'|'pie';rows:[string,number][]}; shape?:{form:'circle'|'square'|'triangle';color:string;outlined:boolean}; summary?:string; size?:number; caption?:string; attribution?:string; link?:BodyLink; embed?:Embed; gallery?:Gallery; image?:ImageContent; text: string; format?: 'p'|'h1'|'h2'|'h3'|'h4'|'blockquote'|'pre'|'p-large'|'p-small'|'div'; content?: RichNode[];
  column: number; span: number; row: number; order: number;
  align: 'left' | 'center' | 'right' | 'justify'; vertical: 'start' | 'center' | 'end';
 }
@@ -98,8 +98,18 @@ export function normalizeSections(value: unknown): Section[] | undefined {
   if (section.background !== undefined && (typeof section.background !== 'string' || !/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(section.background))) throw Error('Use a hex section background with 3, 4, 6 or 8 digits.')
   const blocks = section.blocks.map(raw => {
    const block = object(raw)
-   if (Object.keys(block).some(key => !['summary','size','caption','attribution','link','embed','phone','gallery','image','id','kind','text','column','span','row','order','align','vertical','format','content'].includes(key))) throw Error('Unsupported block field.')
-   if (!['text','image','gallery','quote','video','button','line','spacer','accordion'].includes(String(block.kind)) || typeof block.text !== 'string' || (['text','quote','video','button','accordion'].includes(String(block.kind))&&!block.text.trim())) throw Error('Choose a text block with content or a prepared image.')
+   if (Object.keys(block).some(key => !['chart','shape','summary','size','caption','attribution','link','embed','phone','gallery','image','id','kind','text','column','span','row','order','align','vertical','format','content'].includes(key))) throw Error('Unsupported block field.')
+   if (!['text','image','gallery','quote','video','button','line','spacer','accordion','chart','shape','scrolling-text','social-links'].includes(String(block.kind)) || typeof block.text !== 'string' || (['text','quote','video','button','accordion','chart','shape','scrolling-text','social-links'].includes(String(block.kind))&&!block.text.trim())) throw Error('Choose a text block with content or a prepared image.')
+   let chart:TextBlock['chart'],shape:TextBlock['shape']
+   if(block.kind==='chart'){
+    const source=object(block.chart),type=choice(source.type,['bar','line','pie'] as const,'bar')
+    if(Object.keys(source).some(key=>!['type','rows'].includes(key))||!Array.isArray(source.rows)||!source.rows.length||source.rows.length>24)throw Error('Enter between 1 and 24 chart rows.')
+    const rows=source.rows.map(row=>{if(!Array.isArray(row)||row.length!==2||typeof row[0]!=='string'||!row[0].trim()||row[0].length>120||typeof row[1]!=='number'||!Number.isFinite(row[1])||Math.abs(row[1])>1e12||type==='pie'&&row[1]<0)throw Error('Each chart row needs a label and a finite value; pie values cannot be negative.');return [row[0].normalize('NFC').trim(),row[1]] as [string,number]})
+    if(type==='pie'&&!rows.some(row=>row[1]>0))throw Error('A pie chart needs a positive total.')
+    chart={type,rows}
+   }
+   if(block.kind==='shape'){const source=object(block.shape);if(Object.keys(source).some(key=>!['form','color','outlined'].includes(key))||typeof source.color!=='string'||!/^#[a-fA-F0-9]{6}$/.test(source.color)||typeof source.outlined!=='boolean')throw Error('Choose a shape, a six-digit hex color and an explicit outline choice.');shape={form:choice(source.form,['circle','square','triangle'] as const,'circle'),color:source.color.toLowerCase(),outlined:source.outlined}}
+   if(block.chart!==undefined&&block.kind!=='chart'||block.shape!==undefined&&block.kind!=='shape')throw Error('Chart and shape settings must match their block type.')
    const summary=block.kind==='accordion'&&typeof block.summary==='string'?block.summary.normalize('NFC').trim():undefined
    if(block.kind==='accordion'&&(!summary||summary.length>120))throw Error('An accordion needs a title up to 120 characters.')
    if(block.summary!==undefined&&block.kind!=='accordion'||block.size!==undefined&&block.kind!=='spacer')throw Error('Catalog settings must match their block type.')
@@ -109,7 +119,7 @@ export function normalizeSections(value: unknown): Section[] | undefined {
    const image=block.kind==='image'?normalizeImage(block.image):undefined
    if(block.image!==undefined&&block.kind!=='image'||block.gallery!==undefined&&block.kind!=='gallery')throw Error('Media must match its block type.')
    const link=block.link===undefined?undefined:normalizeBodyLink(block.link)
-   if(link&&!['image','button'].includes(String(block.kind)))throw Error('This block does not support a destination.')
+   if(link&&!['image','button','shape'].includes(String(block.kind)))throw Error('This block does not support a destination.')
    if(block.kind==='button'&&!link)throw Error('Choose a button destination.')
    const embed=block.kind==='video'?normalizeEmbed(block.embed):undefined
    if(block.embed!==undefined&&block.kind!=='video'||block.kind==='video'&&!embed)throw Error('Provide a video title and YouTube embed URL.')
@@ -126,10 +136,10 @@ export function normalizeSections(value: unknown): Section[] | undefined {
    if (characters > 20000) throw Error('Section text exceeds 20,000 characters.')
    const column = number(block.column,1,12,1), span = number(block.span,1,12,12)
    if (column + span > 13) throw Error('A block must fit the twelve-column grid.')
-   return {...(block.phone===undefined?{}:{phone:phone(block.phone,true)}),id:identity(block.id),kind:block.kind as TextBlock['kind'],...(summary?{summary}:{}),...(size!==undefined?{size}:{}),...(caption===undefined?{}:{caption}),...(attribution===undefined?{}:{attribution}),...(link?{link}:{}),...(embed?{embed}:{}),...(gallery?{gallery}:{}),...(image?{image}:{}),...(content?{content}:{}),...(block.format===undefined?{}:{format:choice(block.format,['p','h1','h2','h3','h4','blockquote','pre','p-large','p-small','div'] as const,'p')}),text,column,span,row:number(block.row,1,100,1),order:number(block.order,0,100,0),align:choice(block.align,['left','center','right','justify'] as const,'left'),vertical:choice(block.vertical,['start','center','end'] as const,'start')}
+   return {...(block.phone===undefined?{}:{phone:phone(block.phone,true)}),id:identity(block.id),kind:block.kind as TextBlock['kind'],...(chart?{chart}:{}),...(shape?{shape}:{}),...(summary?{summary}:{}),...(size!==undefined?{size}:{}),...(caption===undefined?{}:{caption}),...(attribution===undefined?{}:{attribution}),...(link?{link}:{}),...(embed?{embed}:{}),...(gallery?{gallery}:{}),...(image?{image}:{}),...(content?{content}:{}),...(block.format===undefined?{}:{format:choice(block.format,['p','h1','h2','h3','h4','blockquote','pre','p-large','p-small','div'] as const,'p')}),text,column,span,row:number(block.row,1,100,1),order:number(block.order,0,100,0),align:choice(block.align,['left','center','right','justify'] as const,'left'),vertical:choice(block.vertical,['start','center','end'] as const,'start')}
   })
   return {id,...(anchor?{anchor:String(anchor)}:{}),...(section.phone===undefined?{}:{phone:phone(section.phone,false)}),...(section.height===undefined?{}:{height:choice(section.height,['auto','small','medium','large','full'] as const,'auto')}),...(section.component ? {component:String(section.component)} : {}),kind:choice(section.kind,['text','columns'] as const,'text'),ratio:choice(section.ratio,['1:1','1:2','2:1','1:1:1'] as const,'1:1'),gap:number(section.gap,0,160,24),paddingTop:number(section.paddingTop,0,240,32),paddingBottom:number(section.paddingBottom,0,240,32),...(section.background === undefined ? {} : {background:String(section.background).toLowerCase()}),blocks}
  })
 }
 /** Canonical reading order is the stored order, independent of visual overlap. */
-export const sectionText = (sections: Section[]) => sections.flatMap(section => section.blocks.map(block => [block.summary,block.text,block.caption,block.attribution].filter(Boolean).join('\n')).filter(Boolean)).join('\n\n')
+export const sectionText = (sections: Section[]) => sections.flatMap(section => section.blocks.map(block => [block.summary,block.text,block.chart?.rows.map(([label,value])=>label+' '+value).join('\n'),block.caption,block.attribution].filter(Boolean).join('\n')).filter(Boolean)).join('\n\n')

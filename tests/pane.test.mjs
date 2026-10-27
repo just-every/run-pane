@@ -1974,7 +1974,7 @@ test('native canvas publishes typed destinations and stable section anchors whil
   let draft=await ok(await call('/api/pane/prepare',{site,base:''}));await ok(await call('/api/pane/publish',{revision:draft.id}))
   const read=async()=> (await app.request('/site')).text()
   let html=await read()
-  for(const [label,,href] of destinations){assert.ok(html.includes('href="'+href.replaceAll('&','&amp;')+'"'),label+' resolves its exact destination');assert.match(html,new RegExp('>'+label+' button</a>'))}
+  for(const [label,,href] of destinations){assert.ok(html.includes(' href="'+href.replaceAll('&','&amp;')+'"'),label+' resolves its exact destination');assert.match(html,new RegExp('>'+label+' button</a>'))}
   assert.equal((html.match(/target="_blank" rel="noopener noreferrer"/g)??[]).length,2,'Only the requested external link and button open a new tab')
   for(const kind of ['text','button','line','spacer','accordion'])assert.ok(html.includes('data-block-type="'+kind+'"'),kind+' has a discoverable block type')
   assert.match(html,/<summary>Visiting<\/summary><p>Open weekdays\.<\/p>/)
@@ -1986,6 +1986,12 @@ test('native canvas publishes typed destinations and stable section anchors whil
   assert.equal((html.match(/href="\/site\/our-studio"/g)??[]).length>=2,true,'Page links follow the stable page identity')
   assert.match(await (await app.request('/site/our-studio')).text(),/id="find-us"/)
   for(const mutate of [value=>value.pages.find(page=>page.id==='synthetic-pane-target').sections[0].anchor='bad anchor',value=>value.pages[0].sections[0].blocks[0].content[0].href='javascript:alert(1)',value=>value.pages[0].sections[0].blocks.find(block=>block.kind==='spacer').size=-1]){const invalid=structuredClone(draft.site);mutate(invalid);assert.equal((await call('/api/pane/prepare',{site:invalid,base:draft.id})).status,400,'Unsafe catalog or destination data is refused')}
+  const catalog=structuredClone(draft.site),catalogHome=catalog.pages.find(page=>page.slug==='home')
+  catalogHome.sections[0].blocks.push({id:'visits-chart',kind:'chart',text:'Weekly visits',chart:{type:'bar',rows:[['Monday',12],['Tuesday',-7]]},row:12},{id:'marker',kind:'shape',text:'Workshop marker',shape:{form:'triangle',color:'#123456',outlined:true},link:{href:'page:synthetic-pane-target',newTab:false},row:13},{id:'scrolling',kind:'scrolling-text',text:'Visit the workshop',row:14},{id:'profiles',kind:'social-links',text:'Social links',row:15})
+  catalogHome.body+='\n\nWeekly visits\nMonday 12\nTuesday -7\n\nWorkshop marker\n\nVisit the workshop\n\nSocial links';catalog.socials={facebook:'https://www.facebook.com/syntheticpaneworkshop'}
+  draft=await ok(await call('/api/pane/prepare',{site:catalog,base:draft.id}));await ok(await call('/api/pane/publish',{revision:draft.id}));html=await read()
+  assert.match(html,/<th scope="row">Monday<\/th><td>12<\/td>/);assert.match(html,/<th scope="row">Tuesday<\/th><td>-7<\/td>/);assert.match(html,/fill="none" stroke="#123456"/);assert.match(html,/Pause scrolling/);assert.match(html,/aria-label="Facebook"/)
+  for(const mutate of [value=>value.pages[0].sections[0].blocks.find(block=>block.chart).chart.rows[0][1]=null,value=>value.pages[0].sections[0].blocks.find(block=>block.chart).chart.type='unknown',value=>value.pages[0].sections[0].blocks.find(block=>block.shape).shape.color='url(bad)']){const invalid=structuredClone(draft.site);mutate(invalid);assert.equal((await call('/api/pane/prepare',{site:invalid,base:draft.id})).status,400)}
   const deleted=structuredClone(draft.site);deleted.pages.find(page=>page.id==='synthetic-pane-target').deleted=true
   draft=await ok(await call('/api/pane/prepare',{site:deleted,base:draft.id}))
   for(const path of ['/app?page=home','/app/canvas?page=home']){const response=await app.request(path,{headers:{Cookie:cookie}}),screen=await response.text();assert.equal(response.status,200);assert.ok(screen.includes('Broken links:'));assert.ok(screen.includes('anchor:synthetic-pane-target:synthetic-pane-section'));assert.ok(screen.includes('page:synthetic-pane-target'))}

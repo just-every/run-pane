@@ -5,7 +5,7 @@ export function canvasBody(form,{block,section,newBlock,commit,select,textSelect
  const add=item=>{item.row=Math.max(...section().blocks.map(block=>block.row))+1;section().blocks.push(item);select(item.id);commit()}
  function refresh(){
   const item=block(),link=item?.link
-  if(['line','spacer','accordion'].includes(item?.kind)){input('native-kind').value=item.kind;input('native-summary').value=item.summary??'';input('native-text').value=item.text;input('native-size').value=item.size??32}
+  if(['line','spacer','accordion','chart','shape','scrolling-text','social-links'].includes(item?.kind)){input('native-kind').value=item.kind;input('native-summary').value=item.summary??'';input('native-text').value=item.text;input('native-size').value=item.size??32;if(item.chart){input('chart-type').value=item.chart.type;input('chart-rows').value=item.chart.rows.map(row=>row.join(' | ')).join('\n')}if(item.shape){input('shape-form').value=item.shape.form;input('shape-color').value=item.shape.color;input('shape-outline').checked=item.shape.outlined}}
   input('caption').value=item?.caption??''
   input('attribution').disabled=!(item?.kind==='quote'||item?.format==='blockquote')
   input('attribution').value=item?.attribution??''
@@ -31,12 +31,15 @@ export function canvasBody(form,{block,section,newBlock,commit,select,textSelect
     else{if(item?.kind!=='button')throw Error('Select a button first.');item.text=text;item.link=link;commit()}
    }
    if(action==='native'||action==='update-native'){
-    const kind=input('native-kind').value,text=kind==='accordion'?input('native-text').value.trim():'',summary=input('native-summary').value.trim(),size=Number(input('native-size').value)
+    const kind=input('native-kind').value,text=['line','spacer'].includes(kind)?'':kind==='social-links'?'Social links':input('native-text').value.trim(),summary=input('native-summary').value.trim(),size=Number(input('native-size').value)
     if(kind==='accordion'&&(!summary||!text))throw Error('Enter an accordion title and text.')
     if(kind==='spacer'&&(!Number.isInteger(size)||size<8||size>240))throw Error('Choose a spacer height from 8 to 240 pixels.')
-    const value={kind,text,...(kind==='accordion'?{summary}:{}),...(kind==='spacer'?{size}:{})}
+    if(!['line','spacer'].includes(kind)&&!text)throw Error('Enter block text or a chart title.')
+    const chart=kind==='chart'?{type:input('chart-type').value,rows:input('chart-rows').value.split(/\r?\n/).filter(line=>line.trim()).map(line=>{const parts=line.split('|');if(parts.length!==2||!parts[0].trim()||!parts[1].trim()||!Number.isFinite(Number(parts[1])))throw Error('Enter one label and numeric value per chart row.');return [parts[0].trim(),Number(parts[1])]})}:undefined
+    const shape=kind==='shape'?{form:input('shape-form').value,color:input('shape-color').value,outlined:input('shape-outline').checked}:undefined
+    const value={kind,text,...(chart?{chart}:{}),...(shape?{shape}:{}),...(kind==='accordion'?{summary}:{}),...(kind==='spacer'?{size}:{})}
     if(action==='native')add({...newBlock(),...value})
-    else{if(!['line','spacer','accordion'].includes(item?.kind))throw Error('Select a native block first.');delete item.summary;delete item.size;Object.assign(item,value);commit()}
+    else{if(!['line','spacer','accordion','chart','shape','scrolling-text','social-links'].includes(item?.kind))throw Error('Select a native block first.');delete item.summary;delete item.size;delete item.chart;delete item.shape;delete item.link;Object.assign(item,value);commit()}
    }
    if(action==='quote')add({...newBlock(),kind:'quote',text:'Quote',attribution:''})
    if(action==='video'||action==='update-video'){
@@ -47,7 +50,7 @@ export function canvasBody(form,{block,section,newBlock,commit,select,textSelect
     else{if(item?.kind!=='video')throw Error('Select a video block first.');item.embed=embed;item.text=title;commit()}
    }
    if(action==='destination'||action==='remove-destination'){
-    if(!['image','button'].includes(item?.kind))throw Error('Select an image or button first.')
+    if(!['image','button','shape'].includes(item?.kind))throw Error('Select an image or button first.')
     if(action==='destination')item.link=destination()
     else{if(item.kind==='button')throw Error('Buttons need a destination.');delete item.link}
     commit()
