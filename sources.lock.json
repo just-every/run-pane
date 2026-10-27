@@ -1096,7 +1096,7 @@
       "executable": false
     },
     "scripts/audio-journey.mjs": {
-      "sha256": "712a7e27e007578b6c8da8dac53ff90fb301dd7ea5daaa782d315fad7f8d4cec",
+      "sha256": "fd3214b735bb6ba7a33bd9127d993ba92145065a4008c0610f5476464e367ba8",
       "executable": false
     },
     "scripts/browser-journey.mjs": {
@@ -3864,7 +3864,7 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "edfc0f8925ccca57e8d793d38e07fe097715023e3262fa6164f046cacd100952",
+      "sha256": "85ed2824a39da89abfaedf1434d136f9e9eb68683b35e3f450c08074eb5f376d",
       "executable": false
     },
     "tests/post-fixture.mjs": {

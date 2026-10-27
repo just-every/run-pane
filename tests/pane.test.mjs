@@ -2018,7 +2018,7 @@ test('native owners publish uploaded audio only through referenced public pages'
   let draft=await ok(await call('/api/pane/prepare',{site:fixture}))
   const files=[]
   for(const [name,type] of [['workshop.mp3','audio/mpeg'],['workshop.m4a','audio/mp4']]){
-   const bytes=await readFile('fixtures/audio/'+name),body=new FormData();body.set('base',draft.id);body.set('file',new File([bytes],name,{type}))
+   const bytes=await readFile('./fixtures/audio/'+name),body=new FormData();body.set('base',draft.id);body.set('file',new File([bytes],name,{type}))
    assert.equal((await app.request('/api/pane/library/upload',{method:'POST',headers:{Origin:origin},body})).status,401)
    assert.equal((await app.request('/api/pane/library/upload',{method:'POST',headers:{Cookie:cookie,Origin:'https://elsewhere.invalid'},body})).status,403)
    draft=await ok(await app.request('/api/pane/library/upload',{method:'POST',headers:{Cookie:cookie,Origin:origin},body}));const file=draft.site.libraryFiles.at(-1);files.push({file,bytes})
