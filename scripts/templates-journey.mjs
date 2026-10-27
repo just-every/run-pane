@@ -68,9 +68,21 @@ try{
     for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await check(page,'catalog',width);const account=page.locator('[data-tip="Account and team"]');await account.hover();await page.getByRole('tooltip',{name:'Account and team'}).waitFor();await page.mouse.move(0,0);await account.focus();await page.keyboard.press('Tab');await page.keyboard.press('Shift+Tab');await page.getByRole('tooltip',{name:'Account and team'}).waitFor();await page.keyboard.press('Escape');await page.getByRole('tooltip').waitFor({state:'hidden'})}
     await page.setViewportSize({width:1440,height:1000})
    }
-   const card=page.locator(`[data-template-id="${id}"]`);await card.locator('summary').click();await card.getByLabel('Your business name').fill('synthetic-pane-'+(index+1));await Promise.all([page.waitForURL(url=>url.pathname==='/app'),card.getByRole('button',{name:'Create draft site'}).click()])
+   let startingPage=page,adminContext
+   if(index===0){
+    const link=await fixture.invitePerson(context,{email:'admin@example.test',displayName:'Template administrator',nativeRole:'admin'})
+    adminContext=await browser.newContext();await fixture.protect(adminContext)
+    const confirmed=await adminContext.request.post(origin+'/auth/confirm',{headers:{Origin:origin},data:{token:new URL(link).searchParams.get('token')},maxRedirects:0});assert.equal(confirmed.status(),303,await confirmed.text())
+    startingPage=await adminContext.newPage();await startingPage.goto(origin+'/app/templates')
+   }
+   const card=startingPage.locator(`[data-template-id="${id}"]`);await card.locator('summary').click();await card.getByLabel('Your business name').fill('synthetic-pane-'+(index+1));await Promise.all([startingPage.waitForURL(url=>url.pathname==='/app'),card.getByRole('button',{name:'Create draft site'}).click()])
    const initial=(await state()).draft
    assert.equal(initial.site.template,id);assert.equal(initial.site.name,'synthetic-pane-'+(index+1));assert.deepEqual(initial.site.pages.map(page=>page.slug),['home','services','visit-us'],'Every template starts all three editable pages');assert.equal((await state()).live,null,'Starting never publishes')
+   if(adminContext){
+    assert.equal((await state()).people[initial.actor],'Template administrator','The native admin prepares the template draft')
+    const refused=await adminContext.request.post(origin+'/api/pane/publish',{headers:{Origin:origin},data:{revision:initial.id}});assert.equal(refused.status(),403,'Admin preparation grants no publication authority')
+    await adminContext.close()
+   }
    await call('/api/pane/templates/start',{template:expected[(index+1)%expected.length],name:'replacement'},409)
    assert.equal((await state()).draft.id,initial.id,'A second choice preserves the first draft')
    // Edit every page through the existing canvas, then reopen its durable revision.
