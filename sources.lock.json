@@ -612,7 +612,7 @@
       "executable": false
     },
     "public/pane-canvas-body.mjs": {
-      "sha256": "6b1e73e41aff2df9b3f53085dbfffb1d12349e7fae6ee6e9bf7f2e45db88f028",
+      "sha256": "664441afa7d5e520abc979a2e612d3af25e5a8de99b52a497a8363f1aeb43ceb",
       "executable": false
     },
     "public/pane-canvas-forms.mjs": {
@@ -1300,7 +1300,7 @@
       "executable": false
     },
     "scripts/grid-forms-journey.mjs": {
-      "sha256": "476f82cd2505ff20e7101039c5cfe241e8fa79504d5322fc71f192de4b2a353b",
+      "sha256": "a959e87ff0c49f8db83ca17ea9dad6c462f0c4fd011262616126bd5393c1937d",
       "executable": false
     },
     "scripts/health-browser-journey.mjs": {
@@ -3348,7 +3348,7 @@
       "executable": false
     },
     "src/pane/forms.ts": {
-      "sha256": "a7c62ac9a163cbb44181e47cf0926787d9905db92a8e90b46bc7d765b578f994",
+      "sha256": "91dbf76daa3559ef82b523a9ebdba82d5fcca1053d89df6d164c0dd63cebf508",
       "executable": false
     },
     "src/pane/gallery.ts": {
@@ -3484,7 +3484,7 @@
       "executable": false
     },
     "src/pane/public-view.ts": {
-      "sha256": "c8a72a134d0ca2950bf09c12bab7dd536059e0a18a61e03c99532412e1ec1b7d",
+      "sha256": "793f1b6539dc515b90ea4bd46db8dc2d76857ba87dae46645f8c0d3eb9c94cfd",
       "executable": false
     },
     "src/pane/public.ts": {

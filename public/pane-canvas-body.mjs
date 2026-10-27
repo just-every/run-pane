@@ -41,7 +41,7 @@ export function canvasBody(form,{block,section,newBlock,commit,select,textSelect
     const shape=kind==='shape'?{form:input('shape-form').value,color:input('shape-color').value,outlined:input('shape-outline').checked}:undefined
     const value={kind,text,...(chart?{chart}:{}),...(shape?{shape}:{}),...(kind==='accordion'?{summary}:{}),...(kind==='spacer'?{size}:{})}
     if(action==='native')add({...newBlock(),...value})
-    else{if(!['line','spacer','accordion','chart','shape','scrolling-text','social-links','search'].includes(item?.kind))throw Error('Select a native block first.');delete item.summary;delete item.size;delete item.chart;delete item.shape;delete item.link;Object.assign(item,value);commit()}
+    else{if(!['line','spacer','accordion','chart','shape','scrolling-text','social-links','search'].includes(item?.kind))throw Error('Select a native block first.');delete item.summary;delete item.size;delete item.chart;delete item.shape;if(kind!=='shape')delete item.link;Object.assign(item,value);commit()}
    }
    if(action==='embed'||action==='update-embed'){
     const kind=input('embed-kind').value,title=input('embed-title').value.trim(),url=new URL(input('embed-url').value)
@@ -65,7 +65,7 @@ export function canvasBody(form,{block,section,newBlock,commit,select,textSelect
    }
    if(action==='quote')add({...newBlock(),kind:'quote',text:'Quote',attribution:''})
    if(action==='destination'||action==='remove-destination'){
-    if(!['image','button','shape'].includes(item?.kind))throw Error('Select an image or button first.')
+    if(!['image','button','shape'].includes(item?.kind))throw Error('Select an image, button or shape first.')
     if(action==='destination')item.link=destination()
     else{if(item.kind==='button')throw Error('Buttons need a destination.');delete item.link}
     commit()
