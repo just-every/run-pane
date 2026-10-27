@@ -3684,7 +3684,7 @@
       "executable": false
     },
     "src/pane/ui/canvas.ts": {
-      "sha256": "b2779fad1d7a93f708bbeb228728008670bf9d29678937230a90ce831198a84d",
+      "sha256": "190af299107891dfcdf63f6af9dda8ceba9e7b8ffa746cfb283db38d0c3989fb",
       "executable": false
     },
     "src/pane/ui/changes.ts": {
