@@ -57,7 +57,7 @@ A business phone system has no sibling; Pane links phone numbers for click-to-ca
 
 - **Published clauses** are the `- **ID — Title.**` bullets in [Released guarantees](#released-guarantees). The previous contract and ACCEPTANCE.md already promised them; this edition gives them IDs and keeps every guarantee, widening only where a target clause names the change.
 - **Target clauses** are the `#### ID — Title.` headings in [Target clauses](#target-clauses), and **push-further clauses** are those in [Push further](#push-further). They are binding product requirements; each carries its status beside it.
-- **Status** is judged from the code and tests at commit `ca1f1acb570200e0ffa69e4075ff4b832e7f78ce` (27 October 2026). `done` means the behavior ships and a cited test or journey exercises it; `partial` means some of it ships, or it ships without a test; `missing` means there is no implementation. Status is a build-planning judgment, not acceptance.
+- **Status** is judged from the code and tests at commit `981c8f165b179781113f8b4d6dd5b963af5771c5` (27 October 2026). `done` means the behavior ships and a cited test or journey exercises it; `partial` means some of it ships, or it ships without a test; `missing` means there is no implementation. Status is a build-planning judgment, not acceptance.
 
 ## Target amendment — 16 October 2026
 
@@ -1157,7 +1157,7 @@ The generated `docs/CLAIMS.md` register maps every implementation status to its 
 
 ## Status
 
-Judged from the code and tests at commit `ca1f1acb570200e0ffa69e4075ff4b832e7f78ce` (27 October 2026). CMS-001 and CMS-002 use the native collection routes and shared body editor. Their source and public-door assertions are unchanged by subsequent generated-document and source-lock edits. The target acceptance sentences are unchanged. Other clause statuses retain their earlier judgments; PAGE-015 and API-001 remain partial.
+Judged from the code and tests at commit `981c8f165b179781113f8b4d6dd5b963af5771c5` (27 October 2026). CMS-001 and CMS-002 use the native collection routes and shared body editor. Their source and public-door assertions are unchanged by subsequent generated-document and source-lock edits. The target acceptance sentences are unchanged. Other clause statuses retain their earlier judgments; PAGE-015 and API-001 remain partial.
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
