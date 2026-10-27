@@ -6,7 +6,7 @@ import { promotionSettings } from './promotion-settings'
 import { localeSettings, businessFields } from './locale-settings'
 import { pageStatus } from '../page-review'
 import { can } from '../roles'
-import { scheduleSettings } from './schedule-settings'
+import { scheduleSettings,timeZoneOptions } from './schedule-settings'
 import { activePages, homeSlug, pageId, pagePath } from '../pages'
 import { pageExtraFields } from '../page-extras'
 import { pageOrganization } from './page-organization'
@@ -111,5 +111,11 @@ export function editor(data: Dashboard, requested: string): string {
   const desktop = `<section class="desktop" aria-label="Desktop preview of ${escape(page.title)}"><div class="desktop-bar" aria-hidden="true"><i></i><i></i><i></i><span>${sitePath(slug,site)}</span></div><div class="desktop-viewport"><div class="desktop-page">${publicPage(site, slug, 'frame')}</div></div></section>`
   const by = data.people[draft.actor] ?? 'a former team member'
   const chip = `<a class="chip" href="/app/sites#history"><span class="chip-icon">${icon('history')}</span><span class="chip-copy"><strong>${same ? 'Live' : 'Prepared'} · ${escape(by)}</strong><span>Revision <code>${short(draft.id)}</code> · ${when(draft.created_at, 'short',data.timeZone,data.locale)}</span></span>${icon('arrow')}</a>`
-  return `<script src="/pane-autosave.js" defer></script>${pageBar(data, slug, changed, owner, canEdit)}<div class="canvas canvas-fit">${markNote(data, false)}<div class="stage">${phone}<div class="side"><div class="cardstack">${editCard(site, page, draft.id, canEdit, Boolean(data.live) && !change.changed,can(data,'settings:write'),owner)}${alertCard(data, page, change, canEdit)}</div>${desktop}</div></div></div>${dock(activePages(site), slug, entry => changes[entry]?.changed ?? false, chip,site,data.timeZone,data.locale)}`
+  return `<script src="/pane-autosave.js" defer></script>${pageBar(data, slug, changed, owner, canEdit)}<div class="canvas canvas-fit">${markNote(data, false)}<div class="stage">${phone}<div class="side"><div class="cardstack">${editCard(site, page, draft.id, canEdit, Boolean(data.live) && !change.changed,can(data,'settings:write'),owner)}${owner?pageSchedule(data,page):''}${alertCard(data, page, change, canEdit)}</div>${desktop}</div></div></div>${dock(activePages(site), slug, entry => changes[entry]?.changed ?? false, chip,site,data.timeZone,data.locale)}`
+}
+
+function pageSchedule(data:Dashboard,page:Page):string{
+ const draft=data.draft!,request=data.pageRequests?.find(request=>request.page_id===pageId(page)&&data.revisions.find(row=>row.id===request.revision)?.site.pages.some(candidate=>pageId(candidate)===pageId(page)&&JSON.stringify(candidate)===JSON.stringify(page)))
+ if(!data.live||!request)return ''
+ return `<details><summary>Page publication schedule</summary><p>Approve this reviewed page version for its local publication time. Newer work stays private.</p><form class="edit-form content-schedule" method="post" action="/app/page-schedule">${key()}${hidden('base',draft.id)}${hidden('page',pageId(page))}${hidden('slug',page.slug)}${hidden('request',request.id)}<label>Page publication time zone<select name="timeZone" aria-label="Page publication time zone">${timeZoneOptions(draft.site.automations?.timeZone??'America/Chicago')}</select></label><label>Publish page at<input type="datetime-local" name="start" required></label><label>Unpublish page at (optional)<input type="datetime-local" name="end"></label><button class="secondary">Save unapproved page schedule</button><button class="secondary" formaction="/app/page-schedule-approve">Approve page schedule</button></form></details>`
 }

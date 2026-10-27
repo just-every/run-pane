@@ -294,3 +294,12 @@
 
 .pane .canvas-scroll{max-width:100%;overflow:auto}.pane [data-layout-canvas]{min-width:0;margin-inline:auto}.pane .canvas-devices{display:grid;gap:8px;margin-bottom:16px;max-width:36rem}.pane .canvas-devices select{min-height:44px}.pane [data-layout-canvas] [data-phone-override]{outline:2px dotted var(--pn-action);outline-offset:2px}.pane [data-layout-canvas] [data-selected]{outline-style:dashed}
 .pane [data-image-settings][hidden]{display:none}
+
+/* Preserve the workspace palette with enough contrast for small action text. */
+.rer-themed .pane .screen-pages .primary,
+.rer-themed .pane .screen-pages .device-toggle label:has(input:checked) {
+ background: color-mix(in srgb, var(--pn-action) 95%, var(--pn-ink));
+}
+
+.pane .content-schedule, .pane .content-schedule label { min-width: 0; max-width: 100%; }
+.pane .content-schedule select { width: 100%; min-width: 0; max-width: 100%; }
