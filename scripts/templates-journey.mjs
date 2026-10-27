@@ -10,13 +10,13 @@ const categories=['restaurant','salon-spa','trades','professional','clinic','stu
 const expected=categories.flatMap(category=>[1,2,3,4,5].map(number=>category+'-'+number))
 const browser=await chromium.launch({headless:true,...(process.env.PANE_CHROMIUM?{executablePath:process.env.PANE_CHROMIUM}:{}),args:['--no-sandbox','--use-mock-keychain','--password-store=basic']})
 const results=[]
-async function check(page,label,width){
+async function check(page,label,width,slugs=['home','services','visit-us']){
  await page.evaluate(()=>document.fonts.ready)
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,label+' overflow at '+width)
  if(!label.startsWith('catalog')){
   await page.keyboard.press('Tab');assert.equal(await page.locator(':focus').innerText(),'Skip to content');await page.keyboard.press('Enter');assert.equal(await page.evaluate(()=>location.hash),'#main')
   if(width===390){await page.locator('.public-menu-mobile>summary').focus();await page.keyboard.press('Enter');assert.equal(await page.locator('.public-menu-mobile').getAttribute('open'),'','Mobile navigation opens by keyboard')}
-  const menu=page.locator(width===390?'.public-menu-mobile nav':'.public-menu-desktop');assert.deepEqual(await menu.locator('a').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('href'))),['/site','/site/services','/site/visit-us','/site/search'],'Every page destination is reachable from navigation')
+  const menu=page.locator(width===390?'.public-menu-mobile nav':'.public-menu-desktop');assert.deepEqual(await menu.locator('a').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('href'))),['/site',...slugs.slice(1).map(slug=>'/site/'+slug),'/site/search'],'Every page destination is reachable from navigation')
   const controls=await page.locator('a,button,summary').evaluateAll(nodes=>nodes.filter(node=>node.getClientRects().length&&node.tabIndex>=0).map(node=>({tag:node.tagName,text:node.innerText.trim()})))
   assert.ok(controls.some(control=>control.text==='Skip to content'),'Keyboard inventory includes the skip link')
   const reached=new Set()
@@ -92,17 +92,49 @@ try{
     await page.waitForFunction(()=>document.querySelector('[data-save-status]')?.textContent==='Draft saved. Not published.')
     await page.reload();assert.equal(await page.locator('[contenteditable=true]').first().innerText(),'Personalized '+id+' '+slug,'Canvas edits reopen')
    }
-   const draft=(await state()).draft;assert.equal((await state()).live,null,'Canvas autosave stays private')
+   async function previewLinks(draft){
+    for(const source of draft.site.pages){
+     await page.goto(origin+'/preview/'+draft.id+'/'+source.slug)
+     const target=draft.site.pages.find(candidate=>candidate.id===(source.id==='visit-us'?'services':'visit-us'))
+     const button=page.locator('[data-block] a').last()
+     assert.equal(await button.getAttribute('href'),'./'+target.slug,'Template preview CTA stays in the reviewed draft')
+     await button.click()
+     assert.equal(new URL(page.url()).pathname,'/preview/'+draft.id+'/'+target.slug,'Template preview CTA never escapes to the live website')
+     assert.equal(await page.locator('.preview-banner').count(),1,'Destination retains the draft banner')
+     assert.equal(await page.locator('[data-block]').first().innerText(),'Personalized '+id+' '+target.id,'Destination is the reviewed draft content')
+    }
+   }
+   const edited=(await state()).draft;assert.equal((await state()).live,null,'Canvas autosave stays private')
+   await previewLinks(edited)
+   if(index===0){
+    await page.goto(origin+'/app');await page.getByText('Pages and folders',{exact:true}).click()
+    for(const destination of ['services','visit-us'])await page.locator(`[data-page-id="${destination}"]`).getByLabel('Address',{exact:true}).fill(destination+'-renamed')
+    await page.waitForFunction(()=>document.querySelector('[data-save-status]')?.textContent==='Draft saved. Not published.')
+    await page.reload()
+    const renamed=(await state()).draft
+    assert.deepEqual(renamed.site.pages.map(item=>({id:item.id,slug:item.slug})),[{id:'home',slug:'home'},{id:'services',slug:'services-renamed'},{id:'visit-us',slug:'visit-us-renamed'}],'Renaming preserves destination identities')
+    await previewLinks(renamed)
+    await previewLinks(edited)
+   }
+   const draft=(await state()).draft,slugs=draft.site.pages.map(item=>item.slug)
    await page.goto(origin+'/app/sites');await page.getByRole('button',{name:'Approve & publish',exact:true}).first().click()
    const published=await state();assert.equal(published.live.id,draft.id,'Explicit approval publishes the reviewed revision');assert.equal(published.approvals.length,1)
    for(const width of [1440,390]){
     await page.setViewportSize({width,height:1000})
-    for(const slug of ['home','services','visit-us']){
+    for(const slug of slugs){
      const response=await page.goto(origin+(slug==='home'?'/site':'/site/'+slug));assert.equal(response.status(),200)
-     assert.equal(await page.locator('[data-block]').first().innerText(),'Personalized '+id+' '+slug,'Published page contains the accepted canvas edit')
+     assert.equal(await page.locator('[data-block]').first().innerText(),'Personalized '+id+' '+draft.site.pages.find(item=>item.slug===slug).id,'Published page contains the accepted canvas edit')
      assert.equal(await page.locator('[data-section]').count(),3,'Every template section is delivered')
      assert.equal(await page.locator('.preview-banner').count(),0)
-     await check(page,id+'-'+slug,width)
+     await check(page,id+'-'+slug,width,slugs)
+     const source=draft.site.pages.find(item=>item.slug===slug),target=draft.site.pages.find(item=>item.id===(source.id==='visit-us'?'services':'visit-us'))
+     const button=page.locator('[data-block] a').last()
+     assert.equal(await button.getAttribute('href'),'/site/'+target.slug,'Template live CTA follows the destination identity after rename')
+     const destination=await context.request.get(origin+'/site/'+target.slug,{maxRedirects:0})
+     assert.equal(destination.status(),200,'Renamed template destination is served directly without a redirect')
+     await button.click()
+     assert.equal(new URL(page.url()).pathname,'/site/'+target.slug,'Template CTA reaches the correct published destination')
+     assert.equal(await page.locator('[data-block]').first().innerText(),'Personalized '+id+' '+target.id,'Template CTA serves the chosen destination content')
     }
    }
    console.log('Template passed: '+id+'; edited and published three pages; overflow and axe at 1440 and 390')
