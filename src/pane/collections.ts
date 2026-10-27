@@ -1,7 +1,8 @@
+import {normalizeCollectionTemplate,validateTemplateItem} from './collection-template'
 import {cleanSlug} from './pages'
 import {collectionId,collectionKeys,collectionObject,collectionText,normalizeCollectionValue} from './collection-values'
 import type {Collection,CollectionField,CollectionFieldType,CollectionItem,CollectionSchema} from './collection-types'
-export type {Collection,CollectionField,CollectionFieldType,CollectionItem,CollectionRichText,CollectionSchema} from './collection-types'
+export type {Collection,CollectionField,CollectionFieldType,CollectionItem,CollectionRichText,CollectionSchema,CollectionTemplate} from './collection-types'
 
 const fieldTypes:readonly CollectionFieldType[]=['text','richText','image','number','price','date','link','reference','option']
 function fields(value:unknown):CollectionField[]{
@@ -30,8 +31,9 @@ function fields(value:unknown):CollectionField[]{
 }
 function schema(value:unknown):CollectionSchema{
  const input=collectionObject(value,'a collection schema')
- collectionKeys(input,['id','prefix','title','fields'],'collection schema')
- return {id:collectionId(input.id),prefix:cleanSlug(input.prefix),title:collectionText(input.title,'Collection title',120),fields:fields(input.fields)}
+ collectionKeys(input,['id','prefix','title','fields','template'],'collection schema')
+ const normalizedFields=fields(input.fields),template=normalizeCollectionTemplate(input.template,normalizedFields)
+ return {id:collectionId(input.id),prefix:cleanSlug(input.prefix),title:collectionText(input.title,'Collection title',120),fields:normalizedFields,...(template?{template}:{})}
 }
 function item(value:unknown,schema:CollectionSchema):CollectionItem{
  const input=collectionObject(value,'a collection item')
@@ -43,7 +45,9 @@ function item(value:unknown,schema:CollectionSchema):CollectionItem{
   const value=normalizeCollectionValue(field,Object.hasOwn(source,field.id)?source[field.id]:undefined)
   if(value!==undefined)values[field.id]=value
  }
- return {id:collectionId(input.id),slug:cleanSlug(input.slug),title:collectionText(input.title,'Item title',120),values}
+ const normalized={id:collectionId(input.id),slug:cleanSlug(input.slug),title:collectionText(input.title,'Item title',120),values}
+ validateTemplateItem(schema,normalized)
+ return normalized
 }
 /** Validate schemas first, then references against the complete normalized set. */
 export function normalizeCollections(value:unknown):Collection[]|undefined{
@@ -53,8 +57,8 @@ export function normalizeCollections(value:unknown):Collection[]|undefined{
  const ids=new Set<string>(),prefixes=new Set<string>();let count=0
  const collections:Collection[]=value.map(raw=>{
   const input=collectionObject(raw,'a collection')
-  collectionKeys(input,['id','prefix','title','fields','items'],'collection')
-  const normalized=schema({id:input.id,prefix:input.prefix,title:input.title,fields:input.fields})
+  collectionKeys(input,['id','prefix','title','fields','items','template'],'collection')
+  const normalized=schema({id:input.id,prefix:input.prefix,title:input.title,fields:input.fields,template:input.template})
   if(ids.has(normalized.id)||prefixes.has(normalized.prefix))throw Error('Each collection needs a unique identity and URL prefix.')
   ids.add(normalized.id);prefixes.add(normalized.prefix)
   if(!Array.isArray(input.items)||input.items.length>1000||(count+=input.items.length)>5000)throw Error('Provide at most 1000 items per collection and 5000 overall.')
@@ -90,4 +94,12 @@ export function upsertCollectionItem(existing:Collection[]|undefined,collectionI
  const saved=item(value,collection),previous=collection.items.some(item=>item.id===saved.id)
  const items=previous?collection.items.map(item=>item.id===saved.id?saved:item):[...collection.items,saved]
  return normalizeCollections(current.map(candidate=>candidate.id===collectionId?{...candidate,items}:candidate))!
+}
+
+/** Template saves retain the complete schema and all items for native draft preparation. */
+export function upsertCollectionTemplate(existing:Collection[]|undefined,collectionId:string,value:unknown):Collection[]{
+ const collection=existing?.find(candidate=>candidate.id===collectionId)
+ if(!collection)throw Error('Choose an existing collection before saving a template.')
+ const {items,...schema}=collection
+ return upsertCollection(existing,{...schema,template:value})
 }
