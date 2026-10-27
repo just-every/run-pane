@@ -15,7 +15,7 @@ if(shard!=='canvas'){
 // journeys must not spend one another's sign-in budget or inherit site state.
 const env={...process.env}
 delete env.PANE_BROWSER_FIXTURE
-const journeys=['imports', 'outage', 'custody', 'access', 'privacy', 'acknowledgment', 'traffic', 'analytics', 'navigation', 'pages', 'redirects', 'scheduling', 'promotions', 'gates', 'forms', 'components-code', 'device', 'accessibility', 'ai', 'posts']
+const journeys=['imports', 'outage', 'custody', 'access', 'privacy', 'acknowledgment', 'traffic', 'analytics', 'navigation', 'pages', 'redirects', 'scheduling', 'post-schedules', 'promotions', 'gates', 'forms', 'components-code', 'device', 'accessibility', 'ai', 'posts']
 const canvas=new Set(['components-code','device','accessibility','ai','posts'])
 for(const name of journeys.filter(name=>shard==='all'||(shard==='canvas')===canvas.has(name))) {
  const result=spawnSync(process.execPath, [`scripts/${name}-journey.mjs`], {env, stdio:'inherit'})

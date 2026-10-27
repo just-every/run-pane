@@ -1072,7 +1072,7 @@
       "executable": false
     },
     "scripts/browser-proof.mjs": {
-      "sha256": "5d8eb1d8c7e00f02ba0e847981a0c43294f753edc6930905d06dff3e0f184e4d",
+      "sha256": "1ceb04f082036983bfdebbb53ee51313f074fbc8335d99e8e1fdd679d7afd6c0",
       "executable": false
     },
     "scripts/build-deployment-spec.mjs": {
@@ -1344,7 +1344,7 @@
       "executable": false
     },
     "scripts/scheduling-journey.mjs": {
-      "sha256": "bd93c29966d6bc66bcf34be632ae852a00946bd7c93c764b5960b276099afa86",
+      "sha256": "0d4d0b472a69073bc3bebd65be0e9b2ae88faa1ecfb28a34df035632d38f8815",
       "executable": false
     },
     "scripts/search-journey.mjs": {
