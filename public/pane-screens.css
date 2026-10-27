@@ -129,3 +129,15 @@
 .pane [aria-label="Site ownership"] { overflow-wrap: anywhere; }
 .pane [aria-label="Site ownership"] select, .pane [aria-label="Site ownership"] input[type=email] { width: 100%; }
 .pane [aria-label="Site ownership"] button { max-width: 100%; white-space: normal; }
+
+/* Comment forms share the current editor fields and fit narrow viewports. */
+.pane .screen-posts :is(details, form, label), .pane .screen-comments :is(form, label), .pane #comments :is(form, label) { min-width: 0; }
+.pane [data-comment-settings] :is(input, select), .pane .screen-comments :is(input, textarea), .pane #comments :is(input, select, textarea) { min-width: 0; max-width: 100%; box-sizing: border-box; }
+.pane [data-comment-settings] select, .pane #comments select { width: 100%; }
+.rer-themed .pane .screen-comments { max-width: 1100px; margin: 0 auto; padding: 24px; overflow-wrap: anywhere; }
+.pane .screen-comments .card { margin-block: 12px; }
+.pane .comment-replies { margin-inline-start: 24px; border-inline-start: 2px solid var(--pn-line); padding-inline-start: 16px; }
+.pane #comments { overflow-wrap: anywhere; }
+@media (max-width: 700px) { .rer-themed .pane .screen-comments { padding: 16px; } }
+
+.pane .comment-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 16px; }

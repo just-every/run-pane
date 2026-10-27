@@ -1,3 +1,4 @@
+import {submitComment,likePost} from './comments'
 import {preparedImageResponse} from './image-response'
 import {tags,tagSource,tagSources} from './tags'
 import {blogResponse} from './blog-public'
@@ -7,7 +8,7 @@ import { typedForm,validateForm,boundedForm,uploadStatements,type Upload } from 
 import { accessResponse, pageRules } from './access'
 import { promotionMarkup } from './promotions'
 import { liveCall, liveSnapshot } from './outage'
-import { rejectForm, verifyForm } from './form-protection'
+import { rejectForm, verifyForm,limited,contactLimited,visitor } from './form-protection'
 import { activeBanners } from './schedules'
 import { escape } from './ui/kit'
 import { activePages, homeSlug, pagePath } from './pages'
@@ -24,33 +25,6 @@ import { siteSearch } from './site-search'
 const json = (v:unknown,status=200) => Response.json(v,{status,headers:{'cache-control':'no-store'}})
 const notFound = () => document('Not found','<div class="public-site"><div class="public-shell"><main class="public-main" id="main"><h1>Page not found</h1><p><a href="/site">Back to the home page</a></p></main></div></div>','site').then(r=>new Response(r.body,{status:404,headers:r.headers}))
 const optedOut=(request:Request)=>request.headers.get('DNT')==='1'||request.headers.get('Sec-GPC')==='1'
-async function limited(db:D1Database,key:string,limit:number) {
- const minute = new Date().toISOString().slice(0,16)
- // Only this minute's counts matter, so earlier buckets are dropped as each count is taken.
- const [,r]=await db.batch<{count:number}>([
-  db.prepare('DELETE FROM pane_rate_limits WHERE bucket<?').bind(minute),
-  db.prepare('INSERT INTO pane_rate_limits(bucket,count) VALUES(?,1) ON CONFLICT(bucket) DO UPDATE SET count=count+1 RETURNING count').bind(`${minute}:${key}`),
- ])
- return (r?.results[0]?.count??limit+1)>limit
-}
-/** Each visitor has its own quota per form under a form-wide emergency ceiling; retrying a stored or erased enquiry spends neither. */
-async function contactLimited(db:D1Database,form:string,visitor:string,id:string) {
- if(await db.prepare('SELECT 1 FROM pane_messages WHERE id=? UNION ALL SELECT 1 FROM pane_erased_messages WHERE id=?').bind(id,id).first())return false
- return await limited(db,`contact-visitor:${visitor}:${form}`,20)||await limited(db,'contact:'+form,200)
-}
-/** The visitor a quota belongs to: Cloudflare's client address, an IPv6 address reduced to the /64
- * one subscriber holds, kept only as a keyed digest so no address is stored. */
-async function visitor(request:Request,secret:string) {
- const ip=(request.headers.get('CF-Connecting-IP')??'').toLowerCase()
- let network=ip
- if(ip.includes(':')&&!ip.includes('.')) {
-  const [head,tail]=ip.split('::'),left=head?head.split(':'):[],right=tail?tail.split(':'):[]
-  const groups=tail===undefined?left:[...left,...Array(Math.max(0,8-left.length-right.length)).fill('0'),...right]
-  network=groups.slice(0,4).map(group=>group.replace(/^0+(?=.)/,'')).join(':')+'::/64'
- }
- const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign'])
- return Array.from(new Uint8Array(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode('contact\0'+network))),b=>b.toString(16).padStart(2,'0')).join('')
-}
 export async function publicResponse(request:Request,original:Bindings):Promise<Response|null> {
  const url=new URL(request.url),path=url.pathname
  if(path !== '/site' && !path.startsWith('/site/')) return null
@@ -72,6 +46,8 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
  const redirect=site.redirects?.find(redirect=>redirect.from===path)
  if (redirect && ['GET','HEAD'].includes(request.method)) return new Response(null,{status:redirect.status,headers:{location:redirect.to,'cache-control':'no-store'}})
  const approvedPost=site.blogPosts?.find(post=>blogPostPath(site,post)===path)
+ if(approvedPost&&request.method==='POST'&&url.searchParams.has('like'))return likePost(request,env,site,approvedPost.id)
+ if(approvedPost&&request.method==='POST')return submitComment(request,env,site,approvedPost.id)
  const page=activePages(site).find(page=>page.slug===slug)??approvedPost?.content
  if(url.searchParams.has('pane-brand')){
   const key=url.searchParams.get('pane-brand'),image=key&&['logo','favicon','social'].includes(key)?site.brand?.[key as keyof NonNullable<typeof site.brand>]:undefined
@@ -87,7 +63,7 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   return preparedImageResponse(image,url.searchParams.get('width'),request.method==='HEAD')
  }
 
- const blog=await blogResponse(request,site);if(blog)return blog
+ const blog=await blogResponse(request,site,env);if(blog)return blog
 
  if(path==='/site/visit' && request.method==='POST') {
   if(optedOut(request))return new Response(null,{status:204})

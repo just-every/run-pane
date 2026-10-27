@@ -3,9 +3,9 @@ import { operatorMail } from '../mail.server.mjs'
 import type { Dashboard,Revision } from './model'
 export const paneRoles=['editor','author','comment-moderator','inbox','reporting'] as const
 export type PaneRole=typeof paneRoles[number]
-export type Capability='ai:write'|'posts:write'|'settings:write'|'pages:read'|'pages:write'|'inbox:read'|'inbox:write'|'reports:read'|'imports:read'|'imports:write'|'publish'|'erase'|'audit'|'team'|'tokens'
-export const ownerCapabilities:Capability[]=['ai:write','posts:write','settings:write','pages:read','pages:write','inbox:read','inbox:write','reports:read','imports:read','imports:write','publish','erase','audit','team','tokens']
-const grants:Record<PaneRole,Capability[]>={editor:['pages:read','pages:write','ai:write'],author:['posts:write','ai:write'],'comment-moderator':[],inbox:['inbox:read','inbox:write'],reporting:['reports:read']}
+export type Capability='comments:moderate'|'ai:write'|'posts:write'|'settings:write'|'pages:read'|'pages:write'|'inbox:read'|'inbox:write'|'reports:read'|'imports:read'|'imports:write'|'publish'|'erase'|'audit'|'team'|'tokens'
+export const ownerCapabilities:Capability[]=['comments:moderate','ai:write','posts:write','settings:write','pages:read','pages:write','inbox:read','inbox:write','reports:read','imports:read','imports:write','publish','erase','audit','team','tokens']
+const grants:Record<PaneRole,Capability[]>={editor:['pages:read','pages:write','ai:write'],author:['posts:write','ai:write'],'comment-moderator':['comments:moderate'],inbox:['inbox:read','inbox:write'],reporting:['reports:read']}
 export async function capabilities(db:D1Database,operator:{id:string;role:string}):Promise<Capability[]>{
  if(operator.role==='owner')return [...ownerCapabilities]
  if(operator.role==='admin')return ownerCapabilities.filter(c=>!['publish','erase','audit','team','tokens'].includes(c))
@@ -42,6 +42,8 @@ export function permittedDashboard(data:Dashboard,caps:Capability[],actor:{id:st
  }
 }
 export function routeCapability(path:string,method:string):Capability|undefined{
+ if(['/app/comments','/api/pane/comments'].includes(path)&&method==='GET')return 'comments:moderate'
+ if(path.startsWith('/app/comments/')||path.startsWith('/api/pane/comments/'))return path.endsWith('/reply')?'posts:write':path.endsWith('/settings')||path.endsWith('/close')?'settings:write':'comments:moderate'
  if(method==='GET'&&(path.startsWith('/app/files/')||path.startsWith('/api/pane/files/')))return 'inbox:read'
  if(method==='GET')return ({'/api/pane/ai/history':'ai:write','/api/pane/posts':'posts:write','/app/posts':'posts:write','/app/posts/canvas':'posts:write','/api/pane/pages':'pages:read','/api/pane/collections':'pages:read','/api/pane/activity':'audit','/api/pane/activity/export':'audit','/api/pane/roles':'team','/api/pane/tokens':'tokens','/app':'pages:read','/app/canvas':'pages:write','/app/inquiries':'inbox:read','/app/moves':'imports:read','/app/search':'pages:write'} as Record<string,Capability>)[path]
  const action=path.replace(/^\/(api\/pane|app)\//,'')
@@ -69,7 +71,7 @@ export async function inviteRoles(env:Bindings,request:Request,actorId:string,in
   // Returning the real result preserves native failed-send link revocation.
   return sender.send(message)
  }})
- const returnTo=input.roles.includes('editor')?'/app':input.roles.includes('inbox')?'/app/inquiries':input.roles.includes('reporting')?'/app/sites':input.roles.includes('author')?'/app/posts':'/app'
+ const returnTo=input.roles.includes('comment-moderator')?'/app/comments':input.roles.includes('editor')?'/app':input.roles.includes('inbox')?'/app/inquiries':input.roles.includes('reporting')?'/app/sites':input.roles.includes('author')?'/app/posts':'/app'
  await native.invite(request,{email,displayName:input.displayName,role:'member',returnTo})
  if(!result)throw Error('Invitation was not prepared.')
  return {...result,invited:true}
