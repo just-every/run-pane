@@ -51,23 +51,26 @@ export async function savePost(db:D1Database,actor:string,input:Record<string,an
 
 /** Explicit native-owner approval copies only the selected reviewed post into
  * the live snapshot. A newer retained draft keeps every author's private work. */
-export async function publishPost(db:D1Database,actor:{id:string;role:string},input:{base:string;id:string;review:string}):Promise<Revision>{
+export async function publishPost(db:D1Database,actor:{id:string;role:string},input:{base:string;id:string;review:string},scheduled?:{source:string;at:number;preview?:boolean;queue?:string;finish?:D1PreparedStatement[]}):Promise<Revision>{
  if(actor.role!=='owner'||!await db.prepare("SELECT 1 FROM oa_operators WHERE id=? AND role='owner' AND status='active'").bind(actor.id).first())throw new PostDenied('Only the native owner can publish a reviewed post.')
  const [draft,liveRow]=await Promise.all([latestContent(db),db.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first()])
  if(!draft||draft.id!==input.base)throw new DraftConflict(draft)
  if(!liveRow)throw Error('Publish the initial site before approving individual posts.')
- const post=ownPost(draft.site,input.id,actor.id,true),live=revision(liveRow)
+ const source=scheduled?await db.prepare('SELECT * FROM pane_revisions WHERE id=?').bind(scheduled.source).first():null
+ if(scheduled&&!source)throw Error('The approved schedule source is unavailable.')
+ const reviewed=source?revision(source):draft
+ const post=ownPost(reviewed.site,input.id,actor.id,true),live=revision(liveRow)
  if(post.state!=='review'||!post.review||post.review!==input.review||post.review!==await reviewToken(post))throw Error('Submit this current post for review before publishing.')
  if(!post.byline?.trim()||!post.authorSlug)throw Error('Review an explicit public byline and author slug before publishing.')
- const blog=draft.site.blogs?.find(blog=>blog.id===post.blog)
+ const blog=reviewed.site.blogs?.find(blog=>blog.id===post.blog)
  if(!blog)throw Error('Choose a configured blog before publishing.')
  const liveBlog=live.site.blogs?.find(candidate=>candidate.id===blog.id)
  if(liveBlog&&liveBlog.prefix!==blog.prefix)throw Error('Publish blog URL changes separately before approving an individual post.')
  const previous=live.site.blogPosts?.find(candidate=>candidate.id===post.id)
- const at=Math.max(Date.now(),Date.parse(draft.created_at)+1),created_at=new Date(at).toISOString()
+ const at=Math.max(scheduled?.at??Date.now(),Date.parse(draft.created_at)+1),created_at=new Date(at).toISOString()
  const approved:PublishedPost={id:post.id,blog:post.blog,sourceReview:post.review,excerpt:post.excerpt??'',categories:post.categories??[],tags:post.tags??[],byline:post.byline,authorSlug:post.authorSlug,...(post.featuredImage?{featuredImage:post.featuredImage}:{}),content:{...structuredClone(post.content),hidden:false},publishedAt:previous?.publishedAt??created_at,updatedAt:created_at}
  const {posts:privatePosts,...publicSite}=live.site
- const files=postFiles(draft.site,post.content),fileIds=new Set(files.map(file=>file.id))
+ const files=postFiles(reviewed.site,post.content),fileIds=new Set(files.map(file=>file.id))
  const libraryFiles=[...(live.site.libraryFiles??[]).filter(file=>!fileIds.has(file.id)),...files]
  const used=new Set(approved.content.sections?.flatMap(section=>section.blocks.flatMap(block=>block.gallery?.items.map(item=>item.asset)??[]))??[])
  const copies=(post.media??[]).filter(asset=>used.has(asset.id)).map(asset=>({source:asset.id,asset:{...structuredClone(asset),id:crypto.randomUUID()}}))
@@ -79,6 +82,7 @@ export async function publishPost(db:D1Database,actor:{id:string;role:string},in
  requireImageDescriptions({...site,pages:[{...approved.content,hidden:false}]})
  if(approved.featuredImage&&!approved.featuredImage.decorative&&!approved.featuredImage.alt?.trim())throw Error('Accessibility warning: the featured image needs alternative text or an explicit decorative mark before publishing.')
  const published:Revision={id:crypto.randomUUID(),site,actor:actor.id,hash:await contentHash(site),created_at}
+ if(scheduled?.preview)return published
  const knownMedia=new Set((draft.site.media??[]).map(asset=>asset.id))
  const retainedMedia=[...(draft.site.media??[]),...(site.media??[]).filter(asset=>!knownMedia.has(asset.id))]
  const retainedSite=normalizeSite({...draft.site,...(retainedMedia.length?{media:retainedMedia}:{}),blogPosts:site.blogPosts})
@@ -87,9 +91,11 @@ export async function publishPost(db:D1Database,actor:{id:string;role:string},in
   await db.batch([
    db.prepare(`INSERT INTO pane_revisions(id,site,hash,actor,created_at) SELECT ?,?,?,?,?
     WHERE (SELECT id FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1)=?
-    AND (SELECT live FROM pane_state WHERE id=1)=?`).bind(published.id,JSON.stringify(site),published.hash,actor.id,published.created_at,input.base,live.id),
+    AND (SELECT live FROM pane_state WHERE id=1)=?
+    AND (? IS NULL OR EXISTS(SELECT 1 FROM pane_post_schedules WHERE id=? AND actor=? AND executed_revision IS NULL AND starts_at<=?))`).bind(published.id,JSON.stringify(site),published.hash,actor.id,published.created_at,input.base,live.id,scheduled?.queue??null,scheduled?.queue??null,actor.id,scheduled?.at??0),
    ...approvalStatements(db,{id:crypto.randomUUID(),action:'publish',revision:published.id,actor:actor.id,created_at}),
    revisionStatement(db,retained),
+   ...(scheduled?.finish??[]),
   ])
  }catch(error){
   const current=await latestContent(db)
