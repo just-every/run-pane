@@ -69,7 +69,7 @@ export async function validateForm(form:SiteForm,fields:FormData,id:string){
  if(message.length>5000)state.errors[form.fields[0].key]='Shorten your answers to 5,000 characters in total.'
  return {state,uploads,message,name:state.values.name||'Website visitor',email:form.fields.filter(field=>field.type==='email').map(field=>state.values[field.key]).find(Boolean)??''}
 }
-export async function boundedForm(request:Request){
+export async function boundedForm(request:Pick<Request,'body'|'headers'|'url'>){
  const reader=request.body?.getReader(),chunks:Uint8Array[]=[],limit=6*1024*1024;let size=0
  if(Number(request.headers.get('content-length')??0)>limit)throw Error('Submission exceeds 6 MB.')
  if(reader)while(true){const next=await reader.read();if(next.done)break;size+=next.value.length;if(size>limit){await reader.cancel();throw Error('Submission exceeds 6 MB.')}chunks.push(next.value)}

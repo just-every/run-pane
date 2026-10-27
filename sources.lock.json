@@ -3448,7 +3448,7 @@
       "executable": false
     },
     "src/pane/forms.ts": {
-      "sha256": "096723f404056dcb1c383540aa64d227e5f1891b242d9b08501fd08c93331089",
+      "sha256": "ddd97230e80854b1d0e93fd9538d23a8810f82c194e3d1ffa372706393f82fc4",
       "executable": false
     },
     "src/pane/gallery.ts": {
@@ -4012,7 +4012,7 @@
       "executable": false
     },
     "tests/posts.test.mjs": {
-      "sha256": "f21e2b23c2fee1a6a5be9ef164e8056f5761449c00a3d1453b00b948acf1e227",
+      "sha256": "f5bdeb87d4fdab68b97d6e1f3d3ed679963c9c6aadee0d673076182e1cde32df",
       "executable": false
     },
     "tests/runtime.mjs": {

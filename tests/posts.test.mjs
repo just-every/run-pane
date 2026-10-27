@@ -345,7 +345,7 @@ test('native comment moderation protects notifications, threaded replies, closur
   saved=await ok(await call('/api/pane/posts/submit',{base:saved.base,id:post.id},author));await ok(await call('/api/pane/posts/publish',{base:saved.base,id:post.id,review:saved.posts[0].review}))
   assert.equal((await visitor('Closed by default')).status,403)
   const enquiryId=crypto.randomUUID(),enquiry=new FormData()
-  for(const [key,value] of Object.entries({idempotency:enquiryId,_pane_form:'synthetic-pane-post-form',_pane_form_instance:'synthetic-pane-post-enquiry',name:'Workshop visitor',email:'synthetic-pane-enquirer@example.test',message:'Please restore my chair.','cf-turnstile-response':'synthetic-pane-3:'+createHash('sha256').update('news/story').digest('hex')}))enquiry.set(key,value)
+  for(const [key,value] of Object.entries({idempotency:enquiryId,_pane_form:'synthetic-pane-post-form',_pane_form_instance:'synthetic-pane-post-enquiry',name:'Workshop visitor',email:'synthetic-pane-enquirer@example.test',message:'Please restore my chair.','cf-turnstile-response':'synthetic-pane-3:'+createHash('sha256').update(['news','story'].join('/')).digest('hex')}))enquiry.set(key,value)
   const submitted=await f.request(origin+'/site/news/story',{method:'POST',headers:{Origin:origin},body:enquiry});assert.equal(submitted.status,303,await submitted.clone().text())
   assert.ok((await state()).messages.some(row=>row.id===enquiryId&&row.message.includes('Please restore my chair.')),'A placed post form reaches the enquiry inbox while comments are closed')
   assert.ok(!(await ok(await get('/api/pane/comments'))).some(row=>row.id===enquiryId),'An enquiry is never retained as a comment')
