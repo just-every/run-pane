@@ -27,7 +27,7 @@ export function templateSite(id:unknown,name:unknown):Site {
     const columns=template.variant===0?1:template.variant===3?2:3,span=12/columns,column=index%columns*span+1,row=Math.floor(index/columns)*2+1
     return [block(page+'-detail-'+index,item,'h2',column,span,row),block(page+'-copy-'+index,'Add your own '+item.toLowerCase()+'. Review all starting text before publishing.','p',column,span,row+1)]
    })},
-   {id:page+'-next',kind:'text',ratio:'1:1',gap:16,paddingTop:24,paddingBottom:32,blocks:[block(page+'-next-heading',page==='visit'?'Talk with us':'Take the next step','h2'),{id:page+'-next-link',kind:'button',text:page==='visit'?'Explore our '+template.offering.toLowerCase():'Plan your visit',link:{href:page==='visit'?'/site/services':'/site/visit-us',newTab:false},column:1,span:12,row:2,order:0,align,vertical:'start'}]}]
+   {id:page+'-next',kind:'text',ratio:'1:1',gap:16,paddingTop:24,paddingBottom:32,blocks:[block(page+'-next-heading',page==='visit'?'Talk with us':'Take the next step','h2'),{id:page+'-next-link',kind:'button',text:page==='visit'?'Explore our '+template.offering.toLowerCase():'Plan your visit',link:{href:page==='visit'?'page:services':'page:visit-us',newTab:false},column:1,span:12,row:2,order:0,align,vertical:'start'}]}]
  }
  const pages=['home','services','visit-us'].map(slug=>{const content=sections(slug==='visit-us'?'visit':slug);return {id:slug,slug,title:slug==='home'?template.name:slug==='services'?template.offering:'Visit and contact',body:sectionText(content),sections:content}})
  return {template:template.id,name:name.trim(),description:'Add a short description of your business.',home:'home',pages}

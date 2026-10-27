@@ -1352,7 +1352,7 @@
       "executable": false
     },
     "scripts/templates-journey.mjs": {
-      "sha256": "69353ea0601fa05f0d16de51a5f943c9179e442d058370766e682685aab8b7f7",
+      "sha256": "8bc3a174725d4623859be350e2b01c152174d6dcb347fdf39df85daa2a6b2c46",
       "executable": false
     },
     "scripts/traffic-journey.mjs": {
@@ -3516,7 +3516,7 @@
       "executable": false
     },
     "src/pane/templates.ts": {
-      "sha256": "7d44f3708f7261786d3763f13ab8e562dd3e93a00bd28cd3a42a569b56dcf7d9",
+      "sha256": "aef65cf119194ccc80839bb376fb107ea9ffcfcfebecaed056d20c2bc0a9a61d",
       "executable": false
     },
     "src/pane/ui/access-settings.ts": {
