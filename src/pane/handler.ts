@@ -3,6 +3,7 @@ import {collectionPrivateResponse} from './collection-handlers'
 import {collectionPages} from './collection-page'
 import {contentTrash,contentHistory,deleteContent,restoreContent} from './lifecycle-store'
 import {trashScreen,historyScreen} from './ui/lifecycle'
+import {schedulePost} from './post-schedules'
 import {latestContent,ownPost,postView,PostDenied,savePost,publishPost} from './posts'
 import {postForm} from './post-forms'
 import {postsEditor} from './ui/posts'
@@ -167,6 +168,10 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    result=editor?visibleRevision(retained,caps,actor):postView(retained,actor.id,false)
    notice=deleting?'Moved to trash as a draft. Owner publication is separate.':'Restored as a draft. Submit a restored post for owner review before publication.'
    back='/app/content/trash?kind='+encodeURIComponent(String(input.kind))+(input.kind==='item'?'&collection='+encodeURIComponent(String(input.collection)):'')
+  }else if(['/api/pane/posts/schedule','/app/posts/schedule'].includes(path)){
+   if(!owner||scopes)return json({error:'Native owner only.'},403)
+   result=await schedulePost(env.DB,actor,input)
+   notice=input.cancel==='yes'?'Post schedule cancelled.':input.approve==='yes'?'Post schedule approved.':'Post schedule saved without approval.';back='/app/posts?id='+encodeURIComponent(String(input.id))
   }else if(['/api/pane/posts/publish','/app/posts/publish'].includes(path)){
    const selected={base:String(input.base),id:String(input.id),review:String(input.review)}
    result=env.PANE_LIVE?await liveCall(env,'/post-publish',{actor:{id:actor.id,role:actor.role},...selected}):await publishPost(env.DB,actor,selected)
