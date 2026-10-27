@@ -1,6 +1,6 @@
 # AI rider proof extension
 
-AI-003 is DONE. CT ruled AI-002 STAYS PARTIAL at reviewed commit `9c68cb4775d6668b3bd3424bd2d3c9946df87900` on 26 October 2026 at 22:30Z. This candidate closes those bounded proof gaps and marks AI-002 DONE for a fresh exact-candidate judgment. CMS-004 retains its separate public-blog and rich-body obligations. No acceptance point or role authority changes.
+AI-003 is DONE. CT ruled AI-002 STAYS PARTIAL at `64e7387e92f89dd240fa781c09b416a8fb7e8894` on 27 October 2026 at 01:10Z: the five previous counterexamples discriminate, but Turnstile verification bypassed outbound accounting. This round records every request before that network special case and keeps AI-002 PARTIAL until the counterexample and restored normal proof pass.
 
 The existing “AI-003 and AI-002 browser journey” in `scripts/ai-journey.mjs` loads `riderProof` from `scripts/ai-riders.mjs`. `scripts/browser-proof.mjs` already loads that journey in the canvas shard. No test registration was added or removed. The same production Worker, native authentication, native D1 and real Base AI client run; only the paid provider edge is faked. No live model request was made in this fix round. The previous live-model record remains separately labeled.
 

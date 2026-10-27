@@ -24,9 +24,9 @@ Worker secrets, never in site content or source control. This adapter uses
 Base's AI client, with one request, a 90-second deadline, structured JSON output
 and provider response storage disabled. It supports OpenAI directly.
 
-The owner explicitly sends page text and selected raster bytes to OpenAI. Code,
+The permitted native writer explicitly sends the selected page or own-post text and selected raster bytes to OpenAI. Code,
 form submissions, customer lists and credentials are not included. Confirm the
 provider's actual retention practices before sending sensitive content. Generated
 privacy-policy starters name OpenAI whenever AI is enabled. Proposals are private
-to the initiating owner and excluded from installation archives; accepted text
+to the initiating native writer and excluded from installation archives; accepted text
 is ordinary revision content. Activity records contain only actor, time, operation, page and image identifiers, source and resulting revisions, provider and model, proposal and request identifiers, decisions and sanitized outcomes. Generation clicks are recorded before sending; prompt and output bodies are excluded from activity.
