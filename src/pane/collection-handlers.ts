@@ -74,7 +74,7 @@ export async function collectionPrivateResponse(request:Request,env:Bindings,act
   return api||request.headers.get('Accept')?.includes('application/json')?json(visibleRevision(result,caps,actor)):new Response(null,{status:303,headers:{location:back,'cache-control':'no-store'}})
  }catch(error){
   if(error instanceof PostDenied)return json({error:error.message},403)
-  if(error instanceof DraftConflict)return json({error:error.message,latest:error.latest},409)
+  if(error instanceof DraftConflict)return json({error:error.message,latest:visibleRevision(error.latest,caps,actor)},409)
   return json({error:error instanceof Error?error.message:'Collection action failed.'},400)
  }
 }

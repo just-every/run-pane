@@ -576,7 +576,7 @@
       "executable": false
     },
     "public/pane-base.css": {
-      "sha256": "d8c76478becc133dadcacfdcd6d66d76de67feaeeccdcdb6d9ad3123787317bf",
+      "sha256": "90de5f7da44098483ebd9f763c82a9f676625408453482f142b2530b3e9bec28",
       "executable": false
     },
     "public/pane-blog-settings.mjs": {
@@ -620,7 +620,7 @@
       "executable": false
     },
     "public/pane-editor.css": {
-      "sha256": "116aad0ebae9377faa85239f2c263cf72b6e1855cfa3130e13bda76d3fc009e6",
+      "sha256": "c7b6385d45ec966d21bc3fe02444df8ca22da34f6f67e5a4461471a51b06dc6c",
       "executable": false
     },
     "public/pane-embeds.js": {
@@ -704,7 +704,7 @@
       "executable": false
     },
     "public/pane-screens.css": {
-      "sha256": "c8400e2689789fdfdc60e279419e6e2382bf5fb50c9b5b55cd7d213c7c19690a",
+      "sha256": "d3aa49d7cdb0f657052dda3ecb16d0a93a701327ab9a303886c41fc7db855a1d",
       "executable": false
     },
     "public/pane-search.css": {
@@ -3292,7 +3292,7 @@
       "executable": false
     },
     "src/pane/collection-handlers.ts": {
-      "sha256": "42c6ce4fba13810ebd98ba54bbf29e542fa1e695fcfeb01c39bdfcc516ca132a",
+      "sha256": "9efb45d0bc586dcb53cf331ee9a418d228b868ef5ea07aeb0e27199e70410917",
       "executable": false
     },
     "src/pane/collection-integrity.ts": {
