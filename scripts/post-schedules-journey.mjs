@@ -8,7 +8,7 @@ process.env.PANE_LIVE_FIXTURE='1'
 const fixture=await import('../tests/browser-runtime.mjs')
 const browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH}:{}),args:['--no-sandbox','--use-mock-keychain','--password-store=basic']})
 const context=await browser.newContext(),page=await context.newPage(),origin=fixture.origin
-const folder=resolve(process.env.PANE_SCREENSHOTS??'test-results/post-schedules');await mkdir(folder,{recursive:true})
+const folder=resolve(process.env.PANE_SCREENSHOTS??'./test-results/post-schedules');await mkdir(folder,{recursive:true})
 page.setDefaultTimeout(20000)
 const response=value=>({status:value.status(),json:()=>value.json(),text:()=>value.text(),clone:()=>({text:()=>value.text()})})
 const post=async(path,data)=>response(await context.request.post(origin+path,{headers:{Origin:origin},data}))
