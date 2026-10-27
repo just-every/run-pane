@@ -1,3 +1,5 @@
+import {contentTrash,contentHistory,deleteContent,restoreContent} from './lifecycle-store'
+import {trashScreen,historyScreen} from './ui/lifecycle'
 import {latestContent,ownPost,postView,PostDenied,savePost,publishPost} from './posts'
 import {postForm} from './post-forms'
 import {postsEditor} from './ui/posts'
@@ -57,6 +59,18 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    const required=request.method==='GET'?({'/api/pane':'status:read','/api/pane/pages':'pages:read','/api/pane/collections':'collections:read'} as Record<string,string>)[path]:
     path==='/api/pane/prepare'||path==='/api/pane/autosave'?'draft:write':path.startsWith('/api/pane/import/')?'imports:write':undefined
    if(!required||!scopes.includes(required))return json({error:'Token scope refused.'},403)
+  }
+  if(request.method==='GET'&&['/app/content/trash','/api/pane/content/trash','/app/content/history','/api/pane/content/history'].includes(path)){
+   const query=Object.fromEntries(url.searchParams),kind=query.kind??(caps.includes('pages:write')?'page':'post')
+   const result=path.endsWith('/trash')?await contentTrash(env.DB,actor,kind):await contentHistory(env.DB,actor,query)
+   if(api)return json(result)
+   const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps,actor)
+   if(!owner&&actor.role!=='admin'){data.team=[{name:actor.displayName,role:caps.includes('pages:write')?'editor':'author'}];data.people={}}
+   data.notice=query.notice
+   if('target' in result){
+    return document('Content history',historyScreen(data,result.base,result.target,result.rows,query.revision,query.before,result.next))
+   }
+   return document('Trash',trashScreen(data,result.base,result.rows,kind as 'page'|'post'))
   }
   if(request.method==='GET'&&(path.startsWith('/app/files/')||path.startsWith('/api/pane/files/')))return privateFile(env.DB,decodeURIComponent(path.split('/').at(-1)!))
   if(request.method==='GET'&&['/app/posts','/app/posts/canvas'].includes(path)){
@@ -128,7 +142,8 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   if(formData&&path==='/app/access')input.members=formData.getAll('members')
   const action=api?path.slice('/api/pane/'.length):path.slice('/app/'.length)
   let result:unknown,notice='Saved.',back='/app'
-  if(!routeCapability(path,'POST')||!caps.includes(routeCapability(path,'POST')!))return json({error:'Your role cannot perform this action.'},403)
+  const lifecycleAction=['/api/pane/content/delete','/app/content/delete','/api/pane/content/restore','/app/content/restore'].includes(path)
+  if(!lifecycleAction&&(!routeCapability(path,'POST')||!caps.includes(routeCapability(path,'POST')!)))return json({error:'Your role cannot perform this action.'},403)
   if((!owner||scopes)&&['/api/pane/import/dry-run','/api/pane/import/apply','/app/import/dry-run','/app/import/apply'].includes(path)&&input.source){
    const imported=parseImportDocument(typeof input.source==='string'?input.source:JSON.stringify(input.source)).site
    if(imported?.customCode||imported?.pages.some(page=>page.customCode))return json({error:'Only a native owner authors custom code, including imports.'},403)
@@ -141,7 +156,12 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    const id=String(input.id??saved.posts.at(-1)?.id??'')
    return new Response(null,{status:303,headers:{location:'/app/posts?id='+encodeURIComponent(id)}})
   }
-  if(['/api/pane/posts/publish','/app/posts/publish'].includes(path)){
+  if(lifecycleAction){
+   const deleting=path.endsWith('/delete'),retained=deleting?await deleteContent(env.DB,actor,input):await restoreContent(env.DB,actor,input)
+   result=editor?visibleRevision(retained,caps,actor):postView(retained,actor.id,false)
+   notice=deleting?'Moved to trash as a draft. Owner publication is separate.':'Restored as a draft. Submit a restored post for owner review before publication.'
+   back='/app/content/trash?kind='+encodeURIComponent(String(input.kind))
+  }else if(['/api/pane/posts/publish','/app/posts/publish'].includes(path)){
    const selected={base:String(input.base),id:String(input.id),review:String(input.review)}
    result=env.PANE_LIVE?await liveCall(env,'/post-publish',{actor:{id:actor.id,role:actor.role},...selected}):await publishPost(env.DB,actor,selected)
    notice='Post published. Other private drafts are unchanged.';back='/app/posts?id='+encodeURIComponent(String(input.id))
@@ -247,7 +267,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   } else if(action==='page-request-review') {
    result=await requestPageReview(env.DB,actor.id,String(input.base??''),String(input.page??''));notice='Page sent for review.';back='/app?page='+encodeURIComponent(String(input.slug??''))
   } else if(action==='page-publish') {
-   result=await publishPage(env.DB,actor.id,String(input.base??''),String(input.page??''),String(input.request??''));notice='Selected page published. Other drafts are kept.';back='/app?page='+encodeURIComponent(String(input.slug??''))
+   result=env.PANE_LIVE?await liveCall(env,'/page-publish',{actor:actor.id,base:String(input.base??''),page:String(input.page??''),request:String(input.request??'')}):await publishPage(env.DB,actor.id,String(input.base??''),String(input.page??''),String(input.request??''));notice='Selected page published. Other drafts are kept.';back='/app?page='+encodeURIComponent(String(input.slug??''))
   } else if(action==='publication-revoke') {
    result=env.PANE_LIVE?await liveCall(env,'/revoke',{actor:actor.id,id:String(input.revision),confirm:input.confirm}):await revokePublication(env.DB,actor.id,String(input.revision),input.confirm)
    notice='Approval revoked. The published site is down.';back='/app/sites'
