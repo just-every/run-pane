@@ -1388,7 +1388,7 @@
       "executable": false
     },
     "scripts/scheduling-journey.mjs": {
-      "sha256": "3fedc8f40211bfae3ca72810c944c78c8391f9d8bb90266d53526601bdf68c8f",
+      "sha256": "bd93c29966d6bc66bcf34be632ae852a00946bd7c93c764b5960b276099afa86",
       "executable": false
     },
     "scripts/search-journey.mjs": {
@@ -3972,7 +3972,7 @@
       "executable": false
     },
     "tests/post-schedule-proof.mjs": {
-      "sha256": "7424463b479ed767ddf364b8587f56d1d164458d121ce172262ab98e9e14a5fc",
+      "sha256": "4d56f572c06a9b3c028b74d1f03ac08a2519e864e78fd317e7155555962f609e",
       "executable": false
     },
     "tests/posts.test.mjs": {
