@@ -4012,7 +4012,7 @@
       "executable": false
     },
     "tests/posts.test.mjs": {
-      "sha256": "f5bdeb87d4fdab68b97d6e1f3d3ed679963c9c6aadee0d673076182e1cde32df",
+      "sha256": "1f25a10b4908e05940284d35defcc377a6992092a0e8900cc3398e4fd6a42fd1",
       "executable": false
     },
     "tests/runtime.mjs": {

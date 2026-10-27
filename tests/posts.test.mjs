@@ -350,6 +350,7 @@ test('native comment moderation protects notifications, threaded replies, closur
   assert.ok((await state()).messages.some(row=>row.id===enquiryId&&row.message.includes('Please restore my chair.')),'A placed post form reaches the enquiry inbox while comments are closed')
   assert.ok(!(await ok(await get('/api/pane/comments'))).some(row=>row.id===enquiryId),'An enquiry is never retained as a comment')
   assert.match(await (await get(submitted.headers.get('location'),'' )).text(),/Your enquiry arrived\./)
+  await ok(await call('/api/pane/messages/erase',{id:enquiryId}))
   await ok(await call('/api/pane/comments/settings',{blog:'news',enabled:'on',approval:'on',closeDays:0,likes:'on'}))
   assert.equal((await call('/api/pane/comments/settings',{blog:'news',enabled:'on'},moderator)).status,403)
   assert.equal((await get('/api/pane/comments','')).status,401)
