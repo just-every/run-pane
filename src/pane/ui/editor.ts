@@ -6,7 +6,7 @@ import { promotionSettings } from './promotion-settings'
 import { localeSettings, businessFields } from './locale-settings'
 import { pageStatus } from '../page-review'
 import { can } from '../roles'
-import { scheduleSettings } from './schedule-settings'
+import { scheduleSettings,timeZoneOptions } from './schedule-settings'
 import { activePages, homeSlug, pageId, pagePath } from '../pages'
 import { pageExtraFields } from '../page-extras'
 import { pageOrganization } from './page-organization'
@@ -117,5 +117,5 @@ export function editor(data: Dashboard, requested: string): string {
 function pageSchedule(data:Dashboard,page:Page):string{
  const draft=data.draft!,request=data.pageRequests?.find(request=>request.page_id===pageId(page)&&data.revisions.find(row=>row.id===request.revision)?.site.pages.some(candidate=>pageId(candidate)===pageId(page)&&JSON.stringify(candidate)===JSON.stringify(page)))
  if(!data.live||!request)return ''
- return `<details><summary>Page publication schedule</summary><p>Approve this reviewed page version for its local publication time. Newer work stays private.</p><form class="edit-form" method="post" action="/app/page-schedule">${key()}${hidden('base',draft.id)}${hidden('page',pageId(page))}${hidden('slug',page.slug)}${hidden('request',request.id)}<label>Page publication time zone<select name="timeZone" aria-label="Page publication time zone"><option>America/Chicago</option><option>America/Denver</option><option>America/New_York</option><option>America/Los_Angeles</option></select></label><label>Publish page at<input type="datetime-local" name="start" required></label><label>Unpublish page at (optional)<input type="datetime-local" name="end"></label><button class="secondary">Save unapproved page schedule</button><button class="secondary" formaction="/app/page-schedule-approve">Approve page schedule</button></form></details>`
+ return `<details><summary>Page publication schedule</summary><p>Approve this reviewed page version for its local publication time. Newer work stays private.</p><form class="edit-form content-schedule" method="post" action="/app/page-schedule">${key()}${hidden('base',draft.id)}${hidden('page',pageId(page))}${hidden('slug',page.slug)}${hidden('request',request.id)}<label>Page publication time zone<select name="timeZone" aria-label="Page publication time zone">${timeZoneOptions(draft.site.automations?.timeZone??'America/Chicago')}</select></label><label>Publish page at<input type="datetime-local" name="start" required></label><label>Unpublish page at (optional)<input type="datetime-local" name="end"></label><button class="secondary">Save unapproved page schedule</button><button class="secondary" formaction="/app/page-schedule-approve">Approve page schedule</button></form></details>`
 }

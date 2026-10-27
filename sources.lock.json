@@ -632,7 +632,7 @@
       "executable": false
     },
     "public/pane-editor.css": {
-      "sha256": "75d7cdfeb5d555a90babc5217452c9e12cc00543e1828c8ca88b44bfdf67863f",
+      "sha256": "1107895d50fdf3cb18f0a3bf89572e32fd785b13df44076ddbd4582aa250acbb",
       "executable": false
     },
     "public/pane-embeds.js": {
@@ -3684,7 +3684,7 @@
       "executable": false
     },
     "src/pane/ui/editor.ts": {
-      "sha256": "f1588fe7104881fe9778f923d61dfe5efe90bf26125bef21af1ff6f3f26b500e",
+      "sha256": "416399f84487058ae49834830e75f509eda8b18f7c01efae4e1a76dfc7bab83a",
       "executable": false
     },
     "src/pane/ui/form-settings.ts": {
@@ -3736,7 +3736,7 @@
       "executable": false
     },
     "src/pane/ui/posts.ts": {
-      "sha256": "e944421a91cfd563d71e1362533c603258d427df95828f4389dbae43fe02cd83",
+      "sha256": "42cb8b04021f33514cad769cee3f026e23c54f6425556c8005a531e7851c1307",
       "executable": false
     },
     "src/pane/ui/promotion-settings.ts": {
@@ -3752,7 +3752,7 @@
       "executable": false
     },
     "src/pane/ui/schedule-settings.ts": {
-      "sha256": "12bf6b53fed5d0d5f216eb0569bb56360a5ba7908361a34b3244a254e87d21f1",
+      "sha256": "0613314aff45500c63bae532a4af00b6d0225b4c5debb00de97308b0dab254cf",
       "executable": false
     },
     "src/pane/ui/schedule-status.ts": {
