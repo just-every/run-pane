@@ -182,7 +182,7 @@ try{
   const listBlock=page.locator('[contenteditable=true]').last()
   await listBlock.fill('Toolbar first item');await saved()
   await page.getByRole('button',{name:'Bulleted list',exact:true}).click();await saved()
-  await listBlock.focus();await page.keyboard.press('End');await page.keyboard.press('Enter');await page.keyboard.insertText('Toolbar nested item')
+  await listBlock.focus();await page.keyboard.press(process.platform==='darwin'?'Meta+ArrowRight':'End');await page.keyboard.press('Enter');await page.keyboard.insertText('Toolbar nested item')
   await page.getByRole('button',{name:'Nest list',exact:true}).click();await saved()
   await page.locator('[contenteditable=true]').last().locator('ul ul li').waitFor()
   assert.equal(await page.locator('[contenteditable=true]').last().locator('ul ul li').innerText(),'Toolbar nested item')
