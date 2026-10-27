@@ -2,6 +2,7 @@ import type {Dashboard} from '../model'
 import type {Collection,CollectionField,CollectionItem,CollectionRichText} from '../collection-types'
 import type {ImageContent} from '../images'
 import {escape,hidden,key,form} from './kit'
+import {collectionTemplateEditor} from './collection-template'
 
 const fieldTypes={text:'Text',richText:'Rich description',image:'Image',number:'Number',price:'Price in USD',date:'Date',link:'Link',reference:'Related item',option:'Option'} as const
 const url=(collection:string,item?:string)=>'/app/collections?collection='+encodeURIComponent(collection)+(item?'&item='+encodeURIComponent(item):'')
@@ -32,7 +33,7 @@ function itemField(field:CollectionField,item:CollectionItem|undefined,collectio
 }
 
 export function collectionsEditor(data:Dashboard,collectionId?:string,itemId?:string):string {
- if(!['owner','admin'].includes(data.role))return '<h1>Collections</h1><p>Collection editing is available to the owner and administrators.</p>'
+ if(!['owner','admin','member'].includes(data.role))return '<h1>Collections</h1><p>Collection editing requires native collection access.</p>'
  const revision=data.draft
  if(!revision)return '<h1>Collections</h1><p>Prepare the site before creating a collection.</p>'
  const collections:Collection[]=revision.site.collections??[],collection=collections.find(collection=>collection.id===collectionId)
@@ -45,5 +46,5 @@ export function collectionsEditor(data:Dashboard,collectionId?:string,itemId?:st
  const approved=item&&data.live?.site.collections?.find(candidate=>candidate.id===id)?.items.some(candidate=>candidate.id===item.id)
  const actions=item?`<div class="actions">${approved?`<a class="text-link" href="/site/${escape(collection!.prefix)}/${escape(item!.slug)}">Open live item</a>`:''}<a class="text-link" href="/app/content/history?kind=item&collection=${encodeURIComponent(id)}&id=${encodeURIComponent(item.id)}">Item history</a>${form('/app/content/delete',hidden('base',revision.id)+hidden('kind','item')+hidden('collection',id)+hidden('id',item.id),'Move item to trash','secondary')}${data.role==='owner'?form('/app/collections/items/publish',hidden('base',revision.id)+hidden('collection',id)+hidden('id',item.id),'Approve and publish item','secondary'):''}</div>`:''
  const starters=collectionId?'':form('/app/collections/starters',hidden('base',revision.id),'Add starter collections','secondary')
- return `<section class="screen-sites edit-form" data-collections-editor><h1>Collections</h1><p>Collection changes stay in the draft until the owner publishes them.</p><nav class="actions" aria-label="Collections"><a href="/app/collections">New collection</a>${collections.map(collection=>`<a href="${escape(url(collection.id))}"${collection.id===id?' aria-current="page"':''}>${escape(collection.title)}</a>`).join('')}</nav>${starters}${collection?'<details><summary>Settings</summary>'+schema+'</details>':schema}${items}${actions}</section><script type="module" src="/pane-collections.mjs"></script>`
+ return `<section class="screen-sites edit-form" data-collections-editor><h1>Collections</h1><p>Collection changes stay in the draft until the owner publishes them.</p><nav class="actions" aria-label="Collections"><a href="/app/collections">New collection</a>${collections.map(collection=>`<a href="${escape(url(collection.id))}"${collection.id===id?' aria-current="page"':''}>${escape(collection.title)}</a>`).join('')}</nav>${starters}${collection?'<details><summary>Settings</summary>'+schema+collectionTemplateEditor(collection,revision.id)+'</details>':schema}${items}${actions}</section><script type="module" src="/pane-collections.mjs"></script>`
 }

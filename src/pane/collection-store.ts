@@ -1,6 +1,6 @@
 import {DraftConflict,prepare,revision,normalizeSite,contentHash} from './content'
 import {latestContent,PostDenied} from './posts'
-import {normalizeCollections,upsertCollection,upsertCollectionItem} from './collections'
+import {normalizeCollections,upsertCollection,upsertCollectionItem,upsertCollectionTemplate} from './collections'
 import {collectionId} from './collection-values'
 import {normalizeSections,sectionText} from './sections'
 import {normalizeMedia} from './gallery'
@@ -21,7 +21,11 @@ export function collectionTarget(collections:Collection[]|undefined,collection:u
  return {collection:selected,item}
 }
 export async function saveCollectionSchema(db:D1Database,actor:string,input:Record<string,unknown>){
- const row=await current(db,input.base),collections=upsertCollection(row.site.collections,{id:input.id,title:input.title,prefix:input.prefix,fields:input.fields})
+ const row=await current(db,input.base),collections=upsertCollection(row.site.collections,{id:input.id,title:input.title,prefix:input.prefix,fields:input.fields,template:row.site.collections?.find(collection=>collection.id===input.id)?.template})
+ return prepare(db,actor,{...row.site,collections},row.id)
+}
+export async function saveCollectionTemplate(db:D1Database,actor:string,input:Record<string,unknown>){
+ const row=await current(db,input.base),collections=upsertCollectionTemplate(row.site.collections,collectionId(input.collection),input.template)
  return prepare(db,actor,{...row.site,collections},row.id)
 }
 export async function saveCollectionItem(db:D1Database,actor:string,input:Record<string,unknown>){
@@ -58,6 +62,7 @@ export async function publishCollectionItem(db:D1Database,actorId:string,input:{
  const previous=live.site.collections?.find(candidate=>candidate.id===collection.id)
  if(previous&&previous.prefix!==collection.prefix)throw Error('Publish collection URL changes with the whole site.')
  if(previous&&JSON.stringify(previous.fields)!==JSON.stringify(collection.fields))throw Error('Publish shared collection schema changes with the whole site.')
+ if(JSON.stringify(previous?.template)!==JSON.stringify(collection.template))throw Error('Publish shared collection template changes with whole-site approval from Pages.')
  const previousItem=previous?.items.find(candidate=>candidate.id===item.id)
  if(previousItem&&previousItem.slug!==item.slug)throw Error('Publish item URL changes with the whole site and reviewed redirects.')
  const media=[...(live.site.media??[])],fileIds=new Set<string>(),copies=new Map<string,string>()
