@@ -1,3 +1,4 @@
+import {collectionPages} from './collection-page'
 import {prepare,DraftConflict} from './content'
 import {isProtected} from './access'
 import {latestContent} from './posts'
@@ -80,7 +81,7 @@ export async function uploadLibraryFile(db:D1Database,actor:string,base:string,f
  return prepare(db,actor,{...current.site,libraryFiles:normalizeLibraryFiles([...(current.site.libraryFiles??[]),item])},base)
 }
 export function publicLibraryFiles(site:Site):LibraryFile[]{
- const pages=[...site.pages.filter(page=>!page.deleted&&!page.hidden&&!isProtected(site,page)),...((site.access?.mode??'open')==='open'?(site.blogPosts??[]).map(post=>post.content):[])]
+ const pages=[...site.pages.filter(page=>!page.deleted&&!page.hidden&&!isProtected(site,page)),...((site.access?.mode??'open')==='open'?[...(site.blogPosts??[]).map(post=>post.content),...collectionPages(site)]:[])]
  const ids=new Set(pages.flatMap(page=>postFiles(site,page).map(file=>file.id)))
  return (site.libraryFiles??[]).filter(file=>ids.has(file.id))
 }

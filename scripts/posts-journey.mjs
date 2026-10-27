@@ -48,7 +48,7 @@ async function editBody(post,linked,file,width){
  const second=await authorContext.newPage();await second.goto(origin+'/app/posts/canvas?id='+post.id)
  await second.getByLabel('Post title',{exact:true}).fill('Owner review edition');await second.waitForFunction(()=>document.querySelector('[data-save-status]')?.textContent==='Draft saved. Not published.')
  await title.fill('My retained edition');await author.locator('[data-conflict]:not([hidden])').waitFor();assert.equal(await title.inputValue(),'My retained edition')
- const [download]=await Promise.all([author.waitForEvent('download'),author.getByRole('button',{name:'Download my copy',exact:true}).click()]);assert.equal(download.suggestedFilename(),'my-post-draft.json')
+ const [download]=await Promise.all([author.waitForEvent('download'),author.getByRole('button',{name:'Download my copy',exact:true}).click()]);assert.equal(download.suggestedFilename(),'my-post-draft.json');const retained=JSON.parse(await readFile(await download.path(),'utf8'));assert.equal(retained.title,'My retained edition','The downloaded conflict copy retains personal work');assert.deepEqual(JSON.parse(retained.sections),await author.locator('[name=sections]').inputValue().then(JSON.parse),'The downloaded conflict copy retains the complete body')
  await author.getByRole('button',{name:'Use latest draft',exact:true}).click();await author.waitForFunction(()=>document.querySelector('[name=title]')?.value==='Owner review edition');await second.close()
  await author.goto(origin+'/app/posts?id='+post.id)
 }
@@ -113,7 +113,7 @@ try{
   await body.getByRole('button',{name:'Keep external content off',exact:true}).click();assert.equal(await body.locator('iframe').count(),0)
   for(const name of ['Facebook','X','LinkedIn','Pinterest','Email']){
    const button=live.getByRole('link',{name:'Share by '+name,exact:true}),href=await button.getAttribute('href'),url=new URL(href),postUrl=origin+'/site/news/story-0'
-   assert.equal(url.searchParams.get(name==='Facebook'?'u':name==='Email'?'body':'url'),postUrl)
+   const endpoints={Facebook:['https://www.facebook.com','/sharer/sharer.php'],X:['https://twitter.com','/intent/tweet'],LinkedIn:['https://www.linkedin.com','/sharing/share-offsite/'],Pinterest:['https://pinterest.com','/pin/create/button/']};if(name==='Email')assert.equal(url.protocol,'mailto:','Email uses its mailto destination');else assert.deepEqual([url.origin,url.pathname],endpoints[name],'Each named network uses its own share endpoint');assert.equal(url.searchParams.get(name==='Facebook'?'u':name==='Email'?'body':'url'),postUrl)
    if(name!=='Email'){
     await visitor.route(url.origin+'/**',route=>route.fulfill({contentType:'text/html',body:'<p>Sharing destination received the selected post.</p>'}));const [popup]=await Promise.all([live.waitForEvent('popup'),button.click()]);await popup.waitForLoadState();assert.equal(new URL(popup.url()).searchParams.get(name==='Facebook'?'u':'url'),postUrl);await popup.close()
    }else{await button.click();assert.equal(new URL(href).searchParams.get('body'),postUrl)}

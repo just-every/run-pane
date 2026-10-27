@@ -289,8 +289,7 @@ test('native page references follow renamed URLs and report a deleted destinatio
 async function aiWorkspace(respond) {
  const hosted='https://pane.example.test',mail=[],requests=[],outbounds=[]
  let observeEdge,failProvider=false,edgeError
- const app=await runtime({bindings:{AUTH_ORIGIN:hosted,AUTH_LOCAL:'false',MAIL_PROVIDER:'sendgrid',MAIL_API_KEY:'synthetic-pane-5',AI_ENABLED:'true',AI_API_KEY:'synthetic-pane-4',AI_MODEL:'gpt-4.1-mini'},outboundService:async request=>{
-  outbounds.push({origin:new URL(request.url).origin,path:new URL(request.url).pathname,method:request.method})
+ const app=await runtime({bindings:{AUTH_ORIGIN:hosted,AUTH_LOCAL:'false',MAIL_PROVIDER:'sendgrid',MAIL_API_KEY:'synthetic-pane-5',AI_ENABLED:'true',AI_API_KEY:'synthetic-pane-4',AI_MODEL:'gpt-4.1-mini'},observeOutbound:request=>{outbounds.push({origin:new URL(request.url).origin,path:new URL(request.url).pathname,method:request.method})},outboundService:async request=>{
   if(new URL(request.url).hostname==='api.sendgrid.com'){mail.push(await request.json());return new Response(null,{status:202})}
   assert.equal(new URL(request.url).origin,'https://api.openai.com')
   const input=await request.json(),content=input.messages.find(message=>message.role==='user').content

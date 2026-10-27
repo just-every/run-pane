@@ -49,6 +49,10 @@ test('authors submit two isolated blogs for exact owner approval and public sema
   assert.equal((await call('/api/pane/posts/publish',{base:before.draft.id,id:bodyPost.id,review:'synthetic-pane-1'},author)).status,403)
   assert.deepEqual(await state(),before)
   for(const id of [...created.slice(1),created[0]]){
+   if(id===bodyPost.id){
+  const completePost=structuredClone((await own()).posts.find(post=>post.id===bodyPost.id)),missingAlt=structuredClone(completePost.content);missingAlt.sections[0].blocks.find(block=>block.image).image.alt='';missingAlt.sections[0].blocks.find(block=>block.image).image.decorative=false;missingAlt.sections[0].blocks.find(block=>block.image).text='';missingAlt.body=missingAlt.sections.flatMap(section=>section.blocks.map(block=>[block.text,block.caption,block.attribution].filter(Boolean).join('\n')).filter(Boolean)).join('\n\n')
+  await write('news',0,{id:bodyPost.id,content:missingAlt});const invalidReview=await ok(await call('/api/pane/posts/submit',{base:(await own()).base,id:bodyPost.id},author)),invalidPost=invalidReview.posts.find(post=>post.id===bodyPost.id),beforeRefusal=await state(),refused=await call('/api/pane/posts/publish',{base:invalidReview.base,id:bodyPost.id,review:invalidPost.review});assert.equal(refused.status,400,'Reviewed posts without image alt text are refused');assert.match(await refused.text(),/Accessibility warning:/,'The refusal includes an accessibility warning');assert.deepEqual(await state(),beforeRefusal,'An inaccessible reviewed post cannot change any revision or approval');await write('news',0,{id:bodyPost.id,content:completePost.content})
+   }
    const submitted=await ok(await call('/api/pane/posts/submit',{base:(await own()).base,id},author)),post=submitted.posts.find(post=>post.id===id)
    assert.ok(post.review);assert.equal((await call('/api/pane/posts/publish',{base:submitted.base,id,review:post.review},admin)).status,403);assert.equal((await call('/api/pane/posts/publish',{base:'synthetic-pane-stale',id,review:post.review})).status,409);assert.equal((await call('/api/pane/posts/publish',{base:submitted.base,id,review:'synthetic-pane-wrong'},owner)).status,400)
    const prior=(await state()).live,source=structuredClone((await state()).draft),published=await ok(await call('/api/pane/posts/publish',{base:submitted.base,id,review:post.review}));publications.push(published.id);assert.equal(published.actor,ownerId,'A reviewed post records the exact approving native owner');assert.equal((await state()).approvals.find(approval=>approval.revision===published.id).actor,ownerId,'The persisted approval belongs to that same owner')
@@ -78,5 +82,225 @@ test('authors submit two isolated blogs for exact owner approval and public sema
   assert.match(await (await get('/site/news/story-0','')).text(),/href="\/site\/news\/renamed-story"/);assert.equal((await get('/site/news/renamed-story','')).status,200)
   assert.deepEqual(outbounds.slice(invitationCalls),[],'Writing, submission and explicit publication perform no outbound action')
   const audit=await ok(await get('/api/pane/activity'));const approvals=audit.filter(event=>event.action==='publish');assert.deepEqual(approvals.map(event=>event.subject).sort(),publications.map(id=>'revision:'+id).sort(),'Every explicit publication has one transactional activity entry');for(const event of approvals){assert.equal(event.actor,'Workshop owner');assert.ok(Number.isFinite(Date.parse(event.created_at)));assert.deepEqual(Object.keys(event).sort(),['sequence','action','subject','created_at','actor','agent','details'].sort());assert.equal(event.details,null)}for(const privateValue of [body.body,'Unpublished owner page work.','synthetic-pane-author@example.test'])assert.ok(!JSON.stringify(audit).includes(privateValue),'Activity retains only change metadata')
+ }finally{await f.mf.dispose()}
+})
+
+test('trash and single-item history restore preserve unrelated published edits and expire availability',async()=>{
+ let clock=Date.parse('2026-10-15T16:00:00Z'),owner,author,other,editor,reporter
+ const origin='https://pane.example.test',mail=[],outbounds=[],f=await runtime({isolatedLive:true,now:()=>clock,bindings:{AUTH_ORIGIN:origin,AUTH_LOCAL:'false',MAIL_PROVIDER:'sendgrid',MAIL_API_KEY:'synthetic-pane-8'},outboundService:async request=>{outbounds.push(request.url);assert.equal(new URL(request.url).origin,'https://api.sendgrid.com');mail.push(await request.json());return new Response(null,{status:202})}})
+ const call=(path,input,cookie=owner)=>f.request(origin+path,{method:'POST',headers:{Origin:origin,Cookie:cookie??'','Content-Type':'application/json'},body:JSON.stringify(input)})
+ const get=(path,cookie=owner)=>f.request(origin+path,{headers:{Cookie:cookie??''}})
+ const ok=async response=>{assert.equal(response.status,200,await response.clone().text());return response.json()}
+ const state=()=>get('/api/pane').then(ok),own=()=>get('/api/pane/posts',author).then(ok)
+ const confirm=async()=>{const text=mail.at(-1).content.find(part=>part.type==='text/plain').value,response=await call('/auth/confirm',{token:new URL(text.match(/https:\/\/[^\s]+/)[0]).searchParams.get('token')},'');assert.equal(response.status,303);return response.headers.get('set-cookie').split(';')[0]}
+ try{
+  const signed=await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Workshop owner'},'');assert.equal(signed.status,303);owner=signed.headers.get('set-cookie').split(';')[0]
+  assert.equal((await f.request(origin+'/setup',{method:'POST',headers:{Origin:origin,Cookie:owner,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})).status,303)
+  for(const [name,email,roles] of [['Workshop author','synthetic-pane-author@example.test',['author']],['Other author','synthetic-pane-other@example.test',['author']],['Page editor','synthetic-pane-editor@example.test',['editor']],['Reporter','synthetic-pane-reporter@example.test',['reporting']]]){
+   await ok(await call('/api/pane/roles/invite',{displayName:name,email,roles}));const cookie=await confirm();if(name==='Workshop author')author=cookie;else if(name==='Other author')other=cookie;else if(name==='Page editor')editor=cookie;else reporter=cookie
+  }
+  const invitationCalls=outbounds.length,site=JSON.parse(await readFile('fixtures/static-site.json','utf8'))
+  for(const page of site.pages)page.id=page.slug
+  site.pages.push({id:'old-offer',slug:'old-offer',title:'Winter offer',body:'A retired winter workshop offer.'})
+  site.blogs=[{id:'news',title:'News',prefix:'news',comments:false,pageSize:10}]
+  site.navigation={main:[{label:'Home',page:'home'},{label:'Explore',children:[{label:'Our studio',page:'about'},{label:'Services',page:'services'}]},{label:'Hours',page:'hours'},{label:'Contact',page:'contact'}],footer:[{label:'Workshop story',url:origin+'/site/news/story'}],details:'',headerSocials:false,footerSocials:false}
+  const initial=await ok(await call('/api/pane/prepare',{site}));await ok(await call('/api/pane/publish',{revision:initial.id}))
+  const write=async(cookie,slug,body)=>ok(await call('/api/pane/posts/save',{base:(await state()).draft.id,blog:'news',byline:'Workshop team',authorSlug:'workshop-team',content:{slug,title:slug==='story'?'Workshop story':'Private other story',body}},cookie))
+  const post=(await write(author,'story','Our original published workshop article.')).posts[0],foreign=(await write(other,'other-story','Private other author content.')).posts[0]
+  const submitted=await ok(await call('/api/pane/posts/submit',{base:(await own()).base,id:post.id},author)),review=submitted.posts.find(item=>item.id===post.id).review
+  await ok(await call('/api/pane/posts/publish',{base:submitted.base,id:post.id,review}))
+  assert.equal((await get('/site/news/story','')).status,200)
+  const snapshots=structuredClone((await state()).revisions)
+  assert.equal((await get('/api/pane/content/history?kind=post&id='+post.id,'')).status,401)
+  assert.equal((await get('/api/pane/content/history?kind=post&id='+post.id,editor)).status,403)
+  assert.equal((await get('/api/pane/content/history?kind=post&id='+foreign.id,author)).status,403)
+  assert.equal((await get('/api/pane/content/trash?kind=page',reporter)).status,403)
+  for(const target of [{kind:'page',id:'old-offer'},{kind:'page',id:'about'}])await ok(await call('/api/pane/content/delete',{...target,base:(await state()).draft.id},editor))
+  const beforePost=await state();assert.equal((await call('/api/pane/content/delete',{kind:'post',id:foreign.id,base:beforePost.draft.id},author)).status,403);assert.deepEqual(await state(),beforePost)
+  await ok(await call('/api/pane/content/delete',{kind:'post',id:post.id,base:(await own()).base},author))
+  let draft=(await state()).draft
+  assert.deepEqual(draft.site.redirectOffers.filter(offer=>offer.reason==='deleted').map(offer=>offer.from).sort(),['/site/about','/site/news/story','/site/old-offer'])
+  const edited=structuredClone(draft.site),changes={services:'Updated service choices.',hours:'Updated workshop hours.',contact:'Updated contact instructions.'}
+  for(const [slug,body] of Object.entries(changes))edited.pages.find(page=>page.slug===slug).body=body
+  edited.redirects=[{status:301,from:'/site/about',to:'/site/services'},{status:301,from:'/site/news/story',to:'/site/news'},{status:301,from:'/site/old-offer',to:'/site'}]
+  draft=await ok(await call('/api/pane/prepare',{base:draft.id,site:edited}));await ok(await call('/api/pane/publish',{revision:draft.id}))
+  const removed=await get('/site/news/story','');assert.equal(removed.status,301);assert.equal(removed.headers.get('location'),'/site/news')
+  const trash=await ok(await get('/api/pane/content/trash?kind=post',author));assert.deepEqual(trash.rows.map(row=>row.id),[post.id]);assert.equal(trash.rows[0].actor,'Workshop author');assert.equal(trash.rows[0].deleted_at,new Date(clock).toISOString())
+  assert.ok(!JSON.stringify(trash).includes(foreign.id));assert.ok(!JSON.stringify(trash).includes('Private other author content.'))
+  assert.equal((await call('/api/pane/content/restore',{kind:'post',id:post.id,base:beforePost.draft.id},author)).status,409)
+  await ok(await call('/api/pane/content/restore',{kind:'post',id:post.id,base:trash.base},author))
+  const restored=(await own()).posts.find(item=>item.id===post.id);assert.equal(restored.content.body,post.content.body);assert.equal(restored.author,post.author);assert.equal(restored.state,'draft');assert.equal(restored.review,undefined)
+  assert.equal((await get('/site/news/story','')).status,301,'Restoring a draft never publishes it')
+  const resubmitted=await ok(await call('/api/pane/posts/submit',{base:(await own()).base,id:post.id},author)),approved=await ok(await call('/api/pane/posts/publish',{base:resubmitted.base,id:post.id,review:resubmitted.posts.find(item=>item.id===post.id).review}))
+  assert.equal((await get('/site/news/story','')).status,200,'The restored post returns at its original URL after owner approval')
+  assert.ok(!approved.site.redirects.some(redirect=>redirect.from==='/site/news/story'));assert.ok(approved.site.redirects.some(redirect=>redirect.from==='/site/about'&&redirect.to==='/site/services'))
+  for(const [slug,body] of Object.entries(changes))assert.equal(approved.site.pages.find(page=>page.slug===slug).body,body,'Post restoration preserves every later page edit')
+  assert.deepEqual(approved.site.navigation.footer,site.navigation.footer,'The restored post keeps its original menu place')
+  await ok(await call('/api/pane/content/restore',{kind:'page',id:'about',base:(await state()).draft.id},editor));const pageTrashDraft=(await state()).draft,pageRestoreReview=await ok(await call('/api/pane/page-request-review',{base:pageTrashDraft.id,page:'about'},editor));await ok(await call('/api/pane/page-publish',{base:pageTrashDraft.id,page:'about',request:pageRestoreReview.id}));const restoredPage=(await state()).live;assert.equal((await get('/site/about','')).status,200);assert.deepEqual(restoredPage.site.navigation.main,site.navigation.main,'Page trash restore keeps its original nested menu position');assert.ok(!restoredPage.site.redirects.some(redirect=>redirect.from==='/site/about'))
+  const history=await ok(await get('/api/pane/content/history?kind=page&id=services',editor)),previous=history.rows.find(row=>row.body===site.pages.find(page=>page.slug==='services').body)
+  assert.ok(previous);assert.equal(previous.state,'published')
+  const beforeHistory=structuredClone((await state()).draft)
+  await ok(await call('/api/pane/content/restore',{kind:'page',id:'services',base:history.base,revision:previous.revision},editor))
+  const pageDraft=(await state()).draft
+  assert.equal(pageDraft.site.pages.find(page=>page.id==='services').body,site.pages.find(page=>page.slug==='services').body)
+  for(const page of beforeHistory.site.pages.filter(page=>page.id!=='services'))assert.deepEqual(pageDraft.site.pages.find(item=>item.id===page.id),page,'Single-page history leaves every other page exact')
+  assert.deepEqual(pageDraft.site.posts,beforeHistory.site.posts);assert.deepEqual(pageDraft.site.blogPosts,beforeHistory.site.blogPosts)
+  const request=await ok(await call('/api/pane/page-request-review',{base:pageDraft.id,page:'services'},editor)),published=await ok(await call('/api/pane/page-publish',{base:pageDraft.id,page:'services',request:request.id}))
+  assert.equal(published.site.pages.find(page=>page.id==='services').body,site.pages.find(page=>page.id==='services').body)
+  for(const [slug,body] of Object.entries(changes).filter(([slug])=>slug!=='services'))assert.equal(published.site.pages.find(page=>page.slug===slug).body,body)
+  assert.equal((await get('/site/news/story','')).status,200)
+  const serviceHtml=await (await get('/site/services','')).text();assert.ok(serviceHtml.includes('Furniture repairs'));assert.ok(!serviceHtml.includes(changes.services),'Only the selected historical service body goes live');for(const slug of ['hours','contact'])assert.ok((await (await get('/site/'+slug,'')).text()).includes(changes[slug]))
+  const activity=await ok(await get('/api/pane/activity')),restores=activity.filter(event=>['content.restore','content.restore-version'].includes(event.action))
+  assert.deepEqual(restores.map(event=>[event.action,event.subject,event.actor,event.created_at]),[['content.restore','post:'+post.id,'Workshop author',new Date(clock).toISOString()],['content.restore','page:about','Page editor',new Date(clock).toISOString()],['content.restore-version','page:services','Page editor',new Date(clock).toISOString()]],'Every restore records its exact native actor and server time')
+  for(const event of restores){const details=JSON.parse(event.details);assert.deepEqual(Object.keys(details).sort(),(event.action==='content.restore'?['kind','id','sourceRevision','sourceDeletion']:['kind','id','sourceRevision']).sort());assert.ok(!JSON.stringify(details).includes('article'))}
+  for(const snapshot of snapshots)assert.deepEqual((await state()).revisions.find(row=>row.id===snapshot.id),snapshot,'Selective restores never mutate earlier snapshots or hashes')
+  assert.deepEqual(outbounds.slice(invitationCalls),[],'Content deletion and restoration send no outbound request')
+  clock+=31*86400000
+  assert.equal((await call('/auth/magic-link',{email:settings.OWNER_EMAIL,returnTo:'/app'},'')).status,202);owner=await confirm()
+  assert.deepEqual((await ok(await get('/api/pane/content/trash?kind=page'))).rows,[],'Items deleted 31 days ago disappear from the trash')
+  assert.equal((await call('/api/pane/content/restore',{kind:'page',id:'old-offer',base:(await state()).draft.id})).status,400,'Expired trash cannot be restored through a guessed identifier')
+ }finally{await f.mf.dispose()}
+})
+
+test('typed service collections validate thirty items and publish rich descriptions with selective item restoration',async()=>{
+ const {serviceFields,serviceItem}=await import('./collection-fixture.mjs')
+ let clock=Date.parse('2026-10-15T16:00:00Z'),owner,admin,editor,reporter
+ const mail=[],outbounds=[],collectionWrites=[]
+ const origin='https://pane.example.test',f=await runtime({isolatedLive:true,now:()=>clock,observeOutbound:request=>outbounds.push(request.url),bindings:{AUTH_ORIGIN:origin,AUTH_LOCAL:'false',MAIL_PROVIDER:'sendgrid',MAIL_API_KEY:'synthetic-pane-9'},outboundService:async request=>{assert.equal(new URL(request.url).origin,'https://api.sendgrid.com');mail.push(await request.json());return new Response(null,{status:202})}})
+ const call=(path,input,cookie=owner)=>f.request(origin+path,{method:'POST',headers:{Origin:origin,Cookie:cookie??'','Content-Type':'application/json'},body:JSON.stringify(input)})
+ const get=(path,cookie=owner)=>f.request(origin+path,{headers:{Cookie:cookie??''}})
+ const ok=async response=>{assert.equal(response.status,200,await response.clone().text());return response.json()}
+ const state=()=>get('/api/pane').then(ok)
+ const save=async(path,input)=>{const result=await ok(await call('/api/pane/collections'+path,{base:(await state()).draft.id,...input}));collectionWrites.push({id:result.id,action:path==='/items/publish'?'publish':'edit'});return result}
+ try{
+  const signed=await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Collection owner'},'');assert.equal(signed.status,303);owner=signed.headers.get('set-cookie').split(';')[0]
+  assert.equal((await f.request(origin+'/setup',{method:'POST',headers:{Origin:origin,Cookie:owner,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})).status,303)
+  const starterSite=JSON.parse(await readFile('fixtures/static-site.json','utf8'));starterSite.navigation={main:[{label:'Home',page:'home'},{label:'Our studio',page:'about'}],footer:[{label:'Contact',url:'/site/contact'},{label:'Chair restoration',url:'/site/service-directory/service-1'},{label:'Our studio',url:'/site/about'}],details:'',headerSocials:false,footerSocials:false};starterSite.blogs=[{id:'news',title:'News',prefix:'news',comments:false,pageSize:10}]
+  const initial=await ok(await call('/api/pane/prepare',{site:starterSite}));await ok(await call('/api/pane/publish',{revision:initial.id}))
+  assert.equal((await call('/auth/invite',{email:'synthetic-pane-admin@example.test',displayName:'Collection administrator',role:'admin'})).status,202)
+  const message=mail.at(-1).content.find(part=>part.type==='text/plain').value,confirmed=await call('/auth/confirm',{token:new URL(message.match(/https:\/\/[^\s]+/)[0]).searchParams.get('token')},'');assert.equal(confirmed.status,303);admin=confirmed.headers.get('set-cookie').split(';')[0]
+  await ok(await call('/api/pane/roles/invite',{email:'synthetic-pane-editor@example.test',displayName:'Collection editor',roles:['editor']}))
+  const editorMessage=mail.at(-1).content.find(part=>part.type==='text/plain').value,editorConfirmed=await call('/auth/confirm',{token:new URL(editorMessage.match(/https:\/\/[^\s]+/)[0]).searchParams.get('token')},'');assert.equal(editorConfirmed.status,303);editor=editorConfirmed.headers.get('set-cookie').split(';')[0]
+  const invited=await ok(await call('/api/pane/roles/invite',{email:'synthetic-pane-reporter@example.test',displayName:'Collection reporter',roles:['reporting']}))
+  const reportMessage=mail.at(-1).content.find(part=>part.type==='text/plain').value,reportConfirmed=await call('/auth/confirm',{token:new URL(reportMessage.match(/https:\/\/[^\s]+/)[0]).searchParams.get('token')},'');assert.equal(reportConfirmed.status,303);reporter=reportConfirmed.headers.get('set-cookie').split(';')[0]
+  const people=(await state()).people,ownerId=Object.keys(people).find(id=>people[id]==='Collection owner');assert.ok(ownerId)
+  const starters=await save('/starters',{});assert.deepEqual(starters.site.collections.map(collection=>collection.title).sort(),['Projects','Services','Team'])
+  await ok(await call('/api/pane/prepare',{base:starters.id,site:initial.site}))
+  await save('/schema',{id:'team',title:'Team',prefix:'team',fields:[{id:'name',label:'Name',type:'text',required:true}]})
+  await save('/items/save',{collection:'team',id:'june',slug:'june',title:'June Ellis',values:{name:'June Ellis'}})
+  await save('/schema',{id:'services',title:'Services',prefix:'service-directory',fields:serviceFields})
+  for(let index=1;index<=30;index++)await save('/items/save',{collection:'services',...serviceItem(index)})
+  const linkedDraft=await ok(await call('/api/pane/posts/save',{base:(await state()).draft.id,blog:'news',byline:'Workshop team',authorSlug:'workshop-team',content:{slug:'bakery-story',title:'Our bakery story',body:'A story about careful local work.'}})),linked=linkedDraft.posts.at(-1)
+  const linkedReview=await ok(await call('/api/pane/posts/submit',{base:linkedDraft.base,id:linked.id}));await ok(await call('/api/pane/posts/publish',{base:linkedReview.base,id:linked.id,review:linkedReview.posts.find(post=>post.id===linked.id).review}))
+  await ok(await call('/api/pane/posts/save',{base:(await state()).draft.id,blog:'news',content:{slug:'owner-private',title:'synthetic-pane-private-owner-post',body:'A private owner post outside the collection editor grant.'}}))
+  const editorDraft=await ok(await call('/api/pane/collections/items/save',{base:(await state()).draft.id,collection:'services',...serviceItem(30),title:'Editor saved furniture care'},editor));assert.equal(editorDraft.site.collections.find(collection=>collection.id==='services').items.find(item=>item.id==='service-30').title,'Editor saved furniture care');assert.equal(editorDraft.site.posts,undefined,'Collection responses exclude private posts outside the editor grant');assert.ok(!JSON.stringify(editorDraft).includes('synthetic-pane-private-owner-post'))
+  const staleEditorBase=editorDraft.id
+  await save('/items/save',{collection:'services',...serviceItem(29),title:'Latest owner furniture care'})
+  const editorView=(await ok(await get('/api/pane',editor))).draft
+  for(const path of ['/api/pane/collections/items/save','/app/collections/items/save']){
+   const conflict=await call(path,{base:staleEditorBase,collection:'services',...serviceItem(30),title:'Retained editor furniture care'},editor)
+   assert.equal(conflict.status,409,'A stale collection edit offers the latest permitted draft')
+   const body=await conflict.json();assert.deepEqual(body.latest,editorView,'Collection conflicts expose exactly the normal role-filtered draft');assert.equal(body.latest.site.posts,undefined);assert.ok(!JSON.stringify(body).includes('synthetic-pane-private-owner-post'),'Conflict bodies never disclose private owner posts')
+  }
+  assert.equal((await call('/api/pane/collections/items/publish',{base:editorDraft.id,collection:'services',id:'service-30'},editor)).status,403)
+  const list=await ok(await get('/api/pane/collections')),services=list.collections.find(collection=>collection.id==='services');assert.equal(services.items.length,30,'All thirty service items remain available');assert.deepEqual(services.items.map(item=>item.id).sort(),Array.from({length:30},(_,index)=>'service-'+(index+1)).sort(),'The entire service inventory is retained');assert.deepEqual(services.fields.map(field=>[field.id,field.type,field.required??false]),[['name','text',true],['description','richText',true],['price','price',true],['duration','number',false],['available','date',false],['details','link',false],['team','reference',true],['category','option',false],['image','image',false],['notes','text',false]],'Ten independently specified typed fields retain their required rules');assert.equal(services.fields.find(field=>field.id==='team').reference,'team');assert.equal(services.fields.find(field=>field.id==='name').help,'A short human name.','Owner field help survives the native schema round trip')
+  assert.equal((await get('/api/pane/collections','')).status,401)
+  for(const change of [{price:'125.50'},{description:{body:''}},{team:'missing'},{available:'2026-02-30'},{name:42},{duration:'two'},{details:'javascript:alert(1)'},{category:'Unknown'},{image:'not an image'}]){
+   const values={...serviceItem(1).values,...change}
+   const before=await state();assert.equal((await call('/api/pane/collections/items/save',{base:before.draft.id,collection:'services',...serviceItem(1),values})).status,400,'Typed and required collection values are refused');assert.deepEqual(await state(),before,'Validation leaves the draft untouched')
+  }
+  const pdf=Buffer.from('%PDF-1.4\nsynthetic-pane-service-guide\n%%EOF'),form=new FormData();form.set('base',(await state()).draft.id);form.set('file',new File([pdf],'care-guide.pdf',{type:'application/pdf'}))
+  const uploaded=await ok(await f.request(origin+'/api/pane/library/upload',{method:'POST',headers:{Origin:origin,Cookie:owner},body:form})),file=uploaded.site.libraryFiles[0]
+  const image={src:'data:image/png;base64,'+(await readFile('public/brand/icon-192.png')).toString('base64'),width:192,height:192,decorative:false,alt:'Furniture care at the workshop'}
+  const body=postBody(image,{post:linked.id,file:file.id})
+  const actions=[['/schema',{id:'services',title:'Services',prefix:'service-directory',fields:serviceFields}],['/template',{collection:'services',template:{fields:['description','price']}}],['/items/save',{collection:'services',...serviceItem(1)}],['/body',{collection:'services',item:'service-1',field:'description',sections:body.sections}],['/starters',{}],['/items/publish',{collection:'services',id:'service-1'}]]
+  const beforeDenied=await state()
+  for(const prefix of ['/api/pane/collections','/app/collections'])for(const [action,input] of actions){
+   const path=prefix+action,payload={base:beforeDenied.draft.id,...input}
+   assert.equal((await call(path,payload,'')).status,prefix.startsWith('/api/')?401:303,path+' requires native sign-in')
+   assert.equal((await call(path,payload,reporter)).status,403,path+' refuses a non-collection role')
+   for(const Origin of ['https://elsewhere.invalid','null',undefined]){
+    const headers={Cookie:owner,'Content-Type':'application/json',...(Origin===undefined?{}:{Origin})}
+    assert.equal((await f.request(origin+path,{method:'POST',headers,body:JSON.stringify(payload)})).status,403,path+' requires the canonical origin')
+   }
+  }
+  await ok(await call('/api/pane/roles/set',{operatorId:invited.operatorId,roles:['editor']}));assert.equal((await get('/api/pane/collections',reporter)).status,200)
+  await ok(await call('/api/pane/roles/set',{operatorId:invited.operatorId,roles:[]}));for(const [action,input] of actions)assert.equal((await call('/api/pane/collections'+action,{base:beforeDenied.draft.id,...input},reporter)).status,403,'Revoking the collection grant takes effect on the next mutation')
+  const afterDenied=await state();assert.deepEqual(afterDenied.revisions,beforeDenied.revisions);assert.deepEqual(afterDenied.approvals,beforeDenied.approvals);assert.equal(afterDenied.live.id,beforeDenied.live.id,'Rejected collection mutations leave publication unchanged')
+  await save('/items/save',{collection:'services',...serviceItem(1),title:'Chair restoration',values:{...serviceItem(1).values,description:body,image}})
+  assert.equal((await get('/site/service-directory/service-1','')).status,404)
+  const beforeAdmin=await state();assert.equal((await call('/api/pane/collections/items/publish',{base:beforeAdmin.draft.id,collection:'services',id:'service-1'},admin)).status,403);assert.deepEqual(await state(),beforeAdmin,'An administrator cannot approve publication')
+  const source=structuredClone((await state()).draft),preview='/preview/'+source.id+'/service-directory/service-1';assert.equal((await get(preview,'')).status,303,'Unpublished item previews require native sign-in');const adminPreview=await get(preview,admin);assert.equal(adminPreview.status,200);assert.match(await adminPreview.text(),/Draft preview/,'An administrator sees the unpublished item with its draft banner');assert.equal((await get('/site/service-directory/service-1','')).status,404,'Private preview never publishes an item');await ok(await call('/api/pane/publish',{revision:source.id}))
+  const undescribed=structuredClone(body);const undescribedImage=undescribed.sections[0].blocks.find(block=>block.image);undescribedImage.image.alt='';undescribedImage.image.decorative=false;undescribedImage.text='';undescribed.body=undescribed.sections[0].blocks.map(block=>[block.text,block.caption,block.attribution].filter(Boolean).join('\n')).join('\n\n')
+  await save('/items/save',{collection:'services',...serviceItem(1),title:'Chair restoration',values:{...serviceItem(1).values,description:undescribed,image}})
+  const beforeAlt=await state(),refusedAlt=await call('/api/pane/collections/items/publish',{base:beforeAlt.draft.id,collection:'services',id:'service-1'});assert.equal(refusedAlt.status,400,'Selected collection publication refuses an undescribed inline image');assert.match(await refusedAlt.text(),/Accessibility warning:/,'The owner sees the missing-alt warning');assert.deepEqual(await state(),beforeAlt,'Missing-alt refusal preserves all revisions and approvals')
+  await save('/items/save',{collection:'services',...serviceItem(1),title:'Chair restoration',values:{...serviceItem(1).values,description:body,image}})
+  const html=await (await get('/site/service-directory/service-1','')).text()
+  for(const pattern of [/<h2[^>]*>Decorating celebration cakes<\/h2>/,/<ul><li>Vanilla sponge/,/<strong>Fold gently<\/strong>/,/<figcaption>Lemon cake with flowers<\/figcaption>/,/href="\/site\/about"/,new RegExp('href="/site/files/'+file.id+'"'),/href="tel:\+13125550123"/,/USD\s*125\.50/,/href="\/site\/team\/june"/,/<h3[^>]*>Prepare the layers<\/h3>/,/<ul><li>Vanilla sponge<ul><li>Lemon curd<\/li><\/ul><\/li><\/ul>/,/<em>cool first<\/em>/,/<blockquote[^>]*>A celebration starts with something made with care\./,/Riverbend baking team/,/data-embed/,/https:\/\/www.youtube-nocookie.com\/embed\/syntheticPane1/,/href="\/site\/news\/bakery-story"/])assert.match(html,pattern,'The published item preserves the shared semantic description')
+  for(const [alt,caption] of [['A lemon celebration cake ready for a birthday','Lemon cake with flowers'],['A chocolate celebration cake with piped decoration','Chocolate cake for a celebration']])assert.match(html,new RegExp('<figure\\b[^>]*>(?:(?!</figure>)[\\s\\S])*<img\\b[^>]*alt="'+alt+'"(?:(?!</figure>)[\\s\\S])*<figcaption>'+caption+'</figcaption>'),'Each published inline image retains its own alt text and caption')
+  assert.doesNotMatch(html,/<iframe/,'The video remains behind the consent door')
+  await ok(await call('/api/pane/posts/save',{base:(await state()).draft.id,id:linked.id,blog:'news',content:{...linked.content,slug:'renamed-bakery-story'}}));const renamedReview=await ok(await call('/api/pane/posts/submit',{base:(await state()).draft.id,id:linked.id}));await ok(await call('/api/pane/posts/publish',{base:renamedReview.base,id:linked.id,review:renamedReview.posts.find(post=>post.id===linked.id).review}))
+  assert.match(await (await get('/site/service-directory/service-1','')).text(),/href="\/site\/news\/renamed-bakery-story"/,'Collection body references follow a renamed published post');assert.equal((await get('/site/news/renamed-bakery-story','')).status,200,'The renamed destination is served directly')
+  assert.equal((await get('/site/files/'+file.id,'')).status,200);assert.deepEqual((await state()).revisions.find(row=>row.id===source.id),source)
+  const original=structuredClone((await state()).draft),target={kind:'item',collection:'services',id:'service-1'}
+  await ok(await call('/api/pane/content/delete',{...target,base:(await state()).draft.id}))
+  const deleted=structuredClone((await state()).draft);assert.deepEqual(deleted.site.navigation.footer.map(item=>item.label),['Contact','Our studio'],'Deleting the item removes only its actual menu link');deleted.site.redirects=[{status:301,from:'/site/service-directory/service-1',to:'/site/service-directory'},{status:301,from:'/site/old-care',to:'/site/about'}];const deletionApproval=await ok(await call('/api/pane/prepare',{base:deleted.id,site:deleted.site}));await ok(await call('/api/pane/publish',{revision:deletionApproval.id}));assert.equal((await get('/site/service-directory/service-1','')).status,301)
+  await save('/items/save',{collection:'services',...serviceItem(2),title:'Unrelated current repair'})
+  const trash=await ok(await get('/api/pane/content/trash?kind=item&collection=services'));assert.equal(trash.rows[0].id,'service-1')
+  await ok(await call('/api/pane/content/restore',{...target,base:trash.base},editor));assert.equal((await get('/site/service-directory/service-1','')).status,301,'Restoring an item draft does not publish it')
+  const restored=(await state()).draft.site.collections.find(collection=>collection.id==='services');assert.equal(restored.items.find(item=>item.id==='service-1').title,'Chair restoration');assert.equal(restored.items.find(item=>item.id==='service-2').title,'Unrelated current repair')
+  await save('/items/save',{collection:'services',...serviceItem(1),title:'New description edition'})
+  const history=await ok(await get('/api/pane/content/history?kind=item&collection=services&id=service-1'));const previousItem=history.rows.find(row=>row.title==='Chair restoration'&&row.state==='published');assert.ok(previousItem,'Published item content remains in single-item history')
+  await ok(await call('/api/pane/content/restore',{...target,base:history.base,revision:previousItem.revision}))
+  const approved=await save('/items/publish',{collection:'services',id:'service-1'});assert.equal(approved.site.collections.find(collection=>collection.id==='services').items.find(item=>item.id==='service-1').title,'Chair restoration');assert.equal(approved.site.collections.find(collection=>collection.id==='services').items.find(item=>item.id==='service-2').title,'Furniture care 2','Approving one item leaves unrelated draft work private')
+  assert.equal(approved.actor,ownerId,'Selected item approval records the exact native owner');assert.equal((await state()).approvals.find(row=>row.revision===approved.id).actor,ownerId,'The persisted item approval names the selected revision and owner')
+  assert.equal((await get('/site/service-directory/service-1','')).status,200,'Owner approval restores the original item URL');assert.deepEqual(approved.site.navigation.footer,starterSite.navigation.footer,'Item restoration retains the original menu place');assert.ok(!approved.site.redirects.some(row=>row.from==='/site/service-directory/service-1'));assert.ok(approved.site.redirects.some(row=>row.from==='/site/old-care'&&row.to==='/site/about'));assert.deepEqual((await state()).revisions.find(row=>row.id===original.id),original,'Item restoration leaves the original source snapshot and hash exact')
+  assert.equal(outbounds.length,3,'Collection editing and publication send no outbound request')
+  const activity=await ok(await get('/api/pane/activity')),restores=activity.filter(event=>['content.restore','content.restore-version'].includes(event.action));assert.deepEqual(restores.map(event=>[event.action,event.subject,event.actor,event.created_at]),[['content.restore','item:services:service-1','Collection editor',new Date(clock).toISOString()],['content.restore-version','item:services:service-1','Collection owner',new Date(clock).toISOString()]],'Item restores record the exact native actor and server time');for(const event of restores)assert.deepEqual(Object.keys(JSON.parse(event.details)).sort(),(event.action==='content.restore'?['kind','id','collection','sourceRevision','sourceDeletion']:['kind','id','collection','sourceRevision']).sort())
+  for(const write of collectionWrites){const rows=activity.filter(event=>event.action===write.action&&event.subject==='revision:'+write.id);assert.equal(rows.length,1,'Every successful collection write has one transactional activity event');assert.equal(rows[0].actor,'Collection owner');assert.ok(Number.isFinite(Date.parse(rows[0].created_at)))}
+  assert.equal(activity.find(event=>event.action==='edit'&&event.subject==='revision:'+editorDraft.id).actor,'Collection editor','Collection edits retain the native editor attribution')
+  const itemApproval=activity.filter(event=>event.action==='collection.item.publish'&&event.subject==='item:services:service-1');assert.equal(itemApproval.length,1);assert.equal(itemApproval[0].actor,'Collection owner');assert.deepEqual(JSON.parse(itemApproval[0].details),{kind:'item',collection:'services',id:'service-1',revision:approved.id},'Selected-item publication records only its exact decision metadata')
+  for(const privateValue of ['Fold gently','synthetic-pane-private-owner-post','synthetic-pane-editor@example.test'])assert.ok(!JSON.stringify(activity).includes(privateValue),'Collection activity excludes content and private addresses')
+  await ok(await call('/api/pane/content/delete',{kind:'item',collection:'services',id:'service-29',base:(await state()).draft.id}))
+  clock+=31*86400000;assert.equal((await call('/auth/magic-link',{email:settings.OWNER_EMAIL,returnTo:'/app'},'')).status,202)
+  const refreshMessage=mail.at(-1).content.find(part=>part.type==='text/plain').value,refresh=await call('/auth/confirm',{token:new URL(refreshMessage.match(/https:\/\/[^\s]+/)[0]).searchParams.get('token')},'');assert.equal(refresh.status,303);owner=refresh.headers.get('set-cookie').split(';')[0]
+  assert.deepEqual((await ok(await get('/api/pane/content/trash?kind=item&collection=services'))).rows,[],'Collection item trash expires after 31 days');assert.equal((await call('/api/pane/content/restore',{kind:'item',collection:'services',id:'service-29',base:(await state()).draft.id})).status,400,'Expired collection items cannot be restored')
+ }finally{await f.mf.dispose()}
+})
+
+test('designed collection templates publish every item with exact metadata and prepared social images',async()=>{
+ const {serviceFields,serviceItem}=await import('./collection-fixture.mjs'),origin=settings.AUTH_ORIGIN,f=await runtime({isolatedLive:true,now:Date.parse('2026-10-15T16:00:00Z')});let cookie
+ const call=(path,input)=>f.request(origin+path,{method:'POST',headers:{Origin:origin,Cookie:cookie??'','Content-Type':'application/json'},body:JSON.stringify(input)})
+ const get=path=>f.request(origin+path,{headers:{Cookie:cookie??''}})
+ const ok=async response=>{assert.equal(response.status,200,await response.clone().text());return response.json()}
+ const state=()=>get('/api/pane').then(ok),save=async(path,input)=>ok(await call('/api/pane/collections'+path,{base:(await state()).draft.id,...input}))
+ try{
+  const signed=await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Template owner'});assert.equal(signed.status,303);cookie=signed.headers.get('set-cookie').split(';')[0]
+  assert.equal((await f.request(origin+'/setup',{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})).status,303)
+  const initial=await ok(await call('/api/pane/prepare',{site:JSON.parse(await readFile('fixtures/static-site.json','utf8'))}));await ok(await call('/api/pane/publish',{revision:initial.id}))
+  await save('/schema',{id:'team',title:'Team',prefix:'team',fields:[{id:'name',label:'Name',type:'text',required:true}]});await save('/items/save',{collection:'team',id:'june',slug:'june',title:'June Ellis',values:{name:'June Ellis'}})
+  await save('/schema',{id:'services',title:'Services',prefix:'service-directory',fields:serviceFields})
+  const image={src:'data:image/png;base64,'+(await readFile('public/brand/icon-192.png')).toString('base64'),width:192,height:192,alt:'A repaired timber chair',decorative:false}
+  for(let index=1;index<=30;index++)await save('/items/save',{collection:'services',...serviceItem(index),values:{...serviceItem(index).values,name:'Repair </script> & care '+index,notes:'Service details & care '+index,image}})
+  const draft=(await state()).draft;await ok(await call('/api/pane/publish',{revision:draft.id}));const unchanged=structuredClone((await state()).live)
+  const template={fields:['notes','description','price','image'],titleField:'name',descriptionField:'notes',imageField:'image'}
+  const designed=await save('/template',{collection:'services',template})
+  assert.equal((await call('/api/pane/collections/items/publish',{base:designed.id,collection:'services',id:'service-1'})).status,400,'Shared template changes require whole-site owner approval');assert.deepEqual((await state()).live,unchanged)
+  for(const invalid of [{...template,titleField:'image'},{...template,fields:['notes','notes']},{...template,fields:['missing']}]){const before=await state();assert.equal((await call('/api/pane/collections/template',{base:before.draft.id,collection:'services',template:invalid})).status,400);assert.deepEqual(await state(),before)}
+  const published=await ok(await call('/api/pane/publish',{revision:designed.id}));assert.deepEqual(published.site.collections.find(collection=>collection.id==='services').template,template)
+  for(let index=1;index<=30;index++){
+   const path='/site/service-directory/service-'+index,response=await get(path);assert.equal(response.status,200,'Every service item has its own public URL');const html=await response.text()
+   assert.ok(html.includes('<title>Repair &lt;/script&gt; &amp; care '+index+'</title>'),'The template binds the exact item search title');assert.ok(html.includes('name="description" content="Service details &amp; care '+index+'"'),'The template binds the exact item description')
+   const data=JSON.parse(html.match(/<script type="application\/ld\+json">([^<]+)<\/script>/)[1]);assert.equal(data['@type'],'Service');assert.equal(data.name,'Repair </script> & care '+index,'Structured data preserves the item title safely');assert.equal(data.description,'Service details & care '+index);assert.equal(data.url,origin+path);assert.equal(data.offers[0].price,125.5);assert.equal(data.offers[0].priceCurrency,'USD');assert.equal(data.image,origin+path+'?pane-collection-social=1&width=0')
+   assert.ok(html.indexOf('Service details &amp; care '+index)<html.indexOf('Thoughtful repairs for well-loved furniture.'),'The designed field reading order is rendered')
+   const social=await get(path+'?pane-collection-social=1&width=0');assert.equal(social.status,200);assert.match(social.headers.get('content-type'),/^image\//);assert.deepEqual(Buffer.from(await social.arrayBuffer()),Buffer.from(image.src.split(',')[1],'base64'));assert.equal((await get(path+'?pane-collection-social=1&width=invalid')).status,404)
+  }
+  const changed=await save('/items/save',{collection:'services',...serviceItem(2),values:{...serviceItem(2).values,name:'Updated repair',notes:'Updated service details',image}});await save('/items/publish',{collection:'services',id:'service-2'});assert.ok((await (await get('/site/service-directory/service-2')).text()).includes('<title>Updated repair</title>'));assert.ok((await (await get('/site/service-directory/service-1')).text()).includes('Repair &lt;/script&gt; &amp; care 1'));assert.deepEqual((await state()).revisions.find(row=>row.id===designed.id),designed,'Template approval retains its immutable source')
+  const beforeRollback=await state(),rolledBack=await ok(await call('/api/pane/rollback',{revision:published.id})),rollbackState=await state()
+  assert.deepEqual(rolledBack.site.collections,published.site.collections,'Rollback restores all populated collection values and template bindings exactly');assert.equal(rollbackState.live.id,published.id)
+  const approval=rollbackState.approvals.find(row=>row.action==='rollback'&&row.revision===published.id);assert.ok(approval,'Rollback retains its owner approval');assert.equal(approval.actor,published.actor)
+  assert.deepEqual(rollbackState.draft,beforeRollback.draft,'Whole-site rollback retains unrelated current drafts');for(const expected of [designed,published,changed])assert.deepEqual(rollbackState.revisions.find(row=>row.id===expected.id),expected,'Rollback never rewrites source snapshots or hashes')
+  for(let index=1;index<=30;index++){const response=await get('/site/service-directory/service-'+index);assert.equal(response.status,200);const html=await response.text();assert.ok(html.includes('<title>Repair &lt;/script&gt; &amp; care '+index+'</title>'),'Rollback restores each original item title');assert.ok(html.includes('name="description" content="Service details &amp; care '+index+'"'));const data=JSON.parse(html.match(/<script type="application\/ld\+json">([^<]+)<\/script>/)[1]);assert.equal(data.name,'Repair </script> & care '+index);assert.equal(data.offers[0].price,125.5)}
+
  }finally{await f.mf.dispose()}
 })

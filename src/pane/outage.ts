@@ -1,3 +1,5 @@
+import {publishCollectionItem} from './collection-store'
+import {publishPage} from './page-review'
 import {publishPost,PostDenied} from './posts'
 import { uploadStatements,type Upload } from './forms'
 import { findPersonData,erasePersonData } from './privacy'
@@ -21,8 +23,8 @@ export async function liveSnapshot(env:Bindings):Promise<(Revision&{banners?:{te
 export async function liveCall(env:Bindings,path:string,value:unknown){
  const response=await liveStore(env).fetch('https://pane.internal'+path,{method:'POST',body:JSON.stringify(value)})
  const result=await response.json() as any
- if(path==='/post-publish'&&response.status===409)throw new DraftConflict(result.latest??null)
- if(path==='/post-publish'&&response.status===403)throw new PostDenied(result.error??'Post publication refused.')
+ if(['/post-publish','/page-publish'].includes(path)&&response.status===409)throw new DraftConflict(result.latest??null)
+ if(['/post-publish','/item-publish'].includes(path)&&response.status===403)throw new PostDenied(result.error??'Post publication refused.')
  if(!response.ok)throw Error(result.error??'Live storage unavailable.')
  return result
 }
@@ -57,6 +59,16 @@ export class PaneLive extends DurableObject<Bindings>{
    if(live?.id===input.id)await storage.delete('live')
    return Response.json(result)
   })
+  if(path==='/page-publish')return this.ctx.blockConcurrencyWhile(async()=>{
+   try{
+    const live=await publishPage(auditedDatabase(this.env.DB,input.actor,'workspace.change'),input.actor,input.base,input.page,input.request)
+    await storage.put({live,banners:[]})
+    return Response.json(live)
+   }catch(error){
+    if(error instanceof DraftConflict)return Response.json({error:error.message,latest:error.latest},{status:409})
+    return Response.json({error:error instanceof Error?error.message:'Page publication failed.'},{status:400})
+   }
+  })
   if(path==='/post-publish')return this.ctx.blockConcurrencyWhile(async()=>{
    try{
     const live=await publishPost(auditedDatabase(this.env.DB,input.actor.id,'workspace.change'),input.actor,input)
@@ -66,6 +78,10 @@ export class PaneLive extends DurableObject<Bindings>{
     if(error instanceof DraftConflict)return Response.json({error:error.message,latest:error.latest},{status:409})
     return Response.json({error:error instanceof Error?error.message:'Post publication failed.'},{status:error instanceof PostDenied?403:400})
    }
+  })
+  if(path==='/item-publish')return this.ctx.blockConcurrencyWhile(async()=>{
+   try{const live=await publishCollectionItem(auditedDatabase(this.env.DB,input.actor.id,'workspace.change'),input.actor.id,input);await storage.put({live,banners:[]});return Response.json(live)}
+   catch(error){if(error instanceof DraftConflict)return Response.json({error:error.message,latest:error.latest},{status:409});return Response.json({error:error instanceof Error?error.message:'Item publication failed.'},{status:error instanceof PostDenied?403:400})}
   })
   if(path==='/publish')return this.ctx.blockConcurrencyWhile(async()=>{
    const db=auditedDatabase(this.env.DB,input.actor,'workspace.change')

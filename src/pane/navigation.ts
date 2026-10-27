@@ -15,6 +15,10 @@ function record(value: unknown, message: string): Record<string, unknown> {
  return value as Record<string, unknown>
 }
 function externalUrl(value: unknown): string {
+ if(typeof value==='string'&&value.startsWith('/site')&&value.length<=4000&&!/[\u0000-\u001f\u007f]/.test(value)){
+  const internal=new URL(value,'https://pane.invalid')
+  if(internal.origin==='https://pane.invalid'&&/^\/site(?:\/|$)/.test(internal.pathname))return internal.pathname+internal.search+internal.hash
+ }
  if (typeof value !== 'string' || value.length > 4000 || !/^https?:\/\//i.test(value.trim()) || /[\u0000-\u001f\u007f]/.test(value)) throw Error('Use a full HTTP or HTTPS link.')
  let url: URL
  try { url = new URL(value.trim()) } catch { throw Error('Use a full HTTP or HTTPS link.') }

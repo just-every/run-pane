@@ -135,6 +135,6 @@ their maintenance.
 Pinned reference: https://github.com/runeditrun/base/blob/a06bd065124c2b45fa879e62736fb5e1987efdaa/TANSTACK-START-MIGRATION.md
 Native-session/runtime evidence: https://github.com/runeditrun/base/tree/a06bd065124c2b45fa879e62736fb5e1987efdaa/default-seed
 
-## Contract projections
+## Contract documents
 
-Lander-Regenerate: `node scripts/contract-docs.mjs write`. After editing CONTRACT.md, regenerate ACCEPTANCE.md and docs/CLAIMS.md with this command and run `node scripts/contract-docs.mjs check`. Regenerate the edition source lock last.
+Lander-Regenerate: `node scripts/contract-docs.mjs write`. Validate with `node scripts/contract-docs.mjs check`. CONTRACT.md owns acceptance text and status; the command generates ACCEPTANCE.md, docs/CLAIMS.md and summary counts using the pinned contract parser. Run the edition source lock command last.

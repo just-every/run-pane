@@ -1,3 +1,8 @@
+import {collectionStarters} from './collection-starters'
+import {normalizeCollections} from './collections'
+import {collectionIntegrity} from './collection-integrity'
+import {normalizeLifecycle} from './lifecycle-normalize'
+import {prepareLifecycle,lifecycleAuditStatements} from './lifecycle-prepare'
 import {normalizeMedia} from './gallery'
 import {normalizePostCollections} from './blogs'
 import {normalizeLibraryFiles} from './library-files'
@@ -55,8 +60,12 @@ export function normalizeSite(value: unknown): Site {
  })
  const analyticsCampaigns = normalizeCampaigns(input.analyticsCampaigns), goals = normalizeGoals(input.goals,pages), analytics = normalizeAnalytics(input.analytics), responseDays = normalizeResponseDays(input.responseDays)
  const site: Site = {...(input.brand?{brand:normalizeBrand(input.brand)}:{}),...(input.media?{media:normalizeMedia(input.media)}:{}),...(normalizeCode(input.customCode)?{customCode:normalizeCode(input.customCode)}:{}),...(components ? {components} : {}),...(input.forms ? {forms:normalizeForms(input.forms)} : {}),...(input.access ? {access:normalizeAccess(input.access)} : {}),...(input.promotion !== undefined ? {promotion:normalizePromotion(input.promotion,pages,input.automations?.timeZone??'America/Chicago')} : {}), ...(input.locale ? {locale:normalizeLocale(input.locale)} : {}), ...normalizePageOrganization(input,pages), ...(input.automations !== undefined ? {automations: normalizeAutomations(input.automations)} : {}), ...(input.navigation ? {navigation: normalizeNavigation(input.navigation,pages)} : {}), ...(input.socials ? {socials: normalizeSocials(input.socials)} : {}), ...(analyticsCampaigns.length ? {analyticsCampaigns} : {}), ...(analytics ? {analytics} : {}), ...(goals.length ? {goals} : {}), ...(responseDays ? {responseDays} : {}), name: input.name.normalize('NFC').trim(), description: input.description.normalize('NFC').trim(), pages, ...(input.robots !== undefined ? {robots: normalizeRobots(input.robots)} : {}), ...(input.redirects !== undefined ? {redirects: normalizeRedirects(input.redirects)} : {})}
+ Object.assign(site,normalizeLifecycle(input))
  if(input.libraryFiles!==undefined)site.libraryFiles=normalizeLibraryFiles(input.libraryFiles)
  Object.assign(site,normalizePostCollections(input,(page,media=site.media)=>{if(page.sections?.some(section=>section.blocks.some(block=>block.kind==='html')))throw Error('HTML blocks are currently authored on pages.');return normalizeSite({name:site.name,description:site.description,media,forms:site.forms,pages:[page]}).pages[0]}))
+ if(input.collections!==undefined)site.collections=normalizeCollections(input.collections)
+ else if(pages.some(page=>page.layout))site.collections=normalizeCollections(collectionStarters(undefined,(site.blogs??[]).map(blog=>blog.prefix)))
+ collectionIntegrity(site)
  const routes = new Set(activePages(site).map(page => pagePath(site,page.slug)))
  for (const redirect of site.redirects ?? []) if (routes.has(redirect.from) || ['/site/search','/site/visit'].includes(redirect.from)) throw Error(`Redirect ${redirect.from} would replace an existing page or service.`)
  for(const page of site.pages)for(const section of page.sections??[])for(const block of section.blocks)for(const item of block.gallery?.items??[])if(!site.media?.some(asset=>asset.id===item.asset))throw Error('Gallery image is missing from the library.')
@@ -91,24 +100,25 @@ export async function revisionForDraft(db:D1Database,actor:string,value:unknown,
  const row=await draftRevision(crypto.randomUUID(),actor,value,created_at)
  const live=await db.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first()
  const offers=redirectOffers(row.site,live?revision(live).site:null)
- if(offers.length){row.site.redirectOffers=offers;row.hash=await contentHash(row.site)}
+ if(offers.length){const retained=(row.site.redirectOffers??[]).filter(offer=>!offers.some(current=>current.from===offer.from));row.site.redirectOffers=[...retained,...offers];row.hash=await contentHash(row.site)}
  return row
 }
 export async function prepare(db: D1Database, actor: string, value: unknown, expectedBase?: string): Promise<Revision> {
  const latest = await db.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
  // Keep revision ordering stable even when saves share a millisecond.
  const created = new Date(Math.max(Date.now(), latest ? Date.parse(String(latest.created_at)) + 1 : 0)).toISOString()
- const row = await revisionForDraft(db,actor,value,created)
- if (expectedBase === undefined) await revisionStatement(db, row).run()
- else {
-  // Compare and insert in one statement: two saves of the same base cannot both win.
-  const result = await db.prepare(`INSERT INTO pane_revisions(id,site,hash,actor,created_at)
+ const before=latest?revision(latest):null,input=value as Site
+ for(const field of ['trash','postDeletions'] as const)if(input?.[field]!==undefined&&JSON.stringify(input[field])!==JSON.stringify(before?.site[field]??[]))throw Error('Retained lifecycle metadata is assigned by the server.')
+ const normalized=normalizeSite({...input,trash:before?.site.trash,postDeletions:before?.site.postDeletions})
+ const transition=await prepareLifecycle(db,before,normalized,actor,new Date().toISOString())
+ const row=await revisionForDraft(db,actor,transition.site,created)
+ const statement=expectedBase===undefined?revisionStatement(db,row):db.prepare(`INSERT INTO pane_revisions(id,site,hash,actor,created_at)
    SELECT ?,?,?,?,? WHERE COALESCE((SELECT id FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1),'')=?`)
-   .bind(row.id, JSON.stringify(row.site), row.hash, row.actor, row.created_at, expectedBase).run()
-  if (!result.meta.changes) {
-   const current = await db.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
-   throw new DraftConflict(current ? revision(current) : null)
-  }
+   .bind(row.id,JSON.stringify(row.site),row.hash,row.actor,row.created_at,expectedBase)
+ const results=await db.batch([statement,...lifecycleAuditStatements(db,actor,row.id,transition.events)])
+ if(expectedBase!==undefined&&!results[0].meta.changes){
+  const current=await db.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
+  throw new DraftConflict(current?revision(current):null)
  }
  return row
 }

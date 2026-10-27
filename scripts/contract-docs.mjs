@@ -1,30 +1,29 @@
-import {readFileSync,writeFileSync,existsSync} from 'node:fs'
+// Generate the acceptance register and clause claims from the pinned contract parser.
+import {readFileSync,writeFileSync,mkdirSync,existsSync} from 'node:fs'
 import {parseContract} from '../src/base/seed-contract.mjs'
-
-const mode=process.argv[2]
-if(!['write','check'].includes(mode))throw Error('Use node scripts/contract-docs.mjs write or check.')
-const original=readFileSync('CONTRACT.md','utf8')
-const cells=line=>line.replace(/^\|\s*|\s*\|$/g,'').split(/(?<!\\)\|/).map(cell=>cell.trim())
-const rows=original.split('\n').filter(line=>/^\| `[A-Z][A-Z0-9-]+` \|/.test(line)).map(cells)
-let source=original
-for(const [name,selected] of [['Published',rows.filter(row=>row[2]==='published')],['Target and push further',rows.filter(row=>row[2]!=='published')],['All',rows]]){
- const counts=['done','partial','missing'].map(status=>selected.filter(row=>row[3]===status).length)
- source=source.replace(new RegExp('^\\| '+name+' \\|.*$','m'),'| '+name+' | '+[...counts,selected.length].join(' | ')+' |')
+const command=process.argv[2]
+if(!['write','check'].includes(command))throw Error('Use contract-docs.mjs write or check.')
+let source=readFileSync('CONTRACT.md','utf8')
+const rows=source.split('\n').filter(line=>/^\| `[A-Z][A-Z0-9-]+` \|/.test(line)).map(line=>line.split(/(?<!\\)\|/).slice(1,-1).map(cell=>cell.trim()))
+function summary(label,select){const own=rows.filter(row=>select(row[2]));return `| ${label} | ${['done','partial','missing'].map(status=>own.filter(row=>row[3]===status).length).join(' | ')} | ${own.length} |`}
+for(const [label,select] of [['Published',kind=>kind==='published'],['Target and push further',kind=>kind!=='published'],['All',()=>true]])source=source.replace(new RegExp('^\\| '+label+' \\|.*$','m'),summary(label,select))
+const contract=parseContract(source),byId=new Map(rows.map(row=>[row[0].replaceAll('`',''),row]))
+const tally=`${contract.counts.total} clauses: ${contract.counts.done} done, ${contract.counts.partial} partial, ${contract.counts.missing} missing.`
+let acceptance=`# Pane acceptance\n\nGenerated from [CONTRACT.md](CONTRACT.md) by the seed contract-docs command. Edit the contract source, then regenerate. ${tally}\n\n`
+let claims=`# Pane clause claims\n\nGenerated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses, subject to exact-commit verification and guarded landing. Provider and field-proof boundaries remain in the source contract. ${tally}\n\n| Clause | Status | Title |\n| --- | --- | --- |\n`
+for(const area of contract.areas){
+ acceptance+=`## ${area.name}\n\n`
+ for(const id of area.clauses){
+  const clause=contract.clauses.find(value=>value.id===id),row=byId.get(id)
+  if(!clause.text.includes('**Acceptance evidence:**'))throw Error(id+' has no source acceptance journey.')
+  for(const path of clause.evidence)if(!existsSync(path))throw Error(id+' evidence path is missing: '+path)
+  const text=clause.text.replace(/\*Status:\*\s*(?:done|partial|missing)\./g,'Implementation:').trim()
+  acceptance+=`- **${id} — ${clause.title}** (${clause.status}). ${text}${row[4]?` Evidence: ${row[4]}`:''}${clause.gap?` Gap: ${row[5]}`:''}\n`
+  claims+=`| ${id} | ${clause.status} | ${clause.title.replaceAll('|','\\|')} |\n`
+ }
+ acceptance+='\n'
 }
-const contract=parseContract(source),proof=new Map(rows.map(row=>[row[0].replaceAll('`',''),row[4]]))
-const prose=value=>value.split(/(`[^`]*`)/).map(part=>part.startsWith('`')?part:part.replace(/(?<![\w./:-])([A-Za-z][\w-]*)\/([A-Za-z][\w-]*)(?![\w./:-])/g,'$1&#47;$2')).join('')
-const cell=value=>prose(value).replaceAll('|','\\|').replace(/\s*\n\s*/g,' ')
-const acceptance='# Pane acceptance record\n\nGenerated from [CONTRACT.md](CONTRACT.md). Edit the contract and run `node scripts/contract-docs.mjs write`.\n\n'+
- `**Status: ${contract.counts.done} of ${contract.counts.total} clauses done, ${contract.counts.partial} partial, ${contract.counts.missing} missing.**\n\n`+
- '| Clause | Acceptance evidence | Proof | Status | Gap |\n| --- | --- | --- | --- | --- |\n'+
- contract.clauses.map(clause=>{
-  const acceptance=(clause.text.split('**Acceptance evidence:**')[1]??clause.text).split('\n\n*Status:*')[0].trim()
-  return `| ${clause.id} | ${cell(acceptance)} | ${prose(proof.get(clause.id)??'')} | ${clause.status} | ${cell(clause.gap)} |`
- }).join('\n')+'\n'
-const homepage=source.split('## Homepage claims\n')[1].split('\n## Status')[0].trim()
-const claims='# Pane homepage claims and proof\n\nGenerated from the Homepage claims section of [CONTRACT.md](../CONTRACT.md).\n\n'+prose(homepage)+'\n'
-for(const [path,expected] of [['CONTRACT.md',source],['ACCEPTANCE.md',acceptance],['docs/CLAIMS.md',claims]]){
- if(mode==='write')writeFileSync(path,expected)
- else if(!existsSync(path)||readFileSync(path,'utf8')!==expected)throw Error(path+' is stale; run node scripts/contract-docs.mjs write.')
-}
-console.log(`contract-docs ${mode}: ${contract.counts.total} clauses, ${contract.counts.done} done, ${contract.counts.partial} partial, ${contract.counts.missing} missing`)
+const outputs=new Map([['CONTRACT.md',source],['ACCEPTANCE.md',acceptance],['docs/CLAIMS.md',claims]])
+if(command==='write')mkdirSync('docs',{recursive:true})
+for(const [path,content] of outputs){if(command==='write')writeFileSync(path,content);else if(!existsSync(path)||readFileSync(path,'utf8')!==content)throw Error(path+' is stale; run node scripts/contract-docs.mjs write.')}
+console.log(`Contract documents ${command==='write'?'generated':'fresh'}; ${tally}`)
