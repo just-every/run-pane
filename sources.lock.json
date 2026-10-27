@@ -124,7 +124,7 @@
       "executable": false
     },
     ".github/workflows/verify.yml": {
-      "sha256": "a729675392ff1e297f67be89a93a2750f90136163bcc7551976617fa6574247f",
+      "sha256": "f8c7aed0c30926185f50a9d4ff3252e7944cc0f689df2fc9ad6819015a75af4c",
       "executable": false
     },
     ".gitignore": {
@@ -1088,7 +1088,7 @@
       "executable": false
     },
     "scripts/browser-proof.mjs": {
-      "sha256": "52588134b8329e4dc16128ad9419343642cb549694b682e39e9c5d5bf0775bd1",
+      "sha256": "b14f9659069ad5cc52e5b1be560289efa8150f737f4d9cf977cd6bd229ac3fa6",
       "executable": false
     },
     "scripts/build-deployment-spec.mjs": {
@@ -1388,7 +1388,7 @@
       "executable": false
     },
     "scripts/templates-journey.mjs": {
-      "sha256": "6e1eced0f335405fd89a8099000c5069dcc8a9c84bfbd58c7b66cb592310a074",
+      "sha256": "738d76fea3dd59fbc75c40f128b43a91171fa3fb2acc608f2ae8490904d241d8",
       "executable": false
     },
     "scripts/traffic-journey.mjs": {
