@@ -77,7 +77,7 @@ try{
    }
    const card=startingPage.locator(`[data-template-id="${id}"]`);await card.locator('summary').click();await card.getByLabel('Your business name').fill('synthetic-pane-'+(index+1));await Promise.all([startingPage.waitForURL(url=>url.pathname==='/app'),card.getByRole('button',{name:'Create draft site'}).click()])
    const initial=(await state()).draft
-   assert.equal(initial.site.template,id);assert.equal(initial.site.name,'synthetic-pane-'+(index+1));assert.deepEqual(initial.site.pages.map(page=>page.slug),['home','services','visit-us'],'Every template starts all three editable pages');assert.equal((await state()).live,null,'Starting never publishes')
+   assert.deepEqual(initial.site.collections.map(collection=>collection.id),['starter-services','starter-team','starter-projects'],'Every catalog template retains the native CMS starter collection pack');assert.equal(initial.site.template,id);assert.equal(initial.site.name,'synthetic-pane-'+(index+1));assert.deepEqual(initial.site.pages.map(page=>page.slug),['home','services','visit-us'],'Every template starts all three editable pages');assert.equal((await state()).live,null,'Starting never publishes')
    if(adminContext){
     assert.equal((await state()).people[initial.actor],'Template administrator','The native admin prepares the template draft')
     const refused=await adminContext.request.post(origin+'/api/pane/publish',{headers:{Origin:origin},data:{revision:initial.id}});assert.equal(refused.status(),403,'Admin preparation grants no publication authority')

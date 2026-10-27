@@ -1,7 +1,7 @@
 // Explicit browser verification of the production build, using isolated native fixtures.
 import { spawnSync } from 'node:child_process'
 const shard=process.env.PANE_BROWSER_SHARD??'all'
-if(!['all','core','canvas'].includes(shard))throw Error('Choose a known browser shard.')
+if(!['all','core','canvas','templates'].includes(shard))throw Error('Choose a known browser shard.')
 if(shard==='all'||shard==='core'){
  process.env.PANE_BROWSER_FIXTURE='1'
  const fixture=await import('../tests/browser-runtime.mjs')
