@@ -28,6 +28,21 @@ try {
   const response=await post('/api/pane/posts/save',{base:state.draft.id,blog:'news',byline:'Workshop team',authorSlug:'team',content:{slug,title:slug,body:'Approved morning workshop news.'}})
   assert.equal(response.status(),200);return (await response.json()).posts.at(-1)
  }
+ // Selective page scheduling uses the existing native review and owner approval doors.
+ const changed=structuredClone(initial.site);changed.pages.find(page=>page.slug==='about').body='Approved scheduled studio page.';changed.pages.find(page=>page.slug==='services').body='Unapproved scheduled services.'
+ let pageSource=await (await post('/api/pane/prepare',{site:changed,base:initial.id})).json()
+ await page.goto(origin+'/app?page=about')
+ await Promise.all([page.waitForURL(url=>url.searchParams.has('notice')),page.getByRole('button',{name:'Send page for review',exact:true}).click()])
+ const pagePanel=page.locator('[data-page-schedule]');await pagePanel.getByText('Page publication schedule',{exact:true}).click()
+ await pagePanel.getByLabel('Publish page at',{exact:true}).fill('2026-10-02T09:00')
+ await pagePanel.getByLabel('Unpublish page at (optional)',{exact:true}).fill('2026-10-03T09:00')
+ await pagePanel.getByLabel('Page time zone',{exact:true}).selectOption('America/Chicago')
+ await Promise.all([page.waitForURL(url=>url.searchParams.has('notice')),pagePanel.getByRole('button',{name:'Approve scheduled page',exact:true}).click()])
+ for(const width of [1440,390]){
+  await page.setViewportSize({width,height:1000});await page.locator('[data-page-schedule] summary').click();await page.locator('[data-page-schedule]').getByText('Approved for',{exact:false}).waitFor()
+  await page.locator('[data-page-schedule]').scrollIntoViewIfNeeded();await capture('approved-page-schedule',width);await page.reload()
+ }
+ await post('/api/pane/page-schedule',{base:pageSource.id,page:'services',timeZone:'America/Chicago',occurrence:'2026-10-02T09:00'})
  const morning=await write('morning-news'),pending=await write('unapproved-news')
  let state=await dashboard()
  assert.equal((await post('/api/pane/posts/submit',{base:state.draft.id,id:morning.id})).status(),200)
@@ -51,17 +66,21 @@ try {
  await tick('2026-10-02T14:00:00Z');assert.equal((await context.request.get(origin+'/site/news/morning-news')).status(),200)
  state=await dashboard();const executed=state.schedules.history.filter(event=>event.kind==='post-published')
  assert.equal(executed.length,1);assert.equal(executed[0].occurrence,'2026-10-02T09:00');assert.equal(executed[0].executedAt,Date.parse('2026-10-02T14:00:00Z'));assert.equal(executed[0].timeZone,'America/Chicago')
- assert.deepEqual(state.schedules.draftDue,['Post: unapproved-news']);assert.equal((await context.request.get(origin+'/site/news/unapproved-news')).status(),404)
+ assert.deepEqual(state.schedules.draftDue,['Page: '+changed.pages.find(page=>page.slug==='services').title,'Post: unapproved-news']);
+ assert.match(await (await context.request.get(origin+'/site/about')).text(),/Approved scheduled studio page/);assert.doesNotMatch(await (await context.request.get(origin+'/site/services')).text(),/Unapproved scheduled services/)
+ const pageEvents=state.schedules.history.filter(event=>event.kind==='page-published');assert.equal(pageEvents.length,1);assert.equal(pageEvents[0].revision,pageSource.id);assert.equal(pageEvents[0].executedAt,Date.parse('2026-10-02T14:00:00Z'));assert.equal((await context.request.get(origin+'/site/news/unapproved-news')).status(),404)
  for(const width of [1440,390]){
   await page.setViewportSize({width,height:1000});await page.goto(origin+'/app/sites')
   const region=page.getByRole('region',{name:'Schedules and reviews'});await region.getByText('Schedule event history',{exact:true}).click()
-  await region.getByText('post published',{exact:true}).waitFor();await region.scrollIntoViewIfNeeded();await capture('post-execution-and-unapproved',width)
+  await region.getByText('page published',{exact:true}).waitFor();await region.getByText('post published',{exact:true}).waitFor();await region.scrollIntoViewIfNeeded();await capture('post-execution-and-unapproved',width)
   await page.goto(origin+'/site/news/morning-news');await capture('scheduled-live-post',width)
  }
 
  await tick('2026-10-03T13:59:00Z');assert.equal((await context.request.get(origin+'/site/news/morning-news')).status(),200)
  await tick('2026-10-03T14:00:00Z');assert.equal((await context.request.get(origin+'/site/news/morning-news')).status(),404)
  assert.equal((await dashboard()).schedules.history.filter(event=>event.kind==='post-unpublished').length,1)
+ assert.equal((await context.request.get(origin+'/site/about')).status(),404);assert.equal((await dashboard()).schedules.history.filter(event=>event.kind==='page-unpublished').length,1)
+ for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await page.goto(origin+'/app/sites');const region=page.getByRole('region',{name:'Schedules and reviews'});await region.getByText('Schedule event history',{exact:true}).click();await region.getByText('page unpublished',{exact:true}).waitFor();await region.scrollIntoViewIfNeeded();await capture('scheduled-expiry-history',width)}
  for(const [width,year,thanksgiving] of [[1440,2026,26],[390,2028,23]]){
   await page.setViewportSize({width,height:1000})
   const clean=await (await post('/api/pane/prepare',{site:source})).json()

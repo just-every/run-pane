@@ -1,3 +1,5 @@
+import {runPageSchedules} from './page-schedules'
+import {publishPage} from './page-review'
 import {runPostSchedules} from './post-schedules'
 import {publishPost,PostDenied} from './posts'
 import { uploadStatements,type Upload } from './forms'
@@ -22,8 +24,8 @@ export async function liveSnapshot(env:Bindings):Promise<(Revision&{banners?:{te
 export async function liveCall(env:Bindings,path:string,value:unknown){
  const response=await liveStore(env).fetch('https://pane.internal'+path,{method:'POST',body:JSON.stringify(value)})
  const result=await response.json() as any
- if(path==='/post-publish'&&response.status===409)throw new DraftConflict(result.latest??null)
- if(path==='/post-publish'&&response.status===403)throw new PostDenied(result.error??'Post publication refused.')
+ if(['/post-publish','/page-publish'].includes(path)&&response.status===409)throw new DraftConflict(result.latest??null)
+ if(['/post-publish','/page-publish'].includes(path)&&response.status===403)throw new PostDenied(result.error??'Post publication refused.')
  if(!response.ok)throw Error(result.error??'Live storage unavailable.')
  return result
 }
@@ -58,7 +60,14 @@ export class PaneLive extends DurableObject<Bindings>{
    if(live?.id===input.id)await storage.delete('live')
    return Response.json(result)
   })
+  if(path==='/page-publish')return this.ctx.blockConcurrencyWhile(async()=>{
+   try{
+    const live=await publishPage(auditedDatabase(this.env.DB,input.actor,'workspace.change'),input.actor,input.base,input.id,input.review)
+    await storage.put({live,banners:[]});return Response.json(live)
+   }catch(error){return Response.json({error:error instanceof Error?error.message:'Page publication refused.',...(error instanceof DraftConflict?{latest:error.latest}:{})},{status:error instanceof DraftConflict?409:error instanceof PostDenied?403:400})}
+  })
   if(path==='/post-schedules')return this.ctx.blockConcurrencyWhile(async()=>{
+   await runPageSchedules(auditedDatabase(this.env.DB,null,'schedule.change'),input.now)
    await runPostSchedules(auditedDatabase(this.env.DB,null,'schedule.change'),input.now)
    const row=await this.env.DB.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first()
    if(row)await storage.put('live',{...row,site:JSON.parse(String(row.site))})

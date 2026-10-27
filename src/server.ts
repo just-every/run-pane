@@ -1,3 +1,4 @@
+import {runPageSchedules} from './pane/page-schedules'
 import {runPostSchedules} from './pane/post-schedules'
 export { PaneLive } from './pane/outage'
 import { expireRejected } from './pane/rejected-content'
@@ -42,10 +43,11 @@ async function linkCallbackBody(request: Request) {
 export default withDemo<Bindings, ExportedHandler<Bindings>>({
   async scheduled(controller, env) {
     const bindings={...runtimeBindings(env),DB:auditedDatabase(env.DB,null,'schedule.change')}
+    const pageSweep=env.PANE_LIVE?[]:await Promise.allSettled([runPageSchedules(bindings.DB,controller.scheduledTime)])
     const postSweep=await Promise.allSettled([env.PANE_LIVE?liveCall(bindings,'/post-schedules',{now:controller.scheduledTime}):runPostSchedules(bindings.DB,controller.scheduledTime)])
     // One failing sweep must not stop the other.
     const sweeps=await Promise.allSettled([expireRejected(bindings.DB,controller.scheduledTime),runSchedules(bindings.DB,controller.scheduledTime),runFollowUps(bindings,controller.scheduledTime),...(env.PANE_LIVE?[liveCall(bindings,'/drain',{})]:[])])
-    for(const sweep of [...postSweep,...sweeps]) if(sweep.status==='rejected') throw sweep.reason
+    for(const sweep of [...pageSweep,...postSweep,...sweeps]) if(sweep.status==='rejected') throw sweep.reason
     if(env.PANE_LIVE){const row=await env.DB.prepare('SELECT live FROM pane_state WHERE id=1').first<{live:string}>();if(row)await liveCall(bindings,'/banners',{banners:await activeBanners(env.DB,row.live)})}
   },
   async fetch(request, env, execution) {

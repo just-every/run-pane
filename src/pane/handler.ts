@@ -1,3 +1,4 @@
+import {schedulePage} from './page-schedules'
 import {schedulePost} from './post-schedules'
 import {latestContent,ownPost,postView,PostDenied,savePost,publishPost} from './posts'
 import {postForm} from './post-forms'
@@ -142,7 +143,11 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    const id=String(input.id??saved.posts.at(-1)?.id??'')
    return new Response(null,{status:303,headers:{location:'/app/posts?id='+encodeURIComponent(id)}})
   }
-  if(['/api/pane/posts/schedule','/app/posts/schedule'].includes(path)){
+  if(action==='page-schedule'){
+   if(!owner||scopes)return json({error:'Native owner only.'},403)
+   result=await schedulePage(env.DB,actor,{...input,id:input.page})
+   notice=input.cancel==='yes'?'Page schedule cancelled.':input.approve==='yes'?'Page schedule approved.':'Page schedule saved without approval.';back='/app?page='+encodeURIComponent(String(input.slug??''))
+  }else if(['/api/pane/posts/schedule','/app/posts/schedule'].includes(path)){
    if(!owner||scopes)return json({error:'Native owner only.'},403)
    result=await schedulePost(env.DB,actor,input)
    notice=input.cancel==='yes'?'Post schedule cancelled.':input.approve==='yes'?'Post schedule approved.':'Post schedule saved without approval.';back='/app/posts?id='+encodeURIComponent(String(input.id))
@@ -252,7 +257,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   } else if(action==='page-request-review') {
    result=await requestPageReview(env.DB,actor.id,String(input.base??''),String(input.page??''));notice='Page sent for review.';back='/app?page='+encodeURIComponent(String(input.slug??''))
   } else if(action==='page-publish') {
-   result=await publishPage(env.DB,actor.id,String(input.base??''),String(input.page??''),String(input.request??''));notice='Selected page published. Other drafts are kept.';back='/app?page='+encodeURIComponent(String(input.slug??''))
+   result=env.PANE_LIVE?await liveCall(env,'/page-publish',{actor:actor.id,base:String(input.base??''),id:String(input.page??''),review:String(input.request??'')}):await publishPage(env.DB,actor.id,String(input.base??''),String(input.page??''),String(input.request??''));notice='Selected page published. Other drafts are kept.';back='/app?page='+encodeURIComponent(String(input.slug??''))
   } else if(action==='publication-revoke') {
    result=env.PANE_LIVE?await liveCall(env,'/revoke',{actor:actor.id,id:String(input.revision),confirm:input.confirm}):await revokePublication(env.DB,actor.id,String(input.revision),input.confirm)
    notice='Approval revoked. The published site is down.';back='/app/sites'

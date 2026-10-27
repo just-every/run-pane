@@ -164,3 +164,61 @@ test('approved immutable posts publish at Chicago nine while unapproved times ar
   }finally{await f.mf.dispose()}
  }
 })
+
+test('reviewed page schedules publish only approved content, expire durably and refuse unsafe authority and times',async()=>{
+ for(const isolatedLive of [false,true]){
+  const f=await runtime({isolatedLive,now:Date.parse('2026-10-01T12:00:00Z')}),origin=settings.AUTH_ORIGIN
+  let cookie
+  const call=(path,input,session=cookie,source=origin)=>f.request(path,{method:'POST',headers:{Origin:source,Cookie:session??'','Content-Type':'application/json'},body:JSON.stringify(input)})
+  const ok=async response=>{assert.equal(response.status,200,await response.clone().text());return response.json()}
+  const state=async()=>ok(await f.request('/api/pane',{headers:{Cookie:cookie}}))
+  const get=path=>f.request(path)
+  const tick=async iso=>assert.equal((await (await f.mf.getWorker()).scheduled({scheduledTime:new Date(iso),cron:'* * * * *'})).outcome,'ok')
+  try{
+   cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Page schedule owner'},'')).headers.get('set-cookie').split(';')[0]
+   await f.request('/setup',{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
+   const site=JSON.parse(await readFile('fixtures/static-site.json','utf8'))
+   const initial=await ok(await call('/api/pane/prepare',{site}));await ok(await call('/api/pane/publish',{revision:initial.id}))
+   const change=structuredClone(initial.site);change.pages.find(page=>page.slug==='about').body='Approved timed page.';change.pages.find(page=>page.slug==='services').body='Unapproved service draft.'
+   const source=await ok(await call('/api/pane/prepare',{site:change,base:initial.id}))
+   const review=await ok(await call('/api/pane/page-request-review',{base:source.id,page:'about'}))
+   const input={base:source.id,page:'about',review:review.id,timeZone:'America/Chicago',occurrence:'2026-11-02T09:00',end:'2026-11-03T09:00',approve:'yes'}
+   assert.equal((await call('/api/pane/page-schedule',input,'')).status,401)
+   assert.equal((await call('/api/pane/page-schedule',input,cookie,'https://elsewhere.invalid')).status,403)
+   let invitation
+   const auth=createOperatorAuth({clock:()=>Date.parse('2026-10-01T12:00:00Z'),db:f.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async message=>{invitation=message;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+   for(const role of ['admin','member']){
+    await auth.invite(new Request(origin+'/auth/invite',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin,Cookie:cookie}}),{email:'synthetic-pane-page-'+role+'@example.test',displayName:'Page '+role,role})
+    const response=await call('/auth/confirm',{token:new URL(invitation.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token')},'')
+    assert.equal(response.status,303);assert.equal((await call('/api/pane/page-schedule',input,response.headers.get('set-cookie').split(';')[0])).status,403)
+   }
+   assert.equal((await call('/api/pane/page-schedule',{...input,review:'synthetic-pane-invalid'})).status,400)
+   assert.equal((await call('/api/pane/page-schedule',{...input,base:initial.id})).status,409)
+   for(const occurrence of ['2027-03-14T02:30','2026-11-01T01:30'])assert.equal((await call('/api/pane/page-schedule',{...input,occurrence})).status,400)
+   assert.equal((await call('/api/pane/page-schedule',{...input,end:'2026-11-02T08:00'})).status,400)
+   await ok(await call('/api/pane/page-schedule',input))
+   await ok(await call('/api/pane/page-schedule',{base:source.id,page:'services',timeZone:'America/Chicago',occurrence:input.occurrence}))
+   const privateSite=structuredClone(change);privateSite.pages.find(page=>page.slug==='about').body='Later private personal work.'
+   await ok(await call('/api/pane/prepare',{base:source.id,site:privateSite}))
+   await tick('2026-11-02T14:59:00Z');assert.doesNotMatch(await (await get('/site/about')).text(),/Approved timed page/)
+   await tick('2026-11-02T15:00:00Z')
+   let current=await state();assert.match(await (await get('/site/about')).text(),/Approved timed page/);assert.doesNotMatch(await (await get('/site/about')).text(),/Later private/)
+   assert.deepEqual(current.live.site.pages.find(page=>page.slug==='services'),initial.site.pages.find(page=>page.slug==='services'))
+   assert.equal(current.draft.site.pages.find(page=>page.slug==='about').body,'Later private personal work.')
+   assert.deepEqual(current.revisions.find(row=>row.id===source.id),source)
+   const events=current.schedules.history.filter(event=>event.kind==='page-published');assert.equal(events.length,1);assert.equal(events[0].revision,source.id);assert.equal(events[0].executedAt,Date.parse('2026-11-02T15:00:00Z'));assert.equal(events[0].timeZone,'America/Chicago');assert.equal(events[0].occurrence,input.occurrence)
+   assert.deepEqual(current.schedules.draftDue,['Page: '+change.pages.find(page=>page.slug==='services').title])
+   const live=current.live.id;await tick('2026-11-02T15:00:00Z');await tick('2026-11-02T14:00:00Z');assert.equal((await state()).live.id,live)
+   await tick('2026-11-03T14:59:00Z');assert.equal((await get('/site/about')).status,200)
+   await tick('2026-11-03T15:00:00Z');assert.equal((await get('/site/about')).status,404)
+   assert.doesNotMatch(await (await get('/site/search?q=Approved%20timed')).text(),/href="\/site\/about"/)
+   current=await state();assert.equal(current.schedules.history.filter(event=>event.kind==='page-unpublished').length,1);assert.equal(current.draft.site.pages.find(page=>page.slug==='about').body,'Later private personal work.')
+   const review2=await ok(await call('/api/pane/page-request-review',{base:current.draft.id,page:'about'}))
+   await ok(await call('/api/pane/page-schedule',{...input,base:current.draft.id,review:review2.id,occurrence:'2026-11-04T09:00',end:'2026-11-05T09:00'}))
+   await tick('2026-11-04T15:00:00Z');assert.match(await (await get('/site/about')).text(),/Later private personal work/)
+   current=await state();await ok(await call('/api/pane/page-publish',{base:current.draft.id,page:'about',request:review2.id}))
+   await tick('2026-11-05T15:00:00Z');assert.equal((await get('/site/about')).status,200,'Explicit replacement cancels the old expiry')
+   const audit=await ok(await f.request('/api/pane/activity',{headers:{Cookie:cookie}}));for(const action of ['schedule.approve','schedule.save','schedule.cancel'])assert.ok(audit.some(event=>event.action===action));assert.ok(!JSON.stringify(audit).includes('Later private personal work.'))
+  }finally{await f.mf.dispose()}
+ }
+})

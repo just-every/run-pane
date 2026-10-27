@@ -1,3 +1,4 @@
+import {pageSchedule} from './page-schedule'
 import {brandSettings} from '../brand'
 import { customCodeSettings } from './custom-code-settings'
 import { componentSettings, componentCreation } from './component-settings'
@@ -111,5 +112,5 @@ export function editor(data: Dashboard, requested: string): string {
   const desktop = `<section class="desktop" aria-label="Desktop preview of ${escape(page.title)}"><div class="desktop-bar" aria-hidden="true"><i></i><i></i><i></i><span>${sitePath(slug,site)}</span></div><div class="desktop-viewport"><div class="desktop-page">${publicPage(site, slug, 'frame')}</div></div></section>`
   const by = data.people[draft.actor] ?? 'a former team member'
   const chip = `<a class="chip" href="/app/sites#history"><span class="chip-icon">${icon('history')}</span><span class="chip-copy"><strong>${same ? 'Live' : 'Prepared'} · ${escape(by)}</strong><span>Revision <code>${short(draft.id)}</code> · ${when(draft.created_at, 'short',data.timeZone,data.locale)}</span></span>${icon('arrow')}</a>`
-  return `<script src="/pane-autosave.js" defer></script>${pageBar(data, slug, changed, owner, canEdit)}<div class="canvas canvas-fit">${markNote(data, false)}<div class="stage">${phone}<div class="side"><div class="cardstack">${editCard(site, page, draft.id, canEdit, Boolean(data.live) && !change.changed,can(data,'settings:write'),owner)}${alertCard(data, page, change, canEdit)}</div>${desktop}</div></div></div>${dock(activePages(site), slug, entry => changes[entry]?.changed ?? false, chip,site,data.timeZone,data.locale)}`
+  return `<script src="/pane-autosave.js" defer></script>${pageBar(data, slug, changed, owner, canEdit)}<div class="canvas canvas-fit">${markNote(data, false)}<div class="stage">${phone}<div class="side"><div class="cardstack">${editCard(site, page, draft.id, canEdit, Boolean(data.live) && !change.changed,can(data,'settings:write'),owner)}${alertCard(data, page, change, canEdit)}${owner?`<section class="card">${pageSchedule(data,page)}</section>`:''}</div>${desktop}</div></div></div>${dock(activePages(site), slug, entry => changes[entry]?.changed ?? false, chip,site,data.timeZone,data.locale)}`
 }
