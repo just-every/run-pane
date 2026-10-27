@@ -136,7 +136,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "b46416eaa45f66e236051d5d16af09b8e010885173eb2ad158a0a97161cc6cb5",
+      "sha256": "6d790e31947e053421d17a12c788296a38ea882ad9ae0e6f842d7db2c3c3a1df",
       "executable": false
     },
     "AGENTS.md": {
@@ -160,7 +160,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "c80bda4a46f1de12fc5bb009d40beb896d3f359c1f0859b35fa3f33cef758249",
+      "sha256": "1daa0976ba9a8d80c7ae4cba7d6c732f0f1a50107b696dc1f922cf7d33131c75",
       "executable": false
     },
     "deploy-demo.json": {
@@ -212,7 +212,7 @@
       "executable": false
     },
     "docs/MOVE-IN.md": {
-      "sha256": "a0b0e234e8f8614fae0c8df44e33e07900498a94a6fcb128096c1c5131433e52",
+      "sha256": "52504d4e99b9e516984ba19956e773acea691a80ce1a3c4961f83e1be1074919",
       "executable": false
     },
     "docs/PROVENANCE.md": {
@@ -237,6 +237,10 @@
     },
     "fixtures/images/README.md": {
       "sha256": "3a78462a80abd2d6c0f3c40b2f94cd40b559a52dad901a43cf1fba20508e0bf9",
+      "executable": false
+    },
+    "fixtures/imports/comment-transfer.xml": {
+      "sha256": "a4d983817a9f4ebc86b29056588d101bba4df0d4394471b5c5837d13de8df774",
       "executable": false
     },
     "fixtures/imports/durable.json": {
@@ -437,6 +441,10 @@
     },
     "migrations/core/0036_comments.sql": {
       "sha256": "93826b05a9c1875c8b7d270c030322a64e96f7196508d0f9fd408cc749b242bf",
+      "executable": false
+    },
+    "migrations/core/0037_comment_transfer.sql": {
+      "sha256": "56fc2e222487e8bb0c600bcbb8a34b37c93fd201f92884bb3402e8cf02809660",
       "executable": false
     },
     "ONBOARDING.md": {
@@ -1076,7 +1084,7 @@
       "executable": false
     },
     "scripts/comments-journey.mjs": {
-      "sha256": "0975d9453595c98eaf0c42bb9f619aa6791404d7c590fbb87dc07bdac3552a91",
+      "sha256": "4d2532e64dd424be7343d7e809e458ec7a0068e909e834e921844f15ba671ebb",
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
@@ -3271,8 +3279,12 @@
       "sha256": "7f50862391e78e2feacb001eeed4b98026e710ca05718315147134739791b3df",
       "executable": false
     },
+    "src/pane/comment-transfer.ts": {
+      "sha256": "8ba87d10e30e5193c7eaea4967d358aab3258dd43409a8f0b7f509f4b7027106",
+      "executable": false
+    },
     "src/pane/comments.ts": {
-      "sha256": "1cd74d0d064a28725da7c80ffd6f4497be864cdbc5f88c92ed8cd3b0b1cc67e4",
+      "sha256": "874a2f18caa9df3cb5ace0cdd9f2bc2a172acece8a75177a2b9d5b471398ea8b",
       "executable": false
     },
     "src/pane/components.ts": {
@@ -3336,7 +3348,7 @@
       "executable": false
     },
     "src/pane/handler.ts": {
-      "sha256": "de8d42c5fc0a6d87120097af0f66c51e59b8746163aa0453023551da8e2406ce",
+      "sha256": "dccba3eb5c7ee3384dc1dcb8d139ca4cf0dc547e3d32e18fc9552c015e10e3fa",
       "executable": false
     },
     "src/pane/image-response.ts": {
@@ -3360,7 +3372,7 @@
       "executable": false
     },
     "src/pane/import-formats.ts": {
-      "sha256": "9dcafe539a491680f1cca86f18abe133d793c087b9baab82daeab02858a45e41",
+      "sha256": "774c71e262172743673808f811b60e3da746a16756268e75d9beda7ec1657d19",
       "executable": false
     },
     "src/pane/import-html.ts": {
@@ -3472,7 +3484,7 @@
       "executable": false
     },
     "src/pane/roles.ts": {
-      "sha256": "e14646d3569fe4833156f80f3ec14c10a5ecf519e2716b243068767556ce8bcb",
+      "sha256": "b97fe5181fe304e9972dbb44c59e529644f0faf3a9a0bd128bb587ce595d57a1",
       "executable": false
     },
     "src/pane/schedule-time.ts": {
@@ -3824,11 +3836,11 @@
       "executable": false
     },
     "tests/posts.test.mjs": {
-      "sha256": "1a6ac78c68a0e308f37f3be196b7c7570312931016fb50490e5078d802a0bab3",
+      "sha256": "7a1d4fdec37af3fa2daf6004b758495497a19ad7d2149c95e6b235d124f0082b",
       "executable": false
     },
     "tests/runtime.mjs": {
-      "sha256": "c0e59eb2e4121adc0e1b6a78b3b3f4b67fa61438a94673d0a02bd3bdea17a7ab",
+      "sha256": "7bdf2633a66e2148d8ee87b75eda5993539ac4429b9c350154cb7f37ae1e894f",
       "executable": false
     },
     "tests/search.test.mjs": {

@@ -5,7 +5,7 @@ import {latestContent,PostDenied} from './posts'
 import {rejectForm,verifyForm,limited,visitor} from './form-protection'
 import {escape,hidden,key} from './ui/kit'
 import {blogPostPath} from './post-links'
-export type Comment={id:string;post:string;parent:string|null;name:string;email:string;website:string;body:string;state:'pending'|'approved'|'spam';actor:string|null;created_at:string}
+export type Comment={id:string;post:string;parent:string|null;name:string;email:string;website:string;body:string;state:'pending'|'approved'|'spam';actor:string|null;created_at:string;import_pending?:number}
 type Settings={blog:string;enabled:number;approval:number;close_days:number;blocked_words:string;likes:number;notification_mode:string}
 export async function commentSettings(db:D1Database,blog:string){return await db.prepare('SELECT * FROM pane_comment_settings WHERE blog=?').bind(blog).first<Settings>()??{blog,enabled:0,approval:1,close_days:0,blocked_words:'',likes:0,notification_mode:'immediate'}}
 export async function commentsOpen(db:D1Database,site:Site,post:string){
@@ -34,10 +34,10 @@ export async function submitComment(request:Request,env:Bindings,site:Site,post:
  if(await limited(env.DB,'comment-visitor:'+sender+':'+post,20)||await limited(env.DB,'comments:'+post,200))return rejectForm(env,scope,'rate',form)
  const proof=await verifyForm(env,String(form.get('cf-turnstile-response')??''),id,scope)
  if(proof!=='verified')return rejectForm(env,scope,proof,form)
- if(parent&&!await env.DB.prepare("SELECT 1 FROM pane_comments WHERE id=? AND post=? AND parent IS NULL AND state='approved'").bind(parent,post).first())return Response.json({error:'Reply to an approved top-level comment.'},{status:400})
+ if(parent&&!await env.DB.prepare("SELECT 1 FROM pane_comments WHERE id=? AND post=? AND parent IS NULL AND state='approved' AND import_pending=0").bind(parent,post).first())return Response.json({error:'Reply to an approved top-level comment.'},{status:400})
  const published=site.blogPosts!.find(item=>item.id===post)!,settings=await commentSettings(env.DB,published.blog)
  const spam=(body.match(/https?:\/\//gi)??[]).length>=6||settings.blocked_words.split(',').map(word=>word.trim().toLowerCase()).filter(Boolean).some(word=>body.toLowerCase().includes(word))
- const prior=await env.DB.prepare("SELECT 1 FROM pane_comments WHERE email=? AND state='approved'").bind(email).first()
+ const prior=await env.DB.prepare("SELECT 1 FROM pane_comments WHERE email=? AND state='approved' AND import_pending=0").bind(email).first()
  const state=spam?'spam':!settings.approval&&prior?'approved':'pending'
  const saved=await env.DB.prepare('INSERT OR IGNORE INTO pane_comments(id,post,parent,name,email,website,body,state,created_at) SELECT ?,?,?,?,?,?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM pane_erased_comments WHERE id=?) RETURNING id').bind(id,post,parent,name,email,website,body,state,new Date().toISOString(),id).first()
  if(saved)await notify(env,id,settings.notification_mode==='daily')
@@ -55,13 +55,14 @@ export async function commentAction(env:Bindings,actor:{id:string;displayName:st
  }
  const ids=Array.isArray(input.ids)?input.ids:[input.id];if(!ids.length||ids.length>100||ids.some(id=>typeof id!=='string'))throw Error('Choose up to 100 comments.')
  if(action==='reply'||action==='author-reply'){
-  const parent=await env.DB.prepare("SELECT * FROM pane_comments WHERE id=? AND state='approved' AND parent IS NULL").bind(ids[0]).first<Comment>()
+  const parent=await env.DB.prepare("SELECT * FROM pane_comments WHERE id=? AND state='approved' AND parent IS NULL AND import_pending=0").bind(ids[0]).first<Comment>()
   const current=await latestContent(env.DB),post=current?.site.posts?.find(post=>post.id===parent?.post)
   if(!parent||!post||post.author!==actor.id&&!moderate)throw new PostDenied('Only this post’s native author or an authorized comment moderator can reply as its author.')
   const body=String(input.body??'').trim();if(!body||body.length>5000)throw Error('Enter a reply up to 5,000 characters.')
   const person=await env.DB.prepare('SELECT email FROM oa_operators WHERE id=?').bind(actor.id).first<{email:string}>()
   await env.DB.prepare("INSERT INTO pane_comments(id,post,parent,name,email,body,state,actor,created_at) VALUES(?,?,?,?,?,?,'approved',?,?)").bind(crypto.randomUUID(),parent.post,parent.id,post.byline??actor.displayName,person!.email,body,actor.id,new Date().toISOString()).run();return {replied:true}
  }
+ if(action==='release-import'){await env.DB.batch(ids.map(id=>env.DB.prepare('UPDATE pane_comments SET import_pending=0 WHERE id=? AND import_pending=1').bind(id)));return {released:true}}
  if(!['approve','spam','delete','edit'].includes(action))throw Error('Choose a moderation action.')
  if(action==='edit'&&ids.length!==1)throw Error('Edit one comment at a time.')
  if(action==='edit'&&(!String(input.body??'').trim()||String(input.body).length>5000))throw Error('Enter comment text up to 5,000 characters.')
@@ -69,7 +70,7 @@ export async function commentAction(env:Bindings,actor:{id:string;displayName:st
  return {saved:true}
 }
 export async function commentMarkup(env:Bindings,site:Site,post:string){
- const rows=(await commentList(env.DB,post)).filter(row=>row.state==='approved'),render=(row:Comment)=>`<article id="comment-${escape(row.id)}"><h3>${escape(row.name)}${row.actor?' · Post author':''}</h3><p>${escape(row.body).replaceAll('\n','<br>')}</p></article>`
+ const rows=(await commentList(env.DB,post)).filter(row=>row.state==='approved'&&!row.import_pending),render=(row:Comment)=>`<article id="comment-${escape(row.id)}"><h3>${escape(row.name)}${row.actor?' · Post author':''}</h3><p>${escape(row.body).replaceAll('\n','<br>')}</p></article>`
  const list=rows.filter(row=>!row.parent).map(row=>render(row)+`<div class="comment-replies">${rows.filter(reply=>reply.parent===row.id).map(render).join('')}</div>`).join('')
  const open=await commentsOpen(env.DB,site,post),published=site.blogPosts!.find(item=>item.id===post)!,settings=await commentSettings(env.DB,published.blog)
  const count=await env.DB.prepare('SELECT count FROM pane_post_likes WHERE post=?').bind(post).first<{count:number}>()
@@ -79,13 +80,13 @@ export async function commentMarkup(env:Bindings,site:Site,post:string){
 export async function commentSettingsMarkup(db:D1Database,site:Site){
  return '<details><summary>Comment settings</summary>'+ (await Promise.all((site.blogs??[]).map(async blog=>{const settings=await commentSettings(db,blog.id);return `<form class="edit-form" method="post" action="/app/comments/settings" data-comment-settings>${key()}${hidden('blog',blog.id)}<h2>${escape(blog.title)}</h2><label><input type="checkbox" name="enabled"${settings.enabled?' checked':''}> Enable comments</label><label><input type="checkbox" name="likes"${settings.likes?' checked':''}> Show cookie-free likes</label><label>Notifications<select name="notificationMode"><option value="immediate"${settings.notification_mode==='immediate'?' selected':''}>Each new comment</option><option value="daily"${settings.notification_mode==='daily'?' selected':''}>Daily digest</option></select></label><label>Approval<select name="approval"><option value="on"${settings.approval?' selected':''}>Approve every comment</option><option value="off"${!settings.approval?' selected':''}>Previously approved commenters may post automatically</option></select></label><label>Close after days (0 keeps open)<input type="number" name="closeDays" min="0" max="3650" value="${settings.close_days}"></label><label>Blocked words (comma separated)<input name="blockedWords" maxlength="1000" value="${escape(settings.blocked_words)}"></label><button class="secondary">Save comment settings</button></form>`}))).join('')+'</details>'
 }
-export async function moderationMarkup(db:D1Database,selected:string){
+export async function moderationMarkup(db:D1Database,selected:string,owner=false){
  const rows=await commentList(db),notifications=(await db.prepare('SELECT comment,recipient,status FROM pane_comment_notifications').all()).results
- return `<h1>Comments</h1><p>Only owners, admins and comment moderators can review this queue. Email delivery state is shown with each comment.</p><form method="post" action="/app/comments/approve">${key()}${rows.map(row=>`<article class="card" id="review-${escape(row.id)}"${row.id===selected?' tabindex="-1"':''}><label><input type="checkbox" name="ids" value="${escape(row.id)}"> Select comment by ${escape(row.name)}</label><p>${escape(row.email)} · ${escape(row.state)}</p><p>${escape(row.body)}</p><p>Notification: ${notifications.filter(item=>item.comment===row.id).map(item=>escape(String(item.status))).join(', ')}</p><a href="/app/comments?comment=${escape(row.id)}">Review comment</a></article>`).join('')||'<p>No comments to review.</p>'}<div class="comment-actions"><button class="secondary">Approve selected</button><button formaction="/app/comments/spam" class="secondary">Mark selected as spam</button><button formaction="/app/comments/delete" class="secondary">Delete selected</button></div></form>${rows.filter(row=>row.id===selected).map(row=>`<form class="edit-form" method="post" action="/app/comments/edit">${key()}${hidden('id',row.id)}<label>Edit comment<textarea name="body" required maxlength="5000">${escape(row.body)}</textarea></label><button class="secondary">Save comment edit</button></form>${row.state==='approved'&&!row.parent?`<form class="edit-form" method="post" action="/app/comments/author-reply">${key()}${hidden('id',row.id)}<label>Reply as post author<textarea name="body" required maxlength="5000"></textarea></label><button class="secondary">Publish reply as post author</button></form>`:''}` ).join('')}`
+ return `<h1>Comments</h1><p>Only owners, admins and comment moderators can review this queue. Email delivery state is shown with each comment.</p><form method="post" action="/app/comments/approve">${key()}${rows.map(row=>`<article class="card" id="review-${escape(row.id)}"${row.id===selected?' tabindex="-1"':''}><label><input type="checkbox" name="ids" value="${escape(row.id)}"> Select comment by ${escape(row.name)}</label><p>${escape(row.email)} · ${escape(row.state)}${row.import_pending?' · Private import':''}</p><p>${escape(row.body)}</p><p>Notification: ${notifications.filter(item=>item.comment===row.id).map(item=>escape(String(item.status))).join(', ')}</p><a href="/app/comments?comment=${escape(row.id)}">Review comment</a></article>`).join('')||'<p>No comments to review.</p>'}<div class="comment-actions"><button class="secondary">Approve selected</button>${owner?'<button formaction="/app/comments/release-import" class="secondary">Release imported comments</button>':''}<button formaction="/app/comments/spam" class="secondary">Mark selected as spam</button><button formaction="/app/comments/delete" class="secondary">Delete selected</button></div></form>${rows.filter(row=>row.id===selected).map(row=>`<form class="edit-form" method="post" action="/app/comments/edit">${key()}${hidden('id',row.id)}<label>Edit comment<textarea name="body" required maxlength="5000">${escape(row.body)}</textarea></label><button class="secondary">Save comment edit</button></form>${row.state==='approved'&&!row.parent&&!row.import_pending?`<form class="edit-form" method="post" action="/app/comments/author-reply">${key()}${hidden('id',row.id)}<label>Reply as post author<textarea name="body" required maxlength="5000"></textarea></label><button class="secondary">Publish reply as post author</button></form>`:''}` ).join('')}`
 }
 export async function authorCommentMarkup(db:D1Database,site:Site,post:string,actor:string,owner:boolean){
  const entry=site.posts?.find(item=>item.id===post);if(!entry)return ''
- const rows=(await commentList(db,post)).filter(row=>row.state==='approved'&&!row.parent)
+ const rows=(await commentList(db,post)).filter(row=>row.state==='approved'&&!row.import_pending&&!row.parent)
  return `<section class="card"><h2>Post comments</h2>${owner?`<form method="post" action="/app/comments/close">${key()}${hidden('post',post)}<label>Comment availability<select name="closed"><option value="on">Close comments</option><option value="off">Reopen comments</option></select></label><button class="secondary">Save availability</button></form>`:''}${entry.author===actor?rows.map(row=>`<form class="edit-form" method="post" action="/app/comments/reply">${key()}${hidden('id',row.id)}<p>${escape(row.name)}: ${escape(row.body)}</p><label>Author reply<textarea name="body" required maxlength="5000"></textarea></label><button class="secondary">Publish author reply</button></form>`).join(''):''}</section>`
 }
 

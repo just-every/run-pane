@@ -1,3 +1,4 @@
+import {exportCommentWxr,planCommentTransfer,applyCommentTransfer,transferForm,transferReview} from './comment-transfer'
 import {commentAction,commentSettingsMarkup,moderationMarkup,authorCommentMarkup,commentList} from './comments'
 import {latestContent,ownPost,postView,PostDenied,savePost,publishPost} from './posts'
 import {postForm} from './post-forms'
@@ -78,14 +79,19 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    }
    data.notice=url.searchParams.get('notice')??undefined
    const selected=url.searchParams.get('id')??''
-   const settings=owner&&current?await commentSettingsMarkup(env.DB,current.site):''
+   const settings=owner&&current?await commentSettingsMarkup(env.DB,current.site)+transferForm(current.site):''
    const replies=current&&selected?await authorCommentMarkup(env.DB,current.site,selected,actor.id,owner):''
    return document('Posts',shell(data,'posts',postsEditor(data,selected).replace('<details><summary>PDF library',settings+'<details><summary>PDF library')+replies))
+  }
+  if(request.method==='GET'&&['/app/comments/export','/api/pane/comments/export'].includes(path)){
+   if(!owner||scopes)return json({error:'Native owner only.'},403)
+   await operatorAuth(env).requireStepUp(request,'export')
+   return new Response(await exportCommentWxr(env),{headers:{'content-type':'application/xml; charset=utf-8','content-disposition':'attachment; filename="pane-comments.xml"','cache-control':'no-store'}})
   }
   if(request.method==='GET'&&['/app/comments','/api/pane/comments'].includes(path)){
    if(api)return json(await commentList(env.DB))
    const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps,actor)
-   return document('Comments',shell(data,'comments',await moderationMarkup(env.DB,url.searchParams.get('comment')??'')))
+   return document('Comments',shell(data,'comments',await moderationMarkup(env.DB,url.searchParams.get('comment')??'',owner)))
   }
   if(request.method==='GET'&&path==='/api/pane/posts')return json(postView(await latestContent(env.DB),actor.id,owner||actor.role==='admin'))
   if(request.method==='GET'&&path==='/api/pane/ai/history'){
@@ -146,7 +152,13 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   if(action.startsWith('comments/')){
    if(scopes)return json({error:'Native session required.'},403)
    const verb=action.slice(9)
-   if(['settings','close'].includes(verb)&&!owner)return json({error:'Native owner only.'},403)
+   if(['settings','close','import-review','import-apply','release-import'].includes(verb)&&!owner)return json({error:'Native owner only.'},403)
+   if(verb==='import-review'){
+    const plan=await planCommentTransfer(env.DB,String(input.source),String(input.post),String(input.sourcePost));if(api)return json(plan)
+    const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps,actor)
+    return document('Review comment import',shell(data,'comments',transferReview(plan,String(input.source))))
+   }
+   if(verb==='import-apply'){const saved=await applyCommentTransfer(env.DB,String(input.source),String(input.post),String(input.sourcePost),String(input.fingerprint));if(api)return json(saved);return new Response(null,{status:303,headers:{location:'/app/comments','cache-control':'no-store'}})}
    const saved=await commentAction(env,actor,verb,input,caps.includes('comments:moderate'))
    if(api)return json(saved)
    return new Response(null,{status:303,headers:{location:verb==='reply'||verb==='settings'||verb==='close'?'/app/posts':'/app/comments','cache-control':'no-store'}})

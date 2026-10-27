@@ -170,3 +170,54 @@ test('native comment moderation protects notifications, threaded replies, closur
   await ok(await call('/api/pane/comments/settings',{blog:'news',enabled:'on',approval:'on'}));mailFails=true;const failedId=crypto.randomUUID();assert.equal((await visitor('A retained comment despite email failure',{idempotency:failedId})).status,303);mailFails=false;assert.ok((await ok(await get('/api/pane/comments',admin))).some(row=>row.id===failedId));assert.match(await (await get('/app/comments?comment='+failedId,admin)).text(),/uncertain/)
  }finally{await f.mf.dispose()}
 })
+
+test('owner WXR comment transfers preserve private reviewed metadata, explicit release and erasure fences',async()=>{
+ const origin='https://pane.example.test',mail=[],outbound=[],f=await runtime({now:Date.parse('2026-10-15T16:00:00Z'),bindings:{AUTH_ORIGIN:origin,AUTH_LOCAL:'false',MAIL_PROVIDER:'sendgrid',MAIL_API_KEY:'synthetic-pane-7'},observeOutbound:request=>outbound.push(request.url),outboundService:async request=>{assert.equal(new URL(request.url).origin,'https://api.sendgrid.com');mail.push(await request.json());return new Response(null,{status:202})}})
+ let owner,moderator
+ const call=(path,input,cookie=owner,headers={})=>f.request(origin+path,{method:'POST',headers:{Origin:origin,Cookie:cookie??'','Content-Type':'application/json',...headers},body:JSON.stringify(input)})
+ const get=(path,cookie=owner)=>f.request(origin+path,{headers:{Cookie:cookie??''}})
+ const ok=async response=>{assert.equal(response.status,200,await response.clone().text());return response.json()}
+ try{
+  const first=await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Transfer owner'},'');owner=first.headers.get('set-cookie').split(';')[0]
+  await f.request(origin+'/setup',{method:'POST',headers:{Origin:origin,Cookie:owner,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
+  const site=JSON.parse(await readFile('fixtures/static-site.json','utf8'));site.blogs=[{id:'news',prefix:'news',title:'News',comments:false,pageSize:10}]
+  const initial=await ok(await call('/api/pane/prepare',{site}));await ok(await call('/api/pane/publish',{revision:initial.id}))
+  let saved=await ok(await call('/api/pane/posts/save',{base:initial.id,blog:'news',byline:'Workshop owner',content:{slug:'story',title:'Native story',body:'A native story.'}})),post=saved.posts[0]
+  saved=await ok(await call('/api/pane/posts/submit',{base:saved.base,id:post.id}));await ok(await call('/api/pane/posts/publish',{base:saved.base,id:post.id,review:saved.posts[0].review}))
+  await ok(await call('/api/pane/roles/invite',{email:'synthetic-pane-2@example.test',displayName:'Moderator',roles:['comment-moderator']}))
+  const text=mail.at(-1).content.find(part=>part.type==='text/plain').value,confirmed=await call('/auth/confirm',{token:new URL(text.match(/https:\/\/[^\s]+/)[0]).searchParams.get('token')},'');moderator=confirmed.headers.get('set-cookie').split(';')[0]
+  const source=await readFile('fixtures/imports/comment-transfer.xml','utf8'),input={source,post:post.id,sourcePost:'wxr-7'}
+  assert.equal((await get('/api/pane/comments/export','')).status,401)
+  assert.equal((await get('/api/pane/comments/export',moderator)).status,403)
+  assert.equal((await get('/api/pane/comments/export')).status,400,'Private export requires fresh sign-in')
+  for(const verb of ['import-review','import-apply','release-import'])assert.equal((await call('/api/pane/comments/'+verb,input,moderator)).status,403)
+  assert.equal((await call('/api/pane/comments/import-review',input,owner,{Origin:'https://foreign.invalid'})).status,403)
+  const plan=await ok(await call('/api/pane/comments/import-review',input));assert.equal(plan.comments.length,4);assert.deepEqual(await ok(await get('/api/pane/comments')),[])
+  const shape=row=>[row.name,row.email,row.website,row.body,row.state,row.created_at,!!row.parent]
+  const expected=[['Visitor & friend','synthetic-pane-10@example.test','https://example.org/visitor','Kept <script>alert(1)</script> & text','approved','2025-02-03T14:15:16.000Z',false],['Thread writer','synthetic-pane-10@example.test','','A preserved reply','approved','2025-02-04T15:16:17.000Z',true],['Pending visitor','synthetic-pane-12@example.test','','Not approved','pending','2025-02-05T16:17:18.000Z',false],['Held visitor','synthetic-pane-13@example.test','','Held as spam','spam','2025-02-06T17:18:19.000Z',false]]
+  assert.deepEqual(plan.comments.map(shape),expected);assert.equal(plan.comments[1].parent,plan.comments[0].id)
+  for(const bad of [{...input,fingerprint:'wrong'},{...input,source:source+' ',fingerprint:plan.fingerprint}])assert.equal((await call('/api/pane/comments/import-apply',bad)).status,400)
+  for(const badSource of [source.replace('<wp:comment_parent>10</wp:comment_parent>','<wp:comment_parent>999</wp:comment_parent>'),source.replace('<wp:comment_approved>spam','<wp:comment_approved>trash'),source.replace('2025-02-03 14:15:16','not-a-date'),source.replace('2025-02-03 14:15:16','2025-02-30 14:15:16')])assert.equal((await call('/api/pane/comments/import-review',{...input,source:badSource})).status,400)
+  assert.deepEqual(await ok(await get('/api/pane/comments')),[])
+  const before=outbound.length,result=await ok(await call('/api/pane/comments/import-apply',{...input,fingerprint:plan.fingerprint}));assert.equal(result.imported,4)
+  const imported=await ok(await get('/api/pane/comments'));assert.deepEqual(imported.map(shape),expected);assert.deepEqual(imported.map(row=>row.import_pending),[1,1,1,1]);assert.equal(imported[1].parent,imported[0].id)
+  assert.ok(!(await (await get('/site/news/story','')).text()).includes('Kept &lt;script'))
+  await ok(await call('/api/pane/comments/approve',{ids:[imported[0].id]},moderator));assert.ok(!(await (await get('/site/news/story','')).text()).includes('Kept &lt;script'),'Moderation cannot bypass owner release')
+  await ok(await call('/api/pane/comments/release-import',{ids:result.ids}));assert.equal(outbound.length,before,'Import and release send no outbound requests')
+  const html=await (await get('/site/news/story','')).text();assert.match(html,/Kept &lt;script&gt;/);assert.match(html,/comment-replies[\s\S]*A preserved reply/);for(const hidden of ['Not approved','Held as spam','synthetic-pane-10@example.test','<script>alert(1)</script>'])assert.ok(!html.includes(hidden))
+  assert.equal((await call('/api/pane/comments/import-apply',{...input,fingerprint:plan.fingerprint})).status,400)
+  let signIn
+  const native=createOperatorAuth({clock:()=>Date.parse('2026-10-15T16:00:00Z'),db:f.db,config:{...settings,origin,local:false},clientIp:()=> '127.0.0.1',mailSender:{send:async message=>{signIn=message;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+  await native.requestMagicLink(new Request(origin+'/auth/magic-link',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin}}),{email:settings.OWNER_EMAIL})
+  const signed=await call('/auth/confirm',{token:new URL(signIn.text.match(/https:\/\/[^\s]+/)[0]).searchParams.get('token')},'');owner=signed.headers.get('set-cookie').split(';')[0]
+  const exported=await get('/api/pane/comments/export');assert.equal(exported.status,200);assert.equal(exported.headers.get('cache-control'),'no-store')
+  const wxr=await exported.text(),{XMLParser,XMLValidator}=await import('fast-xml-parser');assert.equal(XMLValidator.validate(wxr),true)
+  const parsed=new XMLParser({parseTagValue:false,trimValues:false}).parse(wxr).rss.channel.item['wp:comment'];assert.deepEqual(parsed.map(row=>[row['wp:comment_author'],row['wp:comment_author_email'],row['wp:comment_content'],row['wp:comment_approved'],row['wp:comment_parent']]),[['Visitor & friend','synthetic-pane-10@example.test','Kept <script>alert(1)</script> & text','1','0'],['Thread writer','synthetic-pane-10@example.test','A preserved reply','1','1'],['Pending visitor','synthetic-pane-12@example.test','Not approved','0','0'],['Held visitor','synthetic-pane-13@example.test','Held as spam','spam','0']])
+  assert.deepEqual(parsed.map(row=>row['wp:comment_date_gmt']),['2025-02-03 14:15:16','2025-02-04 15:16:17','2025-02-05 16:17:18','2025-02-06 17:18:19'])
+  const privacy=await ok(await call('/api/pane/privacy/export',{email:'synthetic-pane-10@example.test'}));assert.deepEqual(privacy.comments.map(shape),expected.slice(0,2))
+  const erased=await ok(await call('/api/pane/privacy/erase',{email:'synthetic-pane-10@example.test',confirm:'erase-person-data'}));assert.equal(erased.erasedComments,2);assert.equal(erased.backupFence,true)
+  assert.equal((await call('/api/pane/comments/import-review',input)).status,400,'An erased source cannot be reimported')
+  const after=await (await get('/api/pane/comments/export')).text();assert.ok(!after.includes('synthetic-pane-10@example.test'));assert.ok(!after.includes('A preserved reply'))
+  const activity=await ok(await get('/api/pane/activity'));assert.ok(activity.some(row=>row.action==='comment.import'&&row.actor==='Transfer owner'));assert.ok(activity.some(row=>row.action==='comment.import-release'&&row.actor==='Transfer owner'));assert.ok(!JSON.stringify(activity).includes('synthetic-pane-10@example.test'))
+ }finally{await f.mf.dispose()}
+})

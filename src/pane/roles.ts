@@ -43,7 +43,7 @@ export function permittedDashboard(data:Dashboard,caps:Capability[],actor:{id:st
 }
 export function routeCapability(path:string,method:string):Capability|undefined{
  if(['/app/comments','/api/pane/comments'].includes(path)&&method==='GET')return 'comments:moderate'
- if(path.startsWith('/app/comments/')||path.startsWith('/api/pane/comments/'))return path.endsWith('/reply')?'posts:write':path.endsWith('/settings')||path.endsWith('/close')?'settings:write':'comments:moderate'
+ if(path.startsWith('/app/comments/')||path.startsWith('/api/pane/comments/'))return ['export','import-review','import-apply','release-import'].includes(path.split('/').at(-1)!)?'erase':path.endsWith('/reply')?'posts:write':path.endsWith('/settings')||path.endsWith('/close')?'settings:write':'comments:moderate'
  if(method==='GET'&&(path.startsWith('/app/files/')||path.startsWith('/api/pane/files/')))return 'inbox:read'
  if(method==='GET')return ({'/api/pane/ai/history':'ai:write','/api/pane/posts':'posts:write','/app/posts':'posts:write','/app/posts/canvas':'posts:write','/api/pane/pages':'pages:read','/api/pane/collections':'pages:read','/api/pane/activity':'audit','/api/pane/activity/export':'audit','/api/pane/roles':'team','/api/pane/tokens':'tokens','/app':'pages:read','/app/canvas':'pages:write','/app/inquiries':'inbox:read','/app/moves':'imports:read','/app/search':'pages:write'} as Record<string,Capability>)[path]
  const action=path.replace(/^\/(api\/pane|app)\//,'')
