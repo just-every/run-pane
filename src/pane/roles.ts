@@ -48,7 +48,7 @@ export function routeCapability(path:string,method:string):Capability|undefined{
  if((path.startsWith('/app/spam/')||path.startsWith('/api/pane/spam/'))&&['settings','rescue','purge','hold','release'].includes(action.slice(5)))return 'erase'
  if(path.startsWith('/api/pane/ai/')&&['propose','decide','undo'].includes(path.split('/').at(-1)!))return 'ai:write'
  if(['/api/pane/posts/save','/api/pane/posts/submit','/app/posts/save','/app/posts/submit'].includes(path))return 'posts:write'
- if(['/api/pane/posts/publish','/app/posts/publish'].includes(path))return 'publish'
+ if(['/api/pane/posts/publish','/app/posts/publish','/api/pane/posts/schedule','/app/posts/schedule'].includes(path))return 'publish'
  if(['/api/pane/blogs/save','/app/blogs/save','/api/pane/library/upload','/app/library/upload'].includes(path))return 'settings:write'
  return ({'component-create':'pages:write',forms:'settings:write',access:'settings:write','privacy/find':'erase','privacy/export':'erase','privacy/erase':'erase','policies/generate':'settings:write','ownership/transfer':'team','team/revoke':'team',prepare:'pages:write',autosave:'pages:write',publish:'publish','publication-revoke':'publish','page-request-review':'pages:write','page-publish':'publish',rollback:'publish',review:'pages:write','import/dry-run':'imports:write','import/apply':'imports:write','import/undo':'imports:write','import/crawl-challenge':'imports:write','import/crawl':'imports:write','messages/update':'inbox:write','messages/reply':'inbox:write','messages/erase':'erase','people/erase':'erase','tokens/create':'tokens','tokens/revoke':'tokens','roles/set':'team','roles/invite':'team'} as Record<string,Capability>)[action]
 }

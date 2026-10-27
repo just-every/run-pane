@@ -1,3 +1,4 @@
+import {schedulePost} from './post-schedules'
 import {latestContent,ownPost,postView,PostDenied,savePost,publishPost} from './posts'
 import {postForm} from './post-forms'
 import {postsEditor} from './ui/posts'
@@ -141,7 +142,11 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    const id=String(input.id??saved.posts.at(-1)?.id??'')
    return new Response(null,{status:303,headers:{location:'/app/posts?id='+encodeURIComponent(id)}})
   }
-  if(['/api/pane/posts/publish','/app/posts/publish'].includes(path)){
+  if(['/api/pane/posts/schedule','/app/posts/schedule'].includes(path)){
+   if(!owner||scopes)return json({error:'Native owner only.'},403)
+   result=await schedulePost(env.DB,actor,input)
+   notice=input.cancel==='yes'?'Post schedule cancelled.':input.approve==='yes'?'Post schedule approved.':'Post schedule saved without approval.';back='/app/posts?id='+encodeURIComponent(String(input.id))
+  }else if(['/api/pane/posts/publish','/app/posts/publish'].includes(path)){
    const selected={base:String(input.base),id:String(input.id),review:String(input.review)}
    result=env.PANE_LIVE?await liveCall(env,'/post-publish',{actor:{id:actor.id,role:actor.role},...selected}):await publishPost(env.DB,actor,selected)
    notice='Post published. Other private drafts are unchanged.';back='/app/posts?id='+encodeURIComponent(String(input.id))

@@ -1,3 +1,4 @@
+import {runPostSchedules} from './post-schedules'
 import {publishPost,PostDenied} from './posts'
 import { uploadStatements,type Upload } from './forms'
 import { findPersonData,erasePersonData } from './privacy'
@@ -56,6 +57,12 @@ export class PaneLive extends DurableObject<Bindings>{
    const live=await storage.get<Revision>('live')
    if(live?.id===input.id)await storage.delete('live')
    return Response.json(result)
+  })
+  if(path==='/post-schedules')return this.ctx.blockConcurrencyWhile(async()=>{
+   await runPostSchedules(auditedDatabase(this.env.DB,null,'schedule.change'),input.now)
+   const row=await this.env.DB.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first()
+   if(row)await storage.put('live',{...row,site:JSON.parse(String(row.site))})
+   return Response.json({processed:true})
   })
   if(path==='/post-publish')return this.ctx.blockConcurrencyWhile(async()=>{
    try{
