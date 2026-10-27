@@ -3844,7 +3844,7 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "d118dbf79512f5bc084a8dfc8fba86d1768a789cb45c3999d98d6c11a360568b",
+      "sha256": "10e381e6f29ab7a6677c6d0574f9bb9fe9e5602f3c22bda5a8bd51c88862dade",
       "executable": false
     },
     "tests/post-fixture.mjs": {
