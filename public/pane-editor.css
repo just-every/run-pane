@@ -300,3 +300,6 @@
 .rer-themed .pane .screen-pages .device-toggle label:has(input:checked) {
  background: color-mix(in srgb, var(--pn-action) 95%, var(--pn-ink));
 }
+
+.pane .content-schedule, .pane .content-schedule label { min-width: 0; max-width: 100%; }
+.pane .content-schedule select { width: 100%; min-width: 0; max-width: 100%; }
