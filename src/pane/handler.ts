@@ -1,3 +1,4 @@
+import {submissionCsv,submissionForms} from './submission-export'
 import {collectionPrivateResponse} from './collection-handlers'
 import {collectionPages} from './collection-page'
 import {contentTrash,contentHistory,deleteContent,restoreContent} from './lifecycle-store'
@@ -62,6 +63,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
     path==='/api/pane/prepare'||path==='/api/pane/autosave'?'draft:write':path.startsWith('/api/pane/import/')?'imports:write':undefined
    if(!required||!scopes.includes(required))return json({error:'Token scope refused.'},403)
   }
+  if(request.method==='GET'&&['/app/submissions/export','/api/pane/submissions/export'].includes(path))return await submissionCsv(env.DB,url.searchParams)
   const collectionReply=await collectionPrivateResponse(request,env,actor,!!scopes);if(collectionReply)return collectionReply
   if(request.method==='GET'&&['/app/content/trash','/api/pane/content/trash','/app/content/history','/api/pane/content/history'].includes(path)){
    const query=Object.fromEntries(url.searchParams),kind=query.kind??(caps.includes('pages:write')?'page':'post')
@@ -135,6 +137,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    if(api&&path!=='/api/pane')return json({error:'Not found.'},404)
    if(api)return json(scopes?{role:actor.role,draft:data.draft?{id:data.draft.id}:null,live:data.live?{id:data.live.id}:null}:{...data,activity:undefined})
    if(!screens[path])return json({error:'Not found.'},404)
+   if(path==='/app/inquiries')data.submissionForms=await submissionForms(env.DB,(data.live??data.draft)?.site)
    data.notice=url.searchParams.get('notice')??undefined
    return document(screens[path][1],workspace(data,path,url.searchParams.get('page')??''),'app',undefined,undefined,data.locale)
   }

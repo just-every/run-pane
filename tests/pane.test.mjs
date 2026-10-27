@@ -957,7 +957,7 @@ test('composable Pane roles are invited natively and enforced across workspace, 
    const expected=new Map([
     ['/app',row.pages?200:row.posts||row.inbox||row.reports?303:403],['/app/sites',row.pages||row.reports?200:403],['/app/inquiries',row.inbox?200:403],['/app/moves',403],['/app/search',row.edit?200:403],
     ['/preview/'+prepared.id+'/home',row.edit?200:403],['/api/pane',200],['/api/pane/pages',row.pages?200:403],['/api/pane/collections',row.edit?200:403],['/app/collections',row.edit?200:403],
-    ['/app/posts',row.posts?200:403],['/api/pane/posts',row.posts?200:403],['/api/pane/activity',403],['/api/pane/activity/export',403],['/api/pane/roles',403],['/api/pane/tokens',403],
+    ['/api/pane/submissions/export?form=native%3Acontact',row.inbox?200:403],['/app/submissions/export?form=native%3Acontact',row.inbox?200:403],['/app/posts',row.posts?200:403],['/api/pane/posts',row.posts?200:403],['/api/pane/activity',403],['/api/pane/activity/export',403],['/api/pane/roles',403],['/api/pane/tokens',403],
    ])
    for(const [path,status] of expected)assert.equal((await get(path,cookie)).status,status,row.roles+': '+path)
    if(!row.pages&&(row.posts||row.inbox||row.reports))assert.equal((await get('/app',cookie)).headers.get('location'),row.posts?'/app/posts':row.inbox?'/app/inquiries':'/app/sites')
@@ -992,6 +992,7 @@ test('composable Pane roles are invited natively and enforced across workspace, 
    assert.equal((await app.request(hosted+'/api/pane/pages',{headers:{Authorization:'Bearer '+scoped.token}})).status,403,'Tokens lose revoked Pane capabilities on the next request')
    assert.equal((await get('/app',cookie)).status,403,'Removing a grant takes effect on the next request')
    assert.equal((await get('/app/inquiries',cookie)).status,403)
+   assert.equal((await get('/api/pane/submissions/export?form=native%3Acontact',cookie)).status,403,'CSV loses revoked inbox authority on the next request')
    assert.equal((await call('/auth/operator/status',{operatorId:person.operatorId,status:'inactive'})).status,200)
    assert.equal((await app.request(hosted+'/api/pane/pages',{headers:{Authorization:'Bearer '+scoped.token}})).status,401,'Native deactivation invalidates the scoped token')
    assert.equal((await call('/auth/operator/status',{operatorId:person.operatorId,status:'active'})).status,200)
@@ -1633,6 +1634,64 @@ test('reusable typed forms preserve invalid answers, enforce every field type, a
   assert.equal((await app.request('/site/contact',{method:'POST',headers:{Origin:'https://foreign.invalid'},body:new FormData()})).status,403)
  }finally{await app.mf.dispose()}
 })
+// An independent CSV reader checks embedded newlines and escaped quote fidelity.
+function submissionRows(text){
+ const rows=[];let row=[],value='',quoted=false
+ for(let i=0;i<text.length;i++){
+  const char=text[i]
+  if(char==='"'){if(quoted&&text[i+1]==='"'){value+='"';i++}else quoted=!quoted}
+  else if(char===','&&!quoted){row.push(value);value=''}
+  else if(char==='\r'&&text[i+1]==='\n'&&!quoted){row.push(value);rows.push(row);row=[];value='';i++}
+  else value+=char
+ }
+ assert.equal(quoted,false,'CSV quotes are balanced')
+ return rows
+}
+test('native submission CSV filters stable forms and inclusive UTC dates beyond the inbox limit without exposing erased or unauthorized records',async()=>{
+ let instant=Date.parse('2030-06-19T23:59:59.999Z')
+ const {app,call,cookie,site,submit}=await formFixture({now:()=>instant})
+ const email=['synthetic-pane-81','example.test'].join('@'),get=(query,credential=cookie)=>app.request('/api/pane/submissions/export?'+query,{headers:{Cookie:credential}})
+ const range='form='+quoteDefinition.id+'&from=2030-06-20&to=2030-06-20'
+ try{
+  // Same display name, different identity: names and placement paths are never filters.
+  const other={...structuredClone(quoteDefinition),id:'synthetic-pane-other-form'};site.forms.push(other);site.pages[1].formId=other.id
+  const latest=await (await app.request('/api/pane',{headers:{Cookie:cookie}})).json()
+  const revision=await (await call('/api/pane/prepare',{site,base:latest.draft.id},cookie)).json();assert.ok(revision.id);await call('/api/pane/publish',{revision:revision.id},cookie)
+  const send=async(slug='contact',changes={},id=crypto.randomUUID())=>{assert.equal((await submit(slug,{email,...changes},undefined,id)).status,303);return id}
+  const before=await send()
+  instant=Date.parse('2030-06-20T00:00:00.000Z');const first=await send('contact',{message:'A comma, a "quote"\r\nand another line',address:'=2+2'})
+  const secondForm=await send('about',{message:'Only the second form'})
+  const expected=[first]
+  for(let i=0;i<101;i++){instant=Date.parse('2030-06-20T12:00:00.000Z')+i*60000;expected.push(await send('contact',{name:'Synthetic visitor '+i}))}
+  instant=Date.parse('2030-06-20T23:59:59.999Z');const last=await send();expected.push(last)
+  instant=Date.parse('2030-06-21T00:00:00.000Z');const after=await send()
+  const dashboard=await (await app.request('/api/pane',{headers:{Cookie:cookie}})).json();assert.equal(dashboard.messages.length,100);assert.ok(!dashboard.messages.some(row=>row.id===first),'The first exported record is beyond the inbox cutoff')
+  const response=await get(range);assert.equal(response.status,200);assert.match(response.headers.get('content-type'),/text\/csv/);assert.match(response.headers.get('cache-control'),/private, no-store/);assert.match(response.headers.get('content-disposition'),/attachment/)
+  const text=await response.text(),rows=submissionRows(text),header=rows.shift(),id=header.indexOf('submission_id'),field=key=>header.indexOf('field:'+key)
+  assert.deepEqual(rows.map(row=>row[id]).sort(),expected.sort(),'CSV contains the complete independently specified form and date set')
+  assert.ok(!rows.some(row=>[before,after,secondForm].includes(row[id])))
+  assert.equal(rows.find(row=>row[id]===first)[field('message')],'A comma, a "quote"\r\nand another line','CSV preserves structured multiline text instead of flattened label text')
+  assert.equal(rows.find(row=>row[id]===first)[field('address')],"'=2+2",'Spreadsheet formulas are inert')
+  assert.equal(rows.find(row=>row[id]===last)[header.indexOf('submitted_at_utc')],'2030-06-20T23:59:59.999Z')
+  const otherRows=submissionRows(await (await get('form='+other.id)).text());assert.equal(otherRows.length,2);assert.equal(otherRows[1][0],secondForm)
+  // Later schema and name edits cannot relabel or overwrite the retained original receipt.
+  const renamed=structuredClone(site);renamed.forms[0].name='Renamed quote';renamed.forms[0].fields.find(field=>field.key==='message').label='Changed label'
+  const current=await (await app.request('/api/pane',{headers:{Cookie:cookie}})).json(),changed=await (await call('/api/pane/prepare',{site:renamed,base:current.draft.id},cookie)).json();await call('/api/pane/publish',{revision:changed.id},cookie)
+  await send('contact',{message:'Replay replacement'},first);assert.equal(await (await get(range)).text(),text,'Replay cannot change original structured values or form identity')
+  const found=await (await call('/api/pane/privacy/find',{email},cookie)).json();assert.equal(found.messages.length,106);assert.equal(JSON.parse(found.messages.find(row=>row.id===first).submission).fields.find(field=>field.key==='message').value,'A comma, a "quote"\r\nand another line')
+  assert.equal((await get(range,'')).status,401);assert.equal((await app.request('/app/submissions/export?'+range)).status,303)
+  for(const query of ['form='+other.id+'&from=2030-02-30','form='+other.id+'&from=2030-06-21&to=2030-06-20','from=2030-06-20'])assert.equal((await get(query)).status,400)
+  assert.equal((await app.request('https://elsewhere.invalid/api/pane/submissions/export?'+range,{headers:{Cookie:cookie}})).status,403)
+  const scoped=await (await call('/api/pane/tokens/create',{name:'Synthetic CSV scope',scopes:['status:read']},cookie)).json();assert.ok(scoped.token)
+  assert.equal((await app.request('/api/pane/submissions/export?'+range,{headers:{Authorization:'Bearer '+scoped.token}})).status,403)
+  // Message erasure deletes the structured columns and fences a captured retry.
+  assert.equal((await call('/api/pane/messages/erase',{id:first},cookie)).status,200)
+  await send('contact',{message:'Erased replay'},first)
+  const erasedRows=submissionRows(await (await get(range)).text());assert.equal(erasedRows.length,103);assert.ok(!erasedRows.slice(1).some(row=>row[0]===first),'Erased submission cannot reappear in a download')
+  const archive=await exportData(app.db),restored=await runtime()
+  try{assert.equal((await restore(restored.db,archive)).phase,'complete');assert.equal(await restored.db.prepare('SELECT COUNT(*) AS n FROM pane_messages WHERE submission IS NOT NULL').first('n'),105);assert.equal(await restored.db.prepare('SELECT submission FROM pane_messages WHERE id=?').bind(first).first(),null)}finally{await restored.mf.dispose()}
+ }finally{await app.mf.dispose()}
+})
 test('private uploads join native archive restore and person export and erasure without replaying old files',async()=>{
  const {app,call,cookie,submit}=await formFixture()
  try{
@@ -1640,7 +1699,7 @@ test('private uploads join native archive restore and person export and erasure 
   assert.equal((await submit('contact',{},file,id)).status,303)
   const archive=await exportData(app.db),destination=await runtime()
   try{assert.equal((await restore(destination.db,archive)).phase,'complete');assert.equal((await destination.db.prepare('SELECT COUNT(*) AS n FROM pane_files').first()).n,1);const chunk=await destination.db.prepare('SELECT data FROM pane_file_chunks').first();assert.match(Buffer.from(chunk.data,'base64').toString(),/synthetic-pane-63/)}finally{await destination.mf.dispose()}
-  const found=await call('/api/pane/privacy/find',{email:'synthetic-pane-61@example.test'},cookie);assert.equal(found.status,200);const record=await found.json();assert.equal(record.files.length,1);assert.ok(record.fileChunks.length)
+  const found=await call('/api/pane/privacy/find',{email:'synthetic-pane-61@example.test'},cookie);assert.equal(found.status,200);const record=await found.json();assert.equal(record.files.length,1);assert.ok(record.fileChunks.length);assert.equal(JSON.parse(record.messages[0].submission).formId,quoteDefinition.id)
   let nativeMail
   const native=createOperatorAuth({db:app.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{nativeMail=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
   await native.requestMagicLink(new Request(origin+'/auth/magic-link',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin}}),{email:settings.OWNER_EMAIL})
@@ -1648,6 +1707,7 @@ test('private uploads join native archive restore and person export and erasure 
   const exported=await call('/api/pane/privacy/export',{email:'synthetic-pane-61@example.test'},freshCookie);assert.equal(exported.status,200);const portable=await exported.json();assert.equal(portable.files.length,1);assert.match(Buffer.from(portable.fileChunks[0].data,'base64').toString(),/synthetic-pane-63/)
   const erased=await call('/api/pane/privacy/erase',{email:'synthetic-pane-61@example.test',confirm:'erase-person-data'},freshCookie);assert.equal(erased.status,200,await erased.text())
   assert.equal((await app.db.prepare('SELECT COUNT(*) AS n FROM pane_files').first()).n,0);assert.equal((await app.db.prepare('SELECT COUNT(*) AS n FROM pane_file_chunks').first()).n,0)
+  assert.equal(submissionRows(await (await app.request('/api/pane/submissions/export?form='+quoteDefinition.id,{headers:{Cookie:cookie}})).text()).length,1,'Person erasure excludes every structured answer from CSV')
   assert.equal((await app.request('/app/files/'+record.files[0].id,{headers:{Cookie:cookie}})).status,404)
   await submit('contact',{},file,id);assert.equal((await app.db.prepare('SELECT COUNT(*) AS n FROM pane_files').first()).n,0)
   const later=await exportData(app.db),empty=await runtime()
@@ -1697,7 +1757,7 @@ test('durable typed intake retains private upload chunks through workspace outag
   assert.equal((await app.request('/site/about')).status,200)
   await app.db.prepare('ALTER TABLE synthetic_unavailable_messages RENAME TO pane_messages').run()
   const worker=await app.mf.getWorker();assert.equal((await worker.scheduled({scheduledTime:new Date('2030-06-20T12:00:00Z'),cron:'* * * * *'})).outcome,'ok')
-  const dashboard=await (await app.request('/api/pane',{headers:{Cookie:cookie}})).json(),receipt=dashboard.messages.find(message=>message.id===id);assert.equal(receipt.files.length,1)
+  const dashboard=await (await app.request('/api/pane',{headers:{Cookie:cookie}})).json(),receipt=dashboard.messages.find(message=>message.id===id);assert.equal(receipt.files.length,1);assert.equal(JSON.parse(receipt.submission).formId,quoteDefinition.id);assert.equal(JSON.parse(receipt.submission).fields.find(field=>field.key==='service').value,'Repair')
   const response=await app.request('/app/files/'+receipt.files[0].id,{headers:{Cookie:cookie}});assert.deepEqual(new Uint8Array(await response.arrayBuffer()),pdf)
   await submit('contact',{},file,id);await worker.scheduled({scheduledTime:new Date('2030-06-20T12:01:00Z'),cron:'* * * * *'})
   assert.equal((await app.db.prepare('SELECT COUNT(*) AS n FROM pane_files').first()).n,1)

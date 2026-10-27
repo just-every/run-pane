@@ -1,3 +1,4 @@
+import {submissionRecord,enquiryStatement,type Submission} from './submission-export'
 import {collectionResponse} from './collection-public'
 import {preparedImageResponse} from './image-response'
 import {tags,tagSource,tagSources} from './tags'
@@ -115,7 +116,7 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   let f:FormData
   try{f=form?await boundedForm(request):await request.formData()}catch{return json({error:'Submission exceeds 6 MB or has invalid form data.'},413)}
   const id=String(f.get('idempotency')??'')
-  let name=String(f.get('name')??'').trim(),email=String(f.get('email')??'').trim(),message=String(f.get('message')??'').trim(),uploads:Upload[]=[]
+  let name=String(f.get('name')??'').trim(),email=String(f.get('email')??'').trim(),message=String(f.get('message')??'').trim(),uploads:Upload[]=[],submission:Submission|undefined
   if(form){
    if(!/^[a-f0-9-]{36}$/.test(id))return json({error:'Invalid submission receipt.'},400)
    const checked=await validateForm(form,f,id)
@@ -124,7 +125,7 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
     const headers=new Headers(response.headers);headers.set('content-security-policy',headers.get('content-security-policy')!.replace("script-src 'self'","script-src 'self' https://challenges.cloudflare.com").replace("connect-src 'self'","connect-src 'self' https://challenges.cloudflare.com")+'; frame-src https://challenges.cloudflare.com');headers.set('x-robots-tag','noindex, nofollow');headers.set('cache-control','private, no-store')
     return new Response(response.body,{status:400,headers})
    }
-   ({name,email,message,uploads}=checked);f.set('name',name);f.set('email',email);f.set('message',message)
+   ({name,email,message,uploads}=checked);submission=submissionRecord(form,slug,checked.state.values,uploads);f.set('name',name);f.set('email',email);f.set('message',message)
   }
   if(String(f.get('website')??''))return rejectForm(env,slug,'honeypot',f)
   if(!form&&(!/^[a-f0-9-]{36}$/.test(id)||!name||name.length>120||!/^\S+@\S+\.\S+$/.test(email)||email.length>254||!message||message.length>5000))return json({error:'Enter a name, valid email and message up to 5,000 characters.'},400)
@@ -134,12 +135,13 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   const verification=await verifyForm(env,String(f.get('cf-turnstile-response')??''),id,slug)
   if(verification!=='verified')return rejectForm(env,slug,verification,f)
   const acknowledgment=page?.acknowledgment,received=Date.now()
+  submission??=submissionRecord(undefined,slug,{name,email,message})
   if(env.PANE_LIVE){
    let attribution:unknown={};try{const text=String(f.get('attribution')??'');if(text.length<=2000)attribution=JSON.parse(text||'{}')}catch{}
-   await liveCall(env,'/accept',{id,name,email,message,received:new Date(received).toISOString(),acknowledgment:acknowledgment??null,followUp:followUpDue(site,received),goals:optedOut(request)?[]:(site.goals??[]).filter(goal=>goal.type==='form'&&goal.page===slug).map(goal=>({id:goal.id,page:slug})),dimensions:visitDimensions(request,attribution,site.analyticsCampaigns),uploads})
+   await liveCall(env,'/accept',{id,name,email,message,submission,received:new Date(received).toISOString(),acknowledgment:acknowledgment??null,followUp:followUpDue(site,received),goals:optedOut(request)?[]:(site.goals??[]).filter(goal=>goal.type==='form'&&goal.page===slug).map(goal=>({id:goal.id,page:slug})),dimensions:visitDimensions(request,attribution,site.analyticsCampaigns),uploads})
    return new Response(null,{status:303,headers:{location:codeConfirmation(site,slug,form?.redirect)}})
   }
-  const messageStatement=env.DB.prepare('INSERT OR IGNORE INTO pane_messages(id,name,email,message,created_at,acknowledgment,acknowledgment_status,follow_up_at) SELECT ?,?,?,?,?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM pane_erased_messages WHERE id=?)').bind(id,name,email,message,new Date(received).toISOString(),acknowledgment ? JSON.stringify(acknowledgment) : null,acknowledgment ? 'pending' : 'not_requested',followUpDue(site,received),id)
+  const messageStatement=enquiryStatement(env.DB,{id,name,email,message,submission,received:new Date(received).toISOString(),acknowledgment,followUp:followUpDue(site,received)})
   const [stored]=await env.DB.batch([messageStatement,...uploadStatements(env.DB,id,message,uploads)])
   // A goal counts once per stored message, from the submitting page view's own attribution; never for opt-outs.
   const goals=optedOut(request)||!stored.meta.changes ? [] : (site.goals??[]).filter(goal=>goal.type==='form'&&goal.page===slug)
