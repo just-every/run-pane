@@ -1791,7 +1791,7 @@ test('custom code requires owner authoring and approved immutable live revisions
   const adminCookie=(await call('/auth/confirm',{token})).headers.get('set-cookie').split(';')[0]
   const htmlEdit=structuredClone(prepared.site);htmlEdit.pages.find(page=>page.slug==='services').sections[0].blocks[0].html.source='<p>Unapproved HTML block replacement</p>'
   assert.equal((await app.request('/api/pane/prepare',{method:'POST',headers:{Cookie:adminCookie,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({site:htmlEdit,base:prepared.id})})).status,403,'An admin cannot author HTML grid source')
-  const scoped=(await (await call('/api/pane/tokens/create',{name:'synthetic-pane-83',scopes:['pages:read','pages:write']})).json()).token
+  const scoped=(await (await call('/api/pane/tokens/create',{name:'synthetic-pane-83',scopes:['pages:read','draft:write']})).json()).token
   assert.equal((await app.request('/api/pane/pages',{headers:{Authorization:'Bearer '+scoped}})).status,200,'The HTML refusal uses an active page-writing token')
   assert.equal((await app.request('/api/pane/prepare',{method:'POST',headers:{Authorization:'Bearer '+scoped,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({site:htmlEdit,base:prepared.id})})).status,403,'A token cannot borrow native-owner HTML authoring authority')
   const htmlLive=await app.request('/site/services');assert.match(await htmlLive.text(),/<section\b[^>]*data-html-block="synthetic-html-block"/);assert.match(htmlLive.headers.get('content-security-policy'),/frame-src about:/)

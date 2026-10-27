@@ -1112,7 +1112,7 @@
       "executable": false
     },
     "scripts/catalog-journey.mjs": {
-      "sha256": "d13c10b873ef2c1cd76af5a3de2f91792eb1fe77cf32777afa3e408d027a6f6c",
+      "sha256": "7c5648b56c784717560faa048828a9175c32432ca97c38e02f80deb521fcec5e",
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
@@ -3860,7 +3860,7 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "1dd7d0c20af199e3d660a578d81808bdd12cd6a1d08b7a94991485cd9e7cdaa7",
+      "sha256": "edfc0f8925ccca57e8d793d38e07fe097715023e3262fa6164f046cacd100952",
       "executable": false
     },
     "tests/post-fixture.mjs": {
