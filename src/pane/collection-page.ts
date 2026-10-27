@@ -2,6 +2,7 @@ import type {Collection,CollectionField,CollectionItem,CollectionRichText} from 
 import type {ImageContent} from './images'
 import type {Page,Site} from './model'
 import type {RichNode,Section,TextBlock} from './sections'
+import {templateDescription} from './collection-template'
 import {sectionText} from './sections'
 
 export const collectionItemPath=(collection:Collection,item:CollectionItem)=>'/site/'+collection.prefix+'/'+item.slug
@@ -25,7 +26,8 @@ function valueLink(site:Site,field:CollectionField,value:string):{href:string;la
 /** Every field uses the existing semantic body renderer and prepared image door. */
 export function collectionItemPage(site:Site,collection:Collection,item:CollectionItem):Page{
  const sections:Section[]=[]
- collection.fields.forEach((field,index)=>{
+ const displayFields=collection.template?collection.template.fields.map(id=>collection.fields.find(field=>field.id===id)!):collection.fields
+ displayFields.forEach((field,index)=>{
   const value=item.values[field.id]
   if(value===undefined)return
   const prefix='cf'+index
@@ -49,7 +51,9 @@ export function collectionItemPage(site:Site,collection:Collection,item:Collecti
    sections.push(section(prefix+'body',[textBlock(prefix+'value',text)]))
   }
  })
- return {id:'collection-'+collection.id+'-'+item.id,slug:collection.prefix+'/'+item.slug,title:item.title,hidden:true,body:sectionText(sections),...(sections.length?{sections}:{})}
+ const title=collection.template?.titleField?item.values[collection.template.titleField] as string:item.title
+ const description=collection.template?.descriptionField?templateDescription(item.values[collection.template.descriptionField]):undefined
+ return {id:'collection-'+collection.id+'-'+item.id,slug:collection.prefix+'/'+item.slug,title,hidden:true,...(collection.template?{search:{title,...(description?{description}:{})}}:{}),body:sectionText(sections),...(sections.length?{sections}:{})}
 }
 
 export function collectionPages(site:Site):Page[]{

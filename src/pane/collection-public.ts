@@ -1,3 +1,4 @@
+import {collectionSocialImage,collectionTemplateHead} from './collection-template-head'
 import type {Page,Site} from './model'
 import {collectionItemPage,collectionItemPath} from './collection-page'
 export {collectionItemPage,collectionPages} from './collection-page'
@@ -33,11 +34,14 @@ export async function collectionResponse(request:Request,site:Site):Promise<Resp
   body:collection.items.length?'Choose an item to read its details.':'No published items yet.',
   links:collection.items.map(item=>({label:item.title,url:collectionItemPath(collection,item)})),
  }
+ if(url.searchParams.has('pane-collection-social'))return preparedImageResponse(item?collectionSocialImage(collection,item):undefined,url.searchParams.get('width'),head)
  if(url.searchParams.has('pane-image'))return imageResponse(site,page,url,head)
  const publicSite={...site,pages:[...site.pages.filter(candidate=>candidate.slug!==page.slug),page]}
  const gpc=request.headers.get('Sec-GPC')==='1',quiet=gpc||request.headers.get('DNT')==='1'
  const markup=publicPage(publicSite,page.slug,'live',gpc,quiet)
- const response=await document(page.title+' · '+site.name,markup,'site',pageEmbedOrigins(page),undefined,site.locale?.locale)
+ const metadata=item?collectionTemplateHead(collection,item,page,url.origin):''
+ const rendered=await document(collection.template&&item?page.title:page.title+' · '+site.name,markup,'site',pageEmbedOrigins(page),undefined,site.locale?.locale,metadata)
+ const response=metadata?new HTMLRewriter().on('head',{element(element){element.append(metadata,{html:true})}}).transform(rendered):rendered
  const headers=new Headers(response.headers)
  headers.set('cache-control','private, no-store');headers.set('vary','Cookie')
  return new Response(head?null:response.body,{status:response.status,headers})
