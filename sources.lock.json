@@ -1088,7 +1088,7 @@
       "executable": false
     },
     "scripts/browser-proof.mjs": {
-      "sha256": "da1fa6b0eadc5839ae73f713d3653668fb731e2917c052a281636654e392675a",
+      "sha256": "42c6bc6f2d4a87e263acf769201c8404f4dae73d310a21b86b4357df842bba55",
       "executable": false
     },
     "scripts/build-deployment-spec.mjs": {
@@ -1359,6 +1359,10 @@
       "sha256": "539eecf16a8e02b227844cb7a3ea2e4eaed460a01d6b3c355a8f042d3aa9e441",
       "executable": false
     },
+    "scripts/post-schedules-journey.mjs": {
+      "sha256": "8b445385eaf51d7e1789f02c77010948d136ac9320f75b51ca362b7362b14f0b",
+      "executable": false
+    },
     "scripts/posts-journey.mjs": {
       "sha256": "b9b5c928fa1433ed348b7fce095f74a65c8f1944c08453c71ee2076f736a47b0",
       "executable": false
@@ -1376,7 +1380,7 @@
       "executable": false
     },
     "scripts/scheduling-journey.mjs": {
-      "sha256": "bd93c29966d6bc66bcf34be632ae852a00946bd7c93c764b5960b276099afa86",
+      "sha256": "0d4d0b472a69073bc3bebd65be0e9b2ae88faa1ecfb28a34df035632d38f8815",
       "executable": false
     },
     "scripts/search-journey.mjs": {
