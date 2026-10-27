@@ -114,4 +114,4 @@ html.rer-themed body.pane-site { background: var(--pn-white); }
   .pane .account-pop { width: min(280px, calc(100vw - 32px)); }
   .pane .notice { margin: 10px 16px 0; }
 }
-.pane-tooltip { position: absolute; z-index: 40; max-width: 16rem; padding: 4px 8px; border-radius: 6px; background: #1b1b1f; color: #fff; font: 500 13px/1.3 system-ui, sans-serif; pointer-events: none; white-space: nowrap; }
+.pane-tooltip { position: fixed; z-index: 40; max-width: 16rem; padding: 4px 8px; border-radius: 6px; background: #1b1b1f; color: #fff; font: 500 13px/1.3 system-ui, sans-serif; pointer-events: none; white-space: nowrap; }
