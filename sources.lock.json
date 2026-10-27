@@ -1096,7 +1096,7 @@
       "executable": false
     },
     "scripts/audio-journey.mjs": {
-      "sha256": "fd3214b735bb6ba7a33bd9127d993ba92145065a4008c0610f5476464e367ba8",
+      "sha256": "808976c1820bb9efbb133459f7e04cb944e9fbca62dd2d2b52d559663eaf2f36",
       "executable": false
     },
     "scripts/browser-journey.mjs": {
@@ -1304,7 +1304,7 @@
       "executable": false
     },
     "scripts/forms-journey.mjs": {
-      "sha256": "ba2083f176d31c8f0bc0404d45d388dfd468b56d0c4a61c4d34d868ac807e19d",
+      "sha256": "dbdd9f0c7c616baabe9bf1c33bcb4c1e5a7f6ec73ff12795e3359821f87b4c26",
       "executable": false
     },
     "scripts/gallery-brand-journey.mjs": {
@@ -1316,7 +1316,7 @@
       "executable": false
     },
     "scripts/grid-forms-journey.mjs": {
-      "sha256": "a959e87ff0c49f8db83ca17ea9dad6c462f0c4fd011262616126bd5393c1937d",
+      "sha256": "c66b1d6f496bc58695d806dcd6b36b9c7cc29ea148ff7f53ee5e24801c4aa405",
       "executable": false
     },
     "scripts/health-browser-journey.mjs": {

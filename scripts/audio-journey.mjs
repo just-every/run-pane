@@ -3,7 +3,7 @@ import {readFile} from 'node:fs/promises'
 import {resolve} from 'node:path'
 
 export async function audioJourney({page,context,origin,state,call,saved,capture,initial}){
- let draft=await call('/api/pane/prepare',{site:initial,base:(await state()).draft.id})
+ let draft=await call('/api/pane/prepare',{site:initial,base:(await state()).draft?.id})
  for(const [name,type] of [['workshop.mp3','audio/mpeg'],['workshop.m4a','audio/mp4']]){
   await page.goto(origin+'/app/posts');await page.getByText('Settings',{exact:true}).click();await page.getByText('Audio library',{exact:true}).click()
   await page.getByLabel('Library audio',{exact:true}).setInputFiles({name,mimeType:type,buffer:await readFile(resolve('./fixtures/audio',name))})
@@ -28,7 +28,7 @@ export async function audioJourney({page,context,origin,state,call,saved,capture
   await page.goto(origin+'/site/hours');const blocks=page.locator('[data-block-type="audio"]');assert.equal(await blocks.count(),2)
   for(const [index,block] of (await blocks.all()).entries()){
    const audio=block.locator('audio'),file=draft.site.libraryFiles[index];assert.equal(await audio.getAttribute('src'),'/site/files/'+file.id);assert.equal(await audio.getAttribute('autoplay'),null)
-   await audio.evaluate(node=>new Promise((resolve,reject)=>{if(node.readyState>=1)return resolve();node.addEventListener('loadedmetadata',resolve,{once:true});node.addEventListener('error',()=>reject(Error('Audio metadata failed: '+node.error?.code)),{once:true})}))
+   await audio.evaluate(node=>new Promise((resolve,reject)=>{if(node.readyState>=1)return resolve();if(node.error)return reject(Error('Audio metadata failed: '+node.error.code));const timer=setTimeout(()=>reject(Error('Audio metadata timed out')),15000);node.addEventListener('loadedmetadata',()=>{clearTimeout(timer);resolve()},{once:true});node.addEventListener('error',()=>{clearTimeout(timer);reject(Error('Audio metadata failed: '+node.error?.code))},{once:true})}))
    assert.ok(await audio.evaluate(node=>node.duration>0),'Native player decodes uploaded audio metadata')
    await audio.focus();assert.equal(await page.evaluate(()=>document.activeElement.tagName),'AUDIO')
    const download=block.getByRole('link',{name:/Download Workshop/});assert.equal(await download.getAttribute('href'),'/site/files/'+file.id);assert.equal(await download.getAttribute('download'),file.name)

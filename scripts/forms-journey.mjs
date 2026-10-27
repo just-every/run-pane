@@ -29,7 +29,7 @@ try{
  }
  await publish()
  const pdf=Buffer.alloc(5*1024*1024,32);pdf.write('%PDF-1.7\nsynthetic-pane-72')
- for(const width of [1440,390]){
+ for(const width of process.env.PANE_GRID_FORMS_ONLY?[]:[1440,390]){
   await page.setViewportSize({width,height:1000});await live.setViewportSize({width,height:1000})
   await page.goto(origin+'/app/sites');await settings.getByText('Workshop quote',{exact:true}).click();await capture(page,'saved-form-builder',width)
   await page.goto(origin+'/app?page=about');await page.getByText('Form placement',{exact:true}).click();await capture(page,'form-placement',width)
