@@ -136,7 +136,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "004069d30b6b6baef8c0fd7b308cc25ede3874472808ae0f50745ffc3303d34a",
+      "sha256": "4bf18906de474960f944f5b949715c4a33bad54912cc97e1270a92307f9856d1",
       "executable": false
     },
     "AGENTS.md": {
@@ -160,7 +160,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "9f524661678a14c0116cfb13c9c962ea48e39e69584847ebd738b74248c643c7",
+      "sha256": "11c80203e69d9ca8fc6de2150fe24137ccd5d6ec6680eb82c66027ecbe0ee092",
       "executable": false
     },
     "deploy-demo.json": {
@@ -3307,8 +3307,12 @@
       "sha256": "8d2acbd75fe393f215215451840511e1a39b785bd098ee306e864f9bd6ba4ef0",
       "executable": false
     },
+    "src/pane/collection-starters.ts": {
+      "sha256": "79f8e335663aebfc39a36458cbef88ab8bf49bddc6a81077c5bd0ee6361ac8f7",
+      "executable": false
+    },
     "src/pane/collection-store.ts": {
-      "sha256": "cc4c210ab041a308712efc1cc3f2d33f73b8514e4be0a628ac21e53d3806f67a",
+      "sha256": "09c21ba7093c9d862816029a4ba419ae1495da8f51c909ee3507bd7b83cf3467",
       "executable": false
     },
     "src/pane/collection-template-head.ts": {
@@ -3336,7 +3340,7 @@
       "executable": false
     },
     "src/pane/content.ts": {
-      "sha256": "428606cbb4b90502a231894868d036130fc4669f37462301a52b64dd60a7c225",
+      "sha256": "445f252fb1fb518d8c9d38793eab9d4b826e0bcbeabb9ac254b04fcbfef86d67",
       "executable": false
     },
     "src/pane/custom-code.ts": {
@@ -3924,7 +3928,7 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "b63a2f9a396bb7e7d29974e3064533547dc367800f549023136d2c4b65c2e53b",
+      "sha256": "7269bf05b2a178e120c911488eff9d469b71475ec29df037f17b5ebdc76b59c6",
       "executable": false
     },
     "tests/post-fixture.mjs": {
@@ -3932,7 +3936,7 @@
       "executable": false
     },
     "tests/posts.test.mjs": {
-      "sha256": "6cd2e5c0d98900bd67f5e5fe2b04cc940c5469954b4e62240e7fff028410538d",
+      "sha256": "b30c485ecce70c8b5cd5edd99f2d55b23cc52e5a3bde93002164a493a4931930",
       "executable": false
     },
     "tests/runtime.mjs": {

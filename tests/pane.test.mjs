@@ -1080,10 +1080,17 @@ test('an oversized connection callback is refused before its whole body is read'
 test('starter layouts and duplicates retain editable content and shared published styles',async()=>{
  const initial=await (await json('/api/pane/prepare',{site:fixture})).json()
  const layouts=['landing','service','team','menu','pricing','faq','location']
+ for(const layout of layouts){
+  await json('/api/pane/prepare',{site:fixture})
+  const templatePages=[...fixture.pages.map(page=>({id:page.slug,slug:page.slug,title:page.title})),{id:'synthetic-pane-template-'+layout,slug:'template-'+layout,title:'Template page',layout}]
+  const applied=await f.request('/app/prepare',{method:'POST',headers:{Cookie:owner,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({base:(await data()).draft.id,structure:JSON.stringify({pages:templatePages,folders:[],home:'home',notFound:''})}),redirect:'manual'});assert.equal(applied.status,303)
+  const collections=(await data()).draft.site.collections;assert.ok(Array.isArray(collections),'Every template starts with collection schemas');assert.deepEqual(collections.map(collection=>collection.title).sort(),['Projects','Services','Team'],'Every template starts with editable collection schemas');assert.ok(collections.every(collection=>collection.items.length===0),'Template collections invent no business records')
+  for(const collection of collections)assert.ok(collection.fields.length>0,'Starter collections contain typed editable fields')
+ }
  const pages=fixture.pages.map(page=>({id:page.id??page.slug,slug:page.slug,title:page.title}))
  for(const layout of layouts)pages.push({id:'synthetic-pane-'+layout,slug:'starter-'+layout,title:'Starter '+layout,layout})
  pages.push({id:'synthetic-pane-copy',slug:'services-copy',title:'Services copy',sourceId:'services'})
- const save=await f.request('/app/prepare',{method:'POST',headers:{Cookie:owner,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({base:initial.id,structure:JSON.stringify({pages,folders:[],home:'home',notFound:''})}),redirect:'manual'})
+ const save=await f.request('/app/prepare',{method:'POST',headers:{Cookie:owner,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({base:(await data()).draft.id,structure:JSON.stringify({pages,folders:[],home:'home',notFound:''})}),redirect:'manual'})
  assert.equal(save.status,303,await save.text())
  const draft=(await data()).draft
  for(const layout of layouts){const page=draft.site.pages.find(page=>page.slug==='starter-'+layout);assert.equal(page.layout,layout);assert.ok(page.body.includes('\n\n'))}

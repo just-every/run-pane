@@ -1,3 +1,4 @@
+import {collectionStarters} from './collection-starters'
 import {DraftConflict,prepare,revision,normalizeSite,contentHash} from './content'
 import {latestContent,PostDenied} from './posts'
 import {normalizeCollections,upsertCollection,upsertCollectionItem,upsertCollectionTemplate} from './collections'
@@ -42,13 +43,7 @@ export async function saveCollectionBody(db:D1Database,actor:string,input:Record
 }
 export async function addStarterCollections(db:D1Database,actor:string,base:unknown){
  const row=await current(db,base)
- const description=(id:string,label:string)=>({id,label,type:'richText' as const,required:true,help:'Describe this item in your own words.'})
- const starters:Collection[]=[
-  {id:'starter-services',title:'Services',prefix:'service-directory',fields:[description('description','Description'),{id:'price',label:'Price in USD',type:'price',help:'Enter the dollar amount without a currency symbol.'},{id:'image',label:'Service image',type:'image',help:'Choose a photo and describe it for visitors who cannot see it.'}],items:[]},
-  {id:'starter-team',title:'Team',prefix:'team',fields:[{id:'role',label:'Role',type:'text',required:true,help:'Describe this person’s role.'},description('biography','Biography'),{id:'portrait',label:'Portrait',type:'image',help:'Choose a portrait and add its alternative text.'}],items:[]},
-  {id:'starter-projects',title:'Projects',prefix:'projects',fields:[description('description','Description'),{id:'image',label:'Project image',type:'image',help:'Choose a project photo and add its alternative text.'},{id:'completed',label:'Completion date',type:'date',help:'Choose the calendar date when this project was completed.'}],items:[]},
- ]
- const existing=row.site.collections??[],collections=normalizeCollections([...existing,...starters.filter(starter=>!existing.some(collection=>collection.id===starter.id))])
+ const collections=normalizeCollections(collectionStarters(row.site.collections,(row.site.blogs??[]).map(blog=>blog.prefix)))
  return prepare(db,actor,{...row.site,collections},row.id)
 }
 

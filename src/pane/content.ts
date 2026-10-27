@@ -1,3 +1,4 @@
+import {collectionStarters} from './collection-starters'
 import {normalizeCollections} from './collections'
 import {collectionIntegrity} from './collection-integrity'
 import {normalizeLifecycle} from './lifecycle-normalize'
@@ -62,6 +63,7 @@ export function normalizeSite(value: unknown): Site {
  if(input.libraryFiles!==undefined)site.libraryFiles=normalizeLibraryFiles(input.libraryFiles)
  Object.assign(site,normalizePostCollections(input,(page,media=site.media)=>normalizeSite({name:site.name,description:site.description,media,pages:[page]}).pages[0]))
  if(input.collections!==undefined)site.collections=normalizeCollections(input.collections)
+ else if(pages.some(page=>page.layout))site.collections=normalizeCollections(collectionStarters(undefined,(site.blogs??[]).map(blog=>blog.prefix)))
  collectionIntegrity(site)
  const routes = new Set(activePages(site).map(page => pagePath(site,page.slug)))
  for (const redirect of site.redirects ?? []) if (routes.has(redirect.from) || ['/site/search','/site/visit'].includes(redirect.from)) throw Error(`Redirect ${redirect.from} would replace an existing page or service.`)
