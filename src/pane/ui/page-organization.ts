@@ -23,7 +23,7 @@ export function pageOrganization(site: Site): string {
  <div class="page-organization-content">
  <p class="help">Organize your draft pages here. Hidden pages stay available by address but leave menus. Deleted pages stay in this draft so you can restore them.</p>
  <p class="help">After renaming or deleting a published page, reload once the draft is saved to review redirect offers.</p>
- <p><a href="/app">Open saved pages</a></p>
+ <p><a href="/app">Open saved pages</a> · <a href="/app/content/trash?kind=page">Page trash</a></p>
  <textarea name="structure" data-page-structure hidden>${escape(JSON.stringify(structure))}</textarea>
  <div class="page-organization-roles">
  <label>Home page<select data-page-role="home" aria-label="Home page"></select></label>

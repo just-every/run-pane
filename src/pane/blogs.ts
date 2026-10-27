@@ -74,14 +74,15 @@ export function normalizePostCollections(input:Site,normalizePage:(page:Page,med
   const ids=new Set<string>(),paths=new Set<string>()
   result.posts=input.posts.map(raw=>{
    const post=object(raw),id=identity(post.id),author=identity(post.author),blog=cleanSlug(post.blog)
+   if(post.deleted!==undefined&&typeof post.deleted!=='boolean')throw Error('Invalid post deletion state.')
    if(ids.has(id)||!['draft','review'].includes(post.state))throw Error('Invalid private post identity or state.')
-   if(Object.keys(post).some(key=>!['id','author','blog','state','content','excerpt','categories','tags','byline','authorSlug','featuredImage','media','review'].includes(key)))throw Error('Unsupported private post field.')
+   if(Object.keys(post).some(key=>!['id','author','blog','state','content','excerpt','categories','tags','byline','authorSlug','featuredImage','media','review','deleted'].includes(key)))throw Error('Unsupported private post field.')
    ids.add(id);ensureBlog(blog)
    const metadata=normalizePostMetadata(post),page=content(post.content,id,true,metadata.media),path=blog+'::'+page.slug
-   if(paths.has(path))throw Error('Each private post needs a unique URL within its blog.')
-   paths.add(path)
+   if(!post.deleted&&paths.has(path))throw Error('Each private post needs a unique URL within its blog.')
+   if(!post.deleted)paths.add(path)
    if(post.review!==undefined&&(typeof post.review!=='string'||!/^[a-f0-9]{64}$/.test(post.review)))throw Error('Invalid submitted post review.')
-   return {id,author,blog,state:post.state,content:page,...metadata,...(post.review===undefined?{}:{review:post.review})} as Post
+   return {id,author,blog,state:post.state,content:page,...metadata,...(post.deleted?{deleted:true}:{}),...(post.review===undefined?{}:{review:post.review})} as Post
   })
  }
  if(input.blogPosts!==undefined){

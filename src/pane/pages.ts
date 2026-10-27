@@ -75,9 +75,17 @@ export function structureFromForm(base: Site, raw: unknown): Site {
 export function redirectOffers(site: Site, live: Site | null): NonNullable<Site['redirectOffers']> {
  if (!live) return []
  const routes = new Set(activePages(site).map(page => pagePath(site,page.slug)))
- return activePages(live).flatMap(old => {
+ const offers=activePages(live).flatMap(old => {
   const page = site.pages.find(page => pageId(page) === pageId(old)), from = pagePath(live,old.slug)
   if (routes.has(from) || site.redirects?.some(redirect => redirect.from === from)) return []
   return [{from, to: page && !page.deleted ? pagePath(site,page.slug) : '/site', reason: page && !page.deleted ? 'renamed' as const : 'deleted' as const}]
  })
+ for(const old of live.blogPosts??[]){
+  const priorBlog=live.blogs?.find(blog=>blog.id===old.blog),blog=site.blogs?.find(blog=>blog.id===old.blog)
+  if(!priorBlog||!blog)continue
+  const from='/site/'+priorBlog.prefix+'/'+old.content.slug,post=site.blogPosts?.find(post=>post.id===old.id),to=post?'/site/'+blog.prefix+'/'+post.content.slug:'/site/'+blog.prefix
+  if(from===to||site.redirects?.some(redirect=>redirect.from===from)||offers.some(offer=>offer.from===from))continue
+  offers.push({from,to,reason:post?'renamed':'deleted'})
+ }
+ return offers
 }

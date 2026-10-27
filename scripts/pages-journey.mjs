@@ -45,7 +45,7 @@ try {
  await page.getByLabel('Home page',{exact:true}).selectOption(chosen.id)
  await page.getByLabel('Not-found page',{exact:true}).selectOption(missing.id)
  await row(page,missing.id).getByLabel('Hidden from menus',{exact:true}).check()
- await row(page,chosen.id).getByRole('button',{name:/Move .* up/}).click();await saved(page)
+ await row(page,chosen.id).getByRole('button',{name:/Move up:/}).click();await saved(page)
  const durable=JSON.parse(await structure(page).inputValue())
  await page.close();page=await context.newPage();page.setDefaultTimeout(20000)
  await page.goto(origin+'/app');await openOrganization()
@@ -124,7 +124,7 @@ try {
    await page.getByLabel('New page title',{exact:true}).fill(`Starter ${layout} ${width}`)
    await page.getByRole('button',{name:'Add page',exact:true}).click();await saved(page)
   }
-  await row(page,'services').getByRole('button',{name:'Duplicate Repairs and commissions',exact:true}).click();await saved(page)
+  await row(page,'services').getByRole('button',{name:'Duplicate page: Repairs and commissions',exact:true}).click();await saved(page)
   await page.getByLabel('Starter layout',{exact:true}).scrollIntoViewIfNeeded();await capture('starter-choices',width)
   const draft=(await data()).draft, duplicate=draft.site.pages.filter(item=>item.slug.startsWith('services-copy')).at(-1)
   assert.equal(duplicate.body,draft.site.pages.find(item=>item.slug==='services').body)

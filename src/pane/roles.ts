@@ -27,8 +27,9 @@ export async function assignRoles(db:D1Database,actorId:string,input:Record<stri
 export const can=(data:Dashboard,capability:Capability)=>data.capabilities?.includes(capability)??(data.role.toLowerCase()==='owner'||data.role.toLowerCase()==='admin')
 export function visibleRevision(row:Revision|null,caps:Capability[],actor:{id:string;role:string}):Revision|null{
  if(!row||['owner','admin'].includes(actor.role))return row
- const {posts,...site}=row.site
- return {...row,site:{...site,...(caps.includes('posts:write')&&posts?{posts:posts.filter(post=>post.author===actor.id)}:{})}}
+ const {posts,trash,postDeletions,...site}=row.site
+ const own=new Set((posts??[]).filter(post=>post.author===actor.id).map(post=>post.id))
+ return {...row,site:{...site,...(caps.includes('posts:write')&&posts?{posts:posts.filter(post=>post.author===actor.id)}:{}),...(trash?{trash:trash.filter(entry=>entry.kind==='page'?caps.includes('pages:read'):caps.includes('posts:write')&&own.has(entry.id))}:{}),...(postDeletions&&caps.includes('posts:write')?{postDeletions:postDeletions.filter(id=>own.has(id))}:{})}}
 }
 export function permittedDashboard(data:Dashboard,caps:Capability[],actor:{id:string;role:string}):Dashboard{
  data={...data,draft:visibleRevision(data.draft,caps,actor),live:visibleRevision(data.live,caps,actor),revisions:data.revisions.map(row=>visibleRevision(row,caps,actor)!)}
