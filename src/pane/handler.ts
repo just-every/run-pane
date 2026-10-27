@@ -1,3 +1,5 @@
+import {templateSite} from './templates'
+import {templateCatalog} from './ui/templates'
 import {latestContent,ownPost,postView,PostDenied,savePost,publishPost} from './posts'
 import {postForm} from './post-forms'
 import {postsEditor} from './ui/posts'
@@ -114,6 +116,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   if(request.method==='GET') {
    const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps,actor)
    if(env.PANE_LIVE&&owner){const review=await env.PANE_LIVE.get(env.PANE_LIVE.idFromName('published-site')).fetch('https://pane.internal/review');Object.assign(data,await review.json())}
+   if(path==='/app/templates'){if(!owner)return json({error:'Native owner only.'},403);return document('Templates',shell(data,'sites',templateCatalog(data)))}
    if(path==='/app/canvas')return document('Visual canvas',canvasEditor(data,url.searchParams.get('page')??''),'site')
    if(api&&path!=='/api/pane')return json({error:'Not found.'},404)
    if(api)return json(scopes?{role:actor.role,draft:data.draft?{id:data.draft.id}:null,live:data.live?{id:data.live.id}:null}:{...data,activity:undefined})
@@ -180,6 +183,11 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    if(!result)return json({error:'Not found.'},404)
    if(typeof result==='object'&&'revision' in result)result={...result,revision:!editor?postView(result.revision as import('./model').Revision,actor.id,false):visibleRevision(result.revision as import('./model').Revision,caps,actor)}
    return json(result)
+  }else if(action==='templates/start'){
+   if(!owner||scopes)return json({error:'Native owner only.'},403)
+   const site=templateSite(input.template,input.name)
+   // Empty-base compare is atomic: two template choices cannot overwrite one another.
+   result=await prepare(env.DB,actor.id,site,'');notice='Template saved as an unpublished draft. Edit every page before publishing.';back='/app'
   }else if(action==='component-create'){
    const row=await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
    if(!row)throw Error('Prepare a site first.')
