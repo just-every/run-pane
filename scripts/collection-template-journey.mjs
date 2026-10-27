@@ -40,7 +40,7 @@ try{
   }
   assert.deepEqual((await state()).draft.site.collections.find(collection=>collection.id==='services').template,{fields:['notes','description','price','image'],titleField:'name',descriptionField:'notes',imageField:'image'})
   await capture(page,'template-settings',width)
-  await form.getByRole('link',{name:'Review in Pages and approve the whole site to publish',exact:true}).click();await page.waitForURL(url=>url.pathname==='/app');await submit(page.getByRole('button',{name:'Approve & publish',exact:true}))
+  await form.getByRole('link',{name:'Review in Pages and approve the whole site to publish',exact:true}).click();await page.waitForURL(url=>url.pathname==='/app');if(width===1440)await submit(page.getByRole('button',{name:'Approve & publish',exact:true}));else assert.equal((await state()).live.id,(await state()).draft.id,'The approved template remains the live revision')
   for(let index=1;index<=30;index++){
    const response=await visitor.request.get(origin+'/site/celebration-cakes/service-'+index);assert.equal(response.status(),200,'Every item URL is public after owner approval');const html=await response.text();assert.ok(html.includes('<title>Hand-decorated cake '+index+'</title>'));assert.ok(html.includes('name="description" content="Cake care for celebration '+index+'"'));const structured=JSON.parse(html.match(/<script type="application\/ld\+json">([^<]+)<\/script>/)[1]);assert.equal(structured.name,'Hand-decorated cake '+index);assert.equal(structured.description,'Cake care for celebration '+index);assert.equal(structured.url,origin+'/site/celebration-cakes/service-'+index)
   }
