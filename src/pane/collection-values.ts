@@ -24,6 +24,7 @@ function richValue(value:unknown,required:boolean):CollectionRichText{
  const rich=collectionObject(value,'rich text')
  collectionKeys(rich,['body','sections'],'rich text')
  const body=collectionText(rich.body,'Rich text body',20000,!required),sections=normalizeSections(rich.sections)
+ if(sections?.some(section=>section.blocks.some(block=>block.kind==='html')))throw Error('HTML blocks are currently authored on pages.')
  if(sections?.some(section=>section.component))throw Error('Collection rich text needs local sections; detach reusable components first.')
  if(sections&&sectionText(sections)!==body)throw Error('Rich text sections must match the body in reading order.')
  return {body,...(sections?{sections}:{})}

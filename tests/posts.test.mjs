@@ -209,6 +209,15 @@ test('typed service collections validate thirty items and publish rich descripti
    const values={...serviceItem(1).values,...change}
    const before=await state();assert.equal((await call('/api/pane/collections/items/save',{base:before.draft.id,collection:'services',...serviceItem(1),values})).status,400,'Typed and required collection values are refused');assert.deepEqual(await state(),before,'Validation leaves the draft untouched')
   }
+  const htmlDescription={body:'Workshop HTML',sections:[{id:'collection-html-section',blocks:[{id:'collection-html-block',kind:'html',text:'Workshop HTML',html:{source:'<h2>Workshop HTML</h2>',height:320}}]}]}
+  for(const cookie of [owner,editor])for(const prefix of ['/api/pane/collections','/app/collections'])for(const [action,input] of [
+   ['/items/save',{collection:'services',...serviceItem(1),values:{...serviceItem(1).values,description:htmlDescription}}],
+   ['/body',{collection:'services',item:'service-1',field:'description',sections:htmlDescription.sections}],
+  ]){
+   const before=await state(),path=prefix+action
+   assert.equal((await call(path,{base:before.draft.id,...input},cookie)).status,400,path+' refuses HTML blocks outside pages even for authorized collection writers')
+   assert.deepEqual(await state(),before,'Refusing collection HTML preserves drafts, publication and approvals')
+  }
   const pdf=Buffer.from('%PDF-1.4\nsynthetic-pane-service-guide\n%%EOF'),form=new FormData();form.set('base',(await state()).draft.id);form.set('file',new File([pdf],'care-guide.pdf',{type:'application/pdf'}))
   const uploaded=await ok(await f.request(origin+'/api/pane/library/upload',{method:'POST',headers:{Origin:origin,Cookie:owner},body:form})),file=uploaded.site.libraryFiles[0]
   const image={src:'data:image/png;base64,'+(await readFile('public/brand/icon-192.png')).toString('base64'),width:192,height:192,decorative:false,alt:'Furniture care at the workshop'}

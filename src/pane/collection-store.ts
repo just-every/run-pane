@@ -37,6 +37,7 @@ export async function saveCollectionBody(db:D1Database,actor:string,input:Record
  const row=await current(db,input.base),{collection,item}=collectionTarget(row.site.collections,input.collection,input.item??input.id),field=collection.fields.find(field=>field.id===input.field)
  if(!item||field?.type!=='richText')throw Error('Choose a rich description field on an existing item.')
  const sections=normalizeSections(input.sections);if(!sections)throw Error('Provide the description sections.')
+ if(sections.some(section=>section.blocks.some(block=>block.kind==='html')))throw Error('HTML blocks are currently authored on pages.')
  const collections=upsertCollectionItem(row.site.collections,collection.id,{...item,values:{...item.values,[field.id]:{body:sectionText(sections),sections}}})
  const media=input.media===undefined?row.site.media:normalizeMedia(input.media)
  return prepare(db,actor,{...row.site,collections,...(media===undefined?{}:{media})},row.id)
