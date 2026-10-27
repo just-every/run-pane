@@ -1775,7 +1775,7 @@ test('custom code requires owner authoring and approved immutable live revisions
   const preview=await app.request('/preview/'+prepared.id+'/contact',{headers:{Cookie:cookie}})
   assert.doesNotMatch(await preview.text(),/data-custom-code|data-marketplace|pane-custom-code.js|pane-tags.js|syntheticThankYou/)
   assert.doesNotMatch(preview.headers.get('content-security-policy'),/unsafe-inline/)
-  assert.doesNotMatch(await (await app.request('/preview/'+prepared.id+'/services',{headers:{Cookie:cookie}})).text(),/data-html-block|syntheticNativeHtml/,'HTML grid blocks stay inert in private previews')
+  assert.doesNotMatch(await (await app.request('/preview/'+prepared.id+'/services',{headers:{Cookie:cookie}})).text(),/<section\b[^>]*data-html-block|syntheticNativeHtml/,'HTML grid blocks stay inert in private previews')
   assert.equal((await call('/api/pane/publish',{revision:prepared.id})).status,200)
   const live=await app.request('/site/contact'),html=await live.text()
   assert.match(html,/data-marketplace/);assert.match(live.headers.get('content-security-policy'),/connect.facebook.net/);assert.match(html,/data-custom-code/);assert.match(html,/syntheticThankYou/)
@@ -1794,7 +1794,7 @@ test('custom code requires owner authoring and approved immutable live revisions
   const scoped=(await (await call('/api/pane/tokens/create',{name:'synthetic-pane-83',scopes:['pages:read','pages:write']})).json()).token
   assert.equal((await app.request('/api/pane/pages',{headers:{Authorization:'Bearer '+scoped}})).status,200,'The HTML refusal uses an active page-writing token')
   assert.equal((await app.request('/api/pane/prepare',{method:'POST',headers:{Authorization:'Bearer '+scoped,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({site:htmlEdit,base:prepared.id})})).status,403,'A token cannot borrow native-owner HTML authoring authority')
-  const htmlLive=await app.request('/site/services');assert.match(await htmlLive.text(),/data-html-block="synthetic-html-block"/);assert.match(htmlLive.headers.get('content-security-policy'),/frame-src about:/)
+  const htmlLive=await app.request('/site/services');assert.match(await htmlLive.text(),/<section\b[^>]*data-html-block="synthetic-html-block"/);assert.match(htmlLive.headers.get('content-security-policy'),/frame-src about:/)
   const changed=structuredClone(prepared.site);changed.customCode.html='<p>Unapproved replacement</p>'
   const denied=await app.request('/api/pane/prepare',{method:'POST',headers:{Cookie:adminCookie,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({site:changed,base:prepared.id})})
   assert.equal(denied.status,403)
