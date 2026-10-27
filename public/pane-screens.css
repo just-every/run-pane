@@ -131,3 +131,5 @@
 .pane [aria-label="Site ownership"] button { max-width: 100%; white-space: normal; }
 .pane [data-collections-editor] input[type=date]:focus-within { outline: 2px solid var(--pn-action); outline-offset: 2px; }
 .pane [data-collections-editor] [hidden], .pane form[data-collection-editor] [hidden] { display: none !important; }
+
+.pane .schedule-status code { font-size: 1em; }

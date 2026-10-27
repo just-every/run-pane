@@ -71,10 +71,18 @@ export class PaneLive extends DurableObject<Bindings>{
    }
   })
   if(path==='/post-schedules')return this.ctx.blockConcurrencyWhile(async()=>{
-   await runPostSchedules(auditedDatabase(this.env.DB,null,'schedule.change'),input.now)
-   const row=await this.env.DB.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first()
-   if(row)await storage.put('live',{...row,site:JSON.parse(String(row.site))})
-   return Response.json({processed:true})
+   let failed=false
+   try{
+    await runPostSchedules(auditedDatabase(this.env.DB,null,'schedule.change'),input.now)
+   }catch{failed=true}finally{
+    // A later failure cannot hide an earlier committed publication or expiry.
+    const row=await this.env.DB.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first()
+    if(row)await storage.put('live',{...row,site:JSON.parse(String(row.site))})
+    else await storage.delete('live')
+   }
+   // Return a failure response rather than throwing inside the concurrency gate:
+   // an object reset must not discard the snapshot just reconciled above.
+   return failed?Response.json({error:'Post schedule sweep incomplete.'},{status:503}):Response.json({processed:true})
   })
   if(path==='/post-publish')return this.ctx.blockConcurrencyWhile(async()=>{
    try{
