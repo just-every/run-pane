@@ -17,7 +17,6 @@ export let aiProviderFailure=false
 export function failAiProvider(value){aiProviderFailure=value}
 async function aiEdge(request){
  const url=new URL(request.url)
- aiOutbounds.push({origin:url.origin,path:url.pathname,method:request.method})
  if(url.hostname==='api.sendgrid.com')return new Response(null,{status:202})
  assert.equal(url.protocol,'https:');assert.equal(url.hostname,'api.openai.com','AI requests stay on the configured provider edge')
  const payload=await request.clone().json(),content=payload.messages.find(message=>message.role==='user').content,input=JSON.parse(content[0].text)
@@ -64,7 +63,7 @@ const server=createServer(async(req,res)=>{
 })
 await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve)})
 export const origin = 'http://127.0.0.1:' + server.address().port
-f = await runtime({...(process.env.PANE_BROWSER_NOW?{now:Date.parse(process.env.PANE_BROWSER_NOW)}:{}),bindings: {AUTH_ORIGIN: origin,...(aiLive||aiFixture?{AI_ENABLED:'true',AI_API_KEY:aiLive?process.env.AI_API_KEY:'synthetic-pane-4',AI_MODEL:'gpt-4.1-mini'}:{})},...(aiLive||aiFixture?{outboundService:aiEdge}:{}),isolatedLive:process.env.PANE_LIVE_FIXTURE==='1'})
+f = await runtime({...(process.env.PANE_BROWSER_NOW?{now:()=>Date.parse(process.env.PANE_BROWSER_NOW)}:{}),bindings: {AUTH_ORIGIN: origin,...(aiLive||aiFixture?{AI_ENABLED:'true',AI_API_KEY:aiLive?process.env.AI_API_KEY:'synthetic-pane-4',AI_MODEL:'gpt-4.1-mini'}:{})},...(aiLive||aiFixture?{observeOutbound:request=>{const url=new URL(request.url);aiOutbounds.push({origin:url.origin,path:url.pathname,method:request.method})},outboundService:aiEdge}:{}),isolatedLive:process.env.PANE_LIVE_FIXTURE==='1'})
 export async function protect(context){
  await context.route('https://challenges.cloudflare.com/turnstile/v0/api.js**',route=>route.fulfill({contentType:'application/javascript',body:`window.turnstile={render(slot,options){if(!/^[a-f0-9]{64}$/.test(options.cData))return options['error-callback']();options.callback('synthetic-pane-3:'+options.cData)}}`}))
 }

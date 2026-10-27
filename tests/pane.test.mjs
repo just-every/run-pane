@@ -840,7 +840,15 @@ test('scoped agent tokens intersect native authority and audit allowed, denied, 
   for(const action of ['token.create','token.revoke','api.GET.200','api.POST.403','api.GET.401'])assert.ok(history.some(row=>row.action===action),action)
   for(const token of [created,expired])assert.ok(history.some(row=>row.agent===token.id&&row.action==='api.GET.401'&&row.subject==='api:pages'),'A refused revoked or expired token call keeps its token id')
   assert.ok(!JSON.stringify(history).includes(created.token));assert.ok(!JSON.stringify(history).includes(stored.token_hash))
-  assert.equal((await get('/api/pane/collections')).status,501,'No collection API success is claimed before CMS-001')
+  const schema=await (await call('/api/pane/collections/schema',{base:prepared.id,id:'services',title:'Services',prefix:'care',fields:[{id:'description',label:'Description',type:'text',required:true}]})).json()
+  const item=await (await call('/api/pane/collections/items/save',{base:schema.id,collection:'services',id:'repair',slug:'repair',title:'Chair repair',values:{description:'Repair well-loved chairs.'}})).json()
+  const reader=await (await call('/api/pane/tokens/create',{name:'Collection reader',scopes:['collections:read']})).json(),readHeader={Authorization:'Bearer '+reader.token}
+  const populated=await get('/api/pane/collections',readHeader);assert.equal(populated.status,200);assert.deepEqual((await populated.json()).collections[0].items.map(item=>item.title),['Chair repair'])
+  assert.equal((await get('/api/pane/collections',bearer)).status,401)
+  assert.equal((await call('/api/pane/collections/items/save',{base:item.id,collection:'services',id:'repair',slug:'repair',title:'Denied edit',values:{description:'Denied'}},readHeader)).status,403)
+  assert.equal((await get('/api/pane/pages',readHeader)).status,403)
+  const readAudit=await (await get('/api/pane/activity')).json();assert.ok(readAudit.some(row=>row.agent===reader.id&&row.action==='api.GET.200'&&row.subject==='api:collections'));assert.ok(readAudit.some(row=>row.agent===reader.id&&row.action==='api.POST.403'&&row.subject==='api:collections'+'/items/save'))
+
  }finally{await app.mf.dispose()}
 })
 
@@ -948,7 +956,7 @@ test('composable Pane roles are invited natively and enforced across workspace, 
    assert.ok(admission.some(event=>event.subject==='person:'+person.operatorId&&event.action==='authentication.change'&&event.actor==='Synthetic '+row.roles.join(' ')),'Native confirmation attributes the admitted person')
    const expected=new Map([
     ['/app',row.pages?200:row.posts||row.inbox||row.reports?303:403],['/app/sites',row.pages||row.reports?200:403],['/app/inquiries',row.inbox?200:403],['/app/moves',403],['/app/search',row.edit?200:403],
-    ['/preview/'+prepared.id+'/home',row.edit?200:403],['/api/pane',200],['/api/pane/pages',row.pages?200:403],['/api/pane/collections',row.pages?501:403],
+    ['/preview/'+prepared.id+'/home',row.edit?200:403],['/api/pane',200],['/api/pane/pages',row.pages?200:403],['/api/pane/collections',row.edit?200:403],['/app/collections',row.edit?200:403],
     ['/app/posts',row.posts?200:403],['/api/pane/posts',row.posts?200:403],['/api/pane/activity',403],['/api/pane/activity/export',403],['/api/pane/roles',403],['/api/pane/tokens',403],
    ])
    for(const [path,status] of expected)assert.equal((await get(path,cookie)).status,status,row.roles+': '+path)
@@ -975,9 +983,12 @@ test('composable Pane roles are invited natively and enforced across workspace, 
     for(const page of fixture.pages){form.set(page.slug+'.title','Synthetic '+page.slug);form.set(page.slug+'.description','synthetic-pane-25')}
     assert.equal((await app.request(hosted+'/app/search',{method:'POST',headers:{Cookie:cookie,Origin:hosted,'Content-Type':'application/x-www-form-urlencoded'},body:form})).status,303)
    }
-   const scoped=await (await call('/api/pane/tokens/create',{name:'synthetic-pane-26',operatorId:person.operatorId,scopes:['pages:read']})).json()
+   const scoped=await (await call('/api/pane/tokens/create',{name:'synthetic-pane-26',operatorId:person.operatorId,scopes:['pages:read','collections:read']})).json()
    assert.equal((await app.request(hosted+'/api/pane/pages',{headers:{Authorization:'Bearer '+scoped.token}})).status,row.pages?200:403)
+   assert.equal((await app.request(hosted+'/api/pane/collections',{headers:{Authorization:'Bearer '+scoped.token}})).status,row.edit?200:403,'Collection tokens intersect the current native grant')
    assert.equal((await call('/api/pane/roles/set',{operatorId:person.operatorId,roles:[]})).status,200)
+   assert.equal((await app.request(hosted+'/api/pane/collections',{headers:{Authorization:'Bearer '+scoped.token}})).status,403,'Collection tokens lose a revoked grant on the next request')
+   assert.equal((await get('/app/collections',cookie)).status,403,'Collection screens lose a revoked grant on the next request')
    assert.equal((await app.request(hosted+'/api/pane/pages',{headers:{Authorization:'Bearer '+scoped.token}})).status,403,'Tokens lose revoked Pane capabilities on the next request')
    assert.equal((await get('/app',cookie)).status,403,'Removing a grant takes effect on the next request')
    assert.equal((await get('/app/inquiries',cookie)).status,403)
@@ -1067,12 +1078,26 @@ test('an oversized connection callback is refused before its whole body is read'
 })
 
 test('starter layouts and duplicates retain editable content and shared published styles',async()=>{
- const initial=await (await json('/api/pane/prepare',{site:fixture})).json()
+ const f=await runtime();let owner
+ const json=(path,body)=>f.request(path,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',Cookie:owner??''},body:JSON.stringify(body),redirect:'manual'})
+ const data=async()=>{const response=await f.request('/api/pane',{headers:{Cookie:owner}});assert.equal(response.status,200);return response.json()}
+ try{
+ const signed=await json('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Template owner'});assert.equal(signed.status,303);owner=signed.headers.get('set-cookie').split(';')[0]
+ assert.equal((await f.request('/setup',{method:'POST',headers:{Origin:origin,Cookie:owner,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes',redirect:'manual'})).status,303)
+ assert.equal((await json('/api/pane/prepare',{site:fixture})).status,200)
+
  const layouts=['landing','service','team','menu','pricing','faq','location']
+ for(const layout of layouts){
+  await json('/api/pane/prepare',{site:fixture})
+  const templatePages=[...fixture.pages.map(page=>({id:page.slug,slug:page.slug,title:page.title})),{id:'synthetic-pane-template-'+layout,slug:'template-'+layout,title:'Template page',layout}]
+  const applied=await f.request('/app/prepare',{method:'POST',headers:{Cookie:owner,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({base:(await data()).draft.id,structure:JSON.stringify({pages:templatePages,folders:[],home:'home',notFound:''})}),redirect:'manual'});assert.equal(applied.status,303)
+  const collections=(await data()).draft.site.collections;assert.ok(Array.isArray(collections),'Every template starts with collection schemas');assert.deepEqual(collections.map(collection=>collection.title).sort(),['Projects','Services','Team'],'Every template starts with editable collection schemas');assert.ok(collections.every(collection=>collection.items.length===0),'Template collections invent no business records')
+  for(const collection of collections)assert.ok(collection.fields.length>0,'Starter collections contain typed editable fields')
+ }
  const pages=fixture.pages.map(page=>({id:page.id??page.slug,slug:page.slug,title:page.title}))
  for(const layout of layouts)pages.push({id:'synthetic-pane-'+layout,slug:'starter-'+layout,title:'Starter '+layout,layout})
  pages.push({id:'synthetic-pane-copy',slug:'services-copy',title:'Services copy',sourceId:'services'})
- const save=await f.request('/app/prepare',{method:'POST',headers:{Cookie:owner,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({base:initial.id,structure:JSON.stringify({pages,folders:[],home:'home',notFound:''})}),redirect:'manual'})
+ const save=await f.request('/app/prepare',{method:'POST',headers:{Cookie:owner,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({base:(await data()).draft.id,structure:JSON.stringify({pages,folders:[],home:'home',notFound:''})}),redirect:'manual'})
  assert.equal(save.status,303,await save.text())
  const draft=(await data()).draft
  for(const layout of layouts){const page=draft.site.pages.find(page=>page.slug==='starter-'+layout);assert.equal(page.layout,layout);assert.ok(page.body.includes('\n\n'))}
@@ -1089,6 +1114,7 @@ test('starter layouts and duplicates retain editable content and shared publishe
  const edit=await (await json('/api/pane/prepare',{site:changed,base:draft.id})).json()
  assert.equal(edit.site.pages.find(page=>page.slug==='services').body,source.body)
  assert.equal((await json('/api/pane/prepare',{site:{...changed,pages:changed.pages.map(page=>({...page,layout:'unsupported'}))}})).status,400)
+ }finally{await f.mf.dispose()}
 })
 
 test('page review binds the exact content and selective owner approval keeps other drafts and records an immutable revision',async()=>{

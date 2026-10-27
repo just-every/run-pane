@@ -1,3 +1,4 @@
+import {restoredRedirects} from './lifecycle-publication'
 import {missingBodyLinks} from './post-links'
 import {cleanSlug} from './pages'
 import {DraftConflict,prepare,revision,normalizeSite,contentHash,revisionStatement,approvalStatements} from './content'
@@ -6,15 +7,15 @@ import {requireImageDescriptions} from './accessibility'
 import {postFiles} from './library-files'
 import type {ImageContent} from './images'
 import type {Page,Revision,Site} from './model'
-export type Post={id:string;author:string;blog:string;state:'draft'|'review';content:Page;excerpt?:string;categories?:string[];tags?:string[];byline?:string;authorSlug?:string;featuredImage?:ImageContent;media?:import('./gallery').MediaImage[];review?:string}
+export type Post={deleted?:boolean;id:string;author:string;blog:string;state:'draft'|'review';content:Page;excerpt?:string;categories?:string[];tags?:string[];byline?:string;authorSlug?:string;featuredImage?:ImageContent;media?:import('./gallery').MediaImage[];review?:string}
 export class PostDenied extends Error{}
 export async function latestContent(db:D1Database):Promise<Revision|null>{const row=await db.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first();return row?revision(row):null}
 export function ownPost(site:Site,id:unknown,actor:string,manage:boolean){
  const post=site.posts?.find(post=>post.id===id)
- if(!post||!manage&&post.author!==actor)throw new PostDenied('This post is outside your content permissions.')
+ if(!post||post.deleted||!manage&&post.author!==actor)throw new PostDenied('This post is outside your content permissions.')
  return post
 }
-export function postView(row:Revision|null,actor:string,manage:boolean){return {base:row?.id??null,blogs:row?.site.blogs??[],posts:(row?.site.posts??[]).filter(post=>manage||post.author===actor)}}
+export function postView(row:Revision|null,actor:string,manage:boolean){return {base:row?.id??null,blogs:row?.site.blogs??[],posts:(row?.site.posts??[]).filter(post=>!post.deleted&&(manage||post.author===actor))}}
 async function reviewToken(post:Post){
  const {review,...submitted}=post
  const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(submitted)))
@@ -67,6 +68,7 @@ export async function publishPost(db:D1Database,actor:{id:string;role:string},in
  const at=Math.max(Date.now(),Date.parse(draft.created_at)+1),created_at=new Date(at).toISOString()
  const approved:PublishedPost={id:post.id,blog:post.blog,sourceReview:post.review,excerpt:post.excerpt??'',categories:post.categories??[],tags:post.tags??[],byline:post.byline,authorSlug:post.authorSlug,...(post.featuredImage?{featuredImage:post.featuredImage}:{}),content:{...structuredClone(post.content),hidden:false},publishedAt:previous?.publishedAt??created_at,updatedAt:created_at}
  const {posts:privatePosts,...publicSite}=live.site
+ publicSite.redirects=restoredRedirects(draft.site,live.site,'post',post.id,'/site/'+blog.prefix+'/'+post.content.slug)
  const files=postFiles(draft.site,post.content),fileIds=new Set(files.map(file=>file.id))
  const libraryFiles=[...(live.site.libraryFiles??[]).filter(file=>!fileIds.has(file.id)),...files]
  const used=new Set(approved.content.sections?.flatMap(section=>section.blocks.flatMap(block=>block.gallery?.items.map(item=>item.asset)??[]))??[])
