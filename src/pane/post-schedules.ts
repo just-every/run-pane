@@ -3,7 +3,7 @@ import {latestContent,ownPost,publishPost,PostDenied} from './posts'
 import {localInstant,normalizeTimeZone} from './schedule-time'
 import type {Revision} from './model'
 
-type ScheduledPost={end_occurrence:string|null;end_at:number|null;expired_at:number|null;expiry_revision:string|null;id:string;post_id:string;source_revision:string;review:string|null;occurrence:string;occurrence_at:number;time_zone:string;approved_by:string|null;cancelled_at:number|null;executed_at:number|null;result_revision:string|null}
+type ScheduledPost={failure_at:number|null;failure_action:'publication'|'expiry'|null;end_occurrence:string|null;end_at:number|null;expired_at:number|null;expiry_revision:string|null;id:string;post_id:string;source_revision:string;review:string|null;occurrence:string;occurrence_at:number;time_zone:string;approved_by:string|null;cancelled_at:number|null;executed_at:number|null;result_revision:string|null}
 export async function postSchedules(db:D1Database):Promise<ScheduledPost[]>{
  return (await db.prepare('SELECT * FROM pane_post_schedules ORDER BY occurrence_at,id').all<ScheduledPost>()).results
 }
@@ -37,8 +37,10 @@ export async function runPostSchedules(db:D1Database,now:number):Promise<Revisio
  const clock=await db.prepare('SELECT scheduled_at FROM pane_schedule_clock WHERE id=1').first<{scheduled_at:number}>()
  if(clock&&now<clock.scheduled_at)return null
  let published:Revision|null=null
+ const failures:unknown[]=[]
  for(const entry of await postSchedules(db)){
   if(entry.cancelled_at!==null||entry.expired_at!==null||!entry.approved_by||entry.occurrence_at>now)continue
+  try{
   if(entry.executed_at!==null){
    if(entry.end_at!==null&&entry.end_at<=now&&entry.expired_at===null){const expired=await expirePost(db,entry,now);if(expired)published=expired}
    continue
@@ -48,18 +50,23 @@ export async function runPostSchedules(db:D1Database,now:number):Promise<Revisio
    continue
   }
   const row=await db.prepare('SELECT * FROM pane_revisions WHERE id=? AND NOT EXISTS(SELECT 1 FROM pane_revoked_revisions WHERE revision=?)').bind(entry.source_revision,entry.source_revision).first()
-  if(!row)continue
-  const current=await latestContent(db);if(!current)continue
+  if(!row)throw Error('The approved source is unavailable.')
+  const current=await latestContent(db);if(!current)throw Error('No current draft is available.')
   published=await publishPost(db,{id:entry.approved_by,role:'owner'},{base:current.id,id:entry.post_id,review:entry.review??''},{source:revision(row),schedule:{id:entry.id,now}})
+  }catch{
+   // Persist only a safe outcome; one rejected entry must not starve another blog.
+   try{await db.prepare('UPDATE pane_post_schedules SET failure_at=?,failure_action=? WHERE id=? AND cancelled_at IS NULL').bind(now,entry.executed_at===null?'publication':'expiry',entry.id).run()}catch(error){failures.push(error)}
+  }
  }
+ if(failures.length)throw new AggregateError(failures,'Schedule failures could not be recorded.')
  return published
 }
 
 /** An explicitly approved expiry removes only the version this schedule published. */
 async function expirePost(db:D1Database,entry:ScheduledPost,now:number):Promise<Revision|null>{
- if(!await db.prepare("SELECT 1 FROM oa_operators WHERE id=? AND role='owner' AND status='active'").bind(entry.approved_by).first())return null
+ if(!await db.prepare("SELECT 1 FROM oa_operators WHERE id=? AND role='owner' AND status='active'").bind(entry.approved_by).first())throw new PostDenied('The approving owner is no longer active.')
  const [draft,row]=await Promise.all([latestContent(db),db.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first()])
- if(!draft||!row)return null
+ if(!draft||!row)throw Error('The current publication is unavailable.')
  const live=revision(row),post=live.site.blogPosts?.find(post=>post.id===entry.post_id)
  if(!post||post.sourceReview!==entry.review){
   await db.prepare('UPDATE pane_post_schedules SET expired_at=? WHERE id=? AND expired_at IS NULL').bind(now,entry.id).run()
