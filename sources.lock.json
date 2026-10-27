@@ -636,7 +636,7 @@
       "executable": false
     },
     "public/pane-editor.css": {
-      "sha256": "0c0fb5ce12d35e4f89b4c70328cc3b90dd4bef3b627a00f9d2547bfc1733be06",
+      "sha256": "8f43a5dc48920b66debc6743851228cf5ac3677389505aacbc841c083f0af2cd",
       "executable": false
     },
     "public/pane-embeds.js": {
@@ -700,7 +700,7 @@
       "executable": false
     },
     "public/pane-public.css": {
-      "sha256": "914b175be2492d1fa5e4a36de2ac89b94470cd767ccdc802b656098032c6032f",
+      "sha256": "4a525444d13ee8a10b107f5fca857d9dbdffa5fc0382d94ee0bddc5b02d93d89",
       "executable": false
     },
     "public/pane-reading-order.mjs": {
@@ -1108,7 +1108,7 @@
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
-      "sha256": "01855223ea484599ed77b15a57982d901dc962f59fc1579e532e9263a796707d",
+      "sha256": "802b349ef0da4ecda423c77d4446d5aed76dd7a66c66dc32b101a2dc29731f00",
       "executable": false
     },
     "scripts/contract-docs.mjs": {
