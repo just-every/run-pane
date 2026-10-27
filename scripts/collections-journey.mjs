@@ -15,6 +15,7 @@ const save=async(path,data)=>call('/api/pane/collections'+path,{base:(await stat
 const submit=async button=>Promise.all([page.waitForEvent('domcontentloaded'),button.click()])
 const saved=()=>page.waitForFunction(()=>document.querySelector('[data-save-status]')?.textContent==='Draft saved. Not published.')
 async function capture(tab,name,width,canvas=false){
+ await tab.evaluate(()=>scrollTo({top:0,behavior:'instant'}))
  if(tab===page&&!canvas){const account=tab.locator('[data-tip="Account and team"]');await account.hover();await tab.getByRole('tooltip').getByText('Account and team',{exact:true}).waitFor();await tab.mouse.move(0,500);await tab.keyboard.press('Escape');await account.focus();await tab.keyboard.press('Tab');await tab.keyboard.press('Shift+Tab');await tab.getByRole('tooltip').getByText('Account and team',{exact:true}).waitFor();await tab.keyboard.press('Escape')}
  if(!canvas){
   const main=tab.locator('#main'),controls=main.locator('a[href],button:not([disabled]),input:not([type=hidden]):not([disabled]),select:not([disabled]),textarea:not([disabled]),summary')
@@ -31,7 +32,7 @@ async function capture(tab,name,width,canvas=false){
  }else{await tab.evaluate(await readFile('node_modules/axe-core/axe.min.js','utf8'));assert.deepEqual(await tab.locator('[data-layout-canvas]').evaluate(async node=>(await axe.run(node)).violations.map(item=>item.id)),[],name+' semantic canvas axe')}
 
  assert.equal(await tab.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,name+' fits '+width)
- await tab.evaluate(()=>scrollTo(0,0));await tab.screenshot({path:resolve(folder,name+'-'+width+'.png'),fullPage:true})
+ await tab.evaluate(()=>scrollTo({top:0,behavior:'instant'}));await tab.screenshot({path:resolve(folder,name+'-'+width+'.png'),fullPage:true})
 }
 try{
  await fixture.bootstrap(context);await page.goto(origin+'/setup');await page.getByRole('checkbox').check();await submit(page.getByRole('button',{name:'Finish setup'}))
