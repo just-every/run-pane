@@ -87,7 +87,7 @@
 .pane .start-page legend { display: flex; align-items: center; gap: 8px; padding: 0 6px; font-size: 14px; font-weight: 700; }
 .pane .start-page .tile { width: 28px; height: 28px; border-radius: 8px; }
 .pane .start-page .tile svg { width: 17px; height: 17px; }
-.pane .alert-card { position: relative; padding: 16px 16px 16px 58px; border: 1px solid color-mix(in srgb, var(--pn-action) 50%, white); border-left: 10px solid var(--pn-action); background: linear-gradient(100deg, color-mix(in srgb, var(--pn-action) 4%, white), color-mix(in srgb, var(--pn-action) 9%, white)); }
+.pane .alert-card { position: relative; padding: 16px 16px 16px 58px; border: 1px solid color-mix(in srgb, var(--pn-action) 50%, white); background: linear-gradient(100deg, color-mix(in srgb, var(--pn-action) 4%, white), color-mix(in srgb, var(--pn-action) 9%, white)); }
 .pane .alert-icon { position: absolute; top: 15px; left: 14px; display: grid; place-items: center; width: 29px; height: 29px; border-radius: 50%; background: var(--pn-action); color: var(--pn-white); font-size: 18px; font-weight: 900; }
 .pane .alert-card h2 { margin-bottom: 6px; font-size: 16px; font-weight: 800; }
 .pane .alert-card h2 span { color: var(--pn-body); font-weight: 600; }

@@ -576,7 +576,7 @@
       "executable": false
     },
     "public/pane-base.css": {
-      "sha256": "9f468e9f3439df51e0e34649e8902a64536cdf0d23e182a40c53ba1627dd079e",
+      "sha256": "96fca2d52f6acb4c476c6c38bb73b351cd460d2dd842da26c1451c2417481825",
       "executable": false
     },
     "public/pane-blog-settings.mjs": {
@@ -620,7 +620,7 @@
       "executable": false
     },
     "public/pane-editor.css": {
-      "sha256": "c7b6385d45ec966d21bc3fe02444df8ca22da34f6f67e5a4461471a51b06dc6c",
+      "sha256": "0c0fb5ce12d35e4f89b4c70328cc3b90dd4bef3b627a00f9d2547bfc1733be06",
       "executable": false
     },
     "public/pane-embeds.js": {
