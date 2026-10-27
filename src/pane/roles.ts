@@ -3,9 +3,9 @@ import { operatorMail } from '../mail.server.mjs'
 import type { Dashboard,Revision } from './model'
 export const paneRoles=['editor','author','comment-moderator','inbox','reporting'] as const
 export type PaneRole=typeof paneRoles[number]
-export type Capability='ai:write'|'posts:write'|'settings:write'|'pages:read'|'pages:write'|'inbox:read'|'inbox:write'|'reports:read'|'imports:read'|'imports:write'|'publish'|'erase'|'audit'|'team'|'tokens'
-export const ownerCapabilities:Capability[]=['ai:write','posts:write','settings:write','pages:read','pages:write','inbox:read','inbox:write','reports:read','imports:read','imports:write','publish','erase','audit','team','tokens']
-const grants:Record<PaneRole,Capability[]>={editor:['pages:read','pages:write','ai:write'],author:['posts:write','ai:write'],'comment-moderator':[],inbox:['inbox:read','inbox:write'],reporting:['reports:read']}
+export type Capability='collections:write'|'ai:write'|'posts:write'|'settings:write'|'pages:read'|'pages:write'|'inbox:read'|'inbox:write'|'reports:read'|'imports:read'|'imports:write'|'publish'|'erase'|'audit'|'team'|'tokens'
+export const ownerCapabilities:Capability[]=['collections:write','ai:write','posts:write','settings:write','pages:read','pages:write','inbox:read','inbox:write','reports:read','imports:read','imports:write','publish','erase','audit','team','tokens']
+const grants:Record<PaneRole,Capability[]>={editor:['collections:write','pages:read','pages:write','ai:write'],author:['posts:write','ai:write'],'comment-moderator':[],inbox:['inbox:read','inbox:write'],reporting:['reports:read']}
 export async function capabilities(db:D1Database,operator:{id:string;role:string}):Promise<Capability[]>{
  if(operator.role==='owner')return [...ownerCapabilities]
  if(operator.role==='admin')return ownerCapabilities.filter(c=>!['publish','erase','audit','team','tokens'].includes(c))
@@ -27,9 +27,9 @@ export async function assignRoles(db:D1Database,actorId:string,input:Record<stri
 export const can=(data:Dashboard,capability:Capability)=>data.capabilities?.includes(capability)??(data.role.toLowerCase()==='owner'||data.role.toLowerCase()==='admin')
 export function visibleRevision(row:Revision|null,caps:Capability[],actor:{id:string;role:string}):Revision|null{
  if(!row||['owner','admin'].includes(actor.role))return row
- const {posts,trash,postDeletions,...site}=row.site
+ const {posts,trash,postDeletions,collections,...site}=row.site
  const own=new Set((posts??[]).filter(post=>post.author===actor.id).map(post=>post.id))
- return {...row,site:{...site,...(caps.includes('posts:write')&&posts?{posts:posts.filter(post=>post.author===actor.id)}:{}),...(trash?{trash:trash.filter(entry=>entry.kind==='page'?caps.includes('pages:read'):caps.includes('posts:write')&&own.has(entry.id))}:{}),...(postDeletions&&caps.includes('posts:write')?{postDeletions:postDeletions.filter(id=>own.has(id))}:{})}}
+ return {...row,site:{...site,...(caps.includes('collections:write')&&collections?{collections}:{}),...(caps.includes('posts:write')&&posts?{posts:posts.filter(post=>post.author===actor.id)}:{}),...(trash?{trash:trash.filter(entry=>entry.kind==='page'?caps.includes('pages:read'):entry.kind==='item'?caps.includes('collections:write'):caps.includes('posts:write')&&own.has(entry.id))}:{}),...(postDeletions&&caps.includes('posts:write')?{postDeletions:postDeletions.filter(id=>own.has(id))}:{})}}
 }
 export function permittedDashboard(data:Dashboard,caps:Capability[],actor:{id:string;role:string}):Dashboard{
  data={...data,draft:visibleRevision(data.draft,caps,actor),live:visibleRevision(data.live,caps,actor),revisions:data.revisions.map(row=>visibleRevision(row,caps,actor)!)}
@@ -43,6 +43,7 @@ export function permittedDashboard(data:Dashboard,caps:Capability[],actor:{id:st
  }
 }
 export function routeCapability(path:string,method:string):Capability|undefined{
+ if(path==='/app/collections'||path.startsWith('/app/collections/')||path==='/api/pane/collections'||path.startsWith('/api/pane/collections/'))return 'collections:write'
  if(method==='GET'&&(path.startsWith('/app/files/')||path.startsWith('/api/pane/files/')))return 'inbox:read'
  if(method==='GET')return ({'/api/pane/ai/history':'ai:write','/api/pane/posts':'posts:write','/app/posts':'posts:write','/app/posts/canvas':'posts:write','/api/pane/pages':'pages:read','/api/pane/collections':'pages:read','/api/pane/activity':'audit','/api/pane/activity/export':'audit','/api/pane/roles':'team','/api/pane/tokens':'tokens','/app':'pages:read','/app/canvas':'pages:write','/app/inquiries':'inbox:read','/app/moves':'imports:read','/app/search':'pages:write'} as Record<string,Capability>)[path]
  const action=path.replace(/^\/(api\/pane|app)\//,'')

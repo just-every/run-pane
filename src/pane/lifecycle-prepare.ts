@@ -20,11 +20,24 @@ export async function prepareLifecycle(db:D1Database,before:Revision|null,after:
   const restored=restoreTrash(transition.site,revision(source).site,{kind:'page',id},ctx)
   transition.site=restored.site;transition.events.push(...restored.events)
  }
+ for(const retained of prior.trash??[]){
+  if(retained.kind!=='item'||retained.restoredAt)continue
+  if(prior.collections?.find(collection=>collection.id===retained.collection)?.items.some(item=>item.id===retained.id))continue
+  const collection=transition.site.collections?.find(collection=>collection.id===retained.collection)
+  if(!collection?.items.some(item=>item.id===retained.id))continue
+  const entry=trashItems(prior,at).filter(entry=>entry.kind==='item'&&entry.collection===retained.collection&&entry.id===retained.id).at(-1)
+  if(!entry)throw Error('This item is no longer available in the trash.')
+  const source=await db.prepare('SELECT * FROM pane_revisions WHERE id=?').bind(entry.sourceRevision).first()
+  if(!source)throw Error('The retained deletion source is unavailable.')
+  collection.items=collection.items.filter(item=>item.id!==retained.id)
+  const restored=restoreTrash(transition.site,revision(source).site,{kind:'item',id:retained.id,collection:retained.collection},ctx)
+  transition.site=restored.site;transition.events.push(...restored.events)
+ }
  // Removing a post is a pending draft change; no approved live snapshot changes here.
  transition.site.blogPosts=transition.site.blogPosts?.filter(post=>!transition.site.postDeletions?.includes(post.id))
  return transition
 }
 export function lifecycleAuditStatements(db:D1Database,actor:string,revisionId:string,events:LifecycleEvent[]){
  return events.map(event=>db.prepare(`INSERT INTO pane_activity(actor,action,subject,created_at,details)
-  SELECT ?,?,?,?,? WHERE EXISTS(SELECT 1 FROM pane_revisions WHERE id=?)`).bind(actor,event.action,event.kind+':'+event.id,event.at,JSON.stringify({kind:event.kind,id:event.id,...(event.sourceRevision?{sourceRevision:event.sourceRevision}:{}),...(event.sourceDeletion?{sourceDeletion:event.sourceDeletion}:{}),...(event.requiresCodeApproval?{requiresCodeApproval:true}:{})}),revisionId))
+  SELECT ?,?,?,?,? WHERE EXISTS(SELECT 1 FROM pane_revisions WHERE id=?)`).bind(actor,event.action,(event.kind==='item'?'item:'+event.collection+':'+event.id:event.kind+':'+event.id),event.at,JSON.stringify({kind:event.kind,id:event.id,...(event.kind==='item'?{collection:event.collection}:{}),...(event.sourceRevision?{sourceRevision:event.sourceRevision}:{}),...(event.sourceDeletion?{sourceDeletion:event.sourceDeletion}:{}),...(event.requiresCodeApproval?{requiresCodeApproval:true}:{})}),revisionId))
 }

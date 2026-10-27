@@ -157,3 +157,68 @@ test('trash and single-item history restore preserve unrelated published edits a
   assert.equal((await call('/api/pane/content/restore',{kind:'page',id:'old-offer',base:(await state()).draft.id})).status,400,'Expired trash cannot be restored through a guessed identifier')
  }finally{await f.mf.dispose()}
 })
+
+test('typed service collections validate thirty items and publish rich descriptions with selective item restoration',async()=>{
+ const {serviceFields,serviceItem}=await import('./collection-fixture.mjs')
+ let clock=Date.parse('2026-10-15T16:00:00Z'),owner,admin,editor
+ const mail=[],outbounds=[]
+ const origin='https://pane.example.test',f=await runtime({isolatedLive:true,now:()=>clock,bindings:{AUTH_ORIGIN:origin,AUTH_LOCAL:'false',MAIL_PROVIDER:'sendgrid',MAIL_API_KEY:'synthetic-pane-9'},outboundService:async request=>{outbounds.push(request.url);assert.equal(new URL(request.url).origin,'https://api.sendgrid.com');mail.push(await request.json());return new Response(null,{status:202})}})
+ const call=(path,input,cookie=owner)=>f.request(origin+path,{method:'POST',headers:{Origin:origin,Cookie:cookie??'','Content-Type':'application/json'},body:JSON.stringify(input)})
+ const get=(path,cookie=owner)=>f.request(origin+path,{headers:{Cookie:cookie??''}})
+ const ok=async response=>{assert.equal(response.status,200,await response.clone().text());return response.json()}
+ const state=()=>get('/api/pane').then(ok)
+ const save=async(path,input)=>ok(await call('/api/pane/collections'+path,{base:(await state()).draft.id,...input}))
+ try{
+  const signed=await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Collection owner'},'');assert.equal(signed.status,303);owner=signed.headers.get('set-cookie').split(';')[0]
+  assert.equal((await f.request(origin+'/setup',{method:'POST',headers:{Origin:origin,Cookie:owner,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})).status,303)
+  const starterSite=JSON.parse(await readFile('fixtures/static-site.json','utf8'));starterSite.navigation={main:[{label:'Home',page:'home'},{label:'Our studio',page:'about'}],footer:[{label:'Contact',url:'/site/contact'},{label:'Chair restoration',url:'/site/service-directory/service-1'},{label:'Our studio',url:'/site/about'}],details:'',headerSocials:false,footerSocials:false};starterSite.blogs=[{id:'news',title:'News',prefix:'news',comments:false,pageSize:10}]
+  const initial=await ok(await call('/api/pane/prepare',{site:starterSite}));await ok(await call('/api/pane/publish',{revision:initial.id}))
+  assert.equal((await call('/auth/invite',{email:'synthetic-pane-admin@example.test',displayName:'Collection administrator',role:'admin'})).status,202)
+  const message=mail.at(-1).content.find(part=>part.type==='text/plain').value,confirmed=await call('/auth/confirm',{token:new URL(message.match(/https:\/\/[^\s]+/)[0]).searchParams.get('token')},'');assert.equal(confirmed.status,303);admin=confirmed.headers.get('set-cookie').split(';')[0]
+  await ok(await call('/api/pane/roles/invite',{email:'synthetic-pane-editor@example.test',displayName:'Collection editor',roles:['editor']}))
+  const editorMessage=mail.at(-1).content.find(part=>part.type==='text/plain').value,editorConfirmed=await call('/auth/confirm',{token:new URL(editorMessage.match(/https:\/\/[^\s]+/)[0]).searchParams.get('token')},'');assert.equal(editorConfirmed.status,303);editor=editorConfirmed.headers.get('set-cookie').split(';')[0]
+  const starters=await save('/starters',{});assert.deepEqual(starters.site.collections.map(collection=>collection.title).sort(),['Projects','Services','Team'])
+  await ok(await call('/api/pane/prepare',{base:starters.id,site:initial.site}))
+  await save('/schema',{id:'team',title:'Team',prefix:'team',fields:[{id:'name',label:'Name',type:'text',required:true}]})
+  await save('/items/save',{collection:'team',id:'june',slug:'june',title:'June Ellis',values:{name:'June Ellis'}})
+  await save('/schema',{id:'services',title:'Services',prefix:'service-directory',fields:serviceFields})
+  for(let index=1;index<=30;index++)await save('/items/save',{collection:'services',...serviceItem(index)})
+  await ok(await call('/api/pane/posts/save',{base:(await state()).draft.id,blog:'news',content:{slug:'owner-private',title:'synthetic-pane-private-owner-post',body:'A private owner post outside the collection editor grant.'}}))
+  const editorDraft=await ok(await call('/api/pane/collections/items/save',{base:(await state()).draft.id,collection:'services',...serviceItem(30),title:'Editor saved furniture care'},editor));assert.equal(editorDraft.site.collections.find(collection=>collection.id==='services').items.find(item=>item.id==='service-30').title,'Editor saved furniture care');assert.equal(editorDraft.site.posts,undefined,'Collection responses exclude private posts outside the editor grant');assert.ok(!JSON.stringify(editorDraft).includes('synthetic-pane-private-owner-post'))
+  assert.equal((await call('/api/pane/collections/items/publish',{base:editorDraft.id,collection:'services',id:'service-30'},editor)).status,403)
+  const list=await ok(await get('/api/pane/collections'));assert.equal(list.collections.find(collection=>collection.id==='services').items.length,30,'All thirty service items remain available')
+  assert.equal((await get('/api/pane/collections','')).status,401)
+  for(const values of [{...serviceItem(1).values,price:'125.50'},{...serviceItem(1).values,description:{body:''}},{...serviceItem(1).values,team:'missing'},{...serviceItem(1).values,available:'2026-02-30'}]){
+   const before=await state();assert.equal((await call('/api/pane/collections/items/save',{base:before.draft.id,collection:'services',...serviceItem(1),values})).status,400,'Typed and required collection values are refused');assert.deepEqual(await state(),before,'Validation leaves the draft untouched')
+  }
+  const pdf=Buffer.from('%PDF-1.4\nsynthetic-pane-service-guide\n%%EOF'),form=new FormData();form.set('base',(await state()).draft.id);form.set('file',new File([pdf],'care-guide.pdf',{type:'application/pdf'}))
+  const uploaded=await ok(await f.request(origin+'/api/pane/library/upload',{method:'POST',headers:{Origin:origin,Cookie:owner},body:form})),file=uploaded.site.libraryFiles[0]
+  const image={src:'data:image/png;base64,'+(await readFile('public/brand/icon-192.png')).toString('base64'),width:192,height:192,decorative:false,alt:'Furniture care at the workshop'}
+  const body=postBody(image,{post:'unused',file:file.id});const first=body.sections[0].blocks[0];first.content[3].children=first.content[3].children.filter(node=>node.href!=='post:unused');first.text=(await import('../public/pane-rich.mjs')).richText(first.content);body.body=body.sections[0].blocks.map(block=>[block.text,block.caption,block.attribution].filter(Boolean).join('\n')).join('\n\n')
+  await save('/items/save',{collection:'services',...serviceItem(1),title:'Chair restoration',values:{...serviceItem(1).values,description:body,image}})
+  assert.equal((await get('/site/service-directory/service-1','')).status,404)
+  const beforeAdmin=await state();assert.equal((await call('/api/pane/collections/items/publish',{base:beforeAdmin.draft.id,collection:'services',id:'service-1'},admin)).status,403);assert.deepEqual(await state(),beforeAdmin,'An administrator cannot approve publication')
+  const source=structuredClone((await state()).draft);await ok(await call('/api/pane/publish',{revision:source.id}))
+  const html=await (await get('/site/service-directory/service-1','')).text()
+  for(const pattern of [/<h2[^>]*>Decorating celebration cakes<\/h2>/,/<ul><li>Vanilla sponge/,/<strong>Fold gently<\/strong>/,/<figcaption>Lemon cake with flowers<\/figcaption>/,/href="\/site\/about"/,new RegExp('href="/site/files/'+file.id+'"'),/href="tel:\+13125550123"/,/USD\s*125\.50/,/href="\/site\/team\/june"/])assert.match(html,pattern,'The published item preserves the shared semantic description')
+  assert.equal((await get('/site/files/'+file.id,'')).status,200);assert.deepEqual((await state()).revisions.find(row=>row.id===source.id),source)
+  const original=structuredClone((await state()).draft),target={kind:'item',collection:'services',id:'service-1'}
+  await ok(await call('/api/pane/content/delete',{...target,base:(await state()).draft.id}))
+  const deleted=structuredClone((await state()).draft);assert.deepEqual(deleted.site.navigation.footer.map(item=>item.label),['Contact','Our studio'],'Deleting the item removes only its actual menu link');deleted.site.redirects=[{status:301,from:'/site/service-directory/service-1',to:'/site/service-directory'},{status:301,from:'/site/old-care',to:'/site/about'}];const deletionApproval=await ok(await call('/api/pane/prepare',{base:deleted.id,site:deleted.site}));await ok(await call('/api/pane/publish',{revision:deletionApproval.id}));assert.equal((await get('/site/service-directory/service-1','')).status,301)
+  await save('/items/save',{collection:'services',...serviceItem(2),title:'Unrelated current repair'})
+  const trash=await ok(await get('/api/pane/content/trash?kind=item&collection=services'));assert.equal(trash.rows[0].id,'service-1')
+  await ok(await call('/api/pane/content/restore',{...target,base:trash.base},editor));assert.equal((await get('/site/service-directory/service-1','')).status,301,'Restoring an item draft does not publish it')
+  const restored=(await state()).draft.site.collections.find(collection=>collection.id==='services');assert.equal(restored.items.find(item=>item.id==='service-1').title,'Chair restoration');assert.equal(restored.items.find(item=>item.id==='service-2').title,'Unrelated current repair')
+  await save('/items/save',{collection:'services',...serviceItem(1),title:'New description edition'})
+  const history=await ok(await get('/api/pane/content/history?kind=item&collection=services&id=service-1'));const previousItem=history.rows.find(row=>row.title==='Chair restoration'&&row.state==='published');assert.ok(previousItem,'Published item content remains in single-item history')
+  await ok(await call('/api/pane/content/restore',{...target,base:history.base,revision:previousItem.revision}))
+  const approved=await save('/items/publish',{collection:'services',id:'service-1'});assert.equal(approved.site.collections.find(collection=>collection.id==='services').items.find(item=>item.id==='service-1').title,'Chair restoration');assert.equal(approved.site.collections.find(collection=>collection.id==='services').items.find(item=>item.id==='service-2').title,'Furniture care 2','Approving one item leaves unrelated draft work private')
+  assert.equal((await get('/site/service-directory/service-1','')).status,200,'Owner approval restores the original item URL');assert.deepEqual(approved.site.navigation.footer,starterSite.navigation.footer,'Item restoration retains the original menu place');assert.ok(!approved.site.redirects.some(row=>row.from==='/site/service-directory/service-1'));assert.ok(approved.site.redirects.some(row=>row.from==='/site/old-care'&&row.to==='/site/about'));assert.deepEqual((await state()).revisions.find(row=>row.id===original.id),original,'Item restoration leaves the original source snapshot and hash exact')
+  assert.equal(outbounds.length,2,'Collection editing and publication send no outbound request')
+  const activity=await ok(await get('/api/pane/activity')),restores=activity.filter(event=>['content.restore','content.restore-version'].includes(event.action));assert.deepEqual(restores.map(event=>[event.action,event.subject,event.actor,event.created_at]),[['content.restore','item:services:service-1','Collection editor',new Date(clock).toISOString()],['content.restore-version','item:services:service-1','Collection owner',new Date(clock).toISOString()]],'Item restores record the exact native actor and server time');for(const event of restores)assert.deepEqual(Object.keys(JSON.parse(event.details)).sort(),(event.action==='content.restore'?['kind','id','collection','sourceRevision','sourceDeletion']:['kind','id','collection','sourceRevision']).sort())
+  await ok(await call('/api/pane/content/delete',{kind:'item',collection:'services',id:'service-29',base:(await state()).draft.id}))
+  clock+=31*86400000;assert.equal((await call('/auth/magic-link',{email:settings.OWNER_EMAIL,returnTo:'/app'},'')).status,202)
+  const refreshMessage=mail.at(-1).content.find(part=>part.type==='text/plain').value,refresh=await call('/auth/confirm',{token:new URL(refreshMessage.match(/https:\/\/[^\s]+/)[0]).searchParams.get('token')},'');assert.equal(refresh.status,303);owner=refresh.headers.get('set-cookie').split(';')[0]
+  assert.deepEqual((await ok(await get('/api/pane/content/trash?kind=item&collection=services'))).rows,[],'Collection item trash expires after 31 days');assert.equal((await call('/api/pane/content/restore',{kind:'item',collection:'services',id:'service-29',base:(await state()).draft.id})).status,400,'Expired collection items cannot be restored')
+ }finally{await f.mf.dispose()}
+})

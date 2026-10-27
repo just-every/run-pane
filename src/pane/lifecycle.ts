@@ -1,4 +1,5 @@
 import {pageId,pagePath} from './pages'
+import {lifecycleItemPath,restoreItemVersion} from './lifecycle-items'
 import {blogPostPath} from './post-links'
 import type {MenuItem,Navigation} from './navigation'
 import type {LifecycleContext,LifecycleDeletionContext,LifecycleEvent,LifecyclePost,LifecycleSite,LifecycleTarget,LifecycleTransition,MenuFrame,MenuPlacement,TrashEntry} from './lifecycle-types'
@@ -91,6 +92,10 @@ function assertRoute(site:LifecycleSite,target:LifecycleTarget,path:string){
  for(const post of site.posts??[])if(!post.deleted&&!(target.kind==='post'&&post.id===target.id)&&blogPostPath(site,post)===path)throw Error('Another post uses the original URL; resolve that collision before restoring.')
  for(const post of site.blogPosts??[])if(!(target.kind==='post'&&post.id===target.id)&&blogPostPath(site,post)===path)throw Error('An approved post uses the original URL; resolve that collision before restoring.')
  for(const blog of site.blogs??[])if('/site/'+blog.prefix===path)throw Error('A blog index uses the original URL; resolve that collision before restoring.')
+ for(const collection of site.collections??[]){
+  if('/site/'+collection.prefix===path)throw Error('A collection index uses the original URL; resolve that collision before restoring.')
+  for(const item of collection.items)if(!(target.kind==='item'&&target.collection===collection.id&&target.id===item.id)&&lifecycleItemPath(collection,item)===path)throw Error('Another collection item uses the original URL; resolve that collision before restoring.')
+ }
  if(['/site/search','/site/visit'].includes(path)||path.startsWith('/site/files/'))throw Error('A service uses the original URL; resolve that collision before restoring.')
 }
 const privateDraft=(post:LifecyclePost):LifecyclePost=>{
@@ -128,6 +133,14 @@ export function recordDeletions(before:LifecycleSite,after:LifecycleSite,supplie
   if(!site.postDeletions.includes(post.id))site.postDeletions.push(post.id)
   events.push({kind:'post',id:post.id,...ctx,action:'content.delete',sourceDeletion:deletion,sourceRevision:supplied.sourceRevision})
  }
+ for(const collection of before.collections??[])for(const item of collection.items){
+  if(after.collections?.find(candidate=>candidate.id===collection.id)?.items.some(candidate=>candidate.id===item.id))continue
+  const path=lifecycleItemPath(collection,item),deletion='item:'+collection.id+':'+item.id+':'+ctx.at
+  const to=deletionTarget(after,path,'/site/'+collection.prefix)
+  site.trash.push({kind:'item',id:item.id,collection:collection.id,deletion,sourceRevision:supplied.sourceRevision,actor:ctx.actor,deletedAt:ctx.at,path,deletionTarget:to,placement:placements(before.navigation,'\u0000',path)})
+  if(!site.redirects?.some(redirect=>redirect.from===path)&&!site.redirectOffers?.some(offer=>offer.from===path)){site.redirectOffers??=[];site.redirectOffers.push({from:path,to,reason:'deleted'})}
+  events.push({kind:'item',id:item.id,collection:collection.id,...ctx,action:'content.delete',sourceDeletion:deletion,sourceRevision:supplied.sourceRevision})
+ }
  if(site.navigation)for(const entry of site.trash.slice((before.trash??[]).length))for(const menu of ['main','footer'] as const)site.navigation[menu]=removeLinks(site.navigation[menu],entry.kind==='page'?before.pages.find(page=>pageId(page)===entry.id)!.slug:'\u0000',entry.path)
  return {site,events}
 }
@@ -137,13 +150,13 @@ export function trashItems(site:LifecycleSite,at:string):TrashEntry[]{
  const now=clock(at)
  return structuredClone((site.trash??[]).filter(entry=>{
   const age=now-clock(entry.deletedAt)
-  const deleted=entry.kind==='page'?!site.pages.some(page=>pageId(page)===entry.id&&!page.deleted):!(site.posts??[]).some(post=>post.id===entry.id&&!post.deleted)
+  const deleted=entry.kind==='page'?!site.pages.some(page=>pageId(page)===entry.id&&!page.deleted):entry.kind==='post'?!(site.posts??[]).some(post=>post.id===entry.id&&!post.deleted):!site.collections?.find(collection=>collection.id===entry.collection)?.items.some(item=>item.id===entry.id)
   return !entry.restoredAt&&deleted&&age>=0&&age<=retention
  }))
 }
 
 export function restoreTrash(latest:LifecycleSite,source:LifecycleSite,target:LifecycleTarget,supplied:LifecycleContext):LifecycleTransition{
- const ctx=context(supplied),entry=trashItems(latest,ctx.at).filter(entry=>entry.kind===target.kind&&entry.id===target.id).at(-1)
+ const ctx=context(supplied),entry=trashItems(latest,ctx.at).filter(entry=>entry.kind===target.kind&&entry.id===target.id&&(target.kind!=='item'||entry.kind==='item'&&entry.collection===target.collection)).at(-1)
  if(!entry)throw Error('This item is no longer available in the trash.')
  const site=structuredClone(latest)
  let requiresCodeApproval=false
@@ -153,6 +166,9 @@ export function restoreTrash(latest:LifecycleSite,source:LifecycleSite,target:Li
   const page={...structuredClone(original),deleted:false},index=site.pages.findIndex(candidate=>pageId(candidate)===entry.id)
   requiresCodeApproval=!!page.customCode
   if(index<0)site.pages.push(page);else site.pages[index]=page
+ }else if(entry.kind==='item'){
+  const path=restoreItemVersion(site,source,entry)
+  if(path!==entry.path)throw Error('The retained item does not have its original URL.')
  }else{
   const original=source.posts?.find(post=>post.id===entry.id&&!post.deleted)
   if(!original||blogPostPath(source,original)!==entry.path)throw Error('The retained deletion source does not contain this post at its original URL.')
@@ -184,6 +200,11 @@ export function restoreHistorical(latest:LifecycleSite,source:LifecycleSite,targ
   const retarget=(items:MenuItem[]):MenuItem[]=>items.map(item=>({...item,...(item.page===previous.slug?{page:page.slug}:{}),...(item.children?{children:retarget(item.children)}:{})}))
   if(site.navigation)for(const menu of ['main','footer'] as const)site.navigation[menu]=retarget(site.navigation[menu])
   removeDeletionRedirect(site,pagePath(site,page.slug));requiresCodeApproval=!!page.customCode
+ }else if(target.kind==='item'){
+  const path=restoreItemVersion(site,source,target)
+  const deletion=site.trash?.filter(entry=>entry.kind==='item'&&entry.collection===target.collection&&entry.id===target.id&&entry.path===path).at(-1)
+  assertRoute(site,target,path);removeDeletionRedirect(site,path,deletion?.deletionTarget)
+  if(deletion){deletion.restoredAt=ctx.at;deletion.restoredBy=ctx.actor}
  }else{
   const historical=source.posts?.find(post=>post.id===target.id&&!post.deleted),index=(site.posts??[]).findIndex(post=>post.id===target.id)
   if(!historical||index<0)throw Error('Choose an active private post and one of its retained versions.')
@@ -194,5 +215,6 @@ export function restoreHistorical(latest:LifecycleSite,source:LifecycleSite,targ
   site.postDeletions=site.postDeletions?.filter(id=>id!==target.id)
   assertRoute(site,target,blogPostPath(site,historical));removeDeletionRedirect(site,blogPostPath(site,historical))
  }
- return {site,events:[{kind:target.kind,id:target.id,...ctx,action:'content.restore-version',sourceRevision:target.revision,...(requiresCodeApproval?{requiresCodeApproval:true}:{})}]}
+ const identity:LifecycleTarget=target.kind==='item'?{kind:'item',id:target.id,collection:target.collection}:{kind:target.kind,id:target.id}
+ return {site,events:[{...identity,...ctx,action:'content.restore-version',sourceRevision:target.revision,...(requiresCodeApproval?{requiresCodeApproval:true}:{})}]}
 }

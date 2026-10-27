@@ -1,3 +1,4 @@
+import {collectionPages} from './collection-page'
 import { parseFragment, type DefaultTreeAdapterMap } from 'parse5'
 import type { Site } from './model'
 import type { RichNode } from './sections'
@@ -82,4 +83,4 @@ export function accessibilityWarnings(site: Site): string {
  }).join('')}</ul></section>`
 }
 
-export function requireImageDescriptions(site:Site):void{const missing=accessibilityFindings(site).filter(finding=>finding.image);if(missing.length)throw Error('Accessibility warning: '+missing.map(finding=>finding.slug+': '+finding.message).join(' '))}
+export function requireImageDescriptions(site:Site):void{const missing=accessibilityFindings({...site,pages:[...site.pages,...collectionPages(site)]}).filter(finding=>finding.image);if(missing.length)throw Error('Accessibility warning: '+missing.map(finding=>finding.slug+': '+finding.message).join(' '))}
