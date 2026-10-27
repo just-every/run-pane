@@ -1352,7 +1352,7 @@
       "executable": false
     },
     "scripts/templates-journey.mjs": {
-      "sha256": "af0bd7366e545174861a64f4fef614b01144d957be28bda94bba3789dac05336",
+      "sha256": "69353ea0601fa05f0d16de51a5f943c9179e442d058370766e682685aab8b7f7",
       "executable": false
     },
     "scripts/traffic-journey.mjs": {
@@ -3336,7 +3336,7 @@
       "executable": false
     },
     "src/pane/handler.ts": {
-      "sha256": "043c5ac92817024b76e19e4bdc78f61ecf4b8d97a47f72ca8301deb1dd802ace",
+      "sha256": "7db1649dc55a34ebd911041d932129dc6d7da673641f93fd00049220b15694b0",
       "executable": false
     },
     "src/pane/image-response.ts": {
@@ -3800,7 +3800,7 @@
       "executable": false
     },
     "tests/browser-runtime.mjs": {
-      "sha256": "27b7ecb158a8f3f47fe4482ee3dd054846bc6b3fde24282b8e321324225ac714",
+      "sha256": "20a9ffb4ac13ae0fc3e0187110c20f01ac942b7462ec05edd2950518d26041c9",
       "executable": false
     },
     "tests/demo.test.mjs": {
@@ -3824,7 +3824,7 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "7f3abc8b3ec4e4a76101295b28de074c81c93df62ff588bd259388372781e083",
+      "sha256": "0dfadb2dd5d5d3d7f4f3bfb8d88abd733f27d2438473c5fa8ca289e4bffa9102",
       "executable": false
     },
     "tests/post-fixture.mjs": {
