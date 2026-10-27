@@ -136,7 +136,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "9b240e28a5f27d1a7f45cd75651b9c967e0b0817adfe7d17edc05f6b83c63c9b",
+      "sha256": "e7707654d9ec2b53a7ef34767b1fa9c3d0da72ad8f2193e8b762c71b6d5c4106",
       "executable": false
     },
     "AGENTS.md": {
@@ -160,7 +160,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "839cdd07b9841d64608241161852464b487e2b3b486a373017239d6d4edd936f",
+      "sha256": "8c40d11af62908bb7504411d2178d52e839a3d7b872737555339479df31661ac",
       "executable": false
     },
     "deploy-demo.json": {
@@ -196,7 +196,7 @@
       "executable": false
     },
     "docs/evidence/ai-riders.md": {
-      "sha256": "ab3028873c671323504a4e014e526d69412b6e8a2f4bc666a6433545bc23e86b",
+      "sha256": "68a799bf8cfbe8c1124fd2764c8422e2ef02a19d10dc9d6e4dfa1aee1b1f8bda",
       "executable": false
     },
     "docs/FORMS-AND-ACCESS.md": {
@@ -1320,7 +1320,7 @@
       "executable": false
     },
     "scripts/posts-journey.mjs": {
-      "sha256": "c2299eb6fe072f281478819c3ec9581b13fbca0c077007bf127c28274a32ad84",
+      "sha256": "9b94b7946f5d7544ebc60adffc72d85079bd0f019bcab33a8d198ab9b18f0bec",
       "executable": false
     },
     "scripts/privacy-journey.mjs": {
@@ -3520,7 +3520,7 @@
       "executable": false
     },
     "src/pane/ui/blog-settings.ts": {
-      "sha256": "596bae3a2882a12a39e22be6a2bb8b77ba20dec33ddd501cf9f16de6dce40a32",
+      "sha256": "a06089d089245c36060bbcdb5835c86d18189defaf7772d1630bf28da9c62855",
       "executable": false
     },
     "src/pane/ui/canvas-body.ts": {
