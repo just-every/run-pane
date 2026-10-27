@@ -1072,7 +1072,7 @@
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
-      "sha256": "19a360cb11f79445976902a659c5673cea03477774278a7088f3725fdf12b042",
+      "sha256": "ef7b43db187a0995ecad59f577cf704b46703a1af8da7a22c01f8ef1b5b823e2",
       "executable": false
     },
     "scripts/custody-journey.mjs": {
