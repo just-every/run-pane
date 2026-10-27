@@ -1,6 +1,6 @@
 # Pane clause claims
 
-Generated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses, subject to exact-commit verification and guarded landing. Provider and field-proof boundaries remain in the source contract. 127 clauses: 51 done, 29 partial, 47 missing.
+Generated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses, subject to exact-commit verification and guarded landing. Provider and field-proof boundaries remain in the source contract. 127 clauses: 51 done, 30 partial, 46 missing.
 
 | Clause | Status | Title |
 | --- | --- | --- |
@@ -54,7 +54,7 @@ Generated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses,
 | CMS-007 | missing | Collection CSV import and export |
 | CMS-008 | partial | Site search |
 | CMS-009 | missing | Events calendar with list and month views |
-| CMS-010 | missing | Blog comments and moderation |
+| CMS-010 | partial | Blog comments and moderation |
 | CMS-011 | partial | Post and collection item bodies in the block editor |
 | DOMAIN-001 | missing | Connect a custom domain with apex and www |
 | DOMAIN-002 | missing | Managed HTTPS and certificate status |

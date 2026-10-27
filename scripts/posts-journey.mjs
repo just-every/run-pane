@@ -4,7 +4,7 @@ import {resolve} from 'node:path'
 import {chromium} from '@playwright/test'
 process.env.PANE_BROWSER_NOW='2026-10-15T16:00:00Z'
 const fixture=await import('../tests/browser-runtime.mjs'),{origin}=fixture
-const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
+const browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH}:{}),args:['--no-sandbox','--use-mock-keychain','--password-store=basic']})
 const context=await browser.newContext({acceptDownloads:true}),authorContext=await browser.newContext({acceptDownloads:true}),visitor=await browser.newContext()
 const page=await context.newPage(),author=await authorContext.newPage(),live=await visitor.newPage(),folder=resolve(process.env.PANE_SCREENSHOTS??'./test-results/posts')
 await mkdir(folder,{recursive:true});await visitor.route('**/*',route=>new URL(route.request().url()).origin===origin?route.continue():route.abort());for(const tab of [page,author,live])tab.setDefaultTimeout(20000)

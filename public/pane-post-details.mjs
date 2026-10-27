@@ -1,3 +1,4 @@
+import './pane-comment-settings.mjs'
 import './pane-blog-settings.mjs'
 import {readImage} from './pane-image.mjs'
 for(const picker of document.querySelectorAll('[data-post-featured]')){

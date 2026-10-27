@@ -1,3 +1,5 @@
+import {commentMarkup} from './comments'
+import type {Bindings} from '../auth.server'
 import {preparedImageResponse} from './image-response'
 import {layoutMarkup} from '../../public/pane-layout.mjs'
 import {publicPage,paragraphs} from './public-view'
@@ -38,7 +40,7 @@ function rss(site:Site,blog:NonNullable<Site['blogs']>[number],posts:Published[]
  const url=absolute(origin,'/site/'+blog.prefix)
  return '<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>'+xml(blog.title)+'</title><link>'+xml(url)+'</link><description>'+xml(site.description)+'</description>'+posts.map(post=>{const href=absolute(origin,blogPostPath(site,post));return '<item><guid isPermaLink="false">'+xml(post.id)+'</guid><title>'+xml(post.content.title)+'</title><link>'+xml(href)+'</link><pubDate>'+new Date(post.publishedAt).toUTCString()+'</pubDate><description>'+xml(bodyMarkup(site,post,origin))+'</description>'+post.categories.map(name=>'<category>'+xml(name)+'</category>').join('')+'</item>'}).join('')+'</channel></rss>'
 }
-export async function blogResponse(request:Request,site:Site):Promise<Response|null>{
+export async function blogResponse(request:Request,site:Site,env:Bindings):Promise<Response|null>{
  const url=new URL(request.url),path=decodeURIComponent(url.pathname),head=request.method==='HEAD'
  if(!['GET','HEAD'].includes(request.method))return null
  if(path.startsWith('/site/files/'))return libraryDownload(site,path.slice('/site/files/'.length),head)
@@ -54,8 +56,12 @@ export async function blogResponse(request:Request,site:Site):Promise<Response|n
    let markup=publicPage(publicSite,content.slug,'live',request.headers.get('Sec-GPC')==='1',request.headers.get('DNT')==='1')
    markup=markup.replace('<div class="public-content">','<div class="public-content">'+metadata(site,post))
    markup+=`<aside class="public-site"><div class="public-shell">${shareLinks(url.origin,path,post.content.title)}<p><a href="${prefix}">Back to ${escape(blog.title)}</a></p></div></aside>`
+   markup+=await commentMarkup(env,site,post.id)
    response=await document(post.content.title+' · '+site.name,markup,'site',pageEmbedOrigins(content),undefined,site.locale?.locale)
    const headers=new Headers(response.headers),canonical=absolute(url.origin,path),image=post.featuredImage?.src
+   headers.set('cache-control','private, no-store')
+   const policy=headers.get('content-security-policy')??''
+   headers.set('content-security-policy',policy.replace("script-src 'self'","script-src 'self' https://challenges.cloudflare.com").replace("connect-src 'self'","connect-src 'self' https://challenges.cloudflare.com").replace(/frame-src ([^;]*)/,(_all,orig)=>'frame-src '+orig+' https://challenges.cloudflare.com')+(policy.includes('frame-src ')?'':'; frame-src https://challenges.cloudflare.com'))
    const body=(await response.text()).replace('</head>',`<link rel="canonical" href="${escape(canonical)}"><meta property="og:type" content="article"><meta property="og:title" content="${escape(post.content.title)}"><meta property="og:description" content="${escape(post.excerpt)}"><meta property="og:url" content="${escape(canonical)}">${image?`<meta property="og:image" content="${escape(absolute(url.origin,path+'?featured=1'))}">`:''}</head>`)
    if(url.searchParams.has('featured')){
     return preparedImageResponse(post.featuredImage,url.searchParams.get('width')??'0',head)
