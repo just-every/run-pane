@@ -1,4 +1,5 @@
 import {collectionPrivateResponse} from './collection-handlers'
+import {collectionPages} from './collection-page'
 import {contentTrash,contentHistory,deleteContent,restoreContent} from './lifecycle-store'
 import {trashScreen,historyScreen} from './ui/lifecycle'
 import {latestContent,ownPost,postView,PostDenied,savePost,publishPost} from './posts'
@@ -118,6 +119,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    const [, ,id,...parts]=path.split('/'),row=await env.DB.prepare('SELECT * FROM pane_revisions WHERE id=?').bind(id).first()
    if(!row)return json({error:'Preview not found.'},404)
    const site=revision(row).site,slug=parts.length ? decodeURIComponent(parts.join('/')) : homeSlug(site)!
+   site.pages=[...site.pages,...collectionPages(site)]
    if(!activePages(site).some(page=>page.slug===slug))return json({error:'Preview not found.'},404)
    return document('Preview',publicPage(site,slug,'preview'),'site')
   }

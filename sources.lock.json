@@ -124,7 +124,7 @@
       "executable": false
     },
     ".github/workflows/verify.yml": {
-      "sha256": "ea11aa41670ba66c45c5e02aa76072a80d71b949d00c12f9fb5a440a77fbb23c",
+      "sha256": "951c8a8280401c4c3d2670120f17af20ae20e027160d3b0de274742afa848544",
       "executable": false
     },
     ".gitignore": {
@@ -136,11 +136,11 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "61b48f3c5948b9074b884046445432fb80209b4d6a9e2602018f2353e1daf8a3",
+      "sha256": "433da01a46ea717db692c35756292fd41004b5760bad3a0ab8e8ce6b3be2fc67",
       "executable": false
     },
     "AGENTS.md": {
-      "sha256": "92c375078fc26def0787b8fc41d26e5f1e606430e357806f9252ef53156b5ad3",
+      "sha256": "826149b19c1cef7bedb0a3be779bccbc8abc33cc5b7b11e4321c0c1ba22e1b68",
       "executable": false
     },
     "base-copies.json": {
@@ -160,7 +160,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "9275cb8b91af76ab201d18692cc27bfdb860b92cc1400872c0b64d5bed4de1a1",
+      "sha256": "385ce7415545d713cc1f98f991a92d2910e36f7ec30f4f547678187a73682072",
       "executable": false
     },
     "deploy-demo.json": {
@@ -185,6 +185,10 @@
     },
     "docs/BACKUP-RESTORE.md": {
       "sha256": "fd3f532006b9f509b6812f5ecffc98c6e8ddabcb2ddb580dcb681610b9bce306",
+      "executable": false
+    },
+    "docs/CLAIMS.md": {
+      "sha256": "912ac7d49559755ed89daad0688c1fed8aa7e42b335f0bdbbbaa6bf735455360",
       "executable": false
     },
     "docs/CUSTOM-CODE.md": {
@@ -1080,15 +1084,19 @@
       "executable": false
     },
     "scripts/collection-template-journey.mjs": {
-      "sha256": "4fb84c2a96cae18786af8f8fddcdb23fc895fc6cb65ec4bdfa14fd5925f3a814",
+      "sha256": "8de29c78918e53fded0dd794f8d7acdec29939f9dc18da3da49f960e07cfeb01",
       "executable": false
     },
     "scripts/collections-journey.mjs": {
-      "sha256": "485b0b96de27b142ecee9f8f9e9a3526a26c2ce3a0671f9d58da3299441c9223",
+      "sha256": "a22fb2d9e02c6b4a693bbfd57685c87cb02a68571abd56173f33a3fa147f26c1",
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
       "sha256": "f6144a55029f7bcc9e498f6faafadeb0ade0a6ce59e013b2ece6e772328bb153",
+      "executable": false
+    },
+    "scripts/contract-docs.mjs": {
+      "sha256": "f525d216d4fbdca9fee31d3a2725b716945a20f2d449980177e22610e9931d39",
       "executable": false
     },
     "scripts/custody-journey.mjs": {
@@ -3384,7 +3392,7 @@
       "executable": false
     },
     "src/pane/handler.ts": {
-      "sha256": "1fc0d6aab5071f3025f481ab0a3a1fb6f249ce93175beaed74bd4c5140bc446c",
+      "sha256": "b7cdd4e1d27d1708b58675eaf20061ed805479f601bd928edadf5a2c00d213cb",
       "executable": false
     },
     "src/pane/image-response.ts": {
@@ -3636,7 +3644,7 @@
       "executable": false
     },
     "src/pane/ui/collections.ts": {
-      "sha256": "be92bf5373f498d132e484468970a9622c4c06af03647f9231a4c0224c6641dd",
+      "sha256": "17c3c7e8f5e4adffd9c5cd54a5a45f8f47a78a7a380f3490bf1ef4bb7d5db33a",
       "executable": false
     },
     "src/pane/ui/component-settings.ts": {
@@ -3924,7 +3932,7 @@
       "executable": false
     },
     "tests/posts.test.mjs": {
-      "sha256": "72482027e59186e5e373d430bc61710420b31184eaa5f02398e8b311edeeeea0",
+      "sha256": "6cd2e5c0d98900bd67f5e5fe2b04cc940c5469954b4e62240e7fff028410538d",
       "executable": false
     },
     "tests/runtime.mjs": {

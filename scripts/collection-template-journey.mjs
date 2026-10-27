@@ -4,7 +4,7 @@ import {resolve} from 'node:path'
 import {chromium} from '@playwright/test'
 import {serviceFields,serviceItem} from '../tests/collection-fixture.mjs'
 process.env.PANE_BROWSER_NOW='2026-10-15T16:00:00Z'
-const fixture=await import('../tests/browser-runtime.mjs'),{origin}=fixture,browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
+const fixture=await import('../tests/browser-runtime.mjs'),{origin}=fixture,browser=await chromium.launch({headless:true,...(process.env.PANE_CHROMIUM_PATH?{executablePath:process.env.PANE_CHROMIUM_PATH}:{}),args:['--no-sandbox','--use-mock-keychain','--password-store=basic']})
 const context=await browser.newContext(),visitor=await browser.newContext(),page=await context.newPage(),live=await visitor.newPage(),folder=resolve(process.env.PANE_SCREENSHOTS??'test-results/collection-template')
 await mkdir(folder,{recursive:true});page.setDefaultTimeout(20000);live.setDefaultTimeout(20000)
 const json=async response=>{assert.equal(response.status(),200,await response.text());return response.json()},state=()=>context.request.get(origin+'/api/pane').then(json)
