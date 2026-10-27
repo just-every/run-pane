@@ -5,6 +5,7 @@ export function canvasBody(form,{block,section,newBlock,commit,select,textSelect
  const add=item=>{item.row=Math.max(...section().blocks.map(block=>block.row))+1;section().blocks.push(item);select(item.id);commit()}
  function refresh(){
   const item=block(),link=item?.link
+  if(['line','spacer','accordion'].includes(item?.kind)){input('native-kind').value=item.kind;input('native-summary').value=item.summary??'';input('native-text').value=item.text;input('native-size').value=item.size??32}
   input('caption').value=item?.caption??''
   input('attribution').disabled=!(item?.kind==='quote'||item?.format==='blockquote')
   input('attribution').value=item?.attribution??''
@@ -28,6 +29,14 @@ export function canvasBody(form,{block,section,newBlock,commit,select,textSelect
     const link=destination()
     if(action==='button')add({...newBlock(),kind:'button',text,link})
     else{if(item?.kind!=='button')throw Error('Select a button first.');item.text=text;item.link=link;commit()}
+   }
+   if(action==='native'||action==='update-native'){
+    const kind=input('native-kind').value,text=kind==='accordion'?input('native-text').value.trim():'',summary=input('native-summary').value.trim(),size=Number(input('native-size').value)
+    if(kind==='accordion'&&(!summary||!text))throw Error('Enter an accordion title and text.')
+    if(kind==='spacer'&&(!Number.isInteger(size)||size<8||size>240))throw Error('Choose a spacer height from 8 to 240 pixels.')
+    const value={kind,text,...(kind==='accordion'?{summary}:{}),...(kind==='spacer'?{size}:{})}
+    if(action==='native')add({...newBlock(),...value})
+    else{if(!['line','spacer','accordion'].includes(item?.kind))throw Error('Select a native block first.');delete item.summary;delete item.size;Object.assign(item,value);commit()}
    }
    if(action==='quote')add({...newBlock(),kind:'quote',text:'Quote',attribution:''})
    if(action==='video'||action==='update-video'){

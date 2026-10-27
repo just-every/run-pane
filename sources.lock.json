@@ -584,7 +584,7 @@
       "executable": false
     },
     "public/pane-body-links.mjs": {
-      "sha256": "330c624337f0661875d880c4cada06f7dcb34465771222c8a71f6c8b6dbb67d1",
+      "sha256": "4450572bea5a045e090932a7e0928fd3730b7acadf66c89ccf698dd28ac13461",
       "executable": false
     },
     "public/pane-body-markup.mjs": {
@@ -596,11 +596,11 @@
       "executable": false
     },
     "public/pane-canvas-body.mjs": {
-      "sha256": "5f23081690e9722f52a577f6c4d28c092c1b9eb5230fa07e06936d8d92a571f6",
+      "sha256": "a2a4a3dd3324e9c3ba1dbb5ce400a433a522bf420e1f5432fc6389c84f23320b",
       "executable": false
     },
     "public/pane-canvas.mjs": {
-      "sha256": "43c7d5957efe4fab000fa0fac5ed43da30c01aa3a73bf2850cc034e410b25dba",
+      "sha256": "780ef9ee30c4cf4133aded9c7c366f4607409a7bd3f34a011a70a6649ad15d5b",
       "executable": false
     },
     "public/pane-custom-code.js": {
@@ -624,7 +624,7 @@
       "executable": false
     },
     "public/pane-gallery-markup.mjs": {
-      "sha256": "a1075d658031fb0c417cd3f5f99f31b852a4258398585bbf0446974e25e8a460",
+      "sha256": "49bae9b0b75938b644d30fdfca667458ae5cdc0ff97b0811488a1874746e80d8",
       "executable": false
     },
     "public/pane-gallery.css": {
@@ -644,7 +644,7 @@
       "executable": false
     },
     "public/pane-layout.mjs": {
-      "sha256": "0a606a016d2bf4ba39061ee3a4c45cfe14b9947bc82a024cd1f58258ee84aad2",
+      "sha256": "cdf93205de9b8c204bafc3835e4b76a3f9afdeb70480ee28a74f07ed49659a53",
       "executable": false
     },
     "public/pane-organization.js": {
@@ -3428,7 +3428,7 @@
       "executable": false
     },
     "src/pane/post-links.ts": {
-      "sha256": "283dbffb734f71cc40dcb7e347c0a2cda2567c32705a12c13a97018b5dbe5b38",
+      "sha256": "9b567a703dccdc06c312e30a9dc702d6f57e8eba439019aaee145cbed0f1f35f",
       "executable": false
     },
     "src/pane/posts.ts": {
@@ -3492,7 +3492,7 @@
       "executable": false
     },
     "src/pane/sections.ts": {
-      "sha256": "e94316ca55d0b0494c88fa3fcd21b82a1ed88d8c7a5b139a9cb908d98ad043dc",
+      "sha256": "95eb26faf8fd5b28c04c377fd661e872456af7beac6ed885a078a4fde203ea2e",
       "executable": false
     },
     "src/pane/site-search.ts": {
@@ -3524,11 +3524,11 @@
       "executable": false
     },
     "src/pane/ui/canvas-body.ts": {
-      "sha256": "f905cf47929881e7964a55ac5c8988043660b8b333989058be09a63bc77c6323",
+      "sha256": "11a05edcb8bc13c72c9ee0a3b1fc497144224e1662e2f74ddc7394eec9f4820e",
       "executable": false
     },
     "src/pane/ui/canvas.ts": {
-      "sha256": "c42110e716e7d24ac069522da0e6bac1043afab15c07de89d9655d835127c45e",
+      "sha256": "4c22d2c3f3f5a8940c511355f01e47419856398eece3e8594a5b5ee03fdb800b",
       "executable": false
     },
     "src/pane/ui/changes.ts": {
@@ -3544,7 +3544,7 @@
       "executable": false
     },
     "src/pane/ui/editor.ts": {
-      "sha256": "76b3194e480579c46cfb0782508cb749d3b874cdab76ffe9bd0f01b7d6957b33",
+      "sha256": "7438c4fd1d10e2327dfd717573e9e423a4753d71f200a3227798f9c2f16e87d0",
       "executable": false
     },
     "src/pane/ui/form-settings.ts": {
@@ -3804,7 +3804,7 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "586fcd7b92e4000229f710063a98b0e49177f711965a836ebe2df90644834417",
+      "sha256": "56e83f6b8226fb754717e29e662775b528b980a95e287706537b1d02cd0e5343",
       "executable": false
     },
     "tests/post-fixture.mjs": {

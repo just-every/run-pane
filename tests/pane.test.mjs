@@ -1957,3 +1957,38 @@ test('brand uploads stay draft until approval and publish served icons, social i
   await call('/api/pane/publication-revoke',{revision:draft.id,confirm:'revoke-publication'});assert.equal((await app.request('/site?pane-brand=logo')).status,404,'Revocation removes public brand delivery')
  }finally{await app.mf.dispose()}
 })
+
+test('native canvas publishes typed destinations and stable section anchors while listing deleted targets',async()=>{
+ const app=await runtime();let cookie=''
+ const call=(path,body)=>app.request(path,{method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)})
+ const ok=async response=>{assert.equal(response.status,200,await response.clone().text());return response.json()}
+ try{
+  cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})).headers.get('set-cookie').split(';')[0]
+  assert.equal((await app.request('/setup',{method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})).status,303)
+  const site=structuredClone(fixture),home=site.pages.find(page=>page.slug==='home'),target=site.pages.find(page=>page.slug==='about'),fileId='00000000-0000-4000-8000-000000000014',pdf=Buffer.from('%PDF-1.4\nsynthetic-pane-14\n%%EOF')
+  site.libraryFiles=[{id:fileId,name:'guide.pdf',type:'application/pdf',size:pdf.length,data:pdf.toString('base64')}]
+  target.id='synthetic-pane-target';target.sections=[{id:'synthetic-pane-section',anchor:'visit-us',blocks:[{id:'target-text',kind:'text',text:target.body}]}]
+  const destinations=[['page','page:synthetic-pane-target','/site/about'],['anchor','anchor:synthetic-pane-target:synthetic-pane-section','/site/about#visit-us'],['external','https://example.test/visit','https://example.test/visit'],['file','file:'+fileId,'/site/files/'+fileId],['email','mailto:hello@example.test?subject=Visit%20the%20studio','mailto:hello@example.test?subject=Visit%20the%20studio'],['telephone','tel:+13125550123','tel:+13125550123'],['message','sms:+13125550123?body=Hello%20there','sms:+13125550123?body=Hello%20there']]
+  home.body='page anchor external file email telephone message\n\npage button\n\nanchor button\n\nexternal button\n\nfile button\n\nemail button\n\ntelephone button\n\nmessage button\n\nVisiting\nOpen weekdays.'
+  home.sections=[{id:'catalog-section',blocks:[{id:'inline-destinations',kind:'text',text:'page anchor external file email telephone message',content:destinations.flatMap(([label,href],index)=>[...(index?[{tag:'text',text:' '}]:[]),{tag:'a',href,newTab:label==='external',children:[{tag:'text',text:label}]}])},...destinations.map(([label,href],index)=>({id:label+'-button',kind:'button',text:label+' button',link:{href,newTab:label==='external'},row:index+2})),{id:'divider',kind:'line',text:'',row:9},{id:'space',kind:'spacer',text:'',size:48,row:10},{id:'accordion',kind:'accordion',summary:'Visiting',text:'Open weekdays.',row:11}]}]
+  let draft=await ok(await call('/api/pane/prepare',{site,base:''}));await ok(await call('/api/pane/publish',{revision:draft.id}))
+  const read=async()=> (await app.request('/site')).text()
+  let html=await read()
+  for(const [label,,href] of destinations){assert.ok(html.includes('href="'+href.replaceAll('&','&amp;')+'"'),label+' resolves its exact destination');assert.match(html,new RegExp('>'+label+' button</a>'))}
+  assert.equal((html.match(/target="_blank" rel="noopener noreferrer"/g)??[]).length,2,'Only the requested external link and button open a new tab')
+  for(const kind of ['text','button','line','spacer','accordion'])assert.ok(html.includes('data-block-type="'+kind+'"'),kind+' has a discoverable block type')
+  assert.match(html,/<summary>Visiting<\/summary><p>Open weekdays\.<\/p>/)
+  const download=await app.request('/site/files/'+fileId);assert.equal(download.status,200);assert.deepEqual(Buffer.from(await download.arrayBuffer()),pdf)
+  assert.match(await (await app.request('/site/about')).text(),/id="visit-us"/)
+  const renamed=structuredClone(draft.site),renamedTarget=renamed.pages.find(page=>page.id==='synthetic-pane-target');renamedTarget.slug='our-studio';renamedTarget.sections[0].anchor='find-us'
+  draft=await ok(await call('/api/pane/prepare',{site:renamed,base:draft.id}));await ok(await call('/api/pane/publish',{revision:draft.id}));html=await read()
+  assert.equal((html.match(/href="\/site\/our-studio#find-us"/g)??[]).length,2,'Both anchor references follow page and anchor renames')
+  assert.equal((html.match(/href="\/site\/our-studio"/g)??[]).length>=2,true,'Page links follow the stable page identity')
+  assert.match(await (await app.request('/site/our-studio')).text(),/id="find-us"/)
+  for(const mutate of [value=>value.pages.find(page=>page.id==='synthetic-pane-target').sections[0].anchor='bad anchor',value=>value.pages[0].sections[0].blocks[0].content[0].href='javascript:alert(1)',value=>value.pages[0].sections[0].blocks.find(block=>block.kind==='spacer').size=-1]){const invalid=structuredClone(draft.site);mutate(invalid);assert.equal((await call('/api/pane/prepare',{site:invalid,base:draft.id})).status,400,'Unsafe catalog or destination data is refused')}
+  const deleted=structuredClone(draft.site);deleted.pages.find(page=>page.id==='synthetic-pane-target').deleted=true
+  draft=await ok(await call('/api/pane/prepare',{site:deleted,base:draft.id}))
+  for(const path of ['/app?page=home','/app/canvas?page=home']){const response=await app.request(path,{headers:{Cookie:cookie}}),screen=await response.text();assert.equal(response.status,200);assert.ok(screen.includes('Broken links:'));assert.ok(screen.includes('anchor:synthetic-pane-target:synthetic-pane-section'));assert.ok(screen.includes('page:synthetic-pane-target'))}
+  assert.match(await read(),/href="\/site\/our-studio#find-us"/,'Unpublished target deletion does not change the live revision')
+ }finally{await app.mf.dispose()}
+})

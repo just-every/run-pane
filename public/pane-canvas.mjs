@@ -7,7 +7,7 @@ import {richText,richMarkup} from './pane-rich.mjs'
 import {layoutRules,layoutMarkup} from './pane-layout.mjs'
 const editor=document.querySelector('[data-layout-editor]'),form=editor.querySelector('form'),field=form.querySelector('[data-layout-state]'),canvas=editor.querySelector('[data-layout-canvas]'),content=canvas.querySelector('.public-content')
 let sections=JSON.parse(field.value),sectionId=sections[0].id,blockId,dragged,selection
-const sectionFields=['kind','ratio','gap','paddingTop','paddingBottom','height','background'],numeric=['gap','paddingTop','paddingBottom','column','span','row','order']
+const sectionFields=['anchor','kind','ratio','gap','paddingTop','paddingBottom','height','background'],numeric=['gap','paddingTop','paddingBottom','column','span','row','order']
 const current=()=>sections.find(section=>section.id===sectionId)??sections[0]
 const block=()=>current().blocks.find(block=>block.id===blockId)
 const device=form.querySelector('[data-layout-device]')
@@ -52,7 +52,7 @@ function render(){
  content.insertAdjacentHTML('beforeend',layoutMarkup(sections,undefined,galleries?.media()??JSON.parse(form.querySelector('[data-media-state]').value)))
  for(const section of content.querySelectorAll('[data-section]')){section.draggable=true;section.tabIndex=0;section.setAttribute('aria-label','Section '+(sections.findIndex(item=>item.id===section.dataset.section)+1))}
  for(const node of content.querySelectorAll('[data-image-block],[data-gallery],[data-video-block],[data-button-block],[data-quote-block]')){node.tabIndex=0;node.setAttribute('aria-label',node.hasAttribute('data-gallery')?'Gallery block':'Image block')}
- for(const node of content.querySelectorAll('[data-block]:not([data-image-block]):not([data-gallery]):not([data-video-block]):not([data-button-block]):not([data-quote-block]),[data-block-text]')){node.contentEditable='true';node.draggable=true;node.setAttribute('role','textbox');node.setAttribute('aria-label','Block text');node.setAttribute('aria-multiline','true')}
+ for(const node of content.querySelectorAll('[data-block]:not([data-catalog-block]):not([data-image-block]):not([data-gallery]):not([data-video-block]):not([data-button-block]):not([data-quote-block]),[data-block-text]')){node.contentEditable='true';node.draggable=true;node.setAttribute('role','textbox');node.setAttribute('aria-label','Block text');node.setAttribute('aria-multiline','true')}
  for(const node of content.querySelectorAll('[data-quote-block]'))node.draggable=true
  for(const button of content.querySelectorAll('[data-gallery-open]')){button.removeAttribute('data-gallery-open');button.dataset.tip='Select image';button.setAttribute('aria-label','Select '+button.getAttribute('aria-label').replace(/^Enlarge /,''))}
  syncReadingOrder(content);settings()
@@ -195,7 +195,7 @@ form.addEventListener('input',event=>{
   record(node);render();return
  }
  if(key==='format'&&target.kind==='text'&&value!=='blockquote')delete target.attribution
- if(key==='background'&&!value)delete target.background;else target[key]=key==='hidden'?event.target.checked:numeric.includes(key)?Number(value):value
+ if((key==='background'||key==='anchor')&&!value)delete target.background;else target[key]=key==='hidden'?event.target.checked:numeric.includes(key)?Number(value):value
  if(key==='column')target.span=Math.min(target.span,13-target.column)
  if(key==='span')target.column=Math.min(target.column,13-target.span)
  if(key==='ratio'&&current().kind==='columns'){
@@ -209,7 +209,7 @@ form.addEventListener('click',event=>{
  let section=current(),selected=block(),items=selected?section.blocks:sections,index=items.indexOf(selected??section)
  if(action==='add-section'){const added={id:identity(),kind:'text',ratio:'1:1',gap:24,paddingTop:32,paddingBottom:32,blocks:[newBlock()]};sections.push(added);sectionId=added.id;blockId=undefined}
  if(action==='add-block'){const added=newBlock();added.row=Math.max(...section.blocks.map(block=>block.row))+1;section.blocks.push(added);blockId=added.id}
- if(action==='duplicate'){const copy=structuredClone(selected??section);copy.id=identity();if(selected)copy.row=Math.max(...section.blocks.map(block=>block.row))+1;if(!selected)copy.blocks=copy.blocks.map(block=>({...block,id:identity()}));items.splice(index+1,0,copy);if(selected)blockId=copy.id;else sectionId=copy.id}
+ if(action==='duplicate'){const copy=structuredClone(selected??section);copy.id=identity();if(selected)copy.row=Math.max(...section.blocks.map(block=>block.row))+1;if(!selected)delete copy.anchor;if(!selected)copy.blocks=copy.blocks.map(block=>({...block,id:identity()}));items.splice(index+1,0,copy);if(selected)blockId=copy.id;else sectionId=copy.id}
  if(action==='delete'){if(items.length===1){form.querySelector('[data-layout-selection]').textContent='Keep at least one section and one text block.';return}items.splice(index,1);sectionId=sections[0].id;blockId=undefined}
  if(isPhone()&&(action==='up'||action==='down')){
   if(!selected){form.querySelector('[data-layout-selection]').textContent='Select a block to arrange its phone order.';return}

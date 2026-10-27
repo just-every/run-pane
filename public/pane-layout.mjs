@@ -23,13 +23,16 @@ export function layoutRules(sections){return sections.flatMap(section=>{
 })}
 export function layoutCss(sections){return layoutRules(sections).join('')}
 function blockMarkup(block,index,imageUrl,media,options){
- const resolve=options?.resolveLink,attributes=`data-block="${escape(block.id)}" data-reading-index="${index}"`
+ const resolve=options?.resolveLink,attributes=`data-block="${escape(block.id)}" data-block-type="${block.kind==='text'?(block.format?.match(/^h[1-4]$/)?'heading':block.format==='pre'?'code':'text'):block.kind}" data-reading-index="${index}"`
+ if(block.kind==='line')return `<hr ${attributes} data-catalog-block>`
+ if(block.kind==='spacer')return `<div ${attributes} data-catalog-block aria-hidden="true" style="height:${block.size}px"></div>`
+ if(block.kind==='accordion')return `<details ${attributes} data-catalog-block><summary>${escape(block.summary)}</summary><p>${escape(block.text)}</p></details>`
  if(block.kind==='video')return `<div ${attributes} data-video-block>${bodyEmbed(block,options?.embedMarkup)}</div>`
  if(block.kind==='button')return `<div ${attributes} data-button-block>${linkedBody(escape(block.text),block.link,resolve,true)}</div>`
  if(block.kind==='quote'||block.attribution!==undefined)return `<figure ${attributes} data-quote-block><blockquote data-block-text>${block.content?richMarkup(block.content,resolve):escape(block.text)}</blockquote>${block.attribution?`<figcaption>${escape(block.attribution)}</figcaption>`:''}</figure>`
  if(block.kind==='gallery')return galleryMarkup(block,index,imageUrl,media)
  if(block.kind==='image'){const image=block.image;const picture=`<img src="${escape(imageUrl?imageUrl(block.id,0):image.src)}"${image.renditions?.length?` srcset="${image.renditions.map(item=>escape(imageUrl?imageUrl(block.id,item.width):item.src)+' '+item.width+'w').join(', ')}" sizes="(max-width: 700px) 100vw, 1100px"`: ''} loading="${imageUrl?'lazy':'eager'}" decoding="async" width="${image.width}" height="${image.height}" alt="${escape(image.decorative?'':image.alt??'')}"${image.decorative?' role="presentation"':''}>`;return `<figure ${attributes} data-image-block>${linkedBody(picture,block.link,resolve)}${block.caption?`<figcaption>${escape(block.caption)}</figcaption>`:''}</figure>`}
  const format=block.format??'p',tag=['p-large','p-small'].includes(format)?'p':format
- return `<${tag} data-block="${escape(block.id)}" data-reading-index="${index}"${tag!==format?` class="pane-${format}"`:''}>${block.content?richMarkup(block.content,resolve):escape(block.text)}</${tag}>`
+ return `<${tag} data-block="${escape(block.id)}" data-block-type="${block.format?.match(/^h[1-4]$/)?'heading':block.format==='pre'?'code':'text'}" data-reading-index="${index}"${tag!==format?` class="pane-${format}"`:''}>${block.content?richMarkup(block.content,resolve):escape(block.text)}</${tag}>`
 }
-export function layoutMarkup(sections,imageUrl,media,options){return sections.map(section=>`<section data-section="${escape(section.id)}"${section.component?` data-component="${escape(section.component)}"`:''}>${section.blocks.map((block,index)=>blockMarkup(block,index,imageUrl,media,options)).join('')}</section>`).join('')}
+export function layoutMarkup(sections,imageUrl,media,options){return sections.map(section=>`<section data-section="${escape(section.id)}" id="${escape(section.anchor??'section-'+section.id)}"${section.component?` data-component="${escape(section.component)}"`:''}>${section.blocks.map((block,index)=>blockMarkup(block,index,imageUrl,media,options)).join('')}</section>`).join('')}

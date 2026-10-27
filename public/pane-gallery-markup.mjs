@@ -1,7 +1,7 @@
 const escape=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 export function galleryMarkup(block,index,imageUrl,media=[]){
  const g=block.gallery
- return `<div data-block="${block.id}" data-reading-index="${index}" data-gallery="${g.layout}"><div class="gallery-items">${g.items.map((item,i)=>{
+ return `<div data-block="${block.id}" data-block-type="gallery" data-reading-index="${index}" data-gallery="${g.layout}"><div class="gallery-items">${g.items.map((item,i)=>{
   const image=media.find(asset=>asset.id===item.asset)?.image;if(!image)return ''
   const url=width=>imageUrl?imageUrl(block.id+':'+item.asset,width):width===0?image.src:image.renditions.find(r=>r.width===width).src
   const img=`<img src="${escape(url(0))}"${image.renditions?.length?` srcset="${image.renditions.map(r=>escape(url(r.width))+' '+r.width+'w').join(', ')}" sizes="(max-width:700px) ${Math.ceil(100/g.phoneColumns)}vw, ${Math.ceil(1100/g.columns)}px"`:''} width="${image.width}" height="${image.height}" loading="lazy" decoding="async" alt="${escape(image.decorative?'':image.alt??'')}">`
