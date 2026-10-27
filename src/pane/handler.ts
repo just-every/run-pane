@@ -6,6 +6,7 @@ import {trashScreen,historyScreen} from './ui/lifecycle'
 import {commentAction,commentSettingsMarkup,moderationMarkup,authorCommentMarkup,commentList} from './comments'
 import {templateSite} from './templates'
 import {templateCatalog} from './ui/templates'
+import {savePageSchedule} from './page-schedules'
 import {schedulePost} from './post-schedules'
 import {latestContent,ownPost,postView,PostDenied,savePost,publishPost} from './posts'
 import {postForm} from './post-forms'
@@ -305,6 +306,9 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    if(typeof input.slug==='string')back='/app?page='+encodeURIComponent(input.slug)
   } else if(action==='page-request-review') {
    result=await requestPageReview(env.DB,actor.id,String(input.base??''),String(input.page??''));notice='Page sent for review.';back='/app?page='+encodeURIComponent(String(input.slug??''))
+  } else if(action==='page-schedule'||action==='page-schedule-approve') {
+   if(!owner||scopes)return json({error:'Native owner only.'},403)
+   result=await savePageSchedule(env.DB,actor,input,action==='page-schedule-approve');notice=action==='page-schedule-approve'?'Page schedule approved. Only the reviewed version will publish.':'Page schedule saved. Owner approval is required.';back='/app?page='+encodeURIComponent(String(input.slug??''))
   } else if(action==='page-publish') {
    result=env.PANE_LIVE?await liveCall(env,'/page-publish',{actor:actor.id,base:String(input.base??''),page:String(input.page??''),request:String(input.request??'')}):await publishPage(env.DB,actor.id,String(input.base??''),String(input.page??''),String(input.request??''));notice='Selected page published. Other drafts are kept.';back='/app?page='+encodeURIComponent(String(input.slug??''))
   } else if(action==='publication-revoke') {

@@ -1,3 +1,4 @@
+import {pageScheduleRows} from './page-schedules'
 import {postSchedules} from './post-schedules'
 import type { Page, Revision, Site } from './model'
 import { activePages, pageId } from './pages'
@@ -68,7 +69,7 @@ function reviewOccurrences(config:Automations, now:number):Occurrence[] {
  }
 }
 /** Only this trusted-clock path executes schedules; drafts never enter it. */
-export async function runSchedules(db:D1Database, scheduledTime:number) {
+export async function runSchedules(db:D1Database, scheduledTime:number):Promise<{lastTick:number|null;revision:string|null;executed:number}> {
  const now = trustedTime(scheduledTime), lastTick = await clock(db)
  if (lastTick !== null && now < lastTick) return {lastTick,revision:null,executed:0}
  const live = await liveRevision(db), config = settings(live?.site), revision = live?.id ?? ''
@@ -132,11 +133,12 @@ export async function scheduleOverview(db:D1Database, draft?:Revision|null, supp
  ])
  const config = settings(live?.site), draftConfig = settings(draft?.site), draftDue:string[] = []
  if (draft && draft.id !== live?.id && draftConfig && lastTick !== null) {
-  for (const banner of draftConfig.banners) if (localInstant(banner.start,draftConfig.timeZone) <= lastTick) draftDue.push(`${banner.id}: ${banner.text}`)
-  if (draftConfig.review && localInstant(draftConfig.review.start,draftConfig.timeZone) <= lastTick) draftDue.push('Page review reminder')
+  for (const banner of draftConfig.banners) if ((!config || config.timeZone!==draftConfig.timeZone || !config.banners.some(approved=>JSON.stringify(approved)===JSON.stringify(banner))) && localInstant(banner.start,draftConfig.timeZone) <= lastTick) draftDue.push(`${banner.id}: ${banner.text}`)
+  if (draftConfig.review && (config?.timeZone!==draftConfig.timeZone || JSON.stringify(config?.review)!==JSON.stringify(draftConfig.review)) && localInstant(draftConfig.review.start,draftConfig.timeZone) <= lastTick) draftDue.push('Page review reminder')
  }
  const posts=await postSchedules(db)
  for(const entry of posts)if(entry.cancelled_at===null&&!entry.approved_by&&entry.executed_at===null&&lastTick!==null&&entry.occurrence_at<=lastTick)draftDue.push('Post: '+(draft?.site.posts?.find(post=>post.id===entry.post_id)?.content.title??entry.post_id))
+ for(const row of await pageScheduleRows(db))if(!row.actor&&lastTick!==null&&row.starts_at<=lastTick)draftDue.push('Page awaiting approval: '+(draft?.site.pages.find(page=>pageId(page)===row.page)?.title??row.page))
  const currentPages = new Map(pages.map(page => [page.id,page]))
  const reminders = reminderRows.results.map(row => ({id:row.id,revision:row.revision,occurrence:row.occurrence,timeZone:row.time_zone,
   pages:(JSON.parse(row.data).pages as ReminderPage[]).filter(page => {

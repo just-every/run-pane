@@ -1295,3 +1295,5 @@ Judged from the code and tests at commit `3b35726211c3a5ac20eeba8b0f8b82b37d2995
 | `AGENT-007` | Follow up unanswered enquiries under an approved policy | push-further | missing |  | No reply drafting or sending. |
 | `AGENT-008` | Agent controls, budgets and audit | push-further | missing |  | No agents run inside Pane; outside agents use the command helper (`API-001`). Every future agent door must enforce the existing API-001 native authority intersection, explicit scope, credential custody and transactional metadata audit. |
  Every future agent door must enforce the existing API-001 native authority intersection, explicit scope, credential custody and transactional metadata audit.
+
+Scheduling replay implementation note (CMS-005 remains partial; current Status judgment retained): selective reviewed page publication and expiry are implemented by src/pane/page-schedules.ts. tests/posts.test.mjs and scripts/scheduling-journey.mjs retain the candidate page and immutable-source assertions alongside the current post-schedule failure-isolation proof. This replay does not promote CMS-005 or alter its current acceptance judgment.
