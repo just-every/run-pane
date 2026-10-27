@@ -136,7 +136,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "426c4a25724842f4a20969ad365ce6e778bea24f1eac6430148abba41a2c6f70",
+      "sha256": "4fd03f9eaae7b1336bbc68385a80e4e217aa604ae6ddfa07658853d33b9f9511",
       "executable": false
     },
     "AGENTS.md": {
@@ -160,7 +160,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "32d38937f0581e7473fe51e9c1565afbd07eeb8609ed993f3229774b2e0411b2",
+      "sha256": "bc2527fb810955b4eea228ab1eb762031eb8b83ec6a8e19ce3012a3312831ad0",
       "executable": false
     },
     "deploy-demo.json": {
@@ -188,7 +188,7 @@
       "executable": false
     },
     "docs/CLAIMS.md": {
-      "sha256": "d8f91744a9dff033188faad4888c62abc09da64ebcb703e79129731efda557d0",
+      "sha256": "c1650905cf46f6727180ed50dc7c14d92da1ca29f86a28643ac1d638fac5ecee",
       "executable": false
     },
     "docs/CUSTOM-CODE.md": {
@@ -1352,7 +1352,7 @@
       "executable": false
     },
     "scripts/templates-journey.mjs": {
-      "sha256": "8bc3a174725d4623859be350e2b01c152174d6dcb347fdf39df85daa2a6b2c46",
+      "sha256": "1804d19c709120e5311da19ae18d17ce28989f8b93384b91596569fe77a5800b",
       "executable": false
     },
     "scripts/traffic-journey.mjs": {
