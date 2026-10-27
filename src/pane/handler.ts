@@ -1,3 +1,5 @@
+import {savePageSchedule} from './page-schedules'
+import {savePostSchedule} from './post-schedules'
 import {latestContent,ownPost,postView,PostDenied,savePost,publishPost} from './posts'
 import {postForm} from './post-forms'
 import {postsEditor} from './ui/posts'
@@ -141,7 +143,11 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    const id=String(input.id??saved.posts.at(-1)?.id??'')
    return new Response(null,{status:303,headers:{location:'/app/posts?id='+encodeURIComponent(id)}})
   }
-  if(['/api/pane/posts/publish','/app/posts/publish'].includes(path)){
+  if(['/api/pane/posts/schedule','/app/posts/schedule','/api/pane/posts/schedule-approve','/app/posts/schedule-approve'].includes(path)){
+   if(!owner||scopes)return json({error:'Native owner only.'},403)
+   result=await savePostSchedule(env.DB,actor,input,path.endsWith('schedule-approve'))
+   notice=path.endsWith('schedule-approve')?'Post schedule approved. Only the reviewed version will publish.':'Post schedule saved. Owner approval is required.';back='/app/posts?id='+encodeURIComponent(String(input.id))
+  }else if(['/api/pane/posts/publish','/app/posts/publish'].includes(path)){
    const selected={base:String(input.base),id:String(input.id),review:String(input.review)}
    result=env.PANE_LIVE?await liveCall(env,'/post-publish',{actor:{id:actor.id,role:actor.role},...selected}):await publishPost(env.DB,actor,selected)
    notice='Post published. Other private drafts are unchanged.';back='/app/posts?id='+encodeURIComponent(String(input.id))
@@ -246,6 +252,9 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    if(typeof input.slug==='string')back='/app?page='+encodeURIComponent(input.slug)
   } else if(action==='page-request-review') {
    result=await requestPageReview(env.DB,actor.id,String(input.base??''),String(input.page??''));notice='Page sent for review.';back='/app?page='+encodeURIComponent(String(input.slug??''))
+  } else if(action==='page-schedule'||action==='page-schedule-approve') {
+   if(!owner||scopes)return json({error:'Native owner only.'},403)
+   result=await savePageSchedule(env.DB,actor,input,action==='page-schedule-approve');notice=action==='page-schedule-approve'?'Page schedule approved. Only the reviewed version will publish.':'Page schedule saved. Owner approval is required.';back='/app?page='+encodeURIComponent(String(input.slug??''))
   } else if(action==='page-publish') {
    result=await publishPage(env.DB,actor.id,String(input.base??''),String(input.page??''),String(input.request??''));notice='Selected page published. Other drafts are kept.';back='/app?page='+encodeURIComponent(String(input.slug??''))
   } else if(action==='publication-revoke') {
