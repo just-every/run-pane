@@ -2,6 +2,7 @@ import {test} from 'node:test'
 import assert from 'node:assert/strict'
 import {readFile} from 'node:fs/promises'
 import {runtime,settings} from './runtime.mjs'
+import {createOperatorAuth} from '../src/modules/operator-auth/index.mjs'
 import {postBody} from './post-fixture.mjs'
 
 test('authors submit two isolated blogs for exact owner approval and public semantic delivery',async()=>{
@@ -303,4 +304,86 @@ test('designed collection templates publish every item with exact metadata and p
   for(let index=1;index<=30;index++){const response=await get('/site/service-directory/service-'+index);assert.equal(response.status,200);const html=await response.text();assert.ok(html.includes('<title>Repair &lt;/script&gt; &amp; care '+index+'</title>'),'Rollback restores each original item title');assert.ok(html.includes('name="description" content="Service details &amp; care '+index+'"'));const data=JSON.parse(html.match(/<script type="application\/ld\+json">([^<]+)<\/script>/)[1]);assert.equal(data.name,'Repair </script> & care '+index);assert.equal(data.offers[0].price,125.5)}
 
  }finally{await f.mf.dispose()}
+})
+
+test('approved immutable posts publish at Chicago nine while unapproved times are flagged and retries stay fenced',async()=>{
+ for(const isolatedLive of [false,true]){
+  let now=Date.parse('2026-10-01T12:00:00Z')
+  const f=await runtime({isolatedLive,now:Date.parse('2026-10-01T12:00:00Z')}),origin=settings.AUTH_ORIGIN
+  let cookie
+  const call=(path,input,session=cookie,source=origin)=>f.request(path,{method:'POST',headers:{Origin:source,Cookie:session??'','Content-Type':'application/json'},body:JSON.stringify(input)})
+  const get=path=>f.request(path,{headers:{Cookie:cookie??''}})
+  const ok=async response=>{assert.equal(response.status,200,await response.clone().text());return response.json()}
+  const state=async()=>ok(await get('/api/pane'))
+  const tick=async iso=>{now=Date.parse(iso);assert.equal((await (await f.mf.getWorker()).scheduled({scheduledTime:new Date(now),cron:'* * * * *'})).outcome,'ok')}
+  try{
+   cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Scheduling owner'},'')).headers.get('set-cookie').split(';')[0]
+   await f.request('/setup',{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
+   const initial=await ok(await call('/api/pane/prepare',{site:JSON.parse(await readFile('fixtures/static-site.json','utf8'))}));await ok(await call('/api/pane/publish',{revision:initial.id}))
+   const write=async(slug,id,body='Approved workshop story.')=>ok(await call('/api/pane/posts/save',{base:(await state()).draft.id,...(id?{id}:{}),blog:'news',byline:'Workshop team',authorSlug:'team',content:{slug,title:slug,body}}))
+   let saved=await write('morning'),post=saved.posts.at(-1)
+   const pending=await write('unapproved'),unapproved=pending.posts.at(-1)
+   const unapprovedInput={base:pending.base,id:unapproved.id,timeZone:'America/Chicago',occurrence:'2026-11-02T09:00'}
+   let invitation
+   const auth=createOperatorAuth({clock:()=>Date.parse('2026-10-01T12:00:00Z'),db:f.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async message=>{invitation=message;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+   for(const role of ['admin','member']){
+    await auth.invite(new Request(origin+'/auth/invite',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin,Cookie:cookie}}),{email:'synthetic-pane-'+role+'@example.test',displayName:'Schedule '+role,role})
+    const token=new URL(invitation.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token'),response=await call('/auth/confirm',{token},'')
+    assert.equal(response.status,303);const deniedCookie=response.headers.get('set-cookie').split(';')[0]
+    assert.equal((await call('/api/pane/posts/schedule',unapprovedInput,deniedCookie)).status,403,'Only the native owner may schedule')
+   }
+
+   assert.equal((await call('/api/pane/posts/schedule',unapprovedInput,'')).status,401)
+   assert.equal((await call('/api/pane/posts/schedule',unapprovedInput,cookie,'https://elsewhere.invalid')).status,403)
+   await ok(await call('/api/pane/posts/schedule',unapprovedInput))
+   assert.equal((await call('/api/pane/posts/schedule',{...unapprovedInput,approve:'yes'})).status,400,'Unsubmitted content cannot be approved')
+   saved=await ok(await call('/api/pane/posts/submit',{base:(await state()).draft.id,id:post.id}));post=saved.posts.find(item=>item.id===post.id)
+   const source=structuredClone((await state()).draft),input={base:saved.base,id:post.id,review:post.review,timeZone:'America/Chicago',occurrence:'2026-11-02T09:00',end:'2026-11-03T09:00',approve:'yes'}
+   for(const occurrence of ['2027-03-14T02:30','2026-11-01T01:30'])assert.equal((await call('/api/pane/posts/schedule',{...input,occurrence})).status,400)
+   assert.equal((await call('/api/pane/posts/schedule',{...input,base:initial.id})).status,409)
+   assert.equal((await call('/api/pane/posts/schedule',{...input,review:'synthetic-pane-wrong'})).status,400)
+   const approved=await ok(await call('/api/pane/posts/schedule',input))
+   assert.equal(approved.sourceRevision,source.id)
+   await write('morning',post.id,'Later private author work.')
+   let current=await state();const privateSite=structuredClone(current.draft.site);privateSite.pages[0].body='Later private owner work.'
+   await ok(await call('/api/pane/prepare',{base:current.draft.id,site:privateSite}))
+   await tick('2026-11-02T14:59:00Z');assert.equal((await get('/site/news/morning')).status,404,'No early publication at 08:59 Central')
+   await tick('2026-11-02T15:00:00Z')
+   current=await state();assert.equal((await get('/site/news/morning')).status,200);assert.match(await (await get('/site/news/morning')).text(),/Approved workshop story/)
+   assert.doesNotMatch(await (await get('/site/news/morning')).text(),/Later private/)
+   assert.deepEqual(current.live.site.pages,initial.site.pages)
+   assert.equal(current.draft.site.posts.find(item=>item.id===post.id).content.body,'Later private author work.')
+   assert.equal(current.draft.site.pages[0].body,'Later private owner work.')
+   assert.deepEqual(current.revisions.find(row=>row.id===source.id),source,'The approved source remains immutable')
+   const events=current.schedules.history.filter(event=>event.kind==='post-published')
+   assert.equal(events.length,1);assert.equal(events[0].revision,source.id);assert.equal(events[0].occurrence,'2026-11-02T09:00');assert.equal(events[0].timeZone,'America/Chicago');assert.equal(events[0].executedAt,now);assert.ok(events[0].detail.includes(current.live.id))
+   assert.deepEqual(current.schedules.draftDue,['Post: unapproved']);assert.equal((await get('/site/news/unapproved')).status,404)
+   assert.match(await (await get('/app/sites')).text(),/Unapproved schedules are due/)
+   const live=current.live.id;await tick('2026-11-02T15:00:00Z');await tick('2026-11-02T14:00:00Z');assert.equal((await state()).live.id,live);assert.equal((await state()).schedules.history.filter(event=>event.kind==='post-published').length,1)
+   const future=await write('cancelled'),cancelled=future.posts.at(-1)
+   const submittedCancel=await ok(await call('/api/pane/posts/submit',{base:future.base,id:cancelled.id}))
+   await ok(await call('/api/pane/posts/schedule',{base:submittedCancel.base,id:cancelled.id,review:submittedCancel.posts.find(item=>item.id===cancelled.id).review,approve:'yes',timeZone:'America/Chicago',occurrence:'2026-11-03T09:00'}))
+   await ok(await call('/api/pane/posts/schedule',{base:submittedCancel.base,id:cancelled.id,cancel:'yes'}))
+   await tick('2026-11-03T14:59:00Z');assert.equal((await get('/site/news/morning')).status,200)
+   await tick('2026-11-03T15:00:00Z');assert.equal((await get('/site/news/morning')).status,404,'The explicitly approved expiry unpublishes at nine Central');assert.equal((await state()).schedules.history.filter(event=>event.kind==='post-unpublished').length,1);assert.equal((await state()).draft.site.posts.find(item=>item.id===post.id).content.body,'Later private author work.')
+   assert.equal((await state()).schedules.posts.some(entry=>entry.postId===cancelled.id),false);assert.equal((await get('/site/news/cancelled')).status,404)
+   let replacement=await write('updated'),updated=replacement.posts.at(-1)
+   replacement=await ok(await call('/api/pane/posts/submit',{base:replacement.base,id:updated.id}))
+   await ok(await call('/api/pane/posts/schedule',{base:replacement.base,id:updated.id,review:replacement.posts.find(item=>item.id===updated.id).review,approve:'yes',timeZone:'America/Chicago',occurrence:'2026-11-04T09:00',end:'2026-11-05T09:00'}))
+   await tick('2026-11-04T15:00:00Z');assert.equal((await get('/site/news/updated')).status,200)
+   replacement=await write('updated',updated.id,'Newer explicitly published story.')
+   replacement=await ok(await call('/api/pane/posts/submit',{base:replacement.base,id:updated.id}))
+   await ok(await call('/api/pane/posts/publish',{base:replacement.base,id:updated.id,review:replacement.posts.find(item=>item.id===updated.id).review}))
+   await tick('2026-11-05T15:00:00Z');assert.equal((await get('/site/news/updated')).status,200);assert.match(await (await get('/site/news/updated')).text(),/Newer explicitly published story/,'An old expiry never removes a newer explicit publication')
+   let missed=await write('missed-window'),missedPost=missed.posts.at(-1)
+   missed=await ok(await call('/api/pane/posts/submit',{base:missed.base,id:missedPost.id}))
+   await ok(await call('/api/pane/posts/schedule',{base:missed.base,id:missedPost.id,review:missed.posts.find(item=>item.id===missedPost.id).review,approve:'yes',timeZone:'America/Chicago',occurrence:'2026-11-06T09:00',end:'2026-11-06T10:00'}))
+   await tick('2026-11-06T16:00:00Z');assert.equal((await get('/site/news/missed-window')).status,404,'A missed publication window never exposes an expired post')
+   assert.equal((await state()).schedules.history.filter(event=>event.kind==='post-window-missed').length,1)
+   const audit=await ok(await get('/api/pane/activity'))
+   for(const action of ['schedule.save','schedule.approve','schedule.cancel'])assert.ok(audit.some(event=>event.action===action),'Transactional metadata audit: '+action)
+   assert.ok(!JSON.stringify(audit).includes('Later private author work.'))
+
+  }finally{await f.mf.dispose()}
+ }
 })
