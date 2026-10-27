@@ -160,7 +160,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "8a21377d921746030bb7c33fcb026920952d5b96b8e0f4d5626211e095a8cda7",
+      "sha256": "2816d48d8f752d74aedd7276c904f3753730cf1a1b90f37a707d2c34fe742e99",
       "executable": false
     },
     "deploy-demo.json": {
@@ -1076,7 +1076,7 @@
       "executable": false
     },
     "scripts/custody-journey.mjs": {
-      "sha256": "4f6fda00d5dd08352c9cd30990af61decf5c32aa81d8b32aa9f5ca96374f0a07",
+      "sha256": "085292f6a06fc23a3b48f050764a1a6cd584f274b8790e005b86c92935f061d0",
       "executable": false
     },
     "scripts/delivery/base/artifact.mjs": {
