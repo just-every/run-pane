@@ -1,4 +1,5 @@
 import {pageHtmlPolicySource} from './html-blocks'
+import {submissionRecord,enquiryStatement,type Submission} from './submission-export'
 import {collectionResponse} from './collection-public'
 import {preparedImageResponse} from './image-response'
 import {tags,tagSource,tagSources} from './tags'
@@ -156,7 +157,7 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   const instances=f.getAll('_pane_form_instance'),instance=instances[0]
   if(instances.length&&(instances.length!==1||typeof instance!=='string'||!form||!page.sections?.some(section=>section.blocks.some(block=>block.kind==='form'&&block.form===form.id&&block.id===instance))))return json({error:'Choose a form on this page.'},400)
   const id=String(f.get('idempotency')??'')
-  let name=String(f.get('name')??'').trim(),email=String(f.get('email')??'').trim(),message=String(f.get('message')??'').trim(),uploads:Upload[]=[]
+  let name=String(f.get('name')??'').trim(),email=String(f.get('email')??'').trim(),message=String(f.get('message')??'').trim(),uploads:Upload[]=[],submission:Submission|undefined
   if(form){
    if(!/^[a-f0-9-]{36}$/.test(id))return json({error:'Invalid submission receipt.'},400)
    const checked=await validateForm(form,f,id)
@@ -167,22 +168,23 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
     const headers=formHeaders(new Headers(response.headers));headers.set('x-robots-tag','noindex, nofollow')
     return new Response(response.body,{status:400,headers})
    }
-   ({name,email,message,uploads}=checked);f.set('name',name);f.set('email',email);f.set('message',message)
+   ({name,email,message,uploads}=checked);submission=submissionRecord(form,slug,checked.state.values,uploads);f.set('name',name);f.set('email',email);f.set('message',message)
   }
-  if(String(f.get('website')??''))return rejectForm(env,slug,'honeypot',f)
+  submission??=submissionRecord(undefined,slug,{name,email,message})
+  if(String(f.get('website')??''))return rejectForm(env,slug,'honeypot',f,submission)
   if(!form&&(!/^[a-f0-9-]{36}$/.test(id)||!name||name.length>120||!/^\S+@\S+\.\S+$/.test(email)||email.length>254||!message||message.length>5000))return json({error:'Enter a name, valid email and message up to 5,000 characters.'},400)
   // Pencil's immutable original receipt: retries cannot replace an earlier answer, and spend no quota.
   const sender=await visitor(request,env.SESSION_SECRET)
-  if(env.PANE_LIVE?(await liveCall(env,'/rate',{form:slug,visitor:sender,id})).limited:await contactLimited(env.DB,slug,sender,id))return rejectForm(env,slug,'rate',f)
+  if(env.PANE_LIVE?(await liveCall(env,'/rate',{form:slug,visitor:sender,id})).limited:await contactLimited(env.DB,slug,sender,id))return rejectForm(env,slug,'rate',f,submission)
   const verification=await verifyForm(env,String(f.get('cf-turnstile-response')??''),id,slug)
-  if(verification!=='verified')return rejectForm(env,slug,verification,f)
+  if(verification!=='verified')return rejectForm(env,slug,verification,f,submission)
   const acknowledgment=page?.acknowledgment,received=Date.now()
   if(env.PANE_LIVE){
    let attribution:unknown={};try{const text=String(f.get('attribution')??'');if(text.length<=2000)attribution=JSON.parse(text||'{}')}catch{}
-   await liveCall(env,'/accept',{id,name,email,message,received:new Date(received).toISOString(),acknowledgment:acknowledgment??null,followUp:followUpDue(site,received),goals:optedOut(request)?[]:(site.goals??[]).filter(goal=>goal.type==='form'&&goal.page===slug).map(goal=>({id:goal.id,page:slug})),dimensions:visitDimensions(request,attribution,site.analyticsCampaigns),uploads})
+   await liveCall(env,'/accept',{id,name,email,message,submission,received:new Date(received).toISOString(),acknowledgment:acknowledgment??null,followUp:followUpDue(site,received),goals:optedOut(request)?[]:(site.goals??[]).filter(goal=>goal.type==='form'&&goal.page===slug).map(goal=>({id:goal.id,page:slug})),dimensions:visitDimensions(request,attribution,site.analyticsCampaigns),uploads})
    return new Response(null,{status:303,headers:{location:formConfirmation(site,slug,form)}})
   }
-  const messageStatement=env.DB.prepare('INSERT OR IGNORE INTO pane_messages(id,name,email,message,created_at,acknowledgment,acknowledgment_status,follow_up_at) SELECT ?,?,?,?,?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM pane_erased_messages WHERE id=?)').bind(id,name,email,message,new Date(received).toISOString(),acknowledgment ? JSON.stringify(acknowledgment) : null,acknowledgment ? 'pending' : 'not_requested',followUpDue(site,received),id)
+  const messageStatement=enquiryStatement(env.DB,{id,name,email,message,submission,received:new Date(received).toISOString(),acknowledgment,followUp:followUpDue(site,received)})
   const [stored]=await env.DB.batch([messageStatement,...uploadStatements(env.DB,id,message,uploads)])
   // A goal counts once per stored message, from the submitting page view's own attribution; never for opt-outs.
   const goals=optedOut(request)||!stored.meta.changes ? [] : (site.goals??[]).filter(goal=>goal.type==='form'&&goal.page===slug)

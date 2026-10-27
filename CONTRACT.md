@@ -651,7 +651,7 @@ Submissions export to CSV per form and date range, and a form can append each su
 
 **Acceptance evidence:** Export a form's submissions to CSV, connect a Google Sheet, submit, and see the row appended.
 
-*Status:* missing. No submission export beyond the installation archive.
+*Status:* partial. Native CSV downloads use the published stable form identity and inclusive UTC date ranges, retain the original structured field values and include matching records beyond the latest 100 shown in the inbox. Downloads require the existing native inbox read authority; scoped tokens cannot export. Structured values share the enquiry receipt, archive custody, person erasure and replay fences. Spreadsheet formula prefixes are made inert in CSV without altering stored answers. Earlier flattened enquiries lack a reliable form identity and structured fields and remain available in installation archives. Google Sheets remains unimplemented and unproved.
 
 #### FORM-008 — Consent capture for email and SMS.
 
@@ -1162,8 +1162,8 @@ Judged from the code and tests at commit `3b35726211c3a5ac20eeba8b0f8b82b37d2995
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 16 | 0 | 0 | 16 |
-| Target and push further | 35 | 28 | 48 | 111 |
-| All | 51 | 28 | 48 | 127 |
+| Target and push further | 35 | 29 | 47 | 111 |
+| All | 51 | 29 | 47 | 127 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -1245,7 +1245,7 @@ Judged from the code and tests at commit `3b35726211c3a5ac20eeba8b0f8b82b37d2995
 | `FORM-004` | Automatic acknowledgment to the sender | target | done | `tests/pane.test.mjs` — an approved form acknowledgment reaches the provider once with owner wording and durable independent status (SendGrid network edge acceptance, configured recipient/text/time, one send, failure/uncertainty retained, replay/erasure and development suppression); `scripts/acknowledgment-journey.mjs` — saved wording, explicit enable, owner publication, durable inquiry, suppression and disable at 1440 and 390 |  |
 | `FORM-005` | Lead routing to Orbit, HubSpot and signed webhooks | target | missing |  | Submissions are stored locally only. |
 | `FORM-006` | Enquiry ownership, status and follow-up | target | done | `tests/pane.test.mjs` — enquiries carry an owner, status and follow-up time; unanswered ones are reminded then escalated by business day and replied ones leave the queue (SendGrid network edge: assignee reminder, owner fallback, one-time owner escalation, no enquiry text in mail; weekend and daylight-saving business days; role refusals; replied leaves the queue; reopen); `scripts/acknowledgment-journey.mjs` — assign an owner and mark an enquiry replied from the inbox into Handled at 1440 and 390 | |
-| `FORM-007` | Submission export and Google Sheets | target | missing |  | No submission export beyond the installation archive. |
+| `FORM-007` | Submission export and Google Sheets | target | partial | `tests/pane.test.mjs` — native submission CSV filters stable forms and inclusive UTC dates beyond the inbox limit without exposing erased or unauthorized records; composable Pane roles; private uploads join native archive restore and person export and erasure; durable typed intake; rejected PDFs remain absent until explicit rescue. `scripts/forms-journey.mjs` — native CSV downloads through Inquiries at 1440 and 390. | Google Sheet connection, append on submission, connector lifecycle and real provider proof remain unimplemented. Held: an owner-authorized Google user and Sheet, test-user access, OAuth scopes and callback registration on the real origin. Earlier flattened enquiries remain archive-only because their original form identity and structured values were not captured. |
 | `FORM-008` | Consent capture for email and SMS | target | missing |  | No consent fields. |
 | `LINK-001` | Booking through Dial, Calendly or Acuity | target | missing |  | No booking embeds; the previous contract excluded bookings. |
 | `LINK-002` | Checkout through Stall, Stripe Payment Links or PayPal | target | missing |  | No checkout; the previous contract excluded payments. |

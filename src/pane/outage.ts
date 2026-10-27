@@ -1,3 +1,4 @@
+import {enquiryStatement,type Submission} from './submission-export'
 import {publishCollectionItem} from './collection-store'
 import {publishPage} from './page-review'
 import {publishPost,PostDenied} from './posts'
@@ -12,7 +13,7 @@ import { deliverAcknowledgment } from './acknowledgment'
 import { recordGoal } from './goal-data'
 import type { VisitDimensions } from './visit-dimensions'
 import type { FormRejection } from './form-protection'
-export type QueuedEnquiry={uploads?:Omit<Upload,'chunks'>[];id:string;name:string;email:string;message:string;received:string;acknowledgment:unknown;followUp:number;goals:{id:string;page:string}[];dimensions:VisitDimensions}
+export type QueuedEnquiry={submission?:Submission;uploads?:Omit<Upload,'chunks'>[];id:string;name:string;email:string;message:string;received:string;acknowledgment:unknown;followUp:number;goals:{id:string;page:string}[];dimensions:VisitDimensions}
 export function liveStore(env:Bindings){if(!env.PANE_LIVE)throw Error('Live storage is not configured.');return env.PANE_LIVE.get(env.PANE_LIVE.idFromName('published-site'))}
 export async function liveSnapshot(env:Bindings):Promise<(Revision&{banners?:{text:string}[]})|null>{
  const response=await liveStore(env).fetch('https://pane.internal/live')
@@ -126,7 +127,7 @@ export class PaneLive extends DurableObject<Bindings>{
    const db=auditedDatabase(this.env.DB,null,'enquiry.delivery')
    for(const [key,message] of queued){
     const uploads=await Promise.all((message.uploads??[]).map(async file=>({...file,chunks:[...(await storage.list<string>({prefix:'file:'+file.id+':'})).entries()].sort(([a],[b])=>Number(a.split(':').at(-1))-Number(b.split(':').at(-1))).map(([,value])=>value)})))
-    const statement=db.prepare('INSERT OR IGNORE INTO pane_messages(id,name,email,message,created_at,acknowledgment,acknowledgment_status,follow_up_at) SELECT ?,?,?,?,?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM pane_erased_messages WHERE id=?)').bind(message.id,message.name,message.email,message.message,message.received,message.acknowledgment?JSON.stringify(message.acknowledgment):null,message.acknowledgment?'pending':'not_requested',message.followUp,message.id)
+    const statement=enquiryStatement(db,message)
     const [stored]=await db.batch([statement,...uploadStatements(db,message.id,message.message,uploads)])
     if(stored.meta.changes)for(const goal of message.goals)await recordGoal(db,goal.id,goal.page,message.dimensions)
     await deliverAcknowledgment({...this.env,DB:db},message.id)
