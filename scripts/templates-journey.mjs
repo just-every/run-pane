@@ -102,6 +102,10 @@ try{
      assert.equal(new URL(page.url()).pathname,'/preview/'+draft.id+'/'+target.slug,'Template preview CTA never escapes to the live website')
      assert.equal(await page.locator('.preview-banner').count(),1,'Destination retains the draft banner')
      assert.equal(await page.locator('[data-block]').first().innerText(),'Personalized '+id+' '+target.id,'Destination is the reviewed draft content')
+     if(index===0&&source.id==='home'&&target.slug.endsWith('-renamed')){
+      for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await page.screenshot({path:resolve(folder,'renamed-draft-destination-'+width+'.png'),fullPage:true})}
+      await page.setViewportSize({width:1440,height:1000})
+     }
     }
    }
    const edited=(await state()).draft;assert.equal((await state()).live,null,'Canvas autosave stays private')
@@ -118,7 +122,7 @@ try{
    }
    const draft=(await state()).draft,slugs=draft.site.pages.map(item=>item.slug)
    await page.goto(origin+'/app/sites');await page.getByRole('button',{name:'Approve & publish',exact:true}).first().click()
-   const published=await state();assert.equal(published.live.id,draft.id,'Explicit approval publishes the reviewed revision');assert.equal(published.approvals.length,1)
+   const published=await state();assert.ok(published.live,'Owner approval makes the selected revision live');assert.equal(published.live.id,draft.id,'Explicit approval publishes the reviewed revision');assert.equal(published.approvals.length,1)
    for(const width of [1440,390]){
     await page.setViewportSize({width,height:1000})
     for(const slug of slugs){
