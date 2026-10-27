@@ -1,5 +1,6 @@
 import {publishCollectionItem} from './collection-store'
 import {publishPage} from './page-review'
+import {runSchedules} from './schedules'
 import {publishPost,PostDenied} from './posts'
 import { uploadStatements,type Upload } from './forms'
 import { findPersonData,erasePersonData } from './privacy'
@@ -68,6 +69,12 @@ export class PaneLive extends DurableObject<Bindings>{
     if(error instanceof DraftConflict)return Response.json({error:error.message,latest:error.latest},{status:409})
     return Response.json({error:error instanceof Error?error.message:'Page publication failed.'},{status:400})
    }
+  })
+  if(path==='/schedules')return this.ctx.blockConcurrencyWhile(async()=>{
+   const result=await runSchedules(auditedDatabase(this.env.DB,null,'schedule.change'),input.at)
+   const row=await this.env.DB.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first()
+   if(row)await storage.put('live',{...row,site:JSON.parse(String(row.site))})
+   return Response.json(result)
   })
   if(path==='/post-publish')return this.ctx.blockConcurrencyWhile(async()=>{
    try{

@@ -42,7 +42,7 @@ export default withDemo<Bindings, ExportedHandler<Bindings>>({
   async scheduled(controller, env) {
     const bindings={...runtimeBindings(env),DB:auditedDatabase(env.DB,null,'schedule.change')}
     // One failing sweep must not stop the other.
-    const sweeps=await Promise.allSettled([expireRejected(bindings.DB,controller.scheduledTime),runSchedules(bindings.DB,controller.scheduledTime),runFollowUps(bindings,controller.scheduledTime),...(env.PANE_LIVE?[liveCall(bindings,'/drain',{})]:[])])
+    const sweeps=await Promise.allSettled([expireRejected(bindings.DB,controller.scheduledTime),...(env.PANE_LIVE?[liveCall(bindings,'/schedules',{at:controller.scheduledTime})]:[runSchedules(bindings.DB,controller.scheduledTime)]),runFollowUps(bindings,controller.scheduledTime),...(env.PANE_LIVE?[liveCall(bindings,'/drain',{})]:[])])
     for(const sweep of sweeps) if(sweep.status==='rejected') throw sweep.reason
     if(env.PANE_LIVE){const row=await env.DB.prepare('SELECT live FROM pane_state WHERE id=1').first<{live:string}>();if(row)await liveCall(bindings,'/banners',{banners:await activeBanners(env.DB,row.live)})}
   },

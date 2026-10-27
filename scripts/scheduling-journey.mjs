@@ -5,7 +5,7 @@ import {chromium} from '@playwright/test'
 // Approval timestamps predate the first review cutoff, independent of the host clock.
 process.env.PANE_BROWSER_NOW='2026-10-01T12:00:00Z'
 const fixture=await import('../tests/browser-runtime.mjs')
-const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
+const browser=await chromium.launch({headless:true,...(process.env.PANE_CHROMIUM?{executablePath:process.env.PANE_CHROMIUM}:{}),args:['--no-sandbox','--use-mock-keychain','--password-store=basic']})
 const context=await browser.newContext(),page=await context.newPage(),origin=fixture.origin
 page.setDefaultTimeout(20000)
 const folder=resolve(process.env.PANE_SCREENSHOTS??'test-results/schedules');await mkdir(folder,{recursive:true})
@@ -14,11 +14,49 @@ const dashboard=async()=>(await context.request.get(origin+'/api/pane')).json()
 const saved=()=>page.waitForFunction(()=>document.querySelector('[data-save-status]').textContent==='Draft saved. Not published.',undefined,{timeout:20000})
 const siteText=async()=>(await context.request.get(origin+'/site')).text()
 async function capture(name,width){await page.screenshot({path:resolve(folder,`${name}-${width}.png`),fullPage:true});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,`${name} overflow at ${width}`)}
+async function tooltip(){await page.evaluate(()=>{document.activeElement?.blur();window.scrollTo({top:0,behavior:'instant'})});await page.mouse.move(0,500);const account=page.locator('[data-tip="Account and team"]');await account.hover();await page.getByRole('tooltip').getByText('Account and team',{exact:true}).waitFor();await page.mouse.move(0,500);await page.keyboard.press('Escape');await account.focus();await page.keyboard.press('Tab');await page.keyboard.press('Shift+Tab');await page.getByRole('tooltip').getByText('Account and team',{exact:true}).waitFor();await page.keyboard.press('Escape')}
+async function accessible(){await page.evaluate(await readFile('node_modules/axe-core/axe.min.js','utf8'));assert.deepEqual(await page.evaluate(async()=> (await axe.run(document)).violations),[],'Scheduled publication controls pass axe')}
 async function tick(iso){await fixture.advance(iso)}
 try {
  await fixture.bootstrap(context);await page.goto(origin+'/setup');await page.getByRole('checkbox').check()
  await Promise.all([page.waitForURL('**/app'),page.getByRole('button',{name:'Finish setup'}).click()])
  const source=JSON.parse(await readFile('fixtures/static-site.json','utf8'))
+ const cleanPost=await (await post('/api/pane/prepare',{site:source})).json();await post('/api/pane/publish',{revision:cleanPost.id})
+ const createPost=async slug=>{let row=await (await post('/api/pane/posts/save',{base:(await dashboard()).draft.id,blog:'news',byline:'Studio team',authorSlug:'studio',content:{slug,title:slug,body:'Morning news for the studio'}})).json();const id=row.posts.at(-1).id;await post('/api/pane/posts/submit',{base:row.base,id});return id}
+ const morning=await createPost('morning'),waiting=await createPost('waiting')
+ await page.setViewportSize({width:1440,height:1000});await page.goto(origin+'/app/posts?id='+morning)
+ await page.getByText('Publication schedule',{exact:true}).click()
+ await page.getByLabel('Publication time zone',{exact:true}).selectOption('America/Chicago');await page.getByLabel('Publish post at',{exact:true}).fill('2026-10-15T09:00');await page.getByLabel('Unpublish post at (optional)',{exact:true}).fill('2026-10-16T09:00')
+ for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await tooltip();if(width===1440)await accessible();await capture('post-schedule-approval',width)}
+ await page.setViewportSize({width:1440,height:1000})
+ await Promise.all([page.waitForURL(url=>url.searchParams.has('notice')),page.getByRole('button',{name:'Approve post schedule',exact:true}).click()])
+ await page.setViewportSize({width:1440,height:1000});await page.goto(origin+'/app/posts?id='+waiting);await page.getByText('Publication schedule',{exact:true}).click();await page.getByLabel('Publish post at',{exact:true}).fill('2026-10-15T09:00')
+ await Promise.all([page.waitForURL(url=>url.searchParams.has('notice')),page.getByRole('button',{name:'Save unapproved schedule',exact:true}).click()])
+ await tick('2026-10-15T13:59:00Z');assert.equal((await context.request.get(origin+'/site/news/morning')).status(),404)
+ await tick('2026-10-15T14:00:00Z');assert.equal((await context.request.get(origin+'/site/news/waiting')).status(),404)
+ const postHistory=(await dashboard()).schedules.history.filter(event=>event.kind==='post-publish');assert.equal(postHistory.length,1);assert.equal(postHistory[0].occurrence,'2026-10-15T09:00');assert.equal(postHistory[0].executedAt,Date.parse('2026-10-15T14:00:00Z'))
+ for(const width of [1440,390]){
+  await page.setViewportSize({width,height:1000});await page.goto(origin+'/site/news/morning');await page.getByRole('heading',{name:'morning',exact:true}).waitFor();if(width===1440)assert.ok((await page.locator('body').innerText()).includes('Morning news for the studio'));await capture('scheduled-post-live',width)
+  await page.goto(origin+'/app/sites');await page.getByText('Unapproved schedules are due.',{exact:false}).waitFor();const status=page.getByRole('region',{name:'Schedules and reviews'});if(width===1440)assert.ok((await status.innerText()).includes('Post awaiting approval: waiting'));await status.getByText('Schedule event history',{exact:true}).click();assert.ok((await status.innerText()).includes('post publish'));await status.scrollIntoViewIfNeeded();await capture('post-schedule-history-and-refusal',width)
+ }
+
+ await tick('2026-10-16T13:59:00Z');assert.equal((await context.request.get(origin+'/site/news/morning')).status(),200)
+ await tick('2026-10-16T14:00:00Z');assert.equal((await context.request.get(origin+'/site/news/morning')).status(),404);assert.equal((await dashboard()).schedules.history.filter(event=>event.kind==='post-expire').length,1)
+ const pageDraft=structuredClone((await dashboard()).draft.site);pageDraft.pages.find(page=>page.slug==='about').body='Scheduled studio page';pageDraft.pages.find(page=>page.slug==='hours').body='Unapproved hours draft'
+ const pageSource=await(await post('/api/pane/prepare',{base:(await dashboard()).draft.id,site:pageDraft})).json()
+ const aboutReview=await(await post('/api/pane/page-request-review',{base:pageSource.id,page:'about'})).json(),hoursReview=await(await post('/api/pane/page-request-review',{base:pageSource.id,page:'hours'})).json()
+ await page.setViewportSize({width:1440,height:1000});await page.goto(origin+'/app?page=about');await page.getByText('Page publication schedule',{exact:true}).click()
+ await page.getByLabel('Page publication time zone',{exact:true}).selectOption('America/Chicago');await page.getByLabel('Publish page at',{exact:true}).fill('2026-10-17T09:00');await page.getByLabel('Unpublish page at (optional)',{exact:true}).fill('2026-10-18T09:00')
+ for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await tooltip();if(width===1440)await accessible();await capture('page-schedule-approval',width)}
+ await page.setViewportSize({width:1440,height:1000})
+ await Promise.all([page.waitForURL(url=>url.searchParams.has('notice')),page.getByRole('button',{name:'Approve page schedule',exact:true}).click()])
+ assert.equal((await post('/api/pane/page-schedule',{base:pageSource.id,page:'hours',request:hoursReview.id,start:'2026-10-17T09:00',timeZone:'America/Chicago'})).status(),200)
+ await tick('2026-10-17T13:59:00Z');assert.ok(!(await(await context.request.get(origin+'/site/about')).text()).includes('Scheduled studio page'))
+ await tick('2026-10-17T14:00:00Z');assert.ok((await(await context.request.get(origin+'/site/about')).text()).includes('Scheduled studio page'));assert.ok(!(await(await context.request.get(origin+'/site/hours')).text()).includes('Unapproved hours draft'))
+ const pageHistory=(await dashboard()).schedules.history.filter(event=>event.kind==='page-publish');assert.equal(pageHistory.length,1);assert.equal(pageHistory[0].revision,pageSource.id);assert.equal(pageHistory[0].executedAt,Date.parse('2026-10-17T14:00:00Z'))
+ for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await page.goto(origin+'/site/about');await page.getByText('Scheduled studio page',{exact:true}).waitFor();await capture('scheduled-page-live',width);await page.goto(origin+'/app/sites');const status=page.getByRole('region',{name:'Schedules and reviews'});if(width===1440)assert.ok((await status.innerText()).includes('Page awaiting approval: Visit the workshop'));await status.getByText('Schedule event history',{exact:true}).click();await status.scrollIntoViewIfNeeded();await capture('page-schedule-history-and-refusal',width)}
+ await tick('2026-10-18T13:59:00Z');assert.equal((await context.request.get(origin+'/site/about')).status(),200)
+ await tick('2026-10-18T14:00:00Z');assert.equal((await context.request.get(origin+'/site/about')).status(),404);assert.equal((await dashboard()).schedules.history.filter(event=>event.kind==='page-expire').length,1)
  for(const [width,year,thanksgiving] of [[1440,2026,26],[390,2028,23]]){
   await page.setViewportSize({width,height:1000})
   const clean=await (await post('/api/pane/prepare',{site:source})).json()
@@ -112,6 +150,6 @@ try {
   for(const text of ['£125.50','+1 303 555 0123','80202 Denver'])assert.ok((await page.locator('.public-content').innerText()).includes(text),text)
   assert.equal(await page.locator('table thead th').first().innerText(),'Mo');await capture('changed-business-formats',width)
  }
- console.log('Business-local scheduling journey passed at 1440/390: approved Thanksgiving banner, quarterly stale-page reminders, promotion expiry and recurring DST times, replay fence, owner review and unapproved draft isolation.')
+ console.log('Business-local scheduling journey passed: reviewed posts and selected pages publish at Chicago 9 AM, expire locally, retain private work, flag unapproved schedules and record execution; promotion DST, reminders, axe and tooltips; screens at 1440 and 390.')
 } catch(error){await page.screenshot({path:resolve(folder,'failure.png'),fullPage:true});throw error}
 finally {await browser.close();await fixture.stop()}
