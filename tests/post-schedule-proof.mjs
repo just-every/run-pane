@@ -26,7 +26,7 @@ export async function invalidatedSchedules({post,get,tick,expiry=false,day='2026
  }
  for(const iso of [`${day}T${utcHour}:02:00Z`,`${day}T${utcHour}:03:00Z`]){
   await tick(iso)
-  const current=await state(),history=current.schedules.history
+  const current=await state(),history=current.schedules.history.filter(event=>scheduled.some(entry=>event.rule==='post:'+entry.id))
   assert.deepEqual(current.live.site.blogPosts.map(row=>row.id).sort(),(expiry?[scheduled[2].id]:[scheduled[0].id,scheduled[2].id]).sort(),'Recorded live state contains exactly the successful schedules')
   for(const index of [0,2]){
    const entry=scheduled[index],published=history.filter(event=>event.kind==='post-published'&&event.rule==='post:'+entry.id)
