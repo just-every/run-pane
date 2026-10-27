@@ -149,3 +149,4 @@
 .pane .comment-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 16px; }
 
 .pane .comment-actions[hidden] { display: none; }
+.pane .schedule-status code { font-size: 1em; }

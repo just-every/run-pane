@@ -46,8 +46,9 @@ export default withDemo<Bindings, ExportedHandler<Bindings>>({
     const postSweep=await Promise.allSettled([env.PANE_LIVE?liveCall(bindings,'/post-schedules',{now:controller.scheduledTime}):runPostSchedules(bindings.DB,controller.scheduledTime)])
     // One failing sweep must not stop the other.
     const sweeps=await Promise.allSettled([sendCommentDigests(bindings,controller.scheduledTime),expireRejected(bindings.DB,controller.scheduledTime),runSchedules(bindings.DB,controller.scheduledTime),runFollowUps(bindings,controller.scheduledTime),...(env.PANE_LIVE?[liveCall(bindings,'/drain',{})]:[])])
-    for(const sweep of [...postSweep,...sweeps]) if(sweep.status==='rejected') throw sweep.reason
-    if(env.PANE_LIVE){const row=await env.DB.prepare('SELECT live FROM pane_state WHERE id=1').first<{live:string}>();if(row)await liveCall(bindings,'/banners',{banners:await activeBanners(env.DB,row.live)})}
+    // Reconcile banners before surfacing failures from any independent sweep.
+    const bannerSweep=await Promise.allSettled([...(env.PANE_LIVE?[(async()=>{const row=await env.DB.prepare('SELECT live FROM pane_state WHERE id=1').first<{live:string}>();await liveCall(bindings,'/banners',{banners:row?await activeBanners(env.DB,row.live):[]})})()]:[])])
+    for(const sweep of [...postSweep,...sweeps,...bannerSweep]) if(sweep.status==='rejected') throw sweep.reason
   },
   async fetch(request, env, execution) {
     const asset = await staticAssetResponse(request, env)

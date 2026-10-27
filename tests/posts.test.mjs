@@ -490,3 +490,51 @@ test('approved immutable posts publish at Chicago nine while unapproved times ar
   }finally{await f.mf.dispose()}
  }
 })
+
+test('an invalidated blog schedule cannot starve other publications or leave an expired post public',async()=>{
+ const {invalidatedSchedules}=await import('./post-schedule-proof.mjs')
+ for(const expiry of [false,true]){
+  const f=await runtime({isolatedLive:true,now:Date.parse('2026-10-01T12:00:00Z')}),origin=settings.AUTH_ORIGIN
+  let cookie=''
+  const post=(path,input)=>f.request(path,{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify(input)})
+  const get=path=>f.request(path,{headers:{Cookie:cookie}})
+  const tick=async iso=>assert.equal((await (await f.mf.getWorker()).scheduled({scheduledTime:new Date(iso),cron:'* * * * *'})).outcome,'ok')
+  try{
+   cookie=(await post('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Scheduling owner'})).headers.get('set-cookie').split(';')[0]
+   await f.request('/setup',{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
+   await invalidatedSchedules({post,get,tick,expiry})
+  }finally{await f.mf.dispose()}
+ }
+})
+
+test('committed publications and expiries reconcile durable reads even when failure recording is unavailable',async()=>{
+ const {invalidatedSchedules}=await import('./post-schedule-proof.mjs')
+ const f=await runtime({isolatedLive:true,now:Date.parse('2026-10-01T12:00:00Z')}),origin=settings.AUTH_ORIGIN
+ let cookie='',injected=false
+ const post=(path,input)=>f.request(path,{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify(input)})
+ const get=path=>f.request(path,{headers:{Cookie:cookie}})
+ const dispatch=iso=>(f.mf.getWorker()).then(worker=>worker.scheduled({scheduledTime:new Date(iso),cron:'* * * * *'}))
+ const tick=async iso=>{
+  if(!injected&&iso==='2026-11-02T15:02:00Z'){
+   injected=true
+   // Storage-edge failure only: production has no fault injection door.
+   await f.db.prepare("CREATE TRIGGER synthetic_schedule_record_unavailable BEFORE UPDATE OF failure_at ON pane_post_schedules BEGIN SELECT RAISE(FAIL,'synthetic-pane-1'); END").run()
+   try{
+    assert.equal((await dispatch(iso)).outcome,'exception','The platform receives the persistence failure')
+    const current=await (await get('/api/pane')).json()
+    assert.deepEqual(current.live.site.blogPosts.map(row=>row.content.slug),['later-safe'])
+    assert.equal(current.schedules.history.filter(event=>event.kind==='post-unpublished').length,1)
+    assert.equal((await get('/site/recipes/first-safe')).status,404,'A committed expiry reaches durable reads even on a failed sweep')
+    assert.equal((await get('/site/recipes/later-safe')).status,200,'A committed later publication reaches durable reads even on a failed sweep')
+    assert.doesNotMatch(await (await get('/site')).text(),/Scheduled workshop promotion/,'Other completed sweeps reconcile durable banners before surfacing the error')
+   }finally{await f.db.prepare('DROP TRIGGER synthetic_schedule_record_unavailable').run()}
+  }
+  assert.equal((await dispatch(iso)).outcome,'ok')
+ }
+ try{
+  cookie=(await post('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Scheduling owner'})).headers.get('set-cookie').split(';')[0]
+  await f.request('/setup',{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
+  await invalidatedSchedules({post,get,tick,expiry:true})
+  assert.equal(injected,true,'The failing sweep was exercised')
+ }finally{await f.mf.dispose()}
+})
