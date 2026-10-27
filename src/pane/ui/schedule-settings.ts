@@ -11,6 +11,11 @@ const businessZones = [
  ['Pacific/Honolulu', 'Hawaii — Honolulu'],
 ]
 
+export function timeZoneOptions(zone:string):string {
+ const zones=businessZones.some(([value])=>value===zone)?businessZones:[[zone,zone],...businessZones]
+ return zones.map(([value,label])=>`<option value="${escape(value)}"${value===zone?' selected':''}>${escape(label)} (${escape(value)})</option>`).join('')
+}
+
 /** Named controls join the editor's existing autosave, undo and reconnect flow. */
 export function scheduleSettings(site: Site): string {
  const automation = site.automations, zone = automation?.timeZone ?? 'America/Chicago'
