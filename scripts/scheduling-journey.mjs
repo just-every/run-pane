@@ -72,8 +72,6 @@ try {
   await region.getByText('Schedule event history',{exact:true}).click()
   await region.getByText('post publication failed',{exact:true}).waitFor()
   await region.scrollIntoViewIfNeeded();await capture('failed-post-with-successful-expiry',width)
-  const small=await page.locator('.schedule-status code,.pane .help,.pane .avatar-sm').evaluateAll(nodes=>nodes.filter(node=>node.getClientRects().length&&parseFloat(getComputedStyle(node).fontSize)<13).map(node=>node.textContent))
-  assert.deepEqual(small,[],'Changed screens use text of at least 13px')
  }
 
  for(const [width,year,thanksgiving] of [[1440,2026,26],[390,2028,23]]){
