@@ -54,6 +54,10 @@
 .pane .visit-total { margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--pn-line); font-weight: 700; }
 
 /* Inquiries: one stream of messages beside a small summary */
+.pane .submission-export { grid-column: 1 / -1; }
+.pane .submission-export :is(form, label, select, input) { min-width: 0; max-width: 100%; box-sizing: border-box; }
+.pane .submission-export form { grid-template-columns: minmax(0, 1fr); }
+.pane .submission-export select { width: 100%; }
 .pane .inquiries-body { display: grid; grid-template-columns: minmax(0, 760px) 260px; gap: 28px; align-items: start; }
 .pane .stream { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
 .pane .message { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; padding: 16px 18px; }

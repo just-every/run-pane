@@ -1690,6 +1690,10 @@ test('native submission CSV filters stable forms and inclusive UTC dates beyond 
   const erasedRows=submissionRows(await (await get(range)).text());assert.equal(erasedRows.length,103);assert.ok(!erasedRows.slice(1).some(row=>row[0]===first),'Erased submission cannot reappear in a download')
   const archive=await exportData(app.db),restored=await runtime()
   try{assert.equal((await restore(restored.db,archive)).phase,'complete');assert.equal(await restored.db.prepare('SELECT COUNT(*) AS n FROM pane_messages WHERE submission IS NOT NULL').first('n'),105);assert.equal(await restored.db.prepare('SELECT submission FROM pane_messages WHERE id=?').bind(first).first(),null)}finally{await restored.mf.dispose()}
+  const plain=structuredClone(renamed);delete plain.pages.find(row=>row.slug==='contact').formId
+  const nativeCurrent=await (await app.request('/api/pane',{headers:{Cookie:cookie}})).json(),nativeDraft=await (await call('/api/pane/prepare',{site:plain,base:nativeCurrent.draft.id},cookie)).json();await call('/api/pane/publish',{revision:nativeDraft.id},cookie)
+  const builtin=await send('contact',{message:'Native built-in contact'})
+  const builtinRows=submissionRows(await (await get('form=native%3Acontact')).text());assert.equal(builtinRows.length,2);assert.equal(builtinRows[1][0],builtin);assert.equal(builtinRows[1][builtinRows[0].indexOf('field:message')],'Native built-in contact')
  }finally{await app.mf.dispose()}
 })
 test('private uploads join native archive restore and person export and erasure without replaying old files',async()=>{
@@ -1739,9 +1743,11 @@ test('rejected PDFs leave no stored bytes and only opted-in validated text and m
    const row=state.rejectedContent[0];assert.equal(row.expires_at-Date.parse(row.created_at),30*86400000);assert.match(row.message,/US phone: 312 555 0123/);assert.match(row.message,/Project PDF: project.pdf \(\d+ bytes\)/)
    const review=await (await app.request('/app/inquiries',{headers:{Cookie:cookie}})).text();assert.match(review,/30 days/);assert.match(review,/project.pdf/)
    await emptyFiles()
+   assert.equal(submissionRows(await (await app.request('/api/pane/submissions/export?form='+quoteDefinition.id,{headers:{Cookie:cookie}})).text()).length,1,'Rejected answers are absent from CSV before explicit rescue')
    assert.equal((await call('/api/pane/spam/rescue',{id},cookie)).status,400);assert.equal((await read()).messages.length,0,'Viewing or unconfirmed rescue creates no submission')
    assert.equal((await call('/api/pane/spam/rescue',{id,confirm:'rescue-rejected'},cookie)).status,200)
    state=await read();assert.equal(state.messages.length,1);assert.equal(state.messages[0].id,id);assert.equal(state.messages[0].acknowledgment_status,'not_requested');assert.deepEqual(state.messages[0].files,[]);assert.equal(state.rejectedContent.length,0)
+   const rescuedCsv=submissionRows(await (await app.request('/api/pane/submissions/export?form='+quoteDefinition.id,{headers:{Cookie:cookie}})).text());assert.equal(rescuedCsv.length,2);assert.equal(rescuedCsv[1][0],id);assert.equal(rescuedCsv[1][rescuedCsv[0].indexOf('field:service')],'Repair');assert.equal(rescuedCsv[1][rescuedCsv[0].indexOf('field:file')],'project.pdf');assert.doesNotMatch(JSON.stringify(rescuedCsv),/synthetic-pane-65-private-rejected-bytes|JVBERi0x/)
    await emptyFiles()
   }finally{await app.mf.dispose()}
  }

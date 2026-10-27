@@ -85,7 +85,7 @@ try{
    assert.equal((await data()).messages.length,100);assert.ok(!(await data()).messages.some(row=>row.id===first))
    const minimum=await exports.locator('label,button,p').evaluateAll(nodes=>Math.min(...nodes.map(node=>parseFloat(getComputedStyle(node).fontSize))));assert.ok(minimum>=13,'Export text meets the readable minimum')
   }
-  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,'Submission export overflow')
+  const overflow=await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(node=>node.getBoundingClientRect().right>innerWidth+2).slice(0,8).map(node=>({tag:node.tagName,classes:node.className,right:node.getBoundingClientRect().right})));assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,'Submission export overflow '+JSON.stringify(overflow))
   await page.screenshot({path:resolve(folder,'submission-export-'+width+'.png'),fullPage:false})
  }
  await call('/api/pane/messages/erase',{id:first})

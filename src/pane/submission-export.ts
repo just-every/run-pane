@@ -14,9 +14,9 @@ export function enquiryStatement(db:D1Database,message:{id:string;name:string;em
   .bind(message.id,message.name,message.email,message.message,message.received,message.acknowledgment?JSON.stringify(message.acknowledgment):null,message.acknowledgment?'pending':'not_requested',message.followUp,message.submission?.formId??null,message.submission?JSON.stringify(message.submission):null,message.id)
 }
 export async function submissionForms(db:D1Database,site?:Site) {
- const records=(await db.prepare('SELECT form_id,submission FROM pane_messages WHERE submission IS NOT NULL AND NOT EXISTS(SELECT 1 FROM pane_erased_messages e WHERE e.id=pane_messages.id) ORDER BY created_at,id').all<{form_id:string;submission:string}>()).results
+ const records=(await db.prepare(`SELECT form_id,MIN(json_extract(submission,'$.formName')) AS form_name FROM pane_messages WHERE submission IS NOT NULL AND NOT EXISTS(SELECT 1 FROM pane_erased_messages e WHERE e.id=pane_messages.id) GROUP BY form_id ORDER BY form_id`).all<{form_id:string;form_name:string}>()).results
  const forms=new Map<string,string>([['native:contact','Contact (built in)'],...(site?.forms??[]).map(form=>[form.id,form.name] as [string,string])])
- for(const record of records){const stored=JSON.parse(record.submission) as Submission;if(!forms.has(record.form_id))forms.set(record.form_id,stored.formName)}
+ for(const record of records)if(!forms.has(record.form_id))forms.set(record.form_id,record.form_name)
  return [...forms].map(([id,name])=>({id,name}))
 }
 const day=(value:string)=>/^\d{4}-\d{2}-\d{2}$/.test(value)&&!Number.isNaN(Date.parse(value))&&new Date(value).toISOString().slice(0,10)===value
