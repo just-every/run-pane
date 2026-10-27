@@ -37,7 +37,7 @@ async function presentedTokenId(db:D1Database,request:Request){
 }
 export async function recordApi(db:D1Database,identity:ApiIdentity|null,request:Request,status:number){
  const known=['','prepare','autosave','publish','publication-revoke','rollback','review','messages/update','messages/reply','messages/erase','people/erase','import/dry-run','import/apply','import/undo','import/crawl-challenge','import/crawl','activity','activity/export','tokens','tokens/create','tokens/revoke','pages','collections','roles','roles/set','roles/invite']
- known.push('posts',...['/posts/save','/posts/submit','/ai/propose','/ai/decide','/ai/undo','/ai/history'].map(path=>path.slice(1)))
+ known.push(...['/collections/template','/collections/schema','/collections/items/save','/collections/body','/collections/items/publish','/collections/starters','/content/trash','/content/history','/content/delete','/content/restore'].map(path=>path.slice(1)),'posts',...['/posts/save','/posts/submit','/ai/propose','/ai/decide','/ai/undo','/ai/history'].map(path=>path.slice(1)))
  const path=new URL(request.url).pathname,method=request.method
  const route=path==='/api/pane'?'':path.slice('/api/pane/'.length)
  const actor=identity?.operator.id??null,agent=identity?.tokenId??await presentedTokenId(db,request)

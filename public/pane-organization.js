@@ -55,17 +55,17 @@ for (const organizer of document.querySelectorAll('[data-page-organization]')) {
    const savedSlug = savedSlugs.get(page.id)
    const pageLabel = page.title || page.slug || 'Untitled page'
    return `<li class="page-organization-row${page.deleted ? ' is-deleted' : ''}" data-page-id="${text(page.id)}">
-   <div class="page-organization-row-head"><strong>${text(pageLabel)}</strong>${page.deleted ? '<span class="page-organization-deleted">Deleted</span>' : ''}${savedSlug !== undefined && !page.deleted ? `<a href="/app?page=${encodeURIComponent(savedSlug)}">Open saved page</a>` : ''}</div>
+   <div class="page-organization-row-head"><strong>${text(pageLabel)}</strong><a href="/app/content/history?kind=page&id=${encodeURIComponent(page.id)}">History</a>${page.deleted ? '<span class="page-organization-deleted">Deleted</span>' : ''}${savedSlug !== undefined && !page.deleted ? `<a href="/app?page=${encodeURIComponent(savedSlug)}">Open saved page</a>` : ''}</div>
    <div class="page-organization-fields">
    <label>Title<input data-page-field="title" value="${text(page.title)}" maxlength="120"${page.deleted ? ' disabled' : ' required'}></label>
    <label>Address<input data-page-field="slug" value="${text(page.slug)}" pattern="[a-z0-9]+(-[a-z0-9]+)*(\\x2f[a-z0-9]+(-[a-z0-9]+)*)*" maxlength="240" autocomplete="off" autocapitalize="none" spellcheck="false"${page.deleted ? ' disabled' : ' required'}></label>
    <label>Folder<input data-page-field="folder" value="${text(page.folder)}" list="${text(folderOptions.id)}" maxlength="120" autocomplete="off"${page.deleted ? ' disabled' : ''}></label>
    </div>
-   <div class="page-organization-row-actions">${page.deleted ? `<button type="button" class="secondary small" data-page-action="restore" aria-label="Restore ${text(pageLabel)}">Restore page</button>` : `<label class="page-organization-check"><input type="checkbox" data-page-field="hidden"${page.hidden ? ' checked' : ''}>Hidden from menus</label>
-   <button type="button" class="secondary small" data-page-action="up" aria-label="Move ${text(pageLabel)} up"${index === 0 ? ' disabled' : ''}>Move up</button>
-   <button type="button" class="secondary small" data-page-action="down" aria-label="Move ${text(pageLabel)} down"${index === active.length - 1 ? ' disabled' : ''}>Move down</button>
-   <button type="button" class="secondary small" data-page-action="duplicate" aria-label="Duplicate ${text(pageLabel)}">Duplicate page</button>
-   <button type="button" class="secondary small" data-page-action="delete" aria-label="Delete ${text(pageLabel)}">Delete page</button>`}</div></li>`
+   <div class="page-organization-row-actions">${page.deleted ? `<button type="button" class="secondary small" data-page-action="restore" aria-label="Restore page: ${text(pageLabel)}">Restore page</button>` : `<label class="page-organization-check"><input type="checkbox" data-page-field="hidden"${page.hidden ? ' checked' : ''}>Hidden from menus</label>
+   <button type="button" class="secondary small" data-page-action="up" aria-label="Move up: ${text(pageLabel)}"${index === 0 ? ' disabled' : ''}>Move up</button>
+   <button type="button" class="secondary small" data-page-action="down" aria-label="Move down: ${text(pageLabel)}"${index === active.length - 1 ? ' disabled' : ''}>Move down</button>
+   <button type="button" class="secondary small" data-page-action="duplicate" aria-label="Duplicate page: ${text(pageLabel)}">Duplicate page</button>
+   <button type="button" class="secondary small" data-page-action="delete" aria-label="Delete page: ${text(pageLabel)}">Delete page</button>`}</div></li>`
   }).join('') || '<li class="help">No pages to show.</li>'
   choices()
   folders()

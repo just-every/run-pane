@@ -1,6 +1,7 @@
+import {restoredRedirects,restorePublishedMenu} from './lifecycle-publication'
 import {requireImageDescriptions} from './accessibility'
 import type { Dashboard, Revision, Site } from './model'
-import { activePages, pageId } from './pages'
+import { activePages, pageId, pagePath } from './pages'
 import { contentHash, DraftConflict, revision, revisionStatement, approvalStatements, normalizeSite } from './content'
 export type PageRequest = {id:string;page_id:string;revision:string;actor:string;created_at:string}
 export async function requestPageReview(db:D1Database,actor:string,base:string,id:string) {
@@ -37,7 +38,9 @@ export async function publishPage(db:D1Database,actor:string,base:string,id:stri
  // Shared organization stays a separate explicit whole-site approval.
  if(previous && page.slug!==previous.slug)throw Error('Publish URL changes with the site organization and reviewed redirects.')
  const pages=previous?live.site.pages.map(candidate=>pageId(candidate)===id?page:candidate):[...live.site.pages,page]
- const site:Site=normalizeSite({...live.site,pages})
+ const selected:Site={...structuredClone(live.site),pages,redirects:restoredRedirects(draft.site,live.site,'page',id,pagePath(draft.site,page.slug))}
+ restorePublishedMenu(draft.site,selected,id,pagePath(draft.site,page.slug))
+ const site:Site=normalizeSite(selected)
  requireImageDescriptions(site)
  const at=Math.max(Date.now(),Date.parse(draft.created_at)+1)
  const published:Revision={id:crypto.randomUUID(),site,actor,hash:await contentHash(site),created_at:new Date(at).toISOString()}

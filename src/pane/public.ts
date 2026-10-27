@@ -1,3 +1,4 @@
+import {collectionResponse} from './collection-public'
 import {preparedImageResponse} from './image-response'
 import {tags,tagSource,tagSources} from './tags'
 import {blogResponse} from './blog-public'
@@ -79,6 +80,7 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   const bytes=Uint8Array.from(atob(image.src.split(',')[1]),c=>c.charCodeAt(0))
   return new Response(request.method==='HEAD'?null:bytes,{headers:{'content-type':'image/png','content-length':String(bytes.length),'cache-control':'private, no-store','x-content-type-options':'nosniff','vary':'Cookie'}})
  }
+ const collection=await collectionResponse(request,site);if(collection)return collection
  if(url.searchParams.has('pane-image')){
   if(!['GET','HEAD'].includes(request.method)||!page)return new Response(null,{status:404})
   const [blockId,assetId]=(url.searchParams.get('pane-image')??'').split(':')
