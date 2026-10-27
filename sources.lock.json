@@ -1324,7 +1324,7 @@
       "executable": false
     },
     "scripts/gallery-brand-journey.mjs": {
-      "sha256": "cfa6f28b306480d7b01711dab039a1344c6de8f182307b06ae34288887c7378c",
+      "sha256": "a902a7a37adbc4f8396b26ac5696a5fd4b3006f27b9d2031f305a798a7b8d6bb",
       "executable": false
     },
     "scripts/gates-journey.mjs": {
@@ -3980,7 +3980,7 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "791f67fadf51579fb208ab52d16b776c2d80b0e16847f61aeac488cef8565633",
+      "sha256": "c8abb5dc8f3272673c9379d3b8d5ee8d7c7a03a2b0ebb5526d924fa68339f819",
       "executable": false
     },
     "tests/post-fixture.mjs": {

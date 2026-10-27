@@ -457,8 +457,8 @@ test('connected Vane and Google Analytics 4 render only on live pages, widen the
    assert.match(html, /<script src="\/pane-analytics\.js" data-ga4="G-SYNTH12345" defer><\/script>/, path)
    assert.match(html, /data-analytics-consent aria-label="Analytics choices" hidden>/, 'The choice starts hidden and nothing from Google is in the markup')
    assert.doesNotMatch(html, /googletagmanager|google-analytics/)
-   assert.equal(policy(page).split('; ').find(part=>part.startsWith('script-src')),"script-src 'self' "+(path==='/site/contact'?'https://challenges.cloudflare.com ':'')+'https://vane.example.test https://www.googletagmanager.com')
-   assert.equal(policy(page).split('; ').find(part=>part.startsWith('connect-src')),"connect-src 'self' "+(path==='/site/contact'?'https://challenges.cloudflare.com ':'')+'https://vane.example.test https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com')
+   assert.deepEqual(new Set(policy(page).split('; ').find(part=>part.startsWith('script-src')).split(/\s+/)),new Set(['script-src',"'self'",...(path==='/site/contact'?['https://challenges.cloudflare.com']:[]),'https://vane.example.test','https://www.googletagmanager.com']))
+   assert.deepEqual(new Set(policy(page).split('; ').find(part=>part.startsWith('connect-src')).split(/\s+/)),new Set(['connect-src',"'self'",...(path==='/site/contact'?['https://challenges.cloudflare.com']:[]),'https://vane.example.test','https://*.google-analytics.com','https://*.analytics.google.com','https://*.googletagmanager.com']))
    assert.match(policy(page), /img-src 'self' https:\/\/\*\.google-analytics\.com/)
    assert.equal(page.headers.get('set-cookie'), null)
   }
