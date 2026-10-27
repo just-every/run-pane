@@ -136,7 +136,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "b46416eaa45f66e236051d5d16af09b8e010885173eb2ad158a0a97161cc6cb5",
+      "sha256": "dc6ed851b103e8923a890ee5175213a3b952bdc0eee6c227c774dbd09301af5f",
       "executable": false
     },
     "AGENTS.md": {
@@ -160,7 +160,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "c80bda4a46f1de12fc5bb009d40beb896d3f359c1f0859b35fa3f33cef758249",
+      "sha256": "773104706e442e92e8d9397a113e332d76cf44cef297e35332286f18a9c9d4da",
       "executable": false
     },
     "deploy-demo.json": {
@@ -568,7 +568,7 @@
       "executable": false
     },
     "public/pane-app.js": {
-      "sha256": "65dbb5d2457a156410001bb634009348c0b4f3f80be9d0647677b7681dda9c8d",
+      "sha256": "96c9fb68dbb98cb424d5fe02ba454cb2f6d7ae249fd192f98ae87f2955374673",
       "executable": false
     },
     "public/pane-autosave.js": {
@@ -576,7 +576,7 @@
       "executable": false
     },
     "public/pane-base.css": {
-      "sha256": "414b86156d800c9eb7cdb0b1de8d254c7a62734a89737107a290bf4b23dcb79d",
+      "sha256": "4988d9dc881dee2b11fdd015fcdd53c9e11e631902f9b6478985d9a97bef0ee8",
       "executable": false
     },
     "public/pane-blog-settings.mjs": {
@@ -605,6 +605,10 @@
     },
     "public/pane-canvas.mjs": {
       "sha256": "43c7d5957efe4fab000fa0fac5ed43da30c01aa3a73bf2850cc034e410b25dba",
+      "executable": false
+    },
+    "public/pane-comment-settings.mjs": {
+      "sha256": "e4643442677e88d59f63449d11a4f4e4dfc058dfdeafb496fc206c70367c3284",
       "executable": false
     },
     "public/pane-custom-code.js": {
@@ -664,7 +668,7 @@
       "executable": false
     },
     "public/pane-post-details.mjs": {
-      "sha256": "ea42cf850b9a279de5e1df4ae69c967c8993d39f09666e104efcb7f63d8941dc",
+      "sha256": "3e76da547a8409095dec07a8e0392b43de8a9389f9c4ca2e7573ab13acf87963",
       "executable": false
     },
     "public/pane-promotion.css": {
@@ -696,7 +700,7 @@
       "executable": false
     },
     "public/pane-screens.css": {
-      "sha256": "1b2e040d8ae6a9faac8d25abbbe47f22e4cab1f458544cd89606436d1ef19a3a",
+      "sha256": "689c0125b4cc0cf148317aec6229ea03daf3507e11cdbf2748357e1fb30e2cf1",
       "executable": false
     },
     "public/pane-search.css": {
@@ -1076,7 +1080,7 @@
       "executable": false
     },
     "scripts/comments-journey.mjs": {
-      "sha256": "0975d9453595c98eaf0c42bb9f619aa6791404d7c590fbb87dc07bdac3552a91",
+      "sha256": "8ab87d867374d327d4a80c997cb27ba67e0f7d6365e0cea51b0866700341555b",
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
@@ -1328,7 +1332,7 @@
       "executable": false
     },
     "scripts/posts-journey.mjs": {
-      "sha256": "4abe06d13ee382df99cdfcf209102736b210319c251aca3ea4aaeeb0da803ba0",
+      "sha256": "5fc06b2ce1022925af35878c18b0137774482f407442c13b706af513754c23d7",
       "executable": false
     },
     "scripts/privacy-journey.mjs": {
@@ -3272,7 +3276,7 @@
       "executable": false
     },
     "src/pane/comments.ts": {
-      "sha256": "1cd74d0d064a28725da7c80ffd6f4497be864cdbc5f88c92ed8cd3b0b1cc67e4",
+      "sha256": "975175a7d9cfcaaf272a64b1f120f5a5a688ed91f4dc7690d863586a87989def",
       "executable": false
     },
     "src/pane/components.ts": {
@@ -3468,7 +3472,7 @@
       "executable": false
     },
     "src/pane/rejected-content.ts": {
-      "sha256": "c357e6099c54d307a094066b34e2d05d219b7b1750808aa8c606c2cc5ce88510",
+      "sha256": "c42043c049d4387a732ec39f50636dd24c92119ec3b7332196b214e20494163b",
       "executable": false
     },
     "src/pane/roles.ts": {
@@ -3824,7 +3828,7 @@
       "executable": false
     },
     "tests/posts.test.mjs": {
-      "sha256": "1a6ac78c68a0e308f37f3be196b7c7570312931016fb50490e5078d802a0bab3",
+      "sha256": "00881081b36fd5711f7855d77c16044746fa80efcdaa7b763aa665d98303cd84",
       "executable": false
     },
     "tests/runtime.mjs": {
