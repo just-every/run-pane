@@ -1,6 +1,9 @@
 import {linkedBody} from './pane-body-markup.mjs'
 const escape=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 export const catalogRules=[
+ '[data-block-type="summary"] ul,[data-block-type="collection-list"] ul{list-style:none;padding:0;display:grid;gap:16px}',
+ '[data-list-layout="grid"]{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}',
+ '[data-block-type="audio"] audio{display:block;width:100%;max-width:100%}',
  '[data-block-type="line"]{width:100%;box-sizing:border-box;border:0;border-top:1px solid currentColor}',
  '@keyframes pane-scroll{from{transform:translateX(100%)}to{transform:translateX(-100%)}}',
  '.pane-scroll-line{overflow:hidden}',
@@ -11,12 +14,28 @@ export const catalogRules=[
  '[data-block-type="chart"] th,[data-block-type="chart"] td{text-align:left;padding:8px}'
 ]
 export function catalogMarkup(block,attributes,options){
+ if(block.kind==='html')return `<div ${attributes} data-catalog-block>${options?.htmlMarkup?.()||'<p>Owner HTML stays off in the editor.</p>'}</div>`
+ if(block.listing){
+  const settings=block.listing,collection=options?.collections?.find(collection=>collection.id===settings.collection)
+  if(!collection)return `<section ${attributes} data-catalog-block><h2>${escape(block.text)}</h2><p>Collection unavailable.</p></section>`
+  const value=item=>settings.sort==='title'?item.title:item.values[settings.sort]
+  const items=collection.items.filter(item=>!settings.filter||String(item.values[settings.filter.field]??'')===settings.filter.value).sort((a,b)=>{const left=value(a),right=value(b);return (typeof left==='number'&&typeof right==='number'?left-right:String(left??'').localeCompare(String(right??''),'en-US',{numeric:true}))*(settings.descending?-1:1)}).slice(0,settings.limit)
+  return `<section ${attributes} data-catalog-block><h2>${escape(block.text)}</h2>${items.length?`<ul data-list-layout="${settings.layout}">${items.map(item=>`<li><a href="/site/${escape(collection.prefix)}/${escape(item.slug)}">${escape(item.title)}</a></li>`).join('')}</ul>`:'<p>No matching published items.</p>'}</section>`
+ }
+ if(block.kind==='form')return `<div ${attributes} data-catalog-block>${options?.formMarkup?.(block)||'<p>Native form preview. Configure fields in Forms settings.</p>'}</div>`
+ if(block.kind==='search')return `<div ${attributes} data-catalog-block><form method="get" action="/site/search" role="search" class="contact-form"><label>${escape(block.text)}<input type="search" name="q" maxlength="200"></label><button type="submit">Search</button></form></div>`
+ if(['map','social-post'].includes(block.kind))return `<div ${attributes} data-catalog-block>${options?.embedMarkup?.(block.embed)||'<p>External content stays off in the editor.</p>'}</div>`
+ if(block.kind==='audio'){
+  if(block.embed)return `<div ${attributes} data-catalog-block>${options?.embedMarkup?.(block.embed)||'<p>External audio stays off in the editor.</p>'}</div>`
+  const href=options?.resolveLink?.('file:'+block.audio.file)
+  return `<figure ${attributes} data-catalog-block><figcaption>${escape(block.text)}</figcaption>${href?`<audio controls preload="none" aria-label="${escape(block.text)}" src="${escape(href)}"></audio>${block.audio.download?`<a href="${escape(href)}" download>Download ${escape(block.text)}</a>`:''}`:'<p>Audio file unavailable.</p>'}</figure>`
+ }
  if(block.kind==='social-links')return `<div ${attributes} data-catalog-block>${options?.socialMarkup?.()||'<p>Configure social profiles in navigation settings.</p>'}</div>`
  if(block.kind==='scrolling-text')return `<div ${attributes} data-catalog-block><div class="pane-scroll-line"><span>${escape(block.text)}</span></div><button type="button" data-scroll-toggle aria-pressed="false">Pause scrolling</button></div>`
  if(block.kind==='shape'){
   const shape=block.shape,geometry={circle:'<circle cx="50" cy="50" r="46"/>',square:'<rect x="4" y="4" width="92" height="92"/>',triangle:'<polygon points="50,4 96,96 4,96"/>'}[shape.form]
   const svg=`<svg viewBox="0 0 100 100" width="100" height="100" role="img" aria-label="${escape(block.text)}" fill="${shape.outlined?'none':shape.color}" stroke="${shape.color}" stroke-width="3">${geometry}</svg>`
-  return `<div ${attributes} data-catalog-block>${linkedBody(svg,block.link,options?.resolveLink)}</div>`
+  return `<div ${attributes} data-catalog-block>${linkedBody(svg,block.link,options?.resolveLink,false,block.text)}</div>`
  }
  if(block.kind!=='chart')return ''
  const {type,rows}=block.chart,values=rows.map(row=>row[1]),low=Math.min(0,...values),high=Math.max(0,...values),span=high-low||1,x=value=>20+360*(value-low)/span,y=value=>180-160*(value-low)/span

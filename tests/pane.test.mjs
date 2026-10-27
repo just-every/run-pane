@@ -1,3 +1,4 @@
+import {catalogProjects} from './catalog-fixture.mjs'
 import {createHash,createHmac} from 'node:crypto'
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
@@ -2018,6 +2019,41 @@ test('native canvas publishes typed destinations and stable section anchors whil
   draft=await ok(await call('/api/pane/prepare',{site:catalog,base:draft.id}));await ok(await call('/api/pane/publish',{revision:draft.id}));html=await read()
   assert.match(html,/<th scope="row">Monday<\/th><td>12<\/td>/);assert.match(html,/<th scope="row">Tuesday<\/th><td>-7<\/td>/);assert.match(html,/fill="none" stroke="#123456"/);assert.match(html,/Pause scrolling/);assert.match(html,/aria-label="Facebook"/)
   for(const mutate of [value=>value.pages[0].sections[0].blocks.find(block=>block.chart).chart.rows[0][1]=null,value=>value.pages[0].sections[0].blocks.find(block=>block.chart).chart.type='unknown',value=>value.pages[0].sections[0].blocks.find(block=>block.shape).shape.color='url(bad)']){const invalid=structuredClone(draft.site);mutate(invalid);assert.equal((await call('/api/pane/prepare',{site:invalid,base:draft.id})).status,400)}
+  // Audio is revision-owned library content; upload and delivery use native doors.
+  const audioFiles=[]
+  for(const [name,type] of [['mp3','audio/mpeg'],['m4a','audio/mp4']]){
+   const bytes=await readFile('./fixtures/media/synthetic-pane-14.'+name),body=new FormData();body.set('base',draft.id);body.set('file',new File([bytes],'synthetic-pane-14.'+name,{type}))
+   draft=await ok(await app.request('/api/pane/library/upload',{method:'POST',headers:{Cookie:cookie,Origin:origin},body}));audioFiles.push(draft.site.libraryFiles.at(-1))
+   assert.equal((await app.request('/site/files/'+audioFiles.at(-1).id)).status,404,'Unpublished audio bytes stay private')
+  }
+  const audioSite=structuredClone(draft.site);audioSite.collections=[structuredClone(catalogProjects)];const blocks=audioSite.pages[0].sections[0].blocks
+  for(const [index,file] of audioFiles.entries())blocks.push({id:'audio-'+index,kind:'audio',text:'Workshop audio '+index,audio:{file:file.id,download:index===0},row:16+index})
+  for(const [index,url] of ['https://open.spotify.com/embed/track/syntheticpane14','https://w.soundcloud.com/player/?url=https%3A%2F%2Fapi.soundcloud.com%2Ftracks%2F14'].entries())blocks.push({id:'provider-audio-'+index,kind:'audio',text:'Provider audio '+index,audio:{download:false},embed:{title:'Provider audio '+index,url},row:18+index})
+  for(const [index,[kind,title,url]] of [['map','Workshop map','https://www.google.com/maps/embed?pb=synthetic-pane-14'],['social-post','Workshop social post','https://www.instagram.com/p/syntheticpane14/embed/']].entries())blocks.push({id:'provider-block-'+index,kind,text:title,embed:{title,url},row:23+index})
+  for(const [index,kind] of ['summary','collection-list'].entries())blocks.push({id:'projects-'+kind,kind,text:'Featured projects '+index,listing:{collection:'synthetic-pane-projects',layout:index?'list':'grid',limit:index?10:2,sort:index?'title':'rank',descending:index===1,...(index?{}:{filter:{field:'featured',value:'yes'}})},row:26+index})
+  blocks.push({id:'site-search',kind:'search',text:'Search this site',row:25})
+  for(const [index,buttonStyle] of ['primary','secondary','tertiary'].entries())blocks.push({id:'variant-'+index,kind:'button',buttonStyle,text:buttonStyle+' action',link:{href:'page:synthetic-pane-target',newTab:false},row:20+index})
+  audioSite.pages[0].body+='\n\nWorkshop audio 0\n\nWorkshop audio 1\n\nProvider audio 0\n\nProvider audio 1\n\nprimary action\n\nsecondary action\n\ntertiary action'
+  audioSite.forms=[{id:'synthetic-pane-form',name:'Workshop enquiry',submit:'Send enquiry',confirmation:'Thank you.',fields:[{key:'name',type:'text',label:'Your name',required:true,help:'',placeholder:''},{key:'email',type:'email',label:'Email',required:true,help:'',placeholder:''},{key:'message',type:'text',label:'Message',required:true,help:'',placeholder:''}]}];audioSite.pages[0].formId='synthetic-pane-form'
+  blocks.push({id:'placed-form',kind:'form',text:'Contact the workshop',row:28},{id:'copied-form',kind:'form',text:'Contact the workshop',row:29})
+  audioSite.pages[0].body=audioSite.pages[0].sections[0].blocks.map(block=>[block.summary,block.text,block.chart?.rows.map(([label,value])=>label+' '+value).join('\n'),block.caption,block.attribution].filter(Boolean).join('\n')).filter(Boolean).join('\n\n')
+  draft=await ok(await call('/api/pane/prepare',{site:audioSite,base:draft.id}))
+  await ok(await call('/api/pane/publish',{revision:draft.id}));html=await read()
+  for(const [index,file] of audioFiles.entries()){
+   const response=await app.request('/site/files/'+file.id);assert.equal(response.headers.get('content-type'),file.type);assert.deepEqual(Buffer.from(await response.arrayBuffer()),Buffer.from(file.data,'base64'))
+   assert.ok(html.includes('src="/site/files/'+file.id+'"'),'Native player resolves its exact library bytes')
+   assert.equal(html.includes('href="/site/files/'+file.id+'" download'),index===0,'Download follows the explicit setting')
+  }
+  assert.deepEqual([...html.match(/<section data-block="projects-summary"[\s\S]*?<\/section>/)[0].matchAll(/<a href="([^"]+)">([^<]+)<\/a>/g)].map(match=>[match[1],match[2]]),[['/site/projects/shelves','Library shelves'],['/site/projects/porch','Porch repairs']],'The grid summary applies its filter, numeric order and exact limit')
+  assert.deepEqual([...html.match(/<section data-block="projects-collection-list"[\s\S]*?<\/section>/)[0].matchAll(/<a href="([^"]+)">([^<]+)<\/a>/g)].map(match=>match[2]),['Workshop table','Porch repairs','Library shelves','Back room cabinet'],'The full list retains the explicit descending item set')
+  assert.match(html,/id="placed-form-field-name"/);assert.match(html,/for="copied-form-field-name"/);assert.equal((html.match(/data-typed-form/g)??[]).length,2,'Each duplicated native form receives independent control identities')
+  const invalidAnswer=new FormData();invalidAnswer.set('idempotency',crypto.randomUUID());invalidAnswer.set('name','field-Visitor');invalidAnswer.set('email','invalid');invalidAnswer.set('message','Please repair a field-table.')
+  const invalidResponse=await app.request('/site',{method:'POST',headers:{Origin:origin},body:invalidAnswer});assert.equal(invalidResponse.status,400);const invalidHtml=await invalidResponse.text();assert.ok(invalidHtml.includes('value="field-Visitor"'),'Placed form errors retain the submitted value without rewriting content')
+  for(const kind of ['map','social-post','search'])assert.ok(html.includes('data-block-type="'+kind+'"'),kind+' renders on the published page')
+  assert.equal((html.match(/<audio controls preload="none"/g)??[]).length,2,'Both uploaded formats have native players without automatic download')
+  for(const variant of ['primary','secondary','tertiary'])assert.ok(html.includes('data-button-style="'+variant+'"'),variant+' is retained in published output')
+  assert.match(html,/data-url="https:\/\/open.spotify.com\/embed\/track\/syntheticpane14"/);assert.match(html,/data-url="https:\/\/w.soundcloud.com/);assert.ok(!html.includes('<iframe'),'Provider audio stays off until consent')
+  for(const mutate of [value=>value.pages[0].sections[0].blocks.find(block=>block.audio?.file).audio.file=fileId,value=>value.pages[0].sections[0].blocks.find(block=>block.audio?.file).audio.file='00000000-0000-4000-8000-000000000099',value=>value.libraryFiles.find(file=>file.type==='audio/mpeg').data=pdf.toString('base64'),value=>value.pages[0].sections[0].blocks.find(block=>block.buttonStyle).buttonStyle='arbitrary']){const invalid=structuredClone(draft.site);mutate(invalid);assert.equal((await call('/api/pane/prepare',{site:invalid,base:draft.id})).status,400,'Invalid audio and button settings are refused')}
   const deleted=structuredClone(draft.site);deleted.pages.find(page=>page.id==='synthetic-pane-target').deleted=true
   draft=await ok(await call('/api/pane/prepare',{site:deleted,base:draft.id}))
   for(const path of ['/app?page=home','/app/canvas?page=home']){const response=await app.request(path,{headers:{Cookie:cookie}}),screen=await response.text();assert.equal(response.status,200);assert.ok(screen.includes('Broken links:'));assert.ok(screen.includes('anchor:synthetic-pane-target:synthetic-pane-section'));assert.ok(screen.includes('page:synthetic-pane-target'))}

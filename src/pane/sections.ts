@@ -8,7 +8,7 @@ export type RichNode = {tag:'text';text:string} | {tag:'a';href:string;newTab:bo
 export type PhoneBlock = {column?:number;span?:number;row?:number;order?:number;align?:TextBlock['align'];vertical?:TextBlock['vertical'];hidden?:boolean}
 export type TextBlock = {
  phone?: PhoneBlock;
- id: string; kind: 'text'|'image'|'gallery'|'quote'|'video'|'button'|'line'|'spacer'|'accordion'|'chart'|'shape'|'scrolling-text'|'social-links'; chart?:{type:'bar'|'line'|'pie';rows:[string,number][]}; shape?:{form:'circle'|'square'|'triangle';color:string;outlined:boolean}; summary?:string; size?:number; caption?:string; attribution?:string; link?:BodyLink; embed?:Embed; gallery?:Gallery; image?:ImageContent; text: string; format?: 'p'|'h1'|'h2'|'h3'|'h4'|'blockquote'|'pre'|'p-large'|'p-small'|'div'; content?: RichNode[];
+ id: string; kind: 'text'|'image'|'gallery'|'quote'|'video'|'button'|'line'|'spacer'|'accordion'|'chart'|'shape'|'scrolling-text'|'social-links'|'audio'|'map'|'social-post'|'search'|'form'|'summary'|'collection-list'|'html'; listing?:{collection:string;layout:'list'|'grid';limit:number;sort:string;descending:boolean;filter?:{field:string;value:string}}; audio?:{file?:string;download:boolean}; buttonStyle?:'primary'|'secondary'|'tertiary'; chart?:{type:'bar'|'line'|'pie';rows:[string,number][]}; shape?:{form:'circle'|'square'|'triangle';color:string;outlined:boolean}; summary?:string; size?:number; caption?:string; attribution?:string; link?:BodyLink; embed?:Embed; gallery?:Gallery; image?:ImageContent; text: string; format?: 'p'|'h1'|'h2'|'h3'|'h4'|'blockquote'|'pre'|'p-large'|'p-small'|'div'; content?: RichNode[];
  column: number; span: number; row: number; order: number;
  align: 'left' | 'center' | 'right' | 'justify'; vertical: 'start' | 'center' | 'end';
 }
@@ -98,8 +98,25 @@ export function normalizeSections(value: unknown): Section[] | undefined {
   if (section.background !== undefined && (typeof section.background !== 'string' || !/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(section.background))) throw Error('Use a hex section background with 3, 4, 6 or 8 digits.')
   const blocks = section.blocks.map(raw => {
    const block = object(raw)
-   if (Object.keys(block).some(key => !['chart','shape','summary','size','caption','attribution','link','embed','phone','gallery','image','id','kind','text','column','span','row','order','align','vertical','format','content'].includes(key))) throw Error('Unsupported block field.')
-   if (!['text','image','gallery','quote','video','button','line','spacer','accordion','chart','shape','scrolling-text','social-links'].includes(String(block.kind)) || typeof block.text !== 'string' || (['text','quote','video','button','accordion','chart','shape','scrolling-text','social-links'].includes(String(block.kind))&&!block.text.trim())) throw Error('Choose a text block with content or a prepared image.')
+   if (Object.keys(block).some(key => !['listing','audio','buttonStyle','chart','shape','summary','size','caption','attribution','link','embed','phone','gallery','image','id','kind','text','column','span','row','order','align','vertical','format','content'].includes(key))) throw Error('Unsupported block field.')
+   if (!['text','image','gallery','quote','video','button','line','spacer','accordion','chart','shape','scrolling-text','social-links','audio','map','social-post','search','form','summary','collection-list','html'].includes(String(block.kind)) || typeof block.text !== 'string' || (['text','quote','video','button','accordion','chart','shape','scrolling-text','social-links','audio','map','social-post','search','form','summary','collection-list','html'].includes(String(block.kind))&&!block.text.trim())) throw Error('Choose a text block with content or a prepared image.')
+   const buttonStyle=block.kind==='button'?choice(block.buttonStyle,['primary','secondary','tertiary'] as const,'primary'):undefined
+   if(block.buttonStyle!==undefined&&block.kind!=='button')throw Error('Button styles require a button block.')
+   let listing:TextBlock['listing']
+   if(['summary','collection-list'].includes(String(block.kind))){
+    const source=object(block.listing)
+    if(Object.keys(source).some(key=>!['collection','layout','limit','sort','descending','filter'].includes(key))||typeof source.collection!=='string'||!/^[a-zA-Z0-9_-]{1,80}$/.test(source.collection)||typeof source.sort!=='string'||!/^title$|^[a-zA-Z0-9_-]{1,80}$/.test(source.sort)||typeof source.descending!=='boolean')throw Error('Choose a collection, sorting and list layout.')
+    let filter:NonNullable<TextBlock['listing']>['filter']
+    if(source.filter!==undefined){const input=object(source.filter);if(Object.keys(input).some(key=>!['field','value'].includes(key))||typeof input.field!=='string'||!/^[a-zA-Z0-9_-]{1,80}$/.test(input.field)||typeof input.value!=='string'||input.value.length>500)throw Error('Choose a collection filter field and value.');filter={field:input.field,value:input.value}}
+    listing={collection:source.collection,layout:choice(source.layout,['list','grid'] as const,'list'),limit:number(source.limit,1,100,10),sort:source.sort,descending:source.descending,...(filter?{filter}:{})}
+   }else if(block.listing!==undefined)throw Error('List settings require a collection block.')
+   let audio:TextBlock['audio']
+   if(block.kind==='audio'){
+    const source=object(block.audio)
+    if(Object.keys(source).some(key=>!['file','download'].includes(key))||typeof source.download!=='boolean'||source.file!==undefined&&(typeof source.file!=='string'||!/^[a-f0-9-]{36}$/.test(source.file)))throw Error('Choose a library audio file and an explicit download option.')
+    if(!source.file&&!block.embed||source.file&&block.embed)throw Error('Choose one library file or audio provider embed.')
+    audio={...(source.file?{file:source.file as string}:{}),download:source.download}
+   }else if(block.audio!==undefined)throw Error('Audio settings require an audio block.')
    let chart:TextBlock['chart'],shape:TextBlock['shape']
    if(block.kind==='chart'){
     const source=object(block.chart),type=choice(source.type,['bar','line','pie'] as const,'bar')
@@ -121,9 +138,12 @@ export function normalizeSections(value: unknown): Section[] | undefined {
    const link=block.link===undefined?undefined:normalizeBodyLink(block.link)
    if(link&&!['image','button','shape'].includes(String(block.kind)))throw Error('This block does not support a destination.')
    if(block.kind==='button'&&!link)throw Error('Choose a button destination.')
-   const embed=block.kind==='video'?normalizeEmbed(block.embed):undefined
-   if(block.embed!==undefined&&block.kind!=='video'||block.kind==='video'&&!embed)throw Error('Provide a video title and YouTube embed URL.')
-   if(embed&&!['www.youtube.com','www.youtube-nocookie.com'].includes(new URL(embed.url).hostname))throw Error('Choose a YouTube embed URL.')
+   const embed=['video','audio','map','social-post'].includes(String(block.kind))?normalizeEmbed(block.embed):undefined
+   if(block.embed!==undefined&&!['video','audio','map','social-post'].includes(String(block.kind))||['video','map','social-post'].includes(String(block.kind))&&!embed)throw Error('Provide a video title and YouTube embed URL.')
+   if(embed&&block.kind==='audio'&&!['w.soundcloud.com','open.spotify.com'].includes(new URL(embed.url).hostname))throw Error('Choose a SoundCloud or Spotify audio embed.')
+   if(embed&&block.kind==='map'&&new URL(embed.url).hostname!=='www.google.com')throw Error('Choose a Google Maps embed.');
+   if(embed&&block.kind==='social-post'&&!['www.instagram.com','www.facebook.com'].includes(new URL(embed.url).hostname))throw Error('Choose an Instagram or Facebook post embed.');
+   if(embed&&block.kind==='video'&&!['www.youtube.com','www.youtube-nocookie.com','player.vimeo.com'].includes(new URL(embed.url).hostname))throw Error('Choose a YouTube embed URL.')
    const fieldText=(value:unknown,label:string)=>{if(typeof value!=='string'||value.length>1000)throw Error(label+' must contain at most 1,000 characters.');return value.normalize('NFC').trim()}
    const caption=block.caption===undefined?undefined:fieldText(block.caption,'Caption'),attribution=block.attribution===undefined?undefined:fieldText(block.attribution,'Attribution')
    if(caption!==undefined&&block.kind!=='image'||attribution!==undefined&&block.kind!=='quote'&&block.format!=='blockquote')throw Error('Caption or attribution does not match this block.')
@@ -136,7 +156,7 @@ export function normalizeSections(value: unknown): Section[] | undefined {
    if (characters > 20000) throw Error('Section text exceeds 20,000 characters.')
    const column = number(block.column,1,12,1), span = number(block.span,1,12,12)
    if (column + span > 13) throw Error('A block must fit the twelve-column grid.')
-   return {...(block.phone===undefined?{}:{phone:phone(block.phone,true)}),id:identity(block.id),kind:block.kind as TextBlock['kind'],...(chart?{chart}:{}),...(shape?{shape}:{}),...(summary?{summary}:{}),...(size!==undefined?{size}:{}),...(caption===undefined?{}:{caption}),...(attribution===undefined?{}:{attribution}),...(link?{link}:{}),...(embed?{embed}:{}),...(gallery?{gallery}:{}),...(image?{image}:{}),...(content?{content}:{}),...(block.format===undefined?{}:{format:choice(block.format,['p','h1','h2','h3','h4','blockquote','pre','p-large','p-small','div'] as const,'p')}),text,column,span,row:number(block.row,1,100,1),order:number(block.order,0,100,0),align:choice(block.align,['left','center','right','justify'] as const,'left'),vertical:choice(block.vertical,['start','center','end'] as const,'start')}
+   return {...(block.phone===undefined?{}:{phone:phone(block.phone,true)}),id:identity(block.id),kind:block.kind as TextBlock['kind'],...(listing?{listing}:{}),...(audio?{audio}:{}),...(buttonStyle?{buttonStyle}:{}),...(chart?{chart}:{}),...(shape?{shape}:{}),...(summary?{summary}:{}),...(size!==undefined?{size}:{}),...(caption===undefined?{}:{caption}),...(attribution===undefined?{}:{attribution}),...(link?{link}:{}),...(embed?{embed}:{}),...(gallery?{gallery}:{}),...(image?{image}:{}),...(content?{content}:{}),...(block.format===undefined?{}:{format:choice(block.format,['p','h1','h2','h3','h4','blockquote','pre','p-large','p-small','div'] as const,'p')}),text,column,span,row:number(block.row,1,100,1),order:number(block.order,0,100,0),align:choice(block.align,['left','center','right','justify'] as const,'left'),vertical:choice(block.vertical,['start','center','end'] as const,'start')}
   })
   return {id,...(anchor?{anchor:String(anchor)}:{}),...(section.phone===undefined?{}:{phone:phone(section.phone,false)}),...(section.height===undefined?{}:{height:choice(section.height,['auto','small','medium','large','full'] as const,'auto')}),...(section.component ? {component:String(section.component)} : {}),kind:choice(section.kind,['text','columns'] as const,'text'),ratio:choice(section.ratio,['1:1','1:2','2:1','1:1:1'] as const,'1:1'),gap:number(section.gap,0,160,24),paddingTop:number(section.paddingTop,0,240,32),paddingBottom:number(section.paddingBottom,0,240,32),...(section.background === undefined ? {} : {background:String(section.background).toLowerCase()}),blocks}
  })

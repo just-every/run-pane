@@ -1,6 +1,8 @@
 import { escape } from './ui/kit'
 export type Embed = { title: string; url: string }
 const paths: Record<string, RegExp> = {
+ 'w.soundcloud.com': /^\/player\/?$/,
+ 'open.spotify.com': /^\/embed\/(?:track|album|playlist|episode|show)\/[a-zA-Z0-9]+$/,
  'www.youtube-nocookie.com': /^\/embed\/[a-zA-Z0-9_-]+$/,
  'www.youtube.com': /^\/embed\/[a-zA-Z0-9_-]+$/,
  'player.vimeo.com': /^\/video\/[0-9]+$/,
@@ -15,7 +17,9 @@ export function normalizeEmbed(value: unknown): Embed | undefined {
  if (typeof input.title !== 'string' || !input.title.trim() || input.title.length > 120 || typeof input.url !== 'string' || input.url.length > 4000) throw Error('Provide an embed title and HTTPS embed URL.')
  let url: URL
  try { url = new URL(input.url) } catch { throw Error('Provide an HTTPS embed URL.') }
- if (url.protocol !== 'https:' || url.username || url.password || url.port || !paths[url.hostname]?.test(url.pathname)) throw Error('Use a YouTube, Vimeo, Google Maps, Instagram or Facebook embed URL.')
+ if (url.protocol !== 'https:' || url.username || url.password || url.port || !paths[url.hostname]?.test(url.pathname)) throw Error('Use a supported video, map, social or audio embed URL.')
+ if(url.hostname==='w.soundcloud.com'){let target:URL;try{target=new URL(url.searchParams.get('url')??'')}catch{throw Error('Choose a public SoundCloud track.')}if(target.origin!=='https://api.soundcloud.com'||!/^\/tracks\/[0-9]+$/.test(target.pathname)||target.search||target.hash)throw Error('Choose a public SoundCloud track.');url.search='';url.searchParams.set('url',target.href)}
+ if(url.hostname==='open.spotify.com')url.search=''
  url.hash = ''
  return {title: input.title.normalize('NFC').trim(), url: url.href}
 }

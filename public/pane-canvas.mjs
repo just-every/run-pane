@@ -27,6 +27,7 @@ function selectedParagraph(node){
 let galleries,bodyControls
 function settings(){
  galleries?.refresh();bodyControls?.refresh()
+ const sectionPicker=form.querySelector('[data-layout-section]');sectionPicker.replaceChildren(...sections.map((section,index)=>new Option('Section '+(index+1),section.id)));sectionPicker.value=sectionId;sectionPicker.disabled=!block()
  const image=block()?.image,panel=form.querySelector('[data-image-settings]');panel.hidden=!image
  if(image){form.querySelector('[data-image-alt]').value=image.alt??'';form.querySelector('[data-image-decorative]').checked=image.decorative;form.querySelector('[data-image-alt]').disabled=image.decorative;form.querySelector('[data-image-status]').textContent=!image.decorative&&!image.alt?.trim()?'Add alternative text or mark this image decorative before publishing.':'Image description is ready.'}
  if(image){form.querySelector('[data-image-rotation]').value=image.rotation??0;const crop=image.crop??{ratio:'original',width:4,height:3,x:50,y:50};for(const input of form.querySelectorAll('[data-image-crop]')){const key=input.dataset.imageCrop;input.value=crop[key];input.disabled=['width','height'].includes(key)&&crop.ratio!=='free'}}
@@ -49,11 +50,11 @@ function render(){
  while(sheet.cssRules.length)sheet.deleteRule(0)
  for(const rule of layoutRules(sections))sheet.insertRule(rule,sheet.cssRules.length)
  for(const node of [...content.children])if(node!==style)node.remove()
- content.insertAdjacentHTML('beforeend',layoutMarkup(sections,undefined,galleries?.media()??JSON.parse(form.querySelector('[data-media-state]').value)))
+ content.insertAdjacentHTML('beforeend',layoutMarkup(sections,undefined,galleries?.media()??JSON.parse(form.querySelector('[data-media-state]').value),{collections:JSON.parse(form.querySelector('[data-body-collections]').value)}))
  for(const section of content.querySelectorAll('[data-section]')){section.draggable=true;section.tabIndex=0;section.setAttribute('aria-label','Section '+(sections.findIndex(item=>item.id===section.dataset.section)+1))}
  for(const node of content.querySelectorAll('[data-image-block],[data-gallery],[data-video-block],[data-button-block],[data-quote-block]')){node.tabIndex=0;node.setAttribute('aria-label',node.hasAttribute('data-gallery')?'Gallery block':'Image block')}
  for(const node of content.querySelectorAll('[data-block]:not([data-catalog-block]):not([data-image-block]):not([data-gallery]):not([data-video-block]):not([data-button-block]):not([data-quote-block]),[data-block-text]')){node.contentEditable='true';node.draggable=true;node.setAttribute('role','textbox');node.setAttribute('aria-label','Block text');node.setAttribute('aria-multiline','true')}
- for(const node of content.querySelectorAll('[data-quote-block]'))node.draggable=true
+ for(const node of content.querySelectorAll('[data-block]'))node.draggable=true
  for(const node of content.querySelectorAll('[data-catalog-block]')){node.tabIndex=0;node.removeAttribute('aria-hidden');node.setAttribute('aria-label',node.dataset.blockType+' block')}
  for(const button of content.querySelectorAll('[data-gallery-open]')){button.removeAttribute('data-gallery-open');button.dataset.tip='Select image';button.setAttribute('aria-label','Select '+button.getAttribute('aria-label').replace(/^Enlarge /,''))}
  syncReadingOrder(content);settings()
@@ -61,6 +62,25 @@ function render(){
 function commit(redraw=true){field.value=JSON.stringify(sections);field.dispatchEvent(new Event('input',{bubbles:true}));if(redraw)render()}
 canvas.addEventListener('click',event=>{const section=event.target.closest('[data-section]');if(!section)return;sectionId=section.dataset.section;blockId=event.target.closest('[data-block]')?.dataset.block;const item=event.target.closest('[data-gallery-index]');if(item)galleries?.select(Number(item.dataset.galleryIndex));settings()})
 canvas.addEventListener('focusin',event=>{const section=event.target.closest('[data-section]');if(!section)return;sectionId=section.dataset.section;blockId=event.target.closest('[data-block]')?.dataset.block;settings()})
+// Word stores list markers in presentation spans rather than semantic lists.
+// Convert only that explicit list structure, retaining one supported nested level.
+function preparePasted(root){
+ for(const parent of [root,...root.querySelectorAll('*')]){
+  let top,nested,listId,type
+  for(const node of [...parent.children]){
+   const style=node.getAttribute('style')??'',match=/mso-list\s*:\s*(l\d+)\s+level(\d+)/i.exec(style)
+   if(!match){top=nested=listId=type=undefined;continue}
+   const marker=[...node.querySelectorAll('span')].find(span=>/mso-list\s*:\s*ignore/i.test(span.getAttribute('style')??''))
+   const nextType=/^[\dA-Za-z]+[.)]/.test(marker?.textContent.trim()??'')?'ol':'ul'
+   marker?.remove()
+   if(!top||listId!==match[1]||Number(match[2])===1&&type!==nextType){top=document.createElement(nextType);node.before(top);listId=match[1];type=nextType;nested=undefined}
+   const li=document.createElement('li');while(node.firstChild)li.append(node.firstChild)
+   if(Number(match[2])>1){if(!top.lastElementChild)top.append(document.createElement('li'));if(!nested||nested.localName!==nextType){nested=document.createElement(nextType);top.lastElementChild.append(nested)}nested.append(li)}
+   else{top.append(li);nested=undefined}
+   node.remove()
+  }
+ }
+}
 // Only these semantic nodes cross the authoring boundary. Pasted scripts and
 // active content are discarded, including their text; attributes never survive.
 function readRich(root){
@@ -70,6 +90,7 @@ function readRich(root){
   if(node.nodeType!==1)return []
   let tag=node.localName
   if(['script','style','iframe','object','embed','svg','math','img','video','audio','input'].includes(tag))return []
+  if(tag==='p'){const heading=/\bMsoHeading([1-4])\b/i.exec(node.className);if(heading)tag='h'+heading[1];else if(/\bMsoQuote\b/i.test(node.className))tag='blockquote'}
   tag=({b:'strong',i:'em',strike:'s',div:'p'}[tag]??tag)
   if(tag==='p'&&node.classList.contains('pane-p-large'))tag='p-large'
   if(tag==='p'&&node.classList.contains('pane-p-small'))tag='p-small'
@@ -86,7 +107,7 @@ function readRich(root){
    children=items
   }
   if(tag==='li')children=children.flatMap(child=>['p','h1','h2','h3','h4','blockquote','pre'].includes(child.tag)?child.children:[child])
-  if(tag==='span'){
+  if(tag!=='a'){
    // CSP correctly prevents pasted inline CSS from taking effect. Read only
    // these literal formatting declarations, then discard every attribute.
    const styles=Object.fromEntries((node.getAttribute('style')??'').split(';').map(item=>{const at=item.indexOf(':');return [item.slice(0,at).trim().toLowerCase(),item.slice(at+1).trim().toLowerCase()]}))
@@ -102,7 +123,8 @@ function readRich(root){
    return children.flatMap(child=>blocks.has(child.tag)?[child]:inline.has(tag)||blocks.has(tag)?[{tag,children:[child]}]:[child])
   }
   if(tag==='a'){const href=safeBodyHref(node.dataset.bodyHref??node.getAttribute('href'));return href?[{tag:'a',href,newTab:node.target==='_blank',children}]:children}
-  const align=node.dataset?.textAlign
+  const pastedAlign=/(?:^|;)\s*text-align\s*:\s*(left|center|right|justify)(?:\s*;|\s*$)/i.exec(node.getAttribute('style')??'')?.[1]?.toLowerCase()
+  const align=node.dataset?.textAlign??pastedAlign
   return inline.has(tag)||blocks.has(tag)?[{tag,children,...(['p','p-large','p-small','h1','h2','h3','h4','blockquote','pre','li'].includes(tag)&&['left','center','right','justify'].includes(align)?{align}:{})}]:children
  }
  return [...root.childNodes].flatMap(read)
@@ -154,7 +176,7 @@ canvas.addEventListener('paste',event=>{
  const html=event.clipboardData.getData('text/html')
  if(html){
   const pasted=document.createElement('template');pasted.innerHTML=html
-  const safe=readRich(pasted.content);node=documentBlock(node)
+  preparePasted(pasted.content);const safe=readRich(pasted.content);node=documentBlock(node)
   const markup=document.createElement('template');markup.innerHTML=richMarkup(safe)
   const selection=window.getSelection(),range=selection?.rangeCount?selection.getRangeAt(0):null
   if(range&&node.contains(range.commonAncestorContainer)){
@@ -257,6 +279,12 @@ canvas.addEventListener('drop',event=>{
  if(dragged.block){if(from!==to&&from.blocks.length===1)return;const moved=from.blocks.find(block=>block.id===dragged.block),next=event.target.closest('[data-block]')?.dataset.block;if(next===moved.id)return;from.blocks.splice(from.blocks.indexOf(moved),1);const index=to.blocks.findIndex(block=>block.id===next);to.blocks.splice(index<0?to.blocks.length:index,0,moved);to.blocks.forEach((block,index)=>block.row=index+1);sectionId=to.id;blockId=moved.id}
  else{sections.splice(sections.indexOf(from),1);sections.splice(sections.indexOf(to),0,from);sectionId=from.id;blockId=undefined}
  dragged=undefined;commit()
+})
+form.querySelector('[data-layout-section]').addEventListener('change',event=>{
+ const from=current(),item=block(),to=sections.find(section=>section.id===event.target.value)
+ if(!item||!to||from===to)return
+ if(from.blocks.length===1){form.querySelector('[data-layout-selection]').textContent='Keep at least one block in each section.';settings();return}
+ from.blocks.splice(from.blocks.indexOf(item),1);item.row=Math.min(100,Math.max(...to.blocks.map(block=>block.row))+1);to.blocks.push(item);sectionId=to.id;commit()
 })
 form.addEventListener('draftrestore',()=>{sections=JSON.parse(field.value);if(!sections.some(section=>section.id===sectionId))sectionId=sections[0].id;if(!current().blocks.some(block=>block.id===blockId))blockId=undefined;render()})
 form.querySelector('[data-image-upload]').addEventListener('change',async event=>{
