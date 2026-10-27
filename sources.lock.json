@@ -1320,7 +1320,7 @@
       "executable": false
     },
     "scripts/posts-journey.mjs": {
-      "sha256": "9b94b7946f5d7544ebc60adffc72d85079bd0f019bcab33a8d198ab9b18f0bec",
+      "sha256": "4abe06d13ee382df99cdfcf209102736b210319c251aca3ea4aaeeb0da803ba0",
       "executable": false
     },
     "scripts/privacy-journey.mjs": {

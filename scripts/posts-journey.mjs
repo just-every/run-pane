@@ -10,7 +10,12 @@ const page=await context.newPage(),author=await authorContext.newPage(),live=awa
 await mkdir(folder,{recursive:true});await visitor.route('**/*',route=>new URL(route.request().url()).origin===origin?route.continue():route.abort());for(const tab of [page,author,live])tab.setDefaultTimeout(20000)
 const state=async()=>{const response=await context.request.get(origin+'/api/pane');assert.equal(response.status(),200);return response.json()}
 const call=async(path,data)=>{const response=await context.request.post(origin+path,{headers:{Origin:origin},data});assert.equal(response.status(),200,await response.text());return response.json()}
-const capture=async(tab,name,width)=>{await tab.screenshot({path:resolve(folder,name+'-'+width+'.png'),fullPage:true});assert.equal(await tab.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,name+' fits at '+width)}
+const capture=async(tab,name,width)=>{
+ if(['author-posts','owner-review','owner-settings','author-composer','published-owner','published-author'].includes(name)){
+  await tab.evaluate(await readFile(resolve('node_modules/axe-core/axe.min.js'),'utf8'));const result=await tab.evaluate(()=>axe.run(document));assert.deepEqual(result.violations.map(item=>({id:item.id,nodes:item.nodes.map(node=>node.target)})),[],name+' axe')
+ }
+ await tab.screenshot({path:resolve(folder,name+'-'+width+'.png'),fullPage:true});assert.equal(await tab.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,name+' fits at '+width)
+}
 const saved=async()=>author.waitForFunction(()=>document.querySelector('[data-save-status]')?.textContent==='Draft saved. Not published.')
 async function submit(tab,button){await Promise.all([tab.waitForEvent('domcontentloaded'),button.click()])}
 async function tooltip(tab){const account=tab.locator('[data-tip="Account and team"]');await account.hover();await tab.getByRole('tooltip').getByText('Account and team',{exact:true}).waitFor();await tab.mouse.move(0,500);await tab.keyboard.press('Escape');await account.focus();await tab.keyboard.press('Tab');await tab.keyboard.press('Shift+Tab');await tab.getByRole('tooltip').getByText('Account and team',{exact:true}).waitFor();await tab.keyboard.press('Escape')}
