@@ -576,7 +576,7 @@
       "executable": false
     },
     "public/pane-base.css": {
-      "sha256": "90de5f7da44098483ebd9f763c82a9f676625408453482f142b2530b3e9bec28",
+      "sha256": "9f468e9f3439df51e0e34649e8902a64536cdf0d23e182a40c53ba1627dd079e",
       "executable": false
     },
     "public/pane-blog-settings.mjs": {

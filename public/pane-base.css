@@ -95,7 +95,7 @@ html.rer-themed body.pane-site { background: var(--pn-white); }
 .pane .account-pop h2 { margin-top: 6px; padding-top: 12px; border-top: 1px solid var(--pn-line); font-size: 13px; font-weight: 800; }
 .pane .account-pop ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .pane .account-pop li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 10px; font-size: 14px; }
-.pane .notice { display: flex; align-items: center; gap: 10px; margin: 12px 24px 0; padding: 10px 14px; border: 1px solid var(--pn-tint-line); border-left: 4px solid var(--pn-aqua); border-radius: 12px; background: var(--pn-white); color: var(--pn-ink); font-size: 14px; font-weight: 600; }
+.pane .notice { display: flex; align-items: center; gap: 10px; margin: 12px 24px 0; padding: 10px 14px; border: 1px solid var(--pn-tint-line); border-radius: 12px; background: var(--pn-white); color: var(--pn-ink); font-size: 14px; font-weight: 600; }
 .pane .notice svg { width: 18px; height: 18px; color: var(--pn-aqua); }
 
 @media (max-width: 760px) {
