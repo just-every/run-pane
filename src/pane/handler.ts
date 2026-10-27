@@ -4,6 +4,7 @@ import {collectionPrivateResponse} from './collection-handlers'
 import {collectionPages} from './collection-page'
 import {contentTrash,contentHistory,deleteContent,restoreContent} from './lifecycle-store'
 import {trashScreen,historyScreen} from './ui/lifecycle'
+import {commentAction,commentSettingsMarkup,moderationMarkup,authorCommentMarkup,commentList} from './comments'
 import {latestContent,ownPost,postView,PostDenied,savePost,publishPost} from './posts'
 import {postForm} from './post-forms'
 import {postsEditor} from './ui/posts'
@@ -52,7 +53,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
  if(!['owner','admin','member'].includes(actor.role))return json({error:'Role has no access.'},403)
  try {
   if(path==='/app'&&request.method==='GET'&&!caps.includes('pages:read')){
-   const home=caps.includes('posts:write')?'/app/posts':caps.includes('inbox:read')?'/app/inquiries':caps.includes('reports:read')?'/app/sites':null
+   const home=caps.includes('comments:moderate')?'/app/comments':caps.includes('posts:write')?'/app/posts':caps.includes('inbox:read')?'/app/inquiries':caps.includes('reports:read')?'/app/sites':null
    if(home)return new Response(null,{status:303,headers:{location:home}})
   }
   const requiredCapability=routeCapability(path,request.method)
@@ -96,7 +97,15 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
     return document('Post body',canvasEditor(data,'',url.searchParams.get('id')??''),'site')
    }
    data.notice=url.searchParams.get('notice')??undefined
-   return document('Posts',shell(data,'posts',postsEditor(data,url.searchParams.get('id')??'')))
+   const selected=url.searchParams.get('id')??''
+   const settings=owner&&current?await commentSettingsMarkup(env.DB,current.site):''
+   const replies=current&&selected?await authorCommentMarkup(env.DB,current.site,selected,actor.id,owner):''
+   return document('Posts',shell(data,'posts',postsEditor(data,selected).replace('<details><summary>PDF library',settings+'<details><summary>PDF library')+replies))
+  }
+  if(request.method==='GET'&&['/app/comments','/api/pane/comments'].includes(path)){
+   if(api)return json(await commentList(env.DB))
+   const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps,actor)
+   return document('Comments',shell(data,'comments',await moderationMarkup(env.DB,url.searchParams.get('comment')??'')))
   }
   if(request.method==='GET'&&path==='/api/pane/posts')return json(postView(await latestContent(env.DB),actor.id,owner||actor.role==='admin'))
   if(request.method==='GET'&&path==='/api/pane/ai/history'){
@@ -146,6 +155,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   if(Number(request.headers.get('content-length')??0)>1800000)return json({error:'Input exceeds 1.8 MB.'},413)
   const formData=request.headers.get('content-type')?.includes('application/json')?null:await request.formData()
   const input:Record<string,any>=formData?Object.fromEntries(formData):await request.json()
+  if(formData&&path.startsWith('/app/comments/')&&formData.has('ids'))input.ids=formData.getAll('ids')
   if(formData&&path==='/app/access')input.members=formData.getAll('members')
   const action=api?path.slice('/api/pane/'.length):path.slice('/app/'.length)
   let result:unknown,notice='Saved.',back='/app'
@@ -154,6 +164,14 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   if((!owner||scopes)&&['/api/pane/import/dry-run','/api/pane/import/apply','/app/import/dry-run','/app/import/apply'].includes(path)&&input.source){
    const imported=parseImportDocument(typeof input.source==='string'?input.source:JSON.stringify(input.source)).site
    if(imported?.customCode||imported?.pages.some(page=>page.customCode||htmlCodeIdentity(page).length))return json({error:'Only a native owner authors custom code, including imports.'},403)
+  }
+  if(action.startsWith('comments/')){
+   if(scopes)return json({error:'Native session required.'},403)
+   const verb=action.slice(9)
+   if(['settings','close'].includes(verb)&&!owner)return json({error:'Native owner only.'},403)
+   const saved=await commentAction(env,actor,verb,input,caps.includes('comments:moderate'))
+   if(api)return json(saved)
+   return new Response(null,{status:303,headers:{location:verb==='reply'||verb==='settings'||verb==='close'?'/app/posts':'/app/comments','cache-control':'no-store'}})
   }
   if(path.endsWith('/posts/save')||path.endsWith('/posts/submit')){
    const current=await latestContent(env.DB)
@@ -242,7 +260,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   }else if(action==='policies/generate'){
    const row=await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
    if(!row)throw Error('Prepare a site first.')
-   result=await prepare(env.DB,actor.id,policyStarters(revision(row).site,env),String(input.base??''));notice='Policy starters prepared. Review and edit before publishing.';back='/app?page=privacy-policy'
+   result=await prepare(env.DB,actor.id,policyStarters(revision(row).site,env,!!await env.DB.prepare('SELECT 1 FROM pane_comment_settings WHERE enabled=1').first()),String(input.base??''));notice='Policy starters prepared. Review and edit before publishing.';back='/app?page=privacy-policy'
   }else if(action==='roles/invite') {
    result=await inviteRoles(env,request,actor.id,input)
   } else if(action==='roles/set') {

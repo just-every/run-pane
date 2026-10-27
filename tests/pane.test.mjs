@@ -941,7 +941,7 @@ test('composable Pane roles are invited natively and enforced across workspace, 
   const matrix=[
    {roles:['editor'],pages:true,edit:true},
    {roles:['author'],posts:true},
-   {roles:['comment-moderator']},
+   {roles:['comment-moderator'],comments:true},
    {roles:['inbox'],inbox:true},
    {roles:['reporting'],reports:true},
    {roles:['editor','inbox','reporting'],pages:true,edit:true,inbox:true,reports:true},
@@ -951,13 +951,13 @@ test('composable Pane roles are invited natively and enforced across workspace, 
    assert.equal(invitation.status,200,await invitation.clone().text());const person=await invitation.json()
    // Delivery happens only after the role assignment exists; inspect that boundary.
    assert.equal((await app.db.prepare('SELECT roles FROM pane_roles WHERE operator_id=?').bind(person.operatorId).first()).roles,JSON.stringify([...row.roles].sort()))
-   const cookie=await signInvitation(row.edit?'/app':row.posts?'/app/posts':row.inbox?'/app/inquiries':row.reports?'/app/sites':'/app')
+   const cookie=await signInvitation(row.comments?'/app/comments':row.edit?'/app':row.posts?'/app/posts':row.inbox?'/app/inquiries':row.reports?'/app/sites':'/app')
    const admission=await (await get('/api/pane/activity')).json()
    assert.ok(admission.some(event=>event.subject==='person:'+person.operatorId&&event.action==='authentication.change'&&event.actor==='Synthetic '+row.roles.join(' ')),'Native confirmation attributes the admitted person')
    const expected=new Map([
-    ['/app',row.pages?200:row.posts||row.inbox||row.reports?303:403],['/app/sites',row.pages||row.reports?200:403],['/app/inquiries',row.inbox?200:403],['/app/moves',403],['/app/search',row.edit?200:403],
+    ['/app',row.pages?200:row.comments||row.posts||row.inbox||row.reports?303:403],['/app/sites',row.pages||row.reports?200:403],['/app/inquiries',row.inbox?200:403],['/app/moves',403],['/app/search',row.edit?200:403],
     ['/preview/'+prepared.id+'/home',row.edit?200:403],['/api/pane',200],['/api/pane/pages',row.pages?200:403],['/api/pane/collections',row.edit?200:403],['/app/collections',row.edit?200:403],
-    ['/api/pane/submissions/export?form=native%3Acontact',row.inbox?200:403],['/app/submissions/export?form=native%3Acontact',row.inbox?200:403],['/app/posts',row.posts?200:403],['/api/pane/posts',row.posts?200:403],['/api/pane/activity',403],['/api/pane/activity/export',403],['/api/pane/roles',403],['/api/pane/tokens',403],
+    ['/api/pane/submissions/export?form=native%3Acontact',row.inbox?200:403],['/app/submissions/export?form=native%3Acontact',row.inbox?200:403],['/app/comments',row.comments?200:403],['/api/pane/comments',row.comments?200:403],['/app/posts',row.posts?200:403],['/api/pane/posts',row.posts?200:403],['/api/pane/activity',403],['/api/pane/activity/export',403],['/api/pane/roles',403],['/api/pane/tokens',403],
    ])
    for(const [path,status] of expected)assert.equal((await get(path,cookie)).status,status,row.roles+': '+path)
    if(!row.pages&&(row.posts||row.inbox||row.reports))assert.equal((await get('/app',cookie)).headers.get('location'),row.posts?'/app/posts':row.inbox?'/app/inquiries':'/app/sites')

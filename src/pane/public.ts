@@ -1,6 +1,7 @@
 import {pageHtmlPolicySource} from './html-blocks'
 import {submissionRecord,enquiryStatement,type Submission} from './submission-export'
 import {collectionResponse} from './collection-public'
+import {submitComment,likePost} from './comments'
 import {preparedImageResponse} from './image-response'
 import {tags,tagSource,tagSources} from './tags'
 import {blogResponse} from './blog-public'
@@ -11,7 +12,7 @@ import type { Site,Page } from './model'
 import { accessResponse, pageRules } from './access'
 import { promotionMarkup } from './promotions'
 import { liveCall, liveSnapshot } from './outage'
-import { rejectForm, verifyForm } from './form-protection'
+import { rejectForm, verifyForm,limited,contactLimited,visitor } from './form-protection'
 import { activeBanners } from './schedules'
 import { escape } from './ui/kit'
 import { activePages, homeSlug, pagePath } from './pages'
@@ -52,33 +53,6 @@ function formConfirmation(site:Site,slug:string,form?:SiteForm){
  const location=codeConfirmation(site,slug,form?.redirect)
  return form&&!form.redirect&&form.id!==typedForm(site,slug)?.id?location+'&_pane_form='+encodeURIComponent(form.id):location
 }
-async function limited(db:D1Database,key:string,limit:number) {
- const minute = new Date().toISOString().slice(0,16)
- // Only this minute's counts matter, so earlier buckets are dropped as each count is taken.
- const [,r]=await db.batch<{count:number}>([
-  db.prepare('DELETE FROM pane_rate_limits WHERE bucket<?').bind(minute),
-  db.prepare('INSERT INTO pane_rate_limits(bucket,count) VALUES(?,1) ON CONFLICT(bucket) DO UPDATE SET count=count+1 RETURNING count').bind(`${minute}:${key}`),
- ])
- return (r?.results[0]?.count??limit+1)>limit
-}
-/** Each visitor has its own quota per form under a form-wide emergency ceiling; retrying a stored or erased enquiry spends neither. */
-async function contactLimited(db:D1Database,form:string,visitor:string,id:string) {
- if(await db.prepare('SELECT 1 FROM pane_messages WHERE id=? UNION ALL SELECT 1 FROM pane_erased_messages WHERE id=?').bind(id,id).first())return false
- return await limited(db,`contact-visitor:${visitor}:${form}`,20)||await limited(db,'contact:'+form,200)
-}
-/** The visitor a quota belongs to: Cloudflare's client address, an IPv6 address reduced to the /64
- * one subscriber holds, kept only as a keyed digest so no address is stored. */
-async function visitor(request:Request,secret:string) {
- const ip=(request.headers.get('CF-Connecting-IP')??'').toLowerCase()
- let network=ip
- if(ip.includes(':')&&!ip.includes('.')) {
-  const [head,tail]=ip.split('::'),left=head?head.split(':'):[],right=tail?tail.split(':'):[]
-  const groups=tail===undefined?left:[...left,...Array(Math.max(0,8-left.length-right.length)).fill('0'),...right]
-  network=groups.slice(0,4).map(group=>group.replace(/^0+(?=.)/,'')).join(':')+'::/64'
- }
- const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign'])
- return Array.from(new Uint8Array(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode('contact\0'+network))),b=>b.toString(16).padStart(2,'0')).join('')
-}
 export async function publicResponse(request:Request,original:Bindings):Promise<Response|null> {
  const url=new URL(request.url),path=url.pathname
  if(path !== '/site' && !path.startsWith('/site/')) return null
@@ -100,6 +74,7 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
  const redirect=site.redirects?.find(redirect=>redirect.from===path)
  if (redirect && ['GET','HEAD'].includes(request.method)) return new Response(null,{status:redirect.status,headers:{location:redirect.to,'cache-control':'no-store'}})
  const approvedPost=site.blogPosts?.find(post=>blogPostPath(site,post)===path)
+ if(approvedPost&&request.method==='POST'&&url.searchParams.has('like'))return likePost(request,env,site,approvedPost.id)
  const page=activePages(site).find(page=>page.slug===slug)??approvedPost?.content
  if(url.searchParams.has('pane-brand')){
   const key=url.searchParams.get('pane-brand'),image=key&&['logo','favicon','social'].includes(key)?site.brand?.[key as keyof NonNullable<typeof site.brand>]:undefined
@@ -117,7 +92,7 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
  }
 
  const legacyForm=typedForm(site,slug),gridForm=!!page&&hasGridForm(site,page,slug),hasForm=!!legacyForm||gridForm,legacyContact=!!page&&(page.kind==='contact'||slug==='contact')
- const blog=await blogResponse(request,site)
+ const blog=await blogResponse(request,site,env)
  if(blog){
   if(!approvedPost||!hasForm||url.searchParams.has('featured'))return blog
   const headers=formHeaders(new Headers(blog.headers))
@@ -148,8 +123,9 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
  if(page&&request.method==='POST') {
   if(!hasForm&&Number(request.headers.get('content-length')??0)>100000)return json({error:'Message too large.'},413)
   let f:FormData
-  try{f=await boundedForm(request)}catch{return json({error:'Submission exceeds 6 MB or has invalid form data.'},413)}
+  try{f=await boundedForm(approvedPost?request.clone():request)}catch{return json({error:'Submission exceeds 6 MB or has invalid form data.'},413)}
   const requested=f.getAll('_pane_form')
+  if(approvedPost&&!requested.length)return submitComment(request,env,site,approvedPost.id)
   const form=requested.length===0?legacyForm:requested.length===1&&typeof requested[0]==='string'?typedForm(site,slug,requested[0]):undefined
   if(requested.length&&!form)return json({error:'Choose a form on this page.'},400)
   if(!form&&!legacyContact)return json({error:hasForm?'Choose a form on this page.':'Method not allowed.'},hasForm?400:405)
