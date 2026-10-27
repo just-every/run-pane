@@ -604,7 +604,7 @@
       "executable": false
     },
     "public/pane-body-markup.mjs": {
-      "sha256": "1e59aa9449afeac174a0f09f958007be2e26be662cd9f3f78b74e0bbfe8d16ee",
+      "sha256": "8b209b0bb025e069797eb7594541fef0798f955342e7efad492acfbdecb73694",
       "executable": false
     },
     "public/pane-brand.mjs": {
@@ -624,7 +624,7 @@
       "executable": false
     },
     "public/pane-catalog.mjs": {
-      "sha256": "755dc8edce612151fc5a9c619a5d8167b47129e09866208567a81b193d9bafa0",
+      "sha256": "af46d7766fd4507480ac1a31b8674937172e0f5ff988e5cf7fdc81a0e558fa5e",
       "executable": false
     },
     "public/pane-custom-code.js": {
@@ -1112,7 +1112,7 @@
       "executable": false
     },
     "scripts/catalog-journey.mjs": {
-      "sha256": "68a74ae2e2defc6c92478274b90ae5780e147837ebc6051303b68e05f3d9ffd7",
+      "sha256": "86bcc0ab15521ed929f6a8c7edec0ce97e68dc334d62de7c0a4637bde835159f",
       "executable": false
     },
     "scripts/catalog-media.mjs": {

@@ -19,7 +19,7 @@ export function catalogMarkup(block,attributes,options){
  if(block.kind==='shape'){
   const shape=block.shape,geometry={circle:'<circle cx="50" cy="50" r="46"/>',square:'<rect x="4" y="4" width="92" height="92"/>',triangle:'<polygon points="50,4 96,96 4,96"/>'}[shape.form]
   const svg=`<svg viewBox="0 0 100 100" width="100" height="100" role="img" aria-label="${escape(block.text)}" fill="${shape.outlined?'none':shape.color}" stroke="${shape.color}" stroke-width="3">${geometry}</svg>`
-  return `<div ${attributes} data-catalog-block>${linkedBody(svg,block.link,options?.resolveLink)}</div>`
+  return `<div ${attributes} data-catalog-block>${linkedBody(svg,block.link,options?.resolveLink,false,'primary','Open linked shape')}</div>`
  }
  if(block.kind!=='chart')return ''
  const {type,rows}=block.chart,values=rows.map(row=>row[1]),low=Math.min(0,...values),high=Math.max(0,...values),span=high-low||1,x=value=>20+360*(value-low)/span,y=value=>180-160*(value-low)/span
