@@ -1,7 +1,8 @@
 import {linkedBody} from './pane-body-markup.mjs'
 const escape=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 export const catalogRules=[
- '[data-block-type="audio"]{margin:0}[data-block-type="audio"] audio{display:block;width:100%;max-width:600px;min-width:0}',
+ '[data-block-type="audio"]{margin:0}',
+ '[data-block-type="audio"] audio{display:block;width:100%;max-width:600px;min-width:0}',
  '[data-block-type="line"]{width:100%;box-sizing:border-box;border:0;border-top:1px solid currentColor}',
  '@keyframes pane-scroll{from{transform:translateX(100%)}to{transform:translateX(-100%)}}',
  '.pane-scroll-line{overflow:hidden}',

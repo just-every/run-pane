@@ -187,6 +187,10 @@
       "sha256": "fd3f532006b9f509b6812f5ecffc98c6e8ddabcb2ddb580dcb681610b9bce306",
       "executable": false
     },
+    "docs/CLAIMS.md": {
+      "sha256": "c253a209b3e81dde5cb21fc63779ace1d30475a13166ccf6da68f6cea5fee674",
+      "executable": false
+    },
     "docs/CUSTOM-CODE.md": {
       "sha256": "7f03232afbebd3f69561ed5792a965304a9acbbcfd79a59c6cd39e818b472df7",
       "executable": false
@@ -229,6 +233,18 @@
     },
     "edition.json": {
       "sha256": "1b70abfc43d7390ccbb29b8ff56c315e6204ce80bdc0bca22ad2e17ca673c736",
+      "executable": false
+    },
+    "fixtures/audio/README.md": {
+      "sha256": "b0112c26ee7d270243560fc63cce9dfd8ac2767e60b6547de89df03d029577ae",
+      "executable": false
+    },
+    "fixtures/audio/workshop.m4a": {
+      "sha256": "9cdf5d47914822caf49899679029f73c0dc6c0353d2b1b327b561b3e21da0ef1",
+      "executable": false
+    },
+    "fixtures/audio/workshop.mp3": {
+      "sha256": "e8d178f39546f630677de53eb027271531b0851bda437dd2c043ff330d7e6b7e",
       "executable": false
     },
     "fixtures/images/apollo17.jpg": {
@@ -599,12 +615,16 @@
       "sha256": "6b1e73e41aff2df9b3f53085dbfffb1d12349e7fae6ee6e9bf7f2e45db88f028",
       "executable": false
     },
+    "public/pane-canvas-forms.mjs": {
+      "sha256": "d28e7839a215716130ed78a3ec0c3886ecfc7e4b8daf3098eebd1458b41e4f07",
+      "executable": false
+    },
     "public/pane-canvas.mjs": {
       "sha256": "a7ce8bcd1be34e8a3e50c8d7ec1ec08cc02128b560416c25cdc669dd04805c0a",
       "executable": false
     },
     "public/pane-catalog.mjs": {
-      "sha256": "dd1dfc124d7847afb97692444b3c013579150f2d00132eabcf703bb1760e43b0",
+      "sha256": "755dc8edce612151fc5a9c619a5d8167b47129e09866208567a81b193d9bafa0",
       "executable": false
     },
     "public/pane-custom-code.js": {
@@ -1063,6 +1083,10 @@
       "sha256": "2c24b1228e4403f4ae0f07e4df645988606cff8e22ffe8dbeb6de3af11e1134c",
       "executable": false
     },
+    "scripts/audio-journey.mjs": {
+      "sha256": "712a7e27e007578b6c8da8dac53ff90fb301dd7ea5daaa782d315fad7f8d4cec",
+      "executable": false
+    },
     "scripts/browser-journey.mjs": {
       "sha256": "f256fe5f787f0f21f06ccdda17000ba3bfaabe98f9867a508df0b9308c1d8d49",
       "executable": false
@@ -1075,8 +1099,16 @@
       "sha256": "8f973731c4d186380bcdfb18ecee158667304379161390aabd1f5a55c50f7074",
       "executable": false
     },
+    "scripts/catalog-journey.mjs": {
+      "sha256": "e46a453dfc7e2462fbe1b8919d293aced997c0a0587a04726cce7164d142d4f7",
+      "executable": false
+    },
     "scripts/components-code-journey.mjs": {
       "sha256": "8932610b8b7c0d38c9ce78ed30e98bb95b1f2754bef6a63beee0cfb25cba22f5",
+      "executable": false
+    },
+    "scripts/contract-docs.mjs": {
+      "sha256": "1f41f4fd8ee8d8131ff9a104e112b54d644cced89e26ac171bccc69943994b9d",
       "executable": false
     },
     "scripts/custody-journey.mjs": {
@@ -1265,6 +1297,10 @@
     },
     "scripts/gates-journey.mjs": {
       "sha256": "464b808449fa76530b03dd66c1fa6ad4dae248b6a343c080afcde0839157cb84",
+      "executable": false
+    },
+    "scripts/grid-forms-journey.mjs": {
+      "sha256": "476f82cd2505ff20e7101039c5cfe241e8fa79504d5322fc71f192de4b2a353b",
       "executable": false
     },
     "scripts/health-browser-journey.mjs": {
