@@ -21,7 +21,9 @@ for(const area of contract.areas){
  }
 }
 const claims='# Pane claims\n\nGenerated from CONTRACT.md by `node scripts/contract-docs.mjs write`. Status describes application proof; provider and legal boundaries remain in the contract.\n\n| Clause | Status | Evidence | Gap |\n| --- | --- | --- | --- |\n'+rows.map(row=>`| \`${row[1]}\` | ${row[4]} | ${row[5].trim()} | ${row[6].trim()} |`).join('\n')+'\n'
-for(const [file,expected] of [['CONTRACT.md',source],['ACCEPTANCE.md',acceptance],['docs/CLAIMS.md',claims]]){
+// Preserve code paths and destinations; spell prose conjunctions without ambiguous slashes.
+const plain=text=>text.split(/(`[^`]*`|https?:\/\/[^\s)]+)/g).map((part,index)=>index%2?part:part.replace(/\b([A-Za-z][A-Za-z0-9-]*)\/(?=[A-Za-z])/g,'$1 and ')).join('')
+for(const [file,expected] of [['CONTRACT.md',source],['ACCEPTANCE.md',plain(acceptance)],['docs/CLAIMS.md',plain(claims)]]){
  if(mode==='write')await writeFile(file,expected)
  else if(await readFile(file,'utf8').catch(()=>null)!==expected)throw Error(file+' is stale; run node scripts/contract-docs.mjs write.')
 }

@@ -13,6 +13,20 @@ const results=[]
 async function check(page,label,width){
  await page.evaluate(()=>document.fonts.ready)
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,label+' overflow at '+width)
+ if(!label.startsWith('catalog')){
+  await page.keyboard.press('Tab');assert.equal(await page.locator(':focus').innerText(),'Skip to content');await page.keyboard.press('Enter');assert.equal(await page.evaluate(()=>location.hash),'#main')
+  if(width===390){await page.locator('.public-menu-mobile>summary').focus();await page.keyboard.press('Enter');assert.equal(await page.locator('.public-menu-mobile').getAttribute('open'),'','Mobile navigation opens by keyboard')}
+  const menu=page.locator(width===390?'.public-menu-mobile nav':'.public-menu-desktop');assert.deepEqual(await menu.locator('a').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('href'))),['/site','/site/services','/site/visit-us','/site/search'],'Every page destination is reachable from navigation')
+  const controls=await page.locator('a,button,summary').evaluateAll(nodes=>nodes.filter(node=>node.getClientRects().length&&node.tabIndex>=0).map(node=>({tag:node.tagName,text:node.innerText.trim()})))
+  assert.ok(controls.some(control=>control.text==='Skip to content'),'Keyboard inventory includes the skip link')
+  const reached=new Set()
+  for(let step=0;step<controls.length+3;step++){
+   await page.keyboard.press('Tab')
+   const focus=await page.evaluate(()=>{const node=document.activeElement;if(node===document.body)return null;const style=getComputedStyle(node);return {key:node.tagName+node.innerText.trim(),visible:node.getClientRects().length>0,outline:style.outlineStyle,shadow:style.boxShadow}})
+   if(focus){assert.equal(focus.visible,true);assert.ok(focus.outline!=='none'||focus.shadow!=='none',label+' visible keyboard focus');reached.add(focus.key)}
+  }
+  for(const control of controls)assert.ok(reached.has(control.tag+control.text),label+' keyboard reaches '+control.text)
+ }
  await page.evaluate(axe)
  const violations=await page.evaluate(async()=> (await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa','wcag22aa']}})).violations.map(item=>({id:item.id,targets:item.nodes.map(node=>node.target)})))
  assert.deepEqual(violations,[],label+' axe at '+width)
@@ -28,6 +42,18 @@ try{
   try{
    assert.equal((await context.request.post(origin+'/api/pane/templates/start',{headers:{Origin:origin},data:{template:id,name:'synthetic-pane-1'}})).status(),401)
    await fixture.bootstrap(context);await page.goto(origin+'/setup');await page.getByRole('checkbox').check();await Promise.all([page.waitForURL('**/app'),page.getByRole('button',{name:'Finish setup'}).click()])
+   if(index===0){
+    for(const width of [1440,390]){
+     await page.setViewportSize({width,height:1000})
+     for(const [path,label] of [['/app','start-pages'],['/app/sites','start-sites']]){
+      await page.goto(origin+path)
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,label+' overflow')
+      await page.screenshot({path:resolve(folder,label+'-'+width+'.png'),fullPage:true})
+      await page.getByRole('link',{name:'Choose a template'}).waitFor()
+     }
+    }
+    await page.setViewportSize({width:1440,height:1000})
+   }
    await page.goto(origin+'/app/templates')
    if(index===0){
     assert.deepEqual(await page.locator('[data-template-id]').evaluateAll(nodes=>nodes.map(node=>node.dataset.templateId)),expected,'Catalog offers the complete independently specified set')
@@ -35,6 +61,9 @@ try{
     await call('/api/pane/templates/start',{template:'unknown',name:'synthetic-pane-1'},400)
     await call('/api/pane/templates/start',{template:id,name:''},400)
     await call('/api/pane/templates/start',{template:id,name:'synthetic-pane-1'},403,{Origin:'https://elsewhere.invalid'})
+    const issued=await (await call('/api/pane/tokens/create',{name:'synthetic-pane-2',scopes:['draft:write'],days:1})).json()
+    const tokenContext=await browser.newContext()
+    try{assert.equal((await tokenContext.request.post(origin+'/api/pane/templates/start',{headers:{Origin:origin,Authorization:'Bearer '+issued.token},data:{template:id,name:'synthetic-pane-1'}})).status(),403,'A scoped token cannot start a site')}finally{await tokenContext.close()}
     assert.equal((await state()).draft,null,'Refused starts create no draft')
     for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await check(page,'catalog',width);const account=page.locator('[data-tip="Account and team"]');await account.hover();await page.getByRole('tooltip',{name:'Account and team'}).waitFor();await page.mouse.move(0,0);await account.focus();await page.keyboard.press('Tab');await page.keyboard.press('Shift+Tab');await page.getByRole('tooltip',{name:'Account and team'}).waitFor()}
     await page.setViewportSize({width:1440,height:1000})
