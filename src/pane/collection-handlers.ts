@@ -1,3 +1,4 @@
+import {adobeResponse} from './adobe-fonts'
 import {saveItemSchedule} from './item-schedules'
 import type {Bindings} from '../auth.server'
 import {dashboardData} from './data'
@@ -47,7 +48,7 @@ export async function collectionPrivateResponse(request:Request,env:Bindings,act
     if(!current)throw Error('Save a collection item before editing its description.')
     const selected=collectionTarget(current.site.collections,collection,item)
     if(!selected.item||selected.collection.fields.find(candidate=>candidate.id===field)?.type!=='richText')throw Error('Choose an existing item rich description.')
-    return document('Collection description',canvasEditor(data,'',undefined,{collection:selected.collection.id,item:selected.item.id,field}),'site')
+    return adobeResponse(await document('Collection description',canvasEditor(data,'',undefined,{collection:selected.collection.id,item:selected.item.id,field}),'site'),current.site.styles)
    }
    return document('Collections',shell(data,'collections',collectionsEditor(data,collection,item)))
   }

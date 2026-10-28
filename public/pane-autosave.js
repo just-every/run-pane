@@ -16,7 +16,13 @@ for (const form of document.querySelectorAll('form[data-autosave]')) {
   status.textContent = unchanged ? 'Draft saved. Not published.' : 'Unsaved changes.'
   if (!blocked && !unchanged) timer = setTimeout(save, 600)
  }
- function restore(value) { for (const field of fields) field.value = value[field.name] ?? ''; form.dispatchEvent(new Event('draftrestore')); changed(false) }
+ function restore(value) {
+  for (const field of fields) if (field.tagName !== 'SELECT') field.value = value[field.name] ?? ''
+  // Restore revision data before rebuilding choices that depend on that data.
+  form.dispatchEvent(new Event('draftrestore'))
+  for (const field of fields) if (field.tagName === 'SELECT') field.value = value[field.name] ?? ''
+  changed(false)
+ }
  function adopt(revision) {
   base.value = revision.id
   const bar = document.querySelector('[data-live]')

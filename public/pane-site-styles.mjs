@@ -1,16 +1,20 @@
+import {initAdobeFonts} from './pane-adobe-fonts.mjs'
 for(const root of document.querySelectorAll('[data-site-style-settings]')){
  const form=root.closest('form'),field=root.querySelector('[data-font-state]'),upload=root.querySelector('[data-font-upload]'),status=root.querySelector('[data-font-status]')
  function render(){
   const fonts=JSON.parse(field.value)
+  const adobe=JSON.parse(root.querySelector('[data-adobe-state]').value)
+  const choices=fonts.concat((adobe?.families??[]).map(name=>({id:'adobe:'+name,name:name+' · Adobe'})))
   for(const select of root.querySelectorAll('[data-font-choice]')){
    const selected=select.value
-   select.querySelectorAll('[data-uploaded]').forEach(option=>option.remove())
-   for(const font of fonts){let option=[...select.options].find(option=>option.value===font.id);if(!option){option=new Option(font.name,font.id);option.dataset.uploaded='';select.add(option)}}
+   select.querySelectorAll('[data-uploaded],[data-adobe]').forEach(option=>option.remove())
+   for(const font of choices){const option=new Option(font.name,font.id);option.dataset[font.id.startsWith('adobe:')?'adobe':'uploaded']='';select.add(option)}
    select.value=selected
   }
   const list=root.querySelector('[data-uploaded-fonts]');list.replaceChildren()
   for(const font of fonts){const row=document.createElement('p');row.textContent=font.name+' · '+font.format.toUpperCase();list.append(row)}
  }
+ initAdobeFonts(root,render)
  upload.addEventListener('change',async()=>{
   const file=upload.files?.[0];if(!file)return
   upload.disabled=true;status.textContent='Checking font…'
@@ -27,6 +31,13 @@ for(const root of document.querySelectorAll('[data-site-style-settings]')){
   const preview=document.querySelector('[data-style-preview]'),link=root.querySelector('[data-style-preview-link]'),message=root.querySelector('[data-style-status]')
   const url=new URL(link.href);url.pathname=url.pathname.replace(/^\/preview\/[^/]+/,'/preview/'+event.detail.id);link.href=url.href
   if(!preview)return
+  const styles=event.detail.site.styles,adobe=styles?.adobe,active=adobe&&[styles.heading,styles.body].some(id=>id.startsWith('adobe:'))
+  let adobeSheet=preview.querySelector('[data-adobe-fonts]')
+  if(active){
+   if(!adobeSheet){adobeSheet=document.createElement('link');adobeSheet.rel='stylesheet';adobeSheet.dataset.adobeFonts='';adobeSheet.referrerPolicy='no-referrer';preview.append(adobeSheet)}
+   const href='https://use.typekit.net/'+adobe.project+'.css'
+   if(adobeSheet.href!==href)adobeSheet.href=href
+  }else adobeSheet?.remove()
   for(const site of preview.querySelectorAll('.public-site'))site.toggleAttribute('data-site-styles',!!event.detail.site.styles)
   let sheet=preview.querySelector('[data-style-sheet]')
   if(!sheet){sheet=document.createElement('link');sheet.rel='stylesheet';sheet.dataset.styleSheet='';preview.append(sheet)}

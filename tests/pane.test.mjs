@@ -1257,13 +1257,14 @@ test('policy starters name actual services, remain editable drafts and require o
   const boot=await app.request('/auth/bootstrap',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})})
   const cookie=boot.headers.get('set-cookie').split(';')[0]
   const post=(path,body,who=cookie)=>app.request(path,{method:'POST',headers:{Origin:origin,Cookie:who,'Content-Type':'application/json'},body:JSON.stringify(body)})
-  const site={...fixture,analytics:{ga4:'G-SYNTH12345',vane:{origin:'https://vane.example.test',site:'synthetic-pane-1'}}}
+  const site={...fixture,styles:{body:'adobe:synthetic-pane-body',adobe:{project:'syn0001',families:['synthetic-pane-body'],authorized:true}},analytics:{ga4:'G-SYNTH12345',vane:{origin:'https://vane.example.test',site:'synthetic-pane-1'}}}
   const draft=await(await post('/api/pane/prepare',{site})).json();await post('/api/pane/publish',{revision:draft.id})
   assert.equal((await post('/api/pane/policies/generate',{base:draft.id},'')).status,401)
   const generated=await(await post('/api/pane/policies/generate',{base:draft.id})).json()
   assert.equal(generated.site.pages.length,site.pages.length+3)
   const privacy=generated.site.pages.find(p=>p.slug==='privacy-policy')
   for(const name of ['Google Analytics 4 (GA4)','Vane','Cloudflare Turnstile','name, email address and message','not legal advice','Rejected form content retention is off by default','30 days','legal hold','excluded from installation archives'])assert.ok(privacy.body.includes(name),name)
+  assert.ok(privacy.body.includes(site.styles.adobe.project),'The policy draft identifies the owner-connected Adobe project')
   assert.doesNotMatch(privacy.body,/HubSpot|Orbit|Meta Pixel|Mailchimp/,'Unconnected services are never invented')
   assert.equal((await app.request('/site/privacy-policy')).status,404)
   const edited=await(await post('/api/pane/prepare',{base:generated.id,site:{...generated.site,pages:generated.site.pages.map(p=>p.slug==='privacy-policy'?{...p,body:p.body+'\n\nContact our business at the studio.'}:p)}})).json()
@@ -2226,11 +2227,14 @@ test('owner style drafts retain self-hosted fonts through preview, conflict, pub
  const fontBytes=await readFile('public/fonts/noto-serif/noto-serif-latin-wght-normal.woff2')
  const font={id:'font-'+crypto.randomUUID(),name:'Workshop serif',format:'woff2',data:fontBytes.toString('base64')}
  const formats=await Promise.all(['woff','ttf','otf'].map(async format=>({id:'font-'+crypto.randomUUID(),name:'Workshop '+format,format,data:(await readFile('tests/fonts/synthetic-pane.'+format)).toString('base64')})))
- const styles={heading:font.id,body:'figtree',primary:'#075985',text:'#1f0717',background:'#ffffff',sectionBackground:'#f0f9ff',button:'pill',spacing:40,fonts:[font,...formats]}
+ const styles={heading:font.id,body:'adobe:synthetic-pane-body',adobe:{project:'syn0001',families:['synthetic-pane-body'],authorized:true},primary:'#075985',text:'#1f0717',background:'#ffffff',sectionBackground:'#f0f9ff',button:'pill',spacing:40,fonts:[font,...formats]}
  const site={...initial.site,styles},before=(await data()).revisions.length
  for(const cookie of [admin,member,'']){
   assert.equal((await json('/api/pane/prepare',{site,base:initial.id},cookie)).status,cookie?403:401)
   assert.equal((await json('/api/pane/autosave',{site,base:initial.id},cookie)).status,cookie?403:401)
+ }
+ for(const adobe of [{...styles.adobe,authorized:false},{...styles.adobe,project:'https://elsewhere.invalid'},{...styles.adobe,families:['synthetic-pane-body\";color:red'] }]){
+  const refused=await json('/api/pane/autosave',{base:initial.id,site:{...site,styles:{...styles,adobe}}});assert.equal(refused.status,400,'Invalid or unauthorized external font settings never save')
  }
  const bad=await json('/api/pane/autosave',{base:initial.id,site:{...site,styles:{...styles,fonts:[{...font,data:Buffer.from('synthetic-pane-1').toString('base64')}]}}})
  assert.equal(bad.status,400)
@@ -2249,7 +2253,7 @@ test('owner style drafts retain self-hosted fonts through preview, conflict, pub
  assert.equal((await f.request('/site?pane-font='+font.id+'&pane-revision='+draft.id)).status,404,'A draft font is not public')
  for(const slug of ['home','about','services']){
   const preview=await f.request('/preview/'+draft.id+'/'+slug,{headers:{Cookie:owner}});assert.equal(preview.status,200)
-  const html=await preview.text();assert.ok(html.includes('font-display:swap'));assert.ok(html.includes('Pane-'+font.id));assert.ok(html.includes('#075985'));assert.ok(html.includes('border-radius:999px'))
+  const html=await preview.text();assert.ok(html.includes('https://use.typekit.net/'+styles.adobe.project+'.css'));assert.ok(html.includes('font-family:"synthetic-pane-body"'));assert.ok(html.includes('font-display:swap'));assert.ok(html.includes('Pane-'+font.id));assert.ok(html.includes('#075985'));assert.ok(html.includes('border-radius:999px'))
  }
  const previewFont='/preview/'+draft.id+'/home?pane-font='+font.id
  assert.equal((await f.request(previewFont,{redirect:'manual'})).status,303)
@@ -2258,14 +2262,16 @@ test('owner style drafts retain self-hosted fonts through preview, conflict, pub
  const sheet=await f.request(cssPath,{headers:{Cookie:owner}});assert.match(sheet.headers.get('content-type'),/text\/css/);assert.ok((await sheet.text()).includes('Pane-'+font.id))
  const privateFont=await f.request(previewFont,{headers:{Cookie:owner}});assert.equal(privateFont.headers.get('content-type'),'font/'+font.format);assert.deepEqual(Buffer.from(await privateFont.arrayBuffer()),fontBytes)
  assert.equal((await json('/api/pane/publish',{revision:draft.id})).status,200)
+ const live=await f.request('/site');assert.ok((await live.text()).includes('https://use.typekit.net/'+styles.adobe.project+'.css'));const policy=live.headers.get('content-security-policy');assert.match(policy,/font-src 'self' https:\/\/use\.typekit\.net/);assert.doesNotMatch(policy.split(';').find(part=>part.trim().startsWith('script-src')),/typekit|unsafe-inline/,'Adobe fonts do not grant external script authority')
  const asset='/site?pane-font='+font.id+'&pane-revision='+draft.id
  const delivered=await f.request(asset);assert.equal(delivered.status,200);assert.match(delivered.headers.get('cache-control'),/no-store/);assert.equal(delivered.headers.get('x-content-type-options'),'nosniff');assert.deepEqual(Buffer.from(await delivered.arrayBuffer()),fontBytes)
  assert.equal((await f.request(asset,{method:'HEAD'})).headers.get('content-length'),String(fontBytes.length))
  assert.equal((await f.request(asset.replace(draft.id,initial.id))).status,404,'A stale live revision cannot deliver a font')
  for(const item of formats){const response=await f.request('/site?pane-font='+item.id+'&pane-revision='+draft.id);assert.equal(response.status,200);assert.equal(response.headers.get('content-type'),'font/'+item.format);assert.deepEqual(Buffer.from(await response.arrayBuffer()).toString('base64'),item.data)}
  const archive=await exportData(f.db),restored=await runtime()
- try{assert.equal((await restore(restored.db,archive)).phase,'complete');const response=await restored.request(asset);assert.equal(response.status,200);assert.deepEqual(Buffer.from(await response.arrayBuffer()),fontBytes)}finally{await restored.mf.dispose()}
+ try{assert.equal((await restore(restored.db,archive)).phase,'complete');const response=await restored.request(asset);assert.equal(response.status,200);assert.deepEqual(Buffer.from(await response.arrayBuffer()),fontBytes);assert.ok((await(await restored.request('/site')).text()).includes('https://use.typekit.net/'+styles.adobe.project+'.css'))}finally{await restored.mf.dispose()}
  assert.equal((await json('/api/pane/rollback',{revision:initial.id})).status,200)
+ assert.ok(!(await(await f.request('/site')).text()).includes('use.typekit.net'),'Rollback removes the Adobe connection from the live page')
  assert.equal((await f.request(asset)).status,404,'Rollback withdraws the uploaded font from public delivery')
  for(const expected of [initial,draft])assert.deepEqual((await data()).revisions.find(row=>row.id===expected.id),expected,'Style edits and approvals leave complete prior snapshots immutable')
  const activityRows=await(await f.request('/api/pane/activity',{headers:{Cookie:owner}})).json();assert.ok(activityRows.some(row=>row.subject==='revision:'+draft.id&&row.action==='edit'),'The style draft has transactional activity')
