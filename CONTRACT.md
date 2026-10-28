@@ -659,7 +659,7 @@ A form can ask for marketing consent with the owner's wording, record the exact 
 
 **Acceptance evidence:** With Mango connected, submit a form with email consent ticked and SMS consent unticked; see consent text, time and page recorded and only the email consent reach the Mango contact. Repeat with a Mailchimp test audience and see the contact subscribed with marketing permission and the consent text, time and page stored on the Mailchimp member, and the SMS consent absent. Repeat with Orbit and see the consent on the Orbit contact.
 
-*Status:* missing. No consent fields.
+*Status:* partial. Native email and SMS marketing choices are separate optional unchecked boxes. SMS names the business and message frequency. Exact published wording, explicit affirmative and absent choices, server acceptance time, page, publication and enquiry identity remain immutable through retries, durable intake, person export and erasure, native CSV and installation archives. Stale published prompts require a new explicit choice. Recording consent initiates no subscription delivery. Gap: Mango email-only propagation, Mailchimp subscription with marketing permission and member consent metadata while SMS consent remains absent, Orbit contact consent delivery and all real-provider proofs require authorized Mango and Orbit tenants and a Mailchimp test audience and key, none held for this run.
 
 ### Bookings, checkout and connections
 
@@ -1162,8 +1162,8 @@ Judged from the code and tests at commit `3b35726211c3a5ac20eeba8b0f8b82b37d2995
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
 | Published | 16 | 0 | 0 | 16 |
-| Target and push further | 35 | 30 | 46 | 111 |
-| All | 51 | 30 | 46 | 127 |
+| Target and push further | 35 | 31 | 45 | 111 |
+| All | 51 | 31 | 45 | 127 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -1246,7 +1246,7 @@ Judged from the code and tests at commit `3b35726211c3a5ac20eeba8b0f8b82b37d2995
 | `FORM-005` | Lead routing to Orbit, HubSpot and signed webhooks | target | missing |  | Submissions are stored locally only. |
 | `FORM-006` | Enquiry ownership, status and follow-up | target | done | `tests/pane.test.mjs` — enquiries carry an owner, status and follow-up time; unanswered ones are reminded then escalated by business day and replied ones leave the queue (SendGrid network edge: assignee reminder, owner fallback, one-time owner escalation, no enquiry text in mail; weekend and daylight-saving business days; role refusals; replied leaves the queue; reopen); `scripts/acknowledgment-journey.mjs` — assign an owner and mark an enquiry replied from the inbox into Handled at 1440 and 390 | |
 | `FORM-007` | Submission export and Google Sheets | target | partial | `tests/pane.test.mjs` — native submission CSV filters stable forms and inclusive UTC dates beyond the inbox limit without exposing erased or unauthorized records; composable Pane roles; private uploads join native archive restore and person export and erasure; durable typed intake; rejected PDFs remain absent until explicit rescue. `scripts/forms-journey.mjs` — native CSV downloads through Inquiries at 1440 and 390. | Google Sheet connection, append on submission, connector lifecycle and real provider proof remain unimplemented. Held: an owner-authorized Google user and Sheet, test-user access, OAuth scopes and callback registration on the real origin. Earlier flattened enquiries remain archive-only because their original form identity and structured values were not captured. |
-| `FORM-008` | Consent capture for email and SMS | target | missing |  | No consent fields. |
+| `FORM-008` | Consent capture for email and SMS | target | partial | `tests/pane.test.mjs` — marketing choices bind published wording to immutable enquiry receipts and travel through export, archives and erasure without subscription delivery; durable typed intake retains private upload chunks through workspace outage and drains once after recovery. `scripts/forms-journey.mjs` — native owner configuration, separate unchecked choices, keyboard and axe, inbox records and CSV at 1440 and 390. `scripts/custody-journey.mjs` — portable marketing records, person erasure and captured retry refusal at both widths. | Mango email-only propagation, Mailchimp subscription with marketing permission and member consent text, time and page while SMS consent remains absent, Orbit contact consent delivery and all real-provider proofs remain unimplemented. Held: authorized Mango and Orbit tenants and a Mailchimp test audience and key, none supplied for this run. |
 | `LINK-001` | Booking through Dial, Calendly or Acuity | target | missing |  | No booking embeds; the previous contract excluded bookings. |
 | `LINK-002` | Checkout through Stall, Stripe Payment Links or PayPal | target | missing |  | No checkout; the previous contract excluded payments. |
 | `LINK-003` | Newsletter signup through Mango or Mailchimp | target | missing |  | No newsletter signup. |

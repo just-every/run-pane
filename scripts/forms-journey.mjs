@@ -8,6 +8,7 @@ const browser=await chromium.launch({headless:true,...(process.env.PANE_CHROMIUM
 const owner=await browser.newContext({acceptDownloads:true}),visitor=await browser.newContext()
 const page=await owner.newPage(),live=await visitor.newPage(),origin=fixture.origin
 await fixture.protect(visitor)
+const axe=await readFile('node_modules/axe-core/axe.min.js','utf8')
 const folder=resolve(process.env.PANE_SCREENSHOTS??'./test-results/forms');await mkdir(folder,{recursive:true})
 const data=async()=> (await owner.request.get(origin+'/api/pane')).json()
 async function call(path,value){const response=await owner.request.post(origin+path,{headers:{Origin:origin},data:value});assert.ok(response.ok(),await response.text());return response.json()}
@@ -20,6 +21,12 @@ try{
  await page.goto(origin+'/app/sites');const settings=page.getByRole('region',{name:'Form settings'});await settings.getByText('Create a form',{exact:true}).click()
  await settings.getByLabel('Form name',{exact:true}).fill('Workshop quote');await settings.getByLabel('Confirmation message',{exact:true}).fill('Your workshop request has arrived.')
  const phone=settings.locator('[data-fields] > fieldset').nth(2);await phone.getByLabel('Help text',{exact:true}).fill('Use the number where we can reach you.');await phone.getByLabel('Validation message',{exact:true}).fill('A reachable US phone is required.')
+ for(const [key,type,label] of [['email_marketing','email-consent','Send me studio news by email.'],['sms_marketing','sms-consent','Send me studio updates by text.']]){
+  await settings.getByRole('button',{name:'Add field',exact:true}).click();const field=settings.locator('[data-fields] > fieldset').last()
+  await field.getByLabel('Field key',{exact:true}).fill(key);await field.getByLabel('Field type',{exact:true}).selectOption(type);await field.getByLabel('Field label',{exact:true}).fill(label)
+  assert.equal(await field.getByLabel('Required field',{exact:true}).isEnabled(),false)
+  if(type==='sms-consent'){await field.getByLabel('SMS business name',{exact:true}).fill('Cedar Street Studio');await field.getByLabel('SMS message frequency',{exact:true}).fill('Up to four messages per month')}
+ }
  await page.setViewportSize({width:1440,height:1000});await capture(page,'form-builder',1440)
  await settings.getByRole('button',{name:'Save form draft',exact:true}).click();await page.waitForURL(url=>url.searchParams.has('notice'))
  const form=(await data()).draft.site.forms[0]
@@ -33,7 +40,14 @@ try{
   await page.setViewportSize({width,height:1000});await live.setViewportSize({width,height:1000})
   await page.goto(origin+'/app/sites');await settings.getByText('Workshop quote',{exact:true}).click();await capture(page,'saved-form-builder',width)
   await page.goto(origin+'/app?page=about');await page.getByText('Form placement',{exact:true}).click();await capture(page,'form-placement',width)
-  await live.goto(origin+'/site/about');await fill();await live.getByLabel('Email address (required)',{exact:true}).fill('invalid-email');await live.getByRole('button',{name:'Request quote',exact:true}).click()
+  await live.goto(origin+'/site/about');await fill();
+  const emailChoice=live.getByRole('checkbox',{name:'Send me studio news by email.',exact:true}),smsChoice=live.getByRole('checkbox',{name:/Send me studio updates by text/})
+  assert.equal(await emailChoice.isChecked(),false);assert.equal(await smsChoice.isChecked(),false)
+  assert.match(await smsChoice.getAttribute('aria-describedby')??'',/^$/)
+  await emailChoice.focus();await live.keyboard.press('Space');assert.equal(await emailChoice.isChecked(),true);await live.keyboard.press('Tab');assert.equal(await smsChoice.evaluate(node=>node===document.activeElement),true);assert.equal(await smsChoice.isChecked(),false)
+  await live.addScriptTag({content:axe});assert.deepEqual((await live.evaluate(()=>axe.run(document.querySelector('.contact-section'),{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}}))).violations,[])
+  await capture(live,'marketing-choices-keyboard',width)
+ await live.getByLabel('Email address (required)',{exact:true}).fill('invalid-email');await live.getByRole('button',{name:'Request quote',exact:true}).click()
   await live.getByText('Enter a valid email address.',{exact:true}).waitFor();assert.equal(await live.getByLabel('Your name (required)',{exact:true}).inputValue(),'Synthetic visitor')
   const number=live.getByLabel('US phone (required)',{exact:true});assert.equal(await number.getAttribute('aria-invalid'),'true');await live.getByText('A reachable US phone is required.',{exact:true}).waitFor();assert.match(await number.getAttribute('aria-describedby'),/field-phone-help field-phone-error/)
   await capture(live,'field-errors-retained-answers',width)
@@ -41,7 +55,10 @@ try{
   await live.getByLabel('Project PDF',{exact:true}).setInputFiles({name:'wrong.txt',mimeType:'text/plain',buffer:Buffer.from('wrong')});await live.getByRole('button',{name:'Request quote',exact:true}).click();await live.getByText('Choose a PDF file.',{exact:true}).waitFor();await capture(live,'file-type-error',width)
   await live.getByLabel('Project PDF',{exact:true}).setInputFiles({name:'project.pdf',mimeType:'application/pdf',buffer:Buffer.alloc(5*1024*1024+1)});await live.getByRole('button',{name:'Request quote',exact:true}).click();await live.getByText('Choose a file of 5 MB or smaller.',{exact:true}).waitFor();await capture(live,'file-size-error',width)
   await live.getByLabel('Project PDF',{exact:true}).setInputFiles({name:'project.pdf',mimeType:'application/pdf',buffer:pdf});await live.getByRole('button',{name:'Request quote',exact:true}).click();await live.waitForURL(url=>url.searchParams.has('sent'));await live.getByRole('status').filter({hasText:'Your workshop request has arrived.'}).waitFor();await capture(live,'confirmation',width)
-  await page.goto(origin+'/app/inquiries');const file=page.getByRole('link',{name:'project.pdf',exact:true}).first();const downloadEvent=page.waitForEvent('download');await file.click();const download=await downloadEvent,downloadPath=resolve(folder,'private-project-'+width+'.pdf');await download.saveAs(downloadPath);assert.deepEqual(await readFile(downloadPath),pdf);await capture(page,'private-file-inbox',width)
+  await page.goto(origin+'/app/inquiries');const receipt=(await data()).messages[0],consent=JSON.parse(receipt.marketing_consent)
+  assert.deepEqual(consent.choices.map(choice=>[choice.channel,choice.granted]),[['email',true],['sms',false]]);assert.equal(consent.inquiryId,receipt.id);assert.equal(consent.page,'about');assert.equal(consent.receivedAt,receipt.created_at)
+  const detail=page.locator('.message').first().getByText('Marketing consent records',{exact:true});await detail.click();assert.match(await page.locator('.message').first().innerText(),/SMS: Not consented/);await capture(page,'recorded-marketing-choices',width)
+  const file=page.getByRole('link',{name:'project.pdf',exact:true}).first();const downloadEvent=page.waitForEvent('download');await file.click();const download=await downloadEvent,downloadPath=resolve(folder,'private-project-'+width+'.pdf');await download.saveAs(downloadPath);assert.deepEqual(await readFile(downloadPath),pdf);await capture(page,'private-file-inbox',width)
   const stored=(await data()).messages[0].files[0],locked=await visitor.request.get(origin+'/api/pane/files/'+stored.id);assert.equal(locked.status(),401)
   await live.goto(origin+'/site/contact');await live.getByRole('heading',{name:'Workshop quote',exact:true}).waitFor();assert.equal(await live.getByLabel('US phone (required)',{exact:true}).getAttribute('aria-describedby'),'field-phone-help');await capture(live,'second-placement',width)
   const direct=await visitor.request.post(origin+'/site/contact',{headers:{Origin:origin},multipart:{idempotency:crypto.randomUUID(),name:'Kept answer',email:'bad-email',phone:'',message:'Please keep this answer.'}});assert.equal(direct.status(),400)
@@ -66,7 +83,7 @@ try{
  const send=async(slug,at,message='Synthetic CSV request')=>{
   process.env.PANE_BROWSER_NOW=at
   const id=crypto.randomUUID(),proof='synthetic-pane-3:'+await page.evaluate(async slug=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(slug))),b=>b.toString(16).padStart(2,'0')).join(''),slug)
-  const response=await visitor.request.post(origin+'/site/'+slug,{headers:{Origin:origin},multipart:{idempotency:id,name:'Synthetic CSV visitor',email:['synthetic-pane-82','example.test'].join('@'),phone:'312 555 0123',message,'cf-turnstile-response':proof},maxRedirects:0});assert.equal(response.status(),303,await response.text());return id
+  const response=await visitor.request.post(origin+'/site/'+slug,{headers:{Origin:origin},multipart:{idempotency:id,name:'Synthetic CSV visitor',email:['synthetic-pane-82','example.test'].join('@'),phone:'312 555 0123',message,consent_schema:(await (await visitor.request.get(origin+'/site/'+slug)).text()).match(/name="consent_schema" value="([^"]+)"/)[1],'cf-turnstile-response':proof},maxRedirects:0});assert.equal(response.status(),303,await response.text());return id
  }
  const before=await send('contact','2030-06-20T23:59:59.999Z')
  const first=await send('contact','2030-06-21T00:00:00.000Z','A comma, a "quote" and a new line'),expected=[first]

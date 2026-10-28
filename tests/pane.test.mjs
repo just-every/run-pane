@@ -1600,15 +1600,20 @@ const quoteDefinition={id:'synthetic-pane-60',name:'Request a quote',submit:'Sen
  {key:'message',type:'text',label:'Project details',help:'',placeholder:'',required:true},
  {key:'file',type:'file',label:'Project PDF',help:'Private project information.',placeholder:'',required:false},
 ]}
-async function formFixture(options){
+const marketingFields=[
+ {key:'email_marketing',type:'email-consent',label:'Send me studio news by email.',help:'You can withdraw your choice.',placeholder:'',required:false},
+ {key:'sms_marketing',type:'sms-consent',label:'Send me studio updates by text.',help:'Message and data rates may apply.',placeholder:'',required:false,business:'Cedar Street Studio',frequency:'Up to four messages per month'},
+]
+async function formFixture({marketing=false,...options}={}){
  const app=await runtime(options),call=(path,body,cookie='')=>app.request(path,{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify(body)})
  const signed=await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Forms owner'}),cookie=signed.headers.get('set-cookie').split(';')[0]
  await app.request('/setup',{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
- const site=structuredClone(fixture);site.forms=[structuredClone(quoteDefinition)];site.pages[1].formId=quoteDefinition.id;site.pages[4].formId=quoteDefinition.id
+ const site=structuredClone(fixture);site.forms=[structuredClone(quoteDefinition)];if(marketing)site.forms[0].fields.push(...structuredClone(marketingFields));site.pages[1].formId=quoteDefinition.id;site.pages[4].formId=quoteDefinition.id
  const draft=await (await call('/api/pane/prepare',{site},cookie)).json();assert.ok(draft.id)
  assert.equal((await call('/api/pane/publish',{revision:draft.id},cookie)).status,200)
- const submit=(slug='contact',changes={},file,id=crypto.randomUUID(),proof=true)=>{
+ const submit=async(slug='contact',changes={},file,id=crypto.randomUUID(),proof=true)=>{
   const fields=new FormData();for(const [key,value] of Object.entries({idempotency:id,name:'Synthetic visitor',email:'synthetic-pane-61@example.test',phone:'312 555 0123',address:'Workshop',service:'Repair',date:'2030-06-20',consent:'yes',message:'Please repair my chair.',...changes}))fields.set(key,value)
+  if(marketing&&!Object.hasOwn(changes,'consent_schema'))fields.set('consent_schema',(await (await app.request('/site/'+slug)).text()).match(/name="consent_schema" value="([^"]+)"/)[1])
   if(proof)fields.set('cf-turnstile-response','synthetic-pane-3:'+createHash('sha256').update(slug).digest('hex'))
   if(file)fields.set('file',file,'project.pdf')
   return app.request('/site/'+slug,{method:'POST',headers:{Origin:origin},body:fields})
@@ -1759,19 +1764,71 @@ test('rejected PDFs leave no stored bytes and only opted-in validated text and m
 })
 
 test('durable typed intake retains private upload chunks through workspace outage and drains once after recovery',async()=>{
- const {app,cookie,submit}=await formFixture({isolatedLive:true})
+ const {app,cookie,submit}=await formFixture({isolatedLive:true,marketing:true,now:Date.parse('2030-06-20T12:00:00.000Z')})
  try{
   await app.db.prepare('ALTER TABLE pane_messages RENAME TO synthetic_unavailable_messages').run()
   const pdf=new Uint8Array(5*1024*1024);pdf.set(new TextEncoder().encode('%PDF-1.7\nsynthetic-pane-64'));pdf.fill(32,32)
   const id=crypto.randomUUID(),file=new File([pdf],'project.pdf',{type:'application/pdf'})
-  assert.equal((await submit('contact',{},file,id)).status,303)
+  assert.equal((await submit('contact',{email_marketing:'yes'},file,id)).status,303)
+  const namespace=await app.mf.getDurableObjectNamespace('PANE_LIVE'),stub=namespace.get(namespace.idFromName('published-site'))
+  const original=(await stub.syntheticStored()).find(([key])=>key==='message:'+id)[1].consent
+  assert.deepEqual(original.choices.map(choice=>[choice.channel,choice.granted]),[['email',true],['sms',false]])
+  assert.equal(original.receivedAt,'2030-06-20T12:00:00.000Z');assert.equal(original.inquiryId,id)
+  await submit('contact',{sms_marketing:'yes'},file,id)
+  assert.deepEqual((await stub.syntheticStored()).find(([key])=>key==='message:'+id)[1].consent,original,'An outage retry cannot replace affirmative or absent choices')
   assert.equal((await app.request('/site/about')).status,200)
   await app.db.prepare('ALTER TABLE synthetic_unavailable_messages RENAME TO pane_messages').run()
   const worker=await app.mf.getWorker();assert.equal((await worker.scheduled({scheduledTime:new Date('2030-06-20T12:00:00Z'),cron:'* * * * *'})).outcome,'ok')
   const dashboard=await (await app.request('/api/pane',{headers:{Cookie:cookie}})).json(),receipt=dashboard.messages.find(message=>message.id===id);assert.equal(receipt.files.length,1);assert.equal(JSON.parse(receipt.submission).formId,quoteDefinition.id);assert.equal(JSON.parse(receipt.submission).fields.find(field=>field.key==='service').value,'Repair')
+  assert.deepEqual(JSON.parse(receipt.marketing_consent),original,'Recovery retains the captured wording, choices and acceptance time')
   const response=await app.request('/app/files/'+receipt.files[0].id,{headers:{Cookie:cookie}});assert.deepEqual(new Uint8Array(await response.arrayBuffer()),pdf)
   await submit('contact',{},file,id);await worker.scheduled({scheduledTime:new Date('2030-06-20T12:01:00Z'),cron:'* * * * *'})
   assert.equal((await app.db.prepare('SELECT COUNT(*) AS n FROM pane_files').first()).n,1)
+ }finally{await app.mf.dispose()}
+})
+
+test('marketing choices bind published wording to immutable enquiry receipts and travel through export, archives and erasure without subscription delivery',async()=>{
+ let instant=Date.parse('2030-06-20T12:00:00.000Z'),outbound=[]
+ const {app,call,cookie,site,draft,submit}=await formFixture({marketing:true,now:()=>instant,observeOutbound:request=>outbound.push(new URL(request.url).hostname)})
+ const email=['synthetic-pane-61','example.test'].join('@'),read=async id=>JSON.parse(await app.db.prepare('SELECT marketing_consent FROM pane_messages WHERE id=?').bind(id).first('marketing_consent'))
+ try{
+  const html=await (await app.request('/site/contact')).text(),schema=html.match(/name="consent_schema" value="([^"]+)"/)[1]
+  for(const key of ['email_marketing','sms_marketing'])assert.match(html,new RegExp('name="'+key+'" type="checkbox" value="yes">'),'Marketing starts unchecked')
+  assert.match(html,/Cedar Street Studio\. Message frequency: Up to four messages per month/)
+  for(const mutate of [form=>form.fields.find(field=>field.type==='sms-consent').required=true,form=>delete form.fields.find(field=>field.type==='sms-consent').frequency]){
+   const invalid=structuredClone(site);mutate(invalid.forms[0]);assert.equal((await call('/api/pane/prepare',{site:invalid,base:draft.id},cookie)).status,400)
+  }
+  assert.equal((await submit('contact',{email_marketing:'on'})).status,400,'Only an explicit supported checkbox value grants permission')
+  const id=crypto.randomUUID();assert.equal((await submit('contact',{email_marketing:'yes',receivedAt:'1900-01-01T00:00:00Z'},undefined,id)).status,303)
+  const original=await read(id)
+  assert.deepEqual(original,{version:1,inquiryId:id,formId:quoteDefinition.id,page:'contact',pageId:draft.site.pages.find(page=>page.slug==='contact').id??'contact',revisionId:draft.id,receivedAt:'2030-06-20T12:00:00.000Z',choices:[
+   {channel:'email',fieldKey:'email_marketing',granted:true,wording:'Send me studio news by email.\nYou can withdraw your choice.'},
+   {channel:'sms',fieldKey:'sms_marketing',granted:false,wording:'Send me studio updates by text. — Cedar Street Studio. Message frequency: Up to four messages per month.\nMessage and data rates may apply.'},
+  ]})
+  const changed=structuredClone(site);changed.forms[0].fields.find(field=>field.type==='email-consent').label='A different published email offer.'
+  const prepared=await (await call('/api/pane/prepare',{site:changed,base:draft.id},cookie)).json();assert.ok(prepared.id)
+  const beforePublish=crypto.randomUUID();assert.equal((await submit('contact',{email_marketing:'yes'},undefined,beforePublish)).status,303);assert.equal((await read(beforePublish)).choices[0].wording,original.choices[0].wording,'Draft wording never changes the live prompt or receipt')
+  assert.equal((await call('/api/pane/publish',{revision:prepared.id},cookie)).status,200)
+  const staleId=crypto.randomUUID(),stale=await submit('contact',{consent_schema:schema,email_marketing:'yes'},undefined,staleId);assert.equal(stale.status,400);const staleHtml=await stale.text();assert.match(staleHtml,/The consent wording changed/);assert.doesNotMatch(staleHtml,/name="email_marketing"[^>]* checked/);assert.equal(await app.db.prepare('SELECT id FROM pane_messages WHERE id=?').bind(staleId).first(),null)
+  instant+=60000;await submit('contact',{sms_marketing:'yes'},undefined,id);assert.deepEqual(await read(id),original,'Retries cannot rewrite choices, wording, time or page')
+  const smsId=crypto.randomUUID();assert.equal((await submit('about',{sms_marketing:'yes'},undefined,smsId)).status,303);assert.deepEqual((await read(smsId)).choices.map(choice=>[choice.channel,choice.granted]),[['email',false],['sms',true]])
+  const absentId=crypto.randomUUID();assert.equal((await submit('contact',{},undefined,absentId)).status,303);assert.deepEqual((await read(absentId)).choices.map(choice=>choice.granted),[false,false])
+  const inbox=await (await app.request('/app/inquiries',{headers:{Cookie:cookie}})).text();assert.match(inbox,/Marketing consent records/);assert.match(inbox,/SMS: Not consented/);assert.match(inbox,/2030-06-20T12:00:00.000Z/)
+  const csv=submissionRows(await (await app.request('/api/pane/submissions/export?form='+quoteDefinition.id,{headers:{Cookie:cookie}})).text());assert.deepEqual(JSON.parse(csv.find(row=>row[0]===id)[csv[0].indexOf('marketing_consent')]),original)
+  const archive=await exportData(app.db),destination=await runtime()
+  try{assert.equal((await restore(destination.db,archive)).phase,'complete');assert.deepEqual(JSON.parse(await destination.db.prepare('SELECT marketing_consent FROM pane_messages WHERE id=?').bind(id).first('marketing_consent')),original)}finally{await destination.mf.dispose()}
+  let nativeMail
+  const native=createOperatorAuth({clock:()=>instant,db:app.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{nativeMail=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+  await native.requestMagicLink(new Request(origin+'/auth/magic-link',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin}}),{email:settings.OWNER_EMAIL})
+  const token=new URL(nativeMail.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token'),confirmed=await call('/auth/confirm',{token}),fresh=confirmed.headers.get('set-cookie').split(';')[0]
+  assert.equal((await call('/api/pane/privacy/export',{email},'')).status,401)
+  const exported=await call('/api/pane/privacy/export',{email},fresh);assert.equal(exported.status,200);const portable=await exported.json();assert.equal(portable.marketingConsents.length,4);assert.deepEqual(portable.marketingConsents.find(row=>row.inquiryId===id),original)
+  assert.equal((await call('/api/pane/privacy/erase',{email,confirm:'erase-person-data'},fresh)).status,200)
+  await submit('contact',{email_marketing:'yes',sms_marketing:'yes'},undefined,id)
+  const after=await (await call('/api/pane/privacy/find',{email},fresh)).json();assert.deepEqual(after.marketingConsents,[]);assert.deepEqual(after.messages,[])
+  const later=await exportData(app.db),empty=await runtime()
+  try{await assert.rejects(restore(empty.db,archive,later),/erased_row|erasure_epoch/)}finally{await empty.mf.dispose()}
+  assert.deepEqual([...new Set(outbound)],['challenges.cloudflare.com'],'Recording choices never initiates a subscription or marketing request')
  }finally{await app.mf.dispose()}
 })
 
