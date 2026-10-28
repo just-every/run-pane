@@ -1,3 +1,4 @@
+import {fontResponse} from './fonts'
 import {submissionCsv,submissionForms} from './submission-export'
 import {collectionPrivateResponse} from './collection-handlers'
 import {collectionPages} from './collection-page'
@@ -136,7 +137,10 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    const site=revision(row).site,slug=parts.length ? decodeURIComponent(parts.join('/')) : homeSlug(site)!
    site.pages=[...site.pages,...collectionPages(site)]
    if(!activePages(site).some(page=>page.slug===slug))return json({error:'Preview not found.'},404)
-   return document('Preview',publicPage(site,slug,'preview'),'site')
+   if(url.searchParams.has('pane-font'))return fontResponse(site.styles?.fonts,url.searchParams.get('pane-font'),request.method)
+   const response=await document('Preview',publicPage(site,slug,'preview',false,false,undefined,undefined,url.pathname),'site')
+   const headers=new Headers(response.headers);headers.set('content-security-policy',headers.get('content-security-policy')!.replace("frame-ancestors 'none'","frame-ancestors 'self'"))
+   return new Response(response.body,{status:response.status,headers})
   }
   if(request.method==='GET' && ['/api/pane/activity','/api/pane/activity/export'].includes(path)) {
    if(!owner)return json({error:'Owner only.'},403)
@@ -167,7 +171,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   if(!lifecycleAction&&(!routeCapability(path,'POST')||!caps.includes(routeCapability(path,'POST')!)))return json({error:'Your role cannot perform this action.'},403)
   if((!owner||scopes)&&['/api/pane/import/dry-run','/api/pane/import/apply','/app/import/dry-run','/app/import/apply'].includes(path)&&input.source){
    const imported=parseImportDocument(typeof input.source==='string'?input.source:JSON.stringify(input.source)).site
-   if(imported?.customCode||imported?.pages.some(page=>page.customCode))return json({error:'Only a native owner authors custom code, including imports.'},403)
+   if(imported?.styles||imported?.customCode||imported?.pages.some(page=>page.customCode))return json({error:'Only a native owner authors custom code, including imports.'},403)
   }
   if(action.startsWith('comments/')){
    if(scopes)return json({error:'Native session required.'},403)
@@ -291,7 +295,9 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    if(!owner&&actor.role!=='admin'&&input.site?.posts!==undefined)return json({error:'Your role cannot change posts.'},403)
    if(!owner&&input.site&&['blogs','libraryFiles','blogPosts'].some(key=>input.site[key]!==undefined&&JSON.stringify(input.site[key]??null)!==JSON.stringify(previousAccess?.[key as keyof typeof previousAccess]??null)))return json({error:'Only the native owner can change blog settings or the file library.'},403)
    if(input.site)input.site={...input.site,blogPosts:previousAccess?.blogPosts,...(!owner?{blogs:previousAccess?.blogs,libraryFiles:previousAccess?.libraryFiles}:{})}
+   if((!owner||scopes)&&input.site?.styles!==undefined&&JSON.stringify(input.site.styles)!==JSON.stringify(previousAccess?.styles))return json({error:'Only the native owner changes site styles.'},403)
    const proposed=normalizeSite(input.site?{...input.site,...(!owner&&actor.role!=='admin'&&previousAccess?.posts?{posts:previousAccess.posts}:{})}:await siteFromForm(env.DB,input))
+   if((!owner||scopes)&&JSON.stringify(proposed.styles??null)!==JSON.stringify(previousAccess?.styles??null))return json({error:'Only the native owner changes site styles.'},403)
    if((!owner||scopes)&&(JSON.stringify(proposed.customCode??null)!==JSON.stringify(previousAccess?.customCode??null)||proposed.pages.some(page=>JSON.stringify(page.customCode??null)!==JSON.stringify(previousAccess?.pages.find(old=>(old.id??old.slug)===(page.id??page.slug))?.customCode??null))))return json({error:'Only the owner authors custom code.'},403)
    if(!owner&&(JSON.stringify(proposed.forms??null)!==JSON.stringify(previousAccess?.forms??null)||JSON.stringify(proposed.access??null)!==JSON.stringify(previousAccess?.access??null)||proposed.pages.some(page=>JSON.stringify(page.access??null)!==JSON.stringify(previousAccess?.pages.find(old=>(old.id??old.slug)===(page.id??page.slug))?.access??null))))return json({error:'Only the owner changes access.'},403)
    if(!caps.includes('settings:write')){

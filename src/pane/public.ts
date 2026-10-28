@@ -1,3 +1,4 @@
+import {fontResponse} from './fonts'
 import {submissionRecord,enquiryStatement,type Submission} from './submission-export'
 import {marketingConsent} from './marketing-consent'
 import {collectionResponse} from './collection-public'
@@ -37,7 +38,7 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
  try {slug=path==='/site'?'':decodeURIComponent(path.slice(6))} catch {return notFound()}
  const snapshot=env.PANE_LIVE?await liveSnapshot(env):null
  const row=env.PANE_LIVE?snapshot:await env.DB.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first()
- if(!row&&(url.searchParams.has('pane-image')||url.searchParams.has('pane-brand')))return new Response(null,{status:404,headers:{'cache-control':'private, no-store'}})
+ if(!row&&(url.searchParams.has('pane-image')||url.searchParams.has('pane-brand')||url.searchParams.has('pane-font')))return new Response(null,{status:404,headers:{'cache-control':'private, no-store'}})
  if(!row && path !== '/site' && !slugs.includes(slug) && slug !== 'search') return notFound()
  if(!row) return document('Website not published','<div class="public-site"><div class="public-shell"><main class="public-main" id="main"><h1>This website is getting ready</h1><p>The business has not published its first version.</p></main></div></div>','site')
  const site=snapshot?snapshot.site:revision(row).site
@@ -52,6 +53,7 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
  if(approvedPost&&request.method==='POST'&&url.searchParams.has('like'))return likePost(request,env,site,approvedPost.id)
  if(approvedPost&&request.method==='POST')return submitComment(request,env,site,approvedPost.id)
  const page=activePages(site).find(page=>page.slug===slug)??approvedPost?.content
+ if(url.searchParams.has('pane-font'))return fontResponse(url.searchParams.get('pane-revision')===String(row.id)?site.styles?.fonts:undefined,url.searchParams.get('pane-font'),request.method)
  if(url.searchParams.has('pane-brand')){
   const key=url.searchParams.get('pane-brand'),image=key&&['logo','favicon','social'].includes(key)?site.brand?.[key as keyof NonNullable<typeof site.brand>]:undefined
   if(!image||!['GET','HEAD'].includes(request.method))return new Response(null,{status:404,headers:{'cache-control':'private, no-store'}})
@@ -98,7 +100,7 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
    if(!/^[a-f0-9-]{36}$/.test(id))return json({error:'Invalid submission receipt.'},400)
    const checked=await validateForm(form,f,id)
    if(Object.keys(checked.state.errors).length){
-    const response=await document(site.name,publicPage(site,slug,'live',false,true,env.TURNSTILE_SITE_KEY,checked.state),'site')
+    const response=await document(site.name,publicPage(site,slug,'live',false,true,env.TURNSTILE_SITE_KEY,checked.state,path+'?pane-revision='+row.id),'site')
     const headers=new Headers(response.headers);headers.set('content-security-policy',headers.get('content-security-policy')!.replace("script-src 'self'","script-src 'self' https://challenges.cloudflare.com").replace("connect-src 'self'","connect-src 'self' https://challenges.cloudflare.com")+'; frame-src https://challenges.cloudflare.com');headers.set('x-robots-tag','noindex, nofollow');headers.set('cache-control','private, no-store')
     return new Response(response.body,{status:400,headers})
    }
@@ -144,13 +146,13 @@ export async function publicResponse(request:Request,original:Bindings):Promise<
   const missing=site.notFound && activePages(site).find(page=>page.slug===site.notFound)
   if(!missing)return notFound()
   const missingGate=await accessResponse(request,env,site,missing);if(missingGate)return missingGate
-  const response=await document(site.name,announcements+publicPage(site,missing.slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY),'site',pageEmbedOrigins(missing),optedOut(request) ? undefined : site.analytics,site.locale?.locale,optedOut(request)?'':customCodeSource(site,missing)+tags(site).map(tagSource).join(''),optedOut(request)?undefined:tagSources(site))
+  const response=await document(site.name,announcements+publicPage(site,missing.slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY,undefined,path+'?pane-revision='+row.id),'site',pageEmbedOrigins(missing),optedOut(request) ? undefined : site.analytics,site.locale?.locale,optedOut(request)?'':customCodeSource(site,missing)+tags(site).map(tagSource).join(''),optedOut(request)?undefined:tagSources(site))
   const headers=new Headers(response.headers);headers.set('x-robots-tag','noindex, nofollow')
   return new Response(request.method==='HEAD'?null:response.body,{status:404,headers})
  }
  const notice=(form||page.kind==='contact'||slug==='contact')&&url.searchParams.has('sent')?'<div class="public-site public-sent"><div class="public-shell"><p class="notice" role="status">'+escape(form?.confirmation??'Thank you. Your message has been received.')+'</p></div></div>':''
  const embed=page.embed
- const response=await document(site.name,announcements+notice+publicPage(site,slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY)+promotionMarkup(site,slug),'site',pageEmbedOrigins(page),optedOut(request) ? undefined : site.analytics,site.locale?.locale,optedOut(request)?'':customCodeSource(site,page!)+tags(site).map(tagSource).join(''),optedOut(request)?undefined:tagSources(site))
+ const response=await document(site.name,announcements+notice+publicPage(site,slug,'live',request.headers.get('Sec-GPC')==='1',optedOut(request),env.TURNSTILE_SITE_KEY,undefined,path+'?pane-revision='+row.id)+promotionMarkup(site,slug),'site',pageEmbedOrigins(page),optedOut(request) ? undefined : site.analytics,site.locale?.locale,optedOut(request)?'':customCodeSource(site,page!)+tags(site).map(tagSource).join(''),optedOut(request)?undefined:tagSources(site))
  if(form||page.kind==='contact'||slug==='contact'){
   const headers=new Headers(response.headers);headers.set('vary','Cookie');headers.set('cache-control','private, no-store');const policy=headers.get('content-security-policy')!
   headers.set('content-security-policy',policy.replace("script-src 'self'","script-src 'self' https://challenges.cloudflare.com").replace("connect-src 'self'","connect-src 'self' https://challenges.cloudflare.com")+(embed||(!optedOut(request)&&(site.customCode||page.customCode))?' https://challenges.cloudflare.com':'; frame-src https://challenges.cloudflare.com'))

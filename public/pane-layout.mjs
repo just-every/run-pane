@@ -32,4 +32,4 @@ function blockMarkup(block,index,imageUrl,media,options){
  const format=block.format??'p',tag=['p-large','p-small'].includes(format)?'p':format
  return `<${tag} data-block="${escape(block.id)}" data-reading-index="${index}"${tag!==format?` class="pane-${format}"`:''}>${block.content?richMarkup(block.content,resolve):escape(block.text)}</${tag}>`
 }
-export function layoutMarkup(sections,imageUrl,media,options){return sections.map(section=>`<section data-section="${escape(section.id)}"${section.component?` data-component="${escape(section.component)}"`:''}>${section.blocks.map((block,index)=>blockMarkup(block,index,imageUrl,media,options)).join('')}</section>`).join('')}
+export function layoutMarkup(sections,imageUrl,media,options){return sections.map(section=>`<section data-section="${escape(section.id)}"${section.background?' data-background-override':''}${section.component?` data-component="${escape(section.component)}"`:''}>${section.blocks.map((block,index)=>blockMarkup(block,index,imageUrl,media,options)).join('')}</section>`).join('')}

@@ -2113,3 +2113,40 @@ test('brand uploads stay draft until approval and publish served icons, social i
   await call('/api/pane/publication-revoke',{revision:draft.id,confirm:'revoke-publication'});assert.equal((await app.request('/site?pane-brand=logo')).status,404,'Revocation removes public brand delivery')
  }finally{await app.mf.dispose()}
 })
+
+
+test('owner style drafts retain self-hosted fonts through preview, conflict, publication and rollback',async()=>{
+ const initial=await(await json('/api/pane/prepare',{site:fixture})).json()
+ await json('/api/pane/publish',{revision:initial.id})
+ const fontBytes=await readFile('public/fonts/noto-serif/noto-serif-latin-wght-normal.woff2')
+ const font={id:'font-'+crypto.randomUUID(),name:'Workshop serif',format:'woff2',data:fontBytes.toString('base64')}
+ const styles={heading:font.id,body:'figtree',primary:'#075985',text:'#1f0717',background:'#ffffff',sectionBackground:'#f0f9ff',button:'pill',spacing:40,fonts:[font]}
+ const site={...initial.site,styles},before=(await data()).revisions.length
+ for(const cookie of [admin,member,'']){
+  assert.equal((await json('/api/pane/prepare',{site,base:initial.id},cookie)).status,cookie?403:401)
+  assert.equal((await json('/api/pane/autosave',{site,base:initial.id},cookie)).status,cookie?403:401)
+ }
+ const bad=await json('/api/pane/autosave',{base:initial.id,site:{...site,styles:{...styles,fonts:[{...font,data:Buffer.from('synthetic-pane-1').toString('base64')}]}}})
+ assert.equal(bad.status,400)
+ assert.equal((await data()).revisions.length,before,'Refused font writes preserve the latest draft')
+ const saved=await json('/api/pane/autosave',{base:initial.id,site});assert.equal(saved.status,200,await saved.clone().text());const draft=await saved.json()
+ assert.deepEqual(draft.site.styles,styles)
+ const stale=await json('/api/pane/autosave',{base:initial.id,site:{...site,styles:{...styles,primary:'#064e3b'}}});assert.equal(stale.status,409);assert.deepEqual((await stale.json()).latest.site.styles,styles)
+ assert.equal((await f.request('/site?pane-font='+font.id+'&pane-revision='+draft.id)).status,404,'A draft font is not public')
+ for(const slug of ['home','about','services']){
+  const preview=await f.request('/preview/'+draft.id+'/'+slug,{headers:{Cookie:owner}});assert.equal(preview.status,200)
+  const html=await preview.text();assert.ok(html.includes('font-display:swap'));assert.ok(html.includes('Pane-'+font.id));assert.ok(html.includes('#075985'));assert.ok(html.includes('border-radius:999px'))
+ }
+ const previewFont='/preview/'+draft.id+'/home?pane-font='+font.id
+ assert.equal((await f.request(previewFont,{redirect:'manual'})).status,303)
+ const privateFont=await f.request(previewFont,{headers:{Cookie:owner}});assert.equal(privateFont.headers.get('content-type'),'font/woff2');assert.deepEqual(Buffer.from(await privateFont.arrayBuffer()),fontBytes)
+ assert.equal((await json('/api/pane/publish',{revision:draft.id})).status,200)
+ const asset='/site?pane-font='+font.id+'&pane-revision='+draft.id
+ const delivered=await f.request(asset);assert.equal(delivered.status,200);assert.match(delivered.headers.get('cache-control'),/no-store/);assert.equal(delivered.headers.get('x-content-type-options'),'nosniff');assert.deepEqual(Buffer.from(await delivered.arrayBuffer()),fontBytes)
+ assert.equal((await f.request(asset,{method:'HEAD'})).headers.get('content-length'),String(fontBytes.length))
+ assert.equal((await f.request(asset.replace(draft.id,initial.id))).status,404,'A stale live revision cannot deliver a font')
+ assert.equal((await json('/api/pane/rollback',{revision:initial.id})).status,200)
+ assert.equal((await f.request(asset)).status,404,'Rollback withdraws the uploaded font from public delivery')
+ for(const expected of [initial,draft])assert.deepEqual((await data()).revisions.find(row=>row.id===expected.id),expected,'Style edits and approvals leave complete prior snapshots immutable')
+ const activityRows=await(await f.request('/api/pane/activity',{headers:{Cookie:owner}})).json();assert.ok(activityRows.some(row=>row.subject==='revision:'+draft.id&&row.action==='edit'),'The style draft has transactional activity')
+})
