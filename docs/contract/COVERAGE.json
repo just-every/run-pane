@@ -2,7 +2,7 @@
   "schema": 1,
   "seed": "contract-md-pane",
   "old": {
-    "commit": "740a24c21a771fe79072b9c269d0650cdbd50584",
+    "commit": "e8709e2b720e18c70d673ee286c388ae0354d0cc",
     "files": [
       "CONTRACT.md",
       "ACCEPTANCE.md",
@@ -1465,6 +1465,12 @@
     },
     {
       "file": "CONTRACT.md",
+      "line": 381,
+      "text": "*Status:* done. Pages, posts, collection items and announcement sections publish and expire in the chosen business-local time zone. Exact owner approval binds an immutable source; later private drafts stay private and separately approved newer versions survive old expiries. Sites shows actual execution, flags overdue unapproved changes and records sanitized refusals without starving unrelated schedules. Native owner authority, revoked-source refusal, session revocation, replay fencing and private-history visibility are exercised through the scheduling journeys.",
+      "to": "changelog"
+    },
+    {
+      "file": "CONTRACT.md",
       "line": 385,
       "text": "The blog and each collection with a template page publish an RSS feed. A blog whose posts carry an audio file can also publish a podcast feed with the Apple Podcasts (iTunes) tags (show title, author, artwork, category, explicit flag, episode duration and enclosure) for Apple Podcasts and Spotify. On publication, subscribers who opted in receive the new post through Mango or Mailchimp (`LINK-003`), whichever the owner connected, and the owner sees the send state.",
       "to": "clause",
@@ -1580,7 +1586,7 @@
     {
       "file": "CONTRACT.md",
       "line": 422,
-      "text": "*Status:* partial. Native blog and post comment settings, approval by default, one-level threads, escaped public text, private email, bulk moderation, explicit author-attributed replies, bounded cookie-free likes and scheduled email digests now use the existing native authority, form-protection and person-custody doors. SendGrid-edge fakes prove email acceptance and failed delivery retention; the existing Turnstile fixture proves fail-closed application behavior, not live provider acceptance. Gap: Native push notification proof requires MOBILE-002 device and signing authority. Live Turnstile acceptance is not proved by the existing provider fixture. WXR comment export and imported author, date, approval state and threading remain unproved under EXPORT-001, IMPORT-001 and IMPORT-002. A recorded exact-candidate Verify and guarded landing remain pending; no DONE claim is made.",
+      "text": "*Status:* partial. Native blog and post comment settings, approval by default, one-level threads, escaped public text, private email, bulk moderation, explicit author-attributed replies, bounded cookie-free likes and scheduled email digests now use the existing native authority, form-protection and person-custody doors. SendGrid-edge fakes prove email acceptance and failed delivery retention; the existing Turnstile fixture proves fail-closed application behavior, not live provider acceptance. Gap: Native push notification proof requires MOBILE-002 device and signing authority. Live Turnstile acceptance is not proved by the existing provider fixture. The owner-only WXR comment carrier preserves imported author, UTC date, approval state and one-level threading when explicitly mapped to an existing native post, with private staging, explicit owner release and fresh native sign-in for private export. Whole-site WXR and Squarespace import journeys and automatic native post mapping remain with IMPORT-001 and IMPORT-002; the remaining open-format export stays with EXPORT-001. The supplied ct note approves the owner-only default with riders but omits their exact wording; retain the conservative owner-only floor without claiming final policy approval or DONE.",
       "to": "changelog"
     },
     {
@@ -3982,6 +3988,12 @@
     },
     {
       "file": "CONTRACT.md",
+      "line": 1163,
+      "text": "CMS-005 judged from the code and journeys on candidate branch `cloud/sx-pane-x-cms-005` (28 October 2026), including retained execution history after an independent replacement. The landing handoff identifies the exact candidate commit and its Verify; other clause judgments remain unchanged.",
+      "to": "changelog"
+    },
+    {
+      "file": "CONTRACT.md",
       "line": 1189,
       "cell": "gap",
       "text": "None.",
@@ -4245,7 +4257,7 @@
       "file": "CONTRACT.md",
       "line": 1223,
       "cell": "gap",
-      "text": "Native push notification proof requires MOBILE-002 device and signing authority. Live Turnstile acceptance is not proved by the existing provider fixture. WXR comment export and imported author, date, approval state and threading remain unproved under EXPORT-001, IMPORT-001 and IMPORT-002. A recorded exact-candidate Verify and guarded landing remain pending; no DONE claim is made.",
+      "text": "Native push notification proof requires MOBILE-002 device and signing authority. Live Turnstile acceptance is not proved by the existing provider fixture. The owner-only WXR comment carrier preserves imported author, UTC date, approval state and one-level threading when explicitly mapped to an existing native post, with private staging, explicit owner release and fresh native sign-in for private export. Whole-site WXR and Squarespace import journeys and automatic native post mapping remain with IMPORT-001 and IMPORT-002; the remaining open-format export stays with EXPORT-001. The supplied ct note approves the owner-only default with riders but omits their exact wording; retain the conservative owner-only floor without claiming final policy approval or DONE.",
       "to": "gap",
       "ids": [
         "CMS-010"
@@ -4915,6 +4927,18 @@
       "file": "CONTRACT.md",
       "line": 1300,
       "text": "Every future agent door must enforce the existing API-001 native authority intersection, explicit scope, credential custody and transactional metadata audit.",
+      "to": "changelog"
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 1302,
+      "text": "Scheduling implementation note (CMS-005): `src/pane/page-schedules.ts` and `src/pane/item-schedules.ts` retain approved immutable sources, refuse revoked publication sources, isolate due failures and preserve later drafts. The existing post and announcement journeys remain in Verify alongside the expanded native scheduling journey.",
+      "to": "changelog"
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 3,
+      "text": "Generated from [CONTRACT.md](CONTRACT.md) by the seed contract-docs command. Edit the contract source, then regenerate. 127 clauses: 52 done, 31 partial, 44 missing.",
       "to": "changelog"
     },
     {
@@ -5641,6 +5665,22 @@
     },
     {
       "file": "ACCEPTANCE.md",
+      "line": 76,
+      "text": "**CMS-005 — Scheduled publishing and expiry** (done). Pages, posts, collection items and announcement sections can be scheduled to publish and to unpublish at a date and time in the business's US time zone, daylight saving included. The workspace shows what actually went live and flags a scheduled change that has not been approved by its time. **Acceptance evidence:** Schedule a post for 9:00 America/Chicago and a promotion to expire across a daylight saving change; see each happen at the right local time and see an unapproved schedule flagged, not published.",
+      "to": "clause",
+      "ids": [
+        "CMS-005"
+      ]
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 76,
+      "text": " Implementation: Pages, posts, collection items and announcement sections publish and expire in the chosen business-local time zone. Exact owner approval binds an immutable source; later private drafts stay private and separately approved newer versions survive old expiries. Sites shows actual execution, flags overdue unapproved changes and records sanitized refusals without starving unrelated schedules. Native owner authority, revoked-source refusal, session revocation, replay fencing and private-history visibility are exercised through the scheduling journeys. Evidence: `tests/posts.test.mjs` — “reviewed posts, pages and items publish at Chicago nine with immutable approval, complete execution history and overdue unapproved refusal” (selected page and collection-item publication and expiry, immutable source and later drafts, actual execution, unapproved changes, replacement and cancellation and replay fences, denied member and deactivated-session writes, private item history and revoked-source failure isolation); `tests/posts.test.mjs` — “approved immutable posts publish at Chicago nine while unapproved times are flagged and retries stay fenced” (09:00 Chicago publication and optional expiry, approved immutable source, actual execution history, retained later drafts, unapproved post flag and refusal, native owner authority, invalid DST choices, cancellation and replay fences with ordinary and durable live storage); `tests/posts.test.mjs` — “an invalidated blog schedule cannot starve other publications or leave an expired post public” and “committed publications and expiries reconcile durable reads even when failure recording is unavailable” (independent due entries, visible sanitized failure history, public state matching committed publications and expiries through a later failure, banner reconciliation before surfacing a storage failure); `tests/pane.test.mjs` — “approved business-local schedules drive banners and reminders while drafts, roles and invalid DST dates stay fenced” (Denver promotion expiry across spring DST and unapproved schedule refusal); `scripts/scheduling-journey.mjs` — “Business-local scheduling journey” (native page and post and item scheduling controls, saved approval state, 09:00 Chicago execution history, optional expiry, overdue unapproved flags, Chicago announcement activation and expiry across fall DST, axe and tooltips, changed screens at 1440 and 390); `scripts/post-schedules-journey.mjs` — “Invalidated post schedule journey” (native invalidated approval, unrelated publication, successful expiry, matching public durable state and visible failure screens at 1440 and 390)",
+      "to": "docs",
+      "path": "docs/verify.md"
+    },
+    {
+      "file": "ACCEPTANCE.md",
       "line": 77,
       "text": "**CMS-006 — RSS and podcast feeds and new-post notifications** (partial). The blog and each collection with a template page publish an RSS feed. A blog whose posts carry an audio file can also publish a podcast feed with the Apple Podcasts (iTunes) tags (show title, author, artwork, category, explicit flag, episode duration and enclosure) for Apple Podcasts and Spotify. On publication, subscribers who opted in receive the new post through Mango or Mailchimp (`LINK-003`), whichever the owner connected, and the owner sees the send state. **Acceptance evidence:** Validate the RSS feed and a podcast feed with two audio posts against the W3C feed validator and the Apple Podcasts feed requirements. With Mango connected, publish a post and see the Mango campaign queued with its delivery state in Pane; repeat with a Mailchimp test audience and see the Mailchimp campaign created and sent to the audience with its delivery state in Pane.",
       "to": "clause",
@@ -5715,7 +5755,7 @@
     {
       "file": "ACCEPTANCE.md",
       "line": 81,
-      "text": " Implementation: Native blog and post comment settings, approval by default, one-level threads, escaped public text, private email, bulk moderation, explicit author-attributed replies, bounded cookie-free likes and scheduled email digests now use the existing native authority, form-protection and person-custody doors. SendGrid-edge fakes prove email acceptance and failed delivery retention; the existing Turnstile fixture proves fail-closed application behavior, not live provider acceptance. Gap: Native push notification proof requires MOBILE-002 device and signing authority. Live Turnstile acceptance is not proved by the existing provider fixture. WXR comment export and imported author, date, approval state and threading remain unproved under EXPORT-001, IMPORT-001 and IMPORT-002. A recorded exact-candidate Verify and guarded landing remain pending; no DONE claim is made. Evidence: `tests/posts.test.mjs` — “native comment moderation protects notifications, threaded replies, closure and person erasure” (approval by default, honeypot refusal, six-link and blocked-word spam, native role and notification boundaries, notification-linked approval, author and authorized moderator replies, one-level public threads, per-post and timed closure, cookie-free counts, daily digest, metadata-only audit, person export, guarded erasure with both cross-store replay fences and old-archive refusal; matching private review links in plain-text and HTML immediate mail and daily digests); `scripts/comments-journey.mjs` — “Comments browser journey” (native comment settings autosave and durable reopen, selection-only bulk actions, visitor form, moderator notification review, author reply, approved thread, closed form, person export and erasure, axe and tooltips, screens at 1440 and 390). Gap: Native push notification proof requires MOBILE-002 device and signing authority. Live Turnstile acceptance is not proved by the existing provider fixture. WXR comment export and imported author, date, approval state and threading remain unproved under EXPORT-001, IMPORT-001 and IMPORT-002. A recorded exact-candidate Verify and guarded landing remain pending; no DONE claim is made.",
+      "text": " Implementation: Native blog and post comment settings, approval by default, one-level threads, escaped public text, private email, bulk moderation, explicit author-attributed replies, bounded cookie-free likes and scheduled email digests now use the existing native authority, form-protection and person-custody doors. SendGrid-edge fakes prove email acceptance and failed delivery retention; the existing Turnstile fixture proves fail-closed application behavior, not live provider acceptance. Gap: Native push notification proof requires MOBILE-002 device and signing authority. Live Turnstile acceptance is not proved by the existing provider fixture. The owner-only WXR comment carrier preserves imported author, UTC date, approval state and one-level threading when explicitly mapped to an existing native post, with private staging, explicit owner release and fresh native sign-in for private export. Whole-site WXR and Squarespace import journeys and automatic native post mapping remain with IMPORT-001 and IMPORT-002; the remaining open-format export stays with EXPORT-001. The supplied ct note approves the owner-only default with riders but omits their exact wording; retain the conservative owner-only floor without claiming final policy approval or DONE. Evidence: `tests/posts.test.mjs` — “native comment moderation protects notifications, threaded replies, closure and person erasure” (approval by default, honeypot refusal, six-link and blocked-word spam, native role and notification boundaries, notification-linked approval, author and authorized moderator replies, one-level public threads, per-post and timed closure, cookie-free counts, daily digest, metadata-only audit, person export, guarded erasure with both cross-store replay fences and old-archive refusal; matching private review links in plain-text and HTML immediate mail and daily digests); `scripts/comments-journey.mjs` — “Comments browser journey” (native comment settings autosave and durable reopen, selection-only bulk actions, visitor form, moderator notification review, author reply, approved thread, closed form, person export and erasure, axe and tooltips, screens at 1440 and 390). `tests/posts.test.mjs` — “owner WXR comment transfers preserve private reviewed metadata, explicit release and erasure fences” (exact imported names, addresses, bodies, UTC dates, states and parent identities; private staging; owner release; WXR parsing; native sign-in and role refusals; no outbound action; person export and erasure; replay refusal and attributed metadata audit). `scripts/comments-journey.mjs` — “Comments browser journey” also covers the native portability settings, import review, private queue, explicit release and WXR download at 1440 and 390. Gap: Native push notification proof requires MOBILE-002 device and signing authority. Live Turnstile acceptance is not proved by the existing provider fixture. The owner-only WXR comment carrier preserves imported author, UTC date, approval state and one-level threading when explicitly mapped to an existing native post, with private staging, explicit owner release and fresh native sign-in for private export. Whole-site WXR and Squarespace import journeys and automatic native post mapping remain with IMPORT-001 and IMPORT-002; the remaining open-format export stays with EXPORT-001. The supplied ct note approves the owner-only default with riders but omits their exact wording; retain the conservative owner-only floor without claiming final policy approval or DONE.",
       "to": "docs",
       "path": "docs/verify.md"
     },
@@ -6942,6 +6982,12 @@
     },
     {
       "file": "docs/CLAIMS.md",
+      "line": 3,
+      "text": "Generated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses, subject to exact-commit verification and guarded landing. Provider and field-proof boundaries remain in the source contract. 127 clauses: 52 done, 31 partial, 44 missing.",
+      "to": "changelog"
+    },
+    {
+      "file": "docs/CLAIMS.md",
       "line": 5,
       "text": "| Clause | Status | Title |",
       "to": "changelog"
@@ -7214,6 +7260,12 @@
       "file": "docs/CLAIMS.md",
       "line": 51,
       "text": "| CMS-004 | done | Blog with categories, tags and authors |",
+      "to": "changelog"
+    },
+    {
+      "file": "docs/CLAIMS.md",
+      "line": 52,
+      "text": "| CMS-005 | done | Scheduled publishing and expiry |",
       "to": "changelog"
     },
     {
@@ -7700,58 +7752,6 @@
       "file": "docs/CLAIMS.md",
       "line": 133,
       "text": "| AGENT-008 | missing | Agent controls, budgets and audit |",
-      "to": "changelog"
-    },
-    {
-      "file": "CONTRACT.md",
-      "line": 381,
-      "text": "*Status:* done. Pages, posts, collection items and announcement sections publish and expire in the chosen business-local time zone. Exact owner approval binds an immutable source; later private drafts stay private and separately approved newer versions survive old expiries. Sites shows actual execution, flags overdue unapproved changes and records sanitized refusals without starving unrelated schedules. Native owner authority, revoked-source refusal, session revocation, replay fencing and private-history visibility are exercised through the scheduling journeys.",
-      "to": "changelog"
-    },
-    {
-      "file": "CONTRACT.md",
-      "line": 1163,
-      "text": "CMS-005 judged from the code and journeys on candidate branch `cloud/sx-pane-x-cms-005` (28 October 2026), including retained execution history after an independent replacement. The landing handoff identifies the exact candidate commit and its Verify; other clause judgments remain unchanged.",
-      "to": "changelog"
-    },
-    {
-      "file": "CONTRACT.md",
-      "line": 1302,
-      "text": "Scheduling implementation note (CMS-005): `src/pane/page-schedules.ts` and `src/pane/item-schedules.ts` retain approved immutable sources, refuse revoked publication sources, isolate due failures and preserve later drafts. The existing post and announcement journeys remain in Verify alongside the expanded native scheduling journey.",
-      "to": "changelog"
-    },
-    {
-      "file": "ACCEPTANCE.md",
-      "line": 3,
-      "text": "Generated from [CONTRACT.md](CONTRACT.md) by the seed contract-docs command. Edit the contract source, then regenerate. 127 clauses: 52 done, 31 partial, 44 missing.",
-      "to": "changelog"
-    },
-    {
-      "file": "ACCEPTANCE.md",
-      "line": 76,
-      "text": "**CMS-005 — Scheduled publishing and expiry** (done). Pages, posts, collection items and announcement sections can be scheduled to publish and to unpublish at a date and time in the business's US time zone, daylight saving included. The workspace shows what actually went live and flags a scheduled change that has not been approved by its time. **Acceptance evidence:** Schedule a post for 9:00 America/Chicago and a promotion to expire across a daylight saving change; see each happen at the right local time and see an unapproved schedule flagged, not published.",
-      "to": "clause",
-      "ids": [
-        "CMS-005"
-      ]
-    },
-    {
-      "file": "ACCEPTANCE.md",
-      "line": 76,
-      "text": " Implementation: Pages, posts, collection items and announcement sections publish and expire in the chosen business-local time zone. Exact owner approval binds an immutable source; later private drafts stay private and separately approved newer versions survive old expiries. Sites shows actual execution, flags overdue unapproved changes and records sanitized refusals without starving unrelated schedules. Native owner authority, revoked-source refusal, session revocation, replay fencing and private-history visibility are exercised through the scheduling journeys. Evidence: `tests/posts.test.mjs` — “reviewed posts, pages and items publish at Chicago nine with immutable approval, complete execution history and overdue unapproved refusal” (selected page and collection-item publication and expiry, immutable source and later drafts, actual execution, unapproved changes, replacement and cancellation and replay fences, denied member and deactivated-session writes, private item history and revoked-source failure isolation); `tests/posts.test.mjs` — “approved immutable posts publish at Chicago nine while unapproved times are flagged and retries stay fenced” (09:00 Chicago publication and optional expiry, approved immutable source, actual execution history, retained later drafts, unapproved post flag and refusal, native owner authority, invalid DST choices, cancellation and replay fences with ordinary and durable live storage); `tests/posts.test.mjs` — “an invalidated blog schedule cannot starve other publications or leave an expired post public” and “committed publications and expiries reconcile durable reads even when failure recording is unavailable” (independent due entries, visible sanitized failure history, public state matching committed publications and expiries through a later failure, banner reconciliation before surfacing a storage failure); `tests/pane.test.mjs` — “approved business-local schedules drive banners and reminders while drafts, roles and invalid DST dates stay fenced” (Denver promotion expiry across spring DST and unapproved schedule refusal); `scripts/scheduling-journey.mjs` — “Business-local scheduling journey” (native page and post and item scheduling controls, saved approval state, 09:00 Chicago execution history, optional expiry, overdue unapproved flags, Chicago announcement activation and expiry across fall DST, axe and tooltips, changed screens at 1440 and 390); `scripts/post-schedules-journey.mjs` — “Invalidated post schedule journey” (native invalidated approval, unrelated publication, successful expiry, matching public durable state and visible failure screens at 1440 and 390)",
-      "to": "docs",
-      "path": "docs/verify.md"
-    },
-    {
-      "file": "docs/CLAIMS.md",
-      "line": 3,
-      "text": "Generated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses, subject to exact-commit verification and guarded landing. Provider and field-proof boundaries remain in the source contract. 127 clauses: 52 done, 31 partial, 44 missing.",
-      "to": "changelog"
-    },
-    {
-      "file": "docs/CLAIMS.md",
-      "line": 52,
-      "text": "| CMS-005 | done | Scheduled publishing and expiry |",
       "to": "changelog"
     }
   ]
