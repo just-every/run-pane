@@ -1567,6 +1567,9 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company's policy decides every ca
 | 22 | Every published version remains; restore one page without losing other edits. | PUBLISH-001, PAGE-015 |
 | 23 | Leave with WXR, CSV, original-media ZIP and static HTML; close the old site on your chosen day. | EXPORT-001, IMPORT-006 |
 | 24 | Run it on your own computer and Cloudflare account. | DEPLOY-001, HOST-005 |
+| 25 | Pane updates verify the release signature and site health, with no plugins to maintain. | HOST-003 |
+| 26 | The launched site's sitemap is sent to Google Search Console and Bing. | SEO-007 |
+| 27 | Correct the Google profile's opening hours and keep site holiday hours and banners current from confirmed business facts. | SEO-008, AGENT-002 |
 
 ## Status
 
