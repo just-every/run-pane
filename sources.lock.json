@@ -1152,7 +1152,7 @@
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
-      "sha256": "c41392ec1617b656627bac23b4978bc789a99f9db3c1b6f2abadfc1ee734d7b2",
+      "sha256": "dafc680c9aa79fc87000d70e55a7a20ea86f279da98570edba40a6ce28805dfe",
       "executable": false
     },
     "scripts/contract-docs.mjs": {

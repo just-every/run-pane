@@ -451,7 +451,10 @@ async function catalogJourney(){
   for(const frame of await frames.all())assert.equal(await frame.getAttribute('sandbox'),'allow-scripts')
   await placements.last().getByRole('button',{name:'Allow custom code',exact:true}).click();await onePerPlacement()
   await page.reload();await onePerPlacement()
-  await placements.first().scrollIntoViewIfNeeded();await page.screenshot({path:resolve(folder,'catalog-two-html-'+width+'.png'),fullPage:false})
+  for(const [index,placement] of (await placements.all()).entries()){
+   const content=placement.frameLocator('[data-code-frame] > iframe').frameLocator('iframe').getByText('Workshop HTML proof',{exact:true});await content.waitFor();assert.equal(await content.count(),1,'Each placement renders the authored HTML once')
+   await placement.scrollIntoViewIfNeeded();await page.screenshot({path:resolve(folder,'catalog-two-html-'+width+'-'+index+'.png'),fullPage:false})
+  }
   await placements.last().getByRole('button',{name:'Keep custom code off',exact:true}).click();assert.equal(await frames.count(),0,'Withdrawal removes both placements')
   await placements.last().getByRole('button',{name:'Allow custom code',exact:true}).click();await onePerPlacement()
   await placements.first().getByRole('button',{name:'Keep custom code off',exact:true}).click();assert.equal(await frames.count(),0)
