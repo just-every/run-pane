@@ -176,7 +176,7 @@ Core · published · **done** · Cites BASE-OPS-001 · Register R-1
 
 Core · published · **partial** · Cites BASE-INSTALL-001, BASE-OPS-002 · Register R-1
 
-**Requirement.** Pane's command-line installation supplies its site-revision D1 schema and migration history alongside its Worker. The supported provider account is Cloudflare and the cost display is USD.
+**Requirement.** Pane's command-line installation supplies its site-revision D1 schema and migration history alongside its Worker. The supported provider account is Cloudflare and costs are in USD.
 
 **Acceptance.**
 1. Through the supported deployment command and a Cloudflare-compatible provider edge, apply Pane's migrations, read matching deployment identity and remove the isolated installation.
@@ -350,7 +350,7 @@ Core · target · **done**
 
 Core · target · **done** · Cites BASE-ROLE-001
 
-**Requirement.** The owner protects a page or folder with a password, or limits it to signed-in site members. Paid membership connection to Stall or Nectar remains a separate obligation (`PAGE-016`, `LINK-002`). Before launch, or during a rebuild, the owner can put the whole site behind a site-wide password or an editable coming-soon page (with an optional signup block, `LINK-003`); the gate answers `noindex`, and the workspace and preview links keep working.
+**Requirement.** The owner protects a page or folder with a password, or limits it to signed-in site members. Pane checks native member access on every request and never serves protected content in the public cache. Paid membership connection to Stall or Nectar remains a separate obligation (`PAGE-016`, `LINK-002`). Before launch, or during a rebuild, the owner can put the whole site behind a site-wide password or an editable coming-soon page (with an optional signup block, `LINK-003`); the gate answers `noindex`, and the workspace and preview links keep working.
 
 **Acceptance.**
 1. Protect a folder with a password and another with member sign-in; signed-out requests see the gate, the right password or member sees the page, and no cached response leaks it.
@@ -814,7 +814,7 @@ Core · target · **done**
 
 Core · target · **missing** · Cites BASE-OPS-002, BASE-BACKUP-001
 
-**Requirement.** Pane ships platform, security and template updates as signed releases, whose signature the installation verifies against the published release key before applying (an unsigned or tampered release is refused), that the owner applies in one action (or automatically, if they choose), with a preview of what changes and a rollback. There are no third-party plugins to keep updated.
+**Requirement.** Pane ships platform, security and template updates as signed releases, whose signature the installation verifies against the published release key before applying (an unsigned or tampered release is refused), that the owner applies in one action (or automatically, if they choose), with a preview of what changes. There are no third-party plugins to keep updated.
 
 **Acceptance.**
 1. Apply a release to a running installation, see the change list, its signature verified against the published release key and a passing health check, then roll it back.

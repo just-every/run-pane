@@ -579,7 +579,26 @@
     {
       "file": "CONTRACT.md",
       "line": 117,
-      "text": "**DEPLOY-001 — Install on the owner's Cloudflare account.** `rer deploy` installs the Worker, D1 database and migrations on the owner's own Cloudflare account and checks health; the owner pays Cloudflare directly in USD. **Acceptance evidence:** Run `rer deploy` against a test Cloudflare account, see migrations applied and `/health` match, then remove the deployment.",
+      "text": "**DEPLOY-001 — Install on the owner's Cloudflare account.** ",
+      "to": "clause",
+      "ids": [
+        "DEPLOY-001"
+      ]
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 117,
+      "text": "`rer deploy` installs the Worker, D1 database and migrations on the owner's own Cloudflare account and checks health;",
+      "to": "base",
+      "ids": [
+        "BASE-INSTALL-001",
+        "BASE-OPS-002"
+      ]
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 117,
+      "text": " the owner pays Cloudflare directly in USD. **Acceptance evidence:** Run `rer deploy` against a test Cloudflare account, see migrations applied and `/health` match, then remove the deployment.",
       "to": "clause",
       "ids": [
         "DEPLOY-001"
