@@ -35,7 +35,7 @@ const post = async (path, input) => {
 }
 async function tooltip(width) {
  const account = page.locator('.account > summary')
- await page.locator('.screen-head h1,.pagebar h1').first().click()
+ await page.getByRole('heading', {level: 1}).first().click()
  await account.hover(); await page.waitForTimeout(120)
  assert.equal(await page.getByRole('tooltip').count(), 0, 'Tooltip waits on hover')
  await page.getByRole('tooltip').getByText('Account and team', {exact: true}).waitFor()
