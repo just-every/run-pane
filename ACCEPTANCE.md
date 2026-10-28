@@ -976,7 +976,7 @@ Core · target · **missing** · Cites BASE-AGENT-006, BASE-AGENT-007 · Rules D
 
 Core · target · **done** · Cites BASE-INPUT-001, BASE-INPUT-003, BASE-ACCESSIBILITY-001
 
-**Requirement.** The owner builds any number of forms (contact, quote request, job application, event registration) with text, email, US phone, address, choice, date, file upload and consent fields, places them on any page, and sets each form's confirmation message or redirect. Each field has a label, optional help text shown under it, an optional placeholder and a required setting; required fields are marked visibly and with `required`/`aria-required`, and a submission with an empty required field or a badly formed email, phone or date is refused both in the browser and by the server, with a validation message beside each failing field, announced to screen readers and tied to it by `aria-describedby`, and the visitor's other answers kept. Uploaded files go to private storage with size and type limits.
+**Requirement.** The owner builds any number of forms (contact, quote request, job application, event registration) with text, email, US phone, address, choice, date, file upload and consent fields, places them on any page, and sets each form's confirmation message or redirect. Each field has a label, optional help text shown under it, an optional placeholder and a required setting; required fields are marked visibly and with `required`/`aria-required`, and a submission with an empty required field or a badly formed email, phone or date is refused both in the browser and by the server, with a validation message beside each failing field, announced to screen readers and tied to it by `aria-describedby`, and the visitor's other answers kept.
 
 **Acceptance.**
 1. Build a quote form with a file upload and a US phone field, place it on two pages, submit it with a 5 MB PDF, and see the submission and file in the inbox; an oversized or wrong-type file is refused.
@@ -1226,7 +1226,7 @@ Core · target · **partial** · Cites BASE-ROLE-001
 2. Native page writers and own-post authors initiate assistance within their existing content authority; assistance adds no publication rights.
 
 **Evidence.** `tests/pane.test.mjs` — “composable Pane roles are invited natively and enforced across workspace, preview, search and every existing API action”; “explicit enquiry replies are retained, delivered once at the provider edge and erased with the parent enquiry”; `scripts/access-journey.mjs` — “Access browser journey” (owner, editor, inbox and reporting at 1440/390)  `tests/search.test.mjs` — “native page writers initiate private assistance within their current grant and retain actor-owned decisions”; “native authors write and submit only own posts and use assistance without exposing other content”; `scripts/ai-journey.mjs` — “editorInitiation”.  `tests/posts.test.mjs` — “authors submit two isolated blogs for exact owner approval and public semantic delivery”; `scripts/posts-journey.mjs` — “Posts browser journey” (native own-post visual authoring, review, owner approval and publication at 1440 and 390).
-**Gap.** Pane-owned composable grants extend native member invitations without changing Base copies, sessions or last-owner protection. Editors edit and preview page and search drafts; inbox users read, explicitly reply and manage enquiries; reporting users read aggregate reports. Every current Pane route, preview and search handler enforces capabilities and omits inaccessible response data; grants revoke on the next request, including token calls. Approved by ct (22 Oct): only the owner assigns roles; grants compose by union and an explicit assignment replaces legacy member access; unassigned native members keep their ACCESS-001 read-only access until a grant replaces it; editors cannot change business and robots settings or publish; authors write and submit their own private posts through the native API; comment-moderator authority remains denied until its CMS doors exist. Inbox replies are explicit, idempotent sends that retain provider status and never retry automatically. Gap: the clause stays partial until every role is exercised: editor collection editing is now proved by CMS-001, and comment queue and notifications await CMS-010 (which must admit only owner, admin and comment moderators).
+**Gap.** Pane-owned composable grants extend native member invitations without changing Base copies, sessions or last-owner protection. Editors edit and preview page and search drafts; inbox users read, explicitly reply and manage enquiries; reporting users read aggregate reports. Approved by ct (22 Oct): only the owner assigns roles; grants compose by union and an explicit assignment replaces legacy member access; unassigned native members keep their ACCESS-001 read-only access until a grant replaces it; editors cannot change business and robots settings or publish; authors write and submit their own private posts through the native API; comment-moderator authority remains denied until its CMS doors exist. Inbox replies are explicit, idempotent sends that retain provider status and never retry automatically. Gap: the clause stays partial until every role is exercised: editor collection editing is now proved by CMS-001, and comment queue and notifications await CMS-010 (which must admit only owner, admin and comment moderators).
 
 #### ROLE-002 — Review requests and publish delegation
 
@@ -1266,15 +1266,15 @@ Core · target · **partial** · Cites BASE-ACCESS-001, BASE-SIGNIN-001, BASE-SI
 
 #### AUDIT-001 — Activity log of every change
 
-Core · target · **partial** · Cites BASE-AUDIT-001, BASE-OPS-005
+Core · target · **partial** · Cites BASE-AUDIT-001, BASE-DATA-003, BASE-OPS-005
 
 **Requirement.** Pane's metadata-only owner activity view includes every edit, publication, rollback, setting change, connection change, import, erasure, role change and agent action, identifying each subject (RL-3).
 
 **Acceptance.**
-1. Perform each kind of Pane action, read its metadata trail in order, open the export and erase a person; the ordered trail remains with the actor anonymized.
+1. Perform each kind of Pane action, read its metadata trail in order and open the export.
 
 **Evidence.** `tests/pane.test.mjs` — “activity records successful existing changes atomically and exports ordered owner-only metadata”; “explicit person erasure preserves anonymous ordered activity through archive restore and revokes access” (erasure, journal refusal, restored anonymous history, ordered export and denied account and credential access); “native connection approval, callback, settings and unlink produce owner-attributed secret-free activity”; `scripts/access-journey.mjs` — “Access browser journey” (owner ordered log and export before and after actor erasure, access refusal and icon tooltips at 1440 and 390)
-**Gap.** Missing journey: every promised content, connector, role and agent action read back through the metadata activity view and export. Cited journeys show current native writes, ordered export and actor anonymization; unbuilt agent and connector doors are not exercised.
+**Gap.** Missing journey: every promised content, connector, role and agent action read back through the metadata activity view and export. Cited journeys show current native writes and ordered export; unbuilt content, agent and connector doors are not exercised.
 
 ### Moving in from incumbents
 
@@ -1763,9 +1763,7 @@ Agent surface · target · **missing** · From new · Cites BASE-AGENT-004, BASE
 1. With the all-autonomous company policy covering every class, import a seeded small business, draft its service and blog content, correct sourced hours, publish a change, check its old redirects and process its enquiries without a policy hold or refusal.
 2. Repeat that week under the held company policy: standard calls enter review and every other declared class waits for that policy's named person to decide the exact saved revision; read the resulting site, enquiries, review feed and activity.
 3. Under a company policy that blocks outside replies, attempt the follow-up: see no message sent and retain the enquiry for handoff; permitted private site work still completes.
-4. Before the company answers setup, attempt a draft write and see no change; finish the company's answers and run it. Exhaust the company's chosen provider budget, read its spend and refused work without a partial change, then exercise its chosen no-cap policy.
-5. Retry a publication and a provider reply, and race a stale draft against a newer one: read one effect for each retry and retain both editors' work on conflict.
-6. Pause the steward as the sponsoring person and observe the next site call stopped; resume as that person, finish the week and reconcile the site's activity and record resources.
+4. Reconcile the week's site changes, enquiry outcomes and handoffs against the site's activity and record resources.
 
 **Evidence.** None.
 **Gap.** No MCP journey implements this Pane surface; the existing helper and scoped API do not prove this shared door or its company-policy matrix.

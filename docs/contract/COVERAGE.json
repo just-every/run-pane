@@ -2132,10 +2132,19 @@
     {
       "file": "CONTRACT.md",
       "line": 600,
-      "text": "The owner builds any number of forms (contact, quote request, job application, event registration) with text, email, US phone, address, choice, date, file upload and consent fields, places them on any page, and sets each form's confirmation message or redirect. Each field has a label, optional help text shown under it, an optional placeholder and a required setting; required fields are marked visibly and with `required`/`aria-required`, and a submission with an empty required field or a badly formed email, phone or date is refused both in the browser and by the server, with a validation message beside each failing field, announced to screen readers and tied to it by `aria-describedby`, and the visitor's other answers kept. Uploaded files go to private storage with size and type limits.",
+      "text": "The owner builds any number of forms (contact, quote request, job application, event registration) with text, email, US phone, address, choice, date, file upload and consent fields, places them on any page, and sets each form's confirmation message or redirect. Each field has a label, optional help text shown under it, an optional placeholder and a required setting; required fields are marked visibly and with `required`/`aria-required`, and a submission with an empty required field or a badly formed email, phone or date is refused both in the browser and by the server, with a validation message beside each failing field, announced to screen readers and tied to it by `aria-describedby`, and the visitor's other answers kept. ",
       "to": "clause",
       "ids": [
         "FORM-001"
+      ]
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 600,
+      "text": "Uploaded files go to private storage with size and type limits.",
+      "to": "base",
+      "ids": [
+        "BASE-INPUT-003"
       ]
     },
     {
@@ -2660,7 +2669,22 @@
     {
       "file": "CONTRACT.md",
       "line": 766,
-      "text": "*Status:* partial. Pane-owned composable grants extend native member invitations without changing Base copies, sessions or last-owner protection. Editors edit and preview page and search drafts; inbox users read, explicitly reply and manage enquiries; reporting users read aggregate reports. Every current Pane route, preview and search handler enforces capabilities and omits inaccessible response data; grants revoke on the next request, including token calls. Approved by ct (22 Oct): only the owner assigns roles; grants compose by union and an explicit assignment replaces legacy member access; unassigned native members keep their ACCESS-001 read-only access until a grant replaces it; editors cannot change business and robots settings or publish; authors write and submit their own private posts through the native API; comment-moderator authority remains denied until its CMS doors exist. Inbox replies are explicit, idempotent sends that retain provider status and never retry automatically. Gap: the clause stays partial until every role is exercised: editor collection editing is now proved by CMS-001, and comment queue and notifications await CMS-010 (which must admit only owner, admin and comment moderators).",
+      "text": "*Status:* partial. Pane-owned composable grants extend native member invitations without changing Base copies, sessions or last-owner protection. Editors edit and preview page and search drafts; inbox users read, explicitly reply and manage enquiries; reporting users read aggregate reports. ",
+      "to": "changelog"
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 766,
+      "text": "Every current Pane route, preview and search handler enforces capabilities and omits inaccessible response data; grants revoke on the next request, including token calls.",
+      "to": "base",
+      "ids": [
+        "BASE-ROLE-001"
+      ]
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 766,
+      "text": " Approved by ct (22 Oct): only the owner assigns roles; grants compose by union and an explicit assignment replaces legacy member access; unassigned native members keep their ACCESS-001 read-only access until a grant replaces it; editors cannot change business and robots settings or publish; authors write and submit their own private posts through the native API; comment-moderator authority remains denied until its CMS doors exist. Inbox replies are explicit, idempotent sends that retain provider status and never retry automatically. Gap: the clause stays partial until every role is exercised: editor collection editing is now proved by CMS-001, and comment queue and notifications await CMS-010 (which must admit only owner, admin and comment moderators).",
       "to": "changelog"
     },
     {
@@ -2777,16 +2801,27 @@
       "text": "It is readable by the owner, exportable and survives erasure of the subject with the actor anonymized where required.",
       "to": "base",
       "ids": [
-        "BASE-AUDIT-001"
+        "BASE-AUDIT-001",
+        "BASE-DATA-003"
       ]
     },
     {
       "file": "CONTRACT.md",
       "line": 796,
-      "text": "**Acceptance evidence:** Perform each kind of action, read the log in order, export it, erase a person and see their actor entries anonymized while the log remains.",
+      "text": "**Acceptance evidence:** Perform each kind of action, read the log in order, export it, ",
       "to": "clause",
       "ids": [
         "AUDIT-001"
+      ]
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 796,
+      "text": "erase a person and see their actor entries anonymized while the log remains.",
+      "to": "base",
+      "ids": [
+        "BASE-AUDIT-001",
+        "BASE-DATA-003"
       ]
     },
     {
@@ -4596,7 +4631,27 @@
       "file": "CONTRACT.md",
       "line": 1264,
       "cell": "gap",
-      "text": "Pane-owned composable grants extend native member invitations without changing Base copies, sessions or last-owner protection. Editors edit and preview page and search drafts; inbox users read, explicitly reply and manage enquiries; reporting users read aggregate reports. Every current Pane route, preview and search handler enforces capabilities and omits inaccessible response data; grants revoke on the next request, including token calls. Approved by ct (22 Oct): only the owner assigns roles; grants compose by union and an explicit assignment replaces legacy member access; unassigned native members keep their ACCESS-001 read-only access until a grant replaces it; editors cannot change business and robots settings or publish; authors write and submit their own private posts through the native API; comment-moderator authority remains denied until its CMS doors exist. Inbox replies are explicit, idempotent sends that retain provider status and never retry automatically. Gap: the clause stays partial until every role is exercised: editor collection editing is now proved by CMS-001, and comment queue and notifications await CMS-010 (which must admit only owner, admin and comment moderators).",
+      "text": "Pane-owned composable grants extend native member invitations without changing Base copies, sessions or last-owner protection. Editors edit and preview page and search drafts; inbox users read, explicitly reply and manage enquiries; reporting users read aggregate reports. ",
+      "to": "gap",
+      "ids": [
+        "ROLE-001"
+      ]
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 1264,
+      "cell": "gap",
+      "text": "Every current Pane route, preview and search handler enforces capabilities and omits inaccessible response data; grants revoke on the next request, including token calls.",
+      "to": "base",
+      "ids": [
+        "BASE-ROLE-001"
+      ]
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 1264,
+      "cell": "gap",
+      "text": " Approved by ct (22 Oct): only the owner assigns roles; grants compose by union and an explicit assignment replaces legacy member access; unassigned native members keep their ACCESS-001 read-only access until a grant replaces it; editors cannot change business and robots settings or publish; authors write and submit their own private posts through the native API; comment-moderator authority remains denied until its CMS doors exist. Inbox replies are explicit, idempotent sends that retain provider status and never retry automatically. Gap: the clause stays partial until every role is exercised: editor collection editing is now proved by CMS-001, and comment queue and notifications await CMS-010 (which must admit only owner, admin and comment moderators).",
       "to": "gap",
       "ids": [
         "ROLE-001"
@@ -6099,7 +6154,25 @@
     {
       "file": "ACCEPTANCE.md",
       "line": 112,
-      "text": "**FORM-001 — Form builder with multiple forms** (done). The owner builds any number of forms (contact, quote request, job application, event registration) with text, email, US phone, address, choice, date, file upload and consent fields, places them on any page, and sets each form's confirmation message or redirect. Each field has a label, optional help text shown under it, an optional placeholder and a required setting; required fields are marked visibly and with `required`/`aria-required`, and a submission with an empty required field or a badly formed email, phone or date is refused both in the browser and by the server, with a validation message beside each failing field, announced to screen readers and tied to it by `aria-describedby`, and the visitor's other answers kept. Uploaded files go to private storage with size and type limits. **Acceptance evidence:** Build a quote form with a file upload and a US phone field, place it on two pages, submit it with a 5 MB PDF, and see the submission and file in the inbox; an oversized or wrong-type file is refused. Mark the phone field required with help text, then submit with it empty and with an invalid email, in the browser and by a direct POST: both are refused, the page shows each field's message linked by `aria-describedby`, the other answers stay filled, and the help text is the field's accessible description.",
+      "text": "**FORM-001 — Form builder with multiple forms** (done). The owner builds any number of forms (contact, quote request, job application, event registration) with text, email, US phone, address, choice, date, file upload and consent fields, places them on any page, and sets each form's confirmation message or redirect. Each field has a label, optional help text shown under it, an optional placeholder and a required setting; required fields are marked visibly and with `required`/`aria-required`, and a submission with an empty required field or a badly formed email, phone or date is refused both in the browser and by the server, with a validation message beside each failing field, announced to screen readers and tied to it by `aria-describedby`, and the visitor's other answers kept. ",
+      "to": "clause",
+      "ids": [
+        "FORM-001"
+      ]
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 112,
+      "text": "Uploaded files go to private storage with size and type limits.",
+      "to": "base",
+      "ids": [
+        "BASE-INPUT-003"
+      ]
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 112,
+      "text": " **Acceptance evidence:** Build a quote form with a file upload and a US phone field, place it on two pages, submit it with a 5 MB PDF, and see the submission and file in the inbox; an oversized or wrong-type file is refused. Mark the phone field required with help text, then submit with it empty and with an invalid email, in the browser and by a direct POST: both are refused, the page shows each field's message linked by `aria-describedby`, the other answers stay filled, and the help text is the field's accessible description.",
       "to": "clause",
       "ids": [
         "FORM-001"
@@ -6412,7 +6485,23 @@
     {
       "file": "ACCEPTANCE.md",
       "line": 140,
-      "text": " Implementation: Pane-owned composable grants extend native member invitations without changing Base copies, sessions or last-owner protection. Editors edit and preview page and search drafts; inbox users read, explicitly reply and manage enquiries; reporting users read aggregate reports. Every current Pane route, preview and search handler enforces capabilities and omits inaccessible response data; grants revoke on the next request, including token calls. Approved by ct (22 Oct): only the owner assigns roles; grants compose by union and an explicit assignment replaces legacy member access; unassigned native members keep their ACCESS-001 read-only access until a grant replaces it; editors cannot change business and robots settings or publish; authors write and submit their own private posts through the native API; comment-moderator authority remains denied until its CMS doors exist. Inbox replies are explicit, idempotent sends that retain provider status and never retry automatically. Gap: the clause stays partial until every role is exercised: editor collection editing is now proved by CMS-001, and comment queue and notifications await CMS-010 (which must admit only owner, admin and comment moderators). Evidence: `tests/pane.test.mjs` — “composable Pane roles are invited natively and enforced across workspace, preview, search and every existing API action”; “explicit enquiry replies are retained, delivered once at the provider edge and erased with the parent enquiry”; `scripts/access-journey.mjs` — “Access browser journey” (owner, editor, inbox and reporting at 1440/390)  `tests/search.test.mjs` — “native page writers initiate private assistance within their current grant and retain actor-owned decisions”; “native authors write and submit only own posts and use assistance without exposing other content”; `scripts/ai-journey.mjs` — “editorInitiation”.  `tests/posts.test.mjs` — “authors submit two isolated blogs for exact owner approval and public semantic delivery”; `scripts/posts-journey.mjs` — “Posts browser journey” (native own-post visual authoring, review, owner approval and publication at 1440 and 390). Gap: Pane-owned composable grants extend native member invitations without changing Base copies, sessions or last-owner protection. Editors edit and preview page and search drafts; inbox users read, explicitly reply and manage enquiries; reporting users read aggregate reports. Every current Pane route, preview and search handler enforces capabilities and omits inaccessible response data; grants revoke on the next request, including token calls. Approved by ct (22 Oct): only the owner assigns roles; grants compose by union and an explicit assignment replaces legacy member access; unassigned native members keep their ACCESS-001 read-only access until a grant replaces it; editors cannot change business and robots settings or publish; authors write and submit their own private posts through the native API; comment-moderator authority remains denied until its CMS doors exist. Inbox replies are explicit, idempotent sends that retain provider status and never retry automatically. Gap: the clause stays partial until every role is exercised: editor collection editing is now proved by CMS-001, and comment queue and notifications await CMS-010 (which must admit only owner, admin and comment moderators).",
+      "text": " Implementation: Pane-owned composable grants extend native member invitations without changing Base copies, sessions or last-owner protection. Editors edit and preview page and search drafts; inbox users read, explicitly reply and manage enquiries; reporting users read aggregate reports. ",
+      "to": "docs",
+      "path": "docs/verify.md"
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 140,
+      "text": "Every current Pane route, preview and search handler enforces capabilities and omits inaccessible response data; grants revoke on the next request, including token calls.",
+      "to": "base",
+      "ids": [
+        "BASE-ROLE-001"
+      ]
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 140,
+      "text": " Approved by ct (22 Oct): only the owner assigns roles; grants compose by union and an explicit assignment replaces legacy member access; unassigned native members keep their ACCESS-001 read-only access until a grant replaces it; editors cannot change business and robots settings or publish; authors write and submit their own private posts through the native API; comment-moderator authority remains denied until its CMS doors exist. Inbox replies are explicit, idempotent sends that retain provider status and never retry automatically. Gap: the clause stays partial until every role is exercised: editor collection editing is now proved by CMS-001, and comment queue and notifications await CMS-010 (which must admit only owner, admin and comment moderators). Evidence: `tests/pane.test.mjs` — “composable Pane roles are invited natively and enforced across workspace, preview, search and every existing API action”; “explicit enquiry replies are retained, delivered once at the provider edge and erased with the parent enquiry”; `scripts/access-journey.mjs` — “Access browser journey” (owner, editor, inbox and reporting at 1440/390)  `tests/search.test.mjs` — “native page writers initiate private assistance within their current grant and retain actor-owned decisions”; “native authors write and submit only own posts and use assistance without exposing other content”; `scripts/ai-journey.mjs` — “editorInitiation”.  `tests/posts.test.mjs` — “authors submit two isolated blogs for exact owner approval and public semantic delivery”; `scripts/posts-journey.mjs` — “Posts browser journey” (native own-post visual authoring, review, owner approval and publication at 1440 and 390). Gap: Pane-owned composable grants extend native member invitations without changing Base copies, sessions or last-owner protection. Editors edit and preview page and search drafts; inbox users read, explicitly reply and manage enquiries; reporting users read aggregate reports. Every current Pane route, preview and search handler enforces capabilities and omits inaccessible response data; grants revoke on the next request, including token calls. Approved by ct (22 Oct): only the owner assigns roles; grants compose by union and an explicit assignment replaces legacy member access; unassigned native members keep their ACCESS-001 read-only access until a grant replaces it; editors cannot change business and robots settings or publish; authors write and submit their own private posts through the native API; comment-moderator authority remains denied until its CMS doors exist. Inbox replies are explicit, idempotent sends that retain provider status and never retry automatically. Gap: the clause stays partial until every role is exercised: editor collection editing is now proved by CMS-001, and comment queue and notifications await CMS-010 (which must admit only owner, admin and comment moderators).",
       "to": "docs",
       "path": "docs/verify.md"
     },
@@ -6467,10 +6556,39 @@
     {
       "file": "ACCEPTANCE.md",
       "line": 144,
-      "text": "**AUDIT-001 — Activity log of every change** (done). One log records every edit, publication, rollback, setting change, connection change, import, erasure, role change and agent action (`AGENT-008`) with actor, time and subject. It is readable by the owner, exportable and survives erasure of the subject with the actor anonymized where required. **Acceptance evidence:** Perform each kind of action, read the log in order, export it, erase a person and see their actor entries anonymized while the log remains.",
+      "text": "**AUDIT-001 — Activity log of every change** (done). One log records every edit, publication, rollback, setting change, connection change, import, erasure, role change and agent action (`AGENT-008`) with actor, time and subject. ",
       "to": "clause",
       "ids": [
         "AUDIT-001"
+      ]
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 144,
+      "text": "It is readable by the owner, exportable and survives erasure of the subject with the actor anonymized where required.",
+      "to": "base",
+      "ids": [
+        "BASE-AUDIT-001",
+        "BASE-DATA-003"
+      ]
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 144,
+      "text": " **Acceptance evidence:** Perform each kind of action, read the log in order, export it, ",
+      "to": "clause",
+      "ids": [
+        "AUDIT-001"
+      ]
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 144,
+      "text": "erase a person and see their actor entries anonymized while the log remains.",
+      "to": "base",
+      "ids": [
+        "BASE-AUDIT-001",
+        "BASE-DATA-003"
       ]
     },
     {
