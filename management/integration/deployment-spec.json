@@ -267,6 +267,12 @@
     },
     {
       "binding": "DB",
+      "name": "0038_import_history.sql",
+      "sha256": "ae211b44f762359161a2db9b4fd4b16364fd1d03ecc29df66852704c24e062cc",
+      "sql": "-- Historical intake is inert and shares native inbox custody.\nALTER TABLE pane_messages ADD COLUMN imported_from TEXT;\nALTER TABLE pane_messages ADD COLUMN import_revision TEXT;\nCREATE TABLE pane_import_visits (\n id TEXT PRIMARY KEY,\n month TEXT NOT NULL,\n path TEXT NOT NULL,\n count INTEGER NOT NULL CHECK(count>=0),\n source TEXT NOT NULL,\n kit_revision TEXT NOT NULL,\n UNIQUE(source,month,path)\n);\nCREATE TABLE pane_erased_import_people (digest TEXT PRIMARY KEY);\n"
+    },
+    {
+      "binding": "DB",
       "name": "0038_marketing_consent.sql",
       "sha256": "ed48e0981f6ba308642b65e3cc1b88bca4b90875d5c8353c6f8ef8ea982008d3",
       "sql": "-- Historic checkboxes confer no marketing permission. New receipts retain the\n-- published prompt and explicit choice on the same atomic enquiry row.\nALTER TABLE pane_messages ADD COLUMN marketing_consent TEXT;\n"
