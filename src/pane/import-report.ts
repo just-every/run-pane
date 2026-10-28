@@ -3,11 +3,11 @@ import { htmlFidelity } from './import-html'
 import { publicPage } from './public-view'
 import type { Site } from './model'
 
-export const importKinds = ['page','post','comment','collection-item','event','gallery','media','product','form','author','taxonomy','menu','unsupported'] as const
+export const importKinds = ['page','post','comment','collection-item','event','gallery','media','product','form','author','taxonomy','menu','unsupported','enquiry','visit-baseline'] as const
 export type ImportKind = typeof importKinds[number]
 export type Fidelity = { text: string; links: string[]; headings: string[]; lists: string[]; images: string[]; buttons: string[]; formatting: string[]; unresolved?: string[]; anchors?: string[] }
 export type InventoryItem = { id: string; kind: ImportKind; title: string; oldUrl?: string; targetSlug?: string; state?: string; reason?: string; destination?: string; fidelity?: Fidelity; fields?: Record<string,string> }
-export type ImportDocument = { site: Site | null; items: InventoryItem[]; format: string; origin?: string; crawl?: {origin:string;verifiedAt:string} }
+export type ImportDocument = { site: Site | null; items: InventoryItem[]; format: string; origin?: string; crawl?: {origin:string;verifiedAt:string}; historyRows?: import('./import-history-source').HistoryRow[] }
 export type ImportIssue = { id: string; check: string; reason: string }
 export type MigrationReport = {
  phase: 'preflight'|'applied'|'undone'; format: string;
