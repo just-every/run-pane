@@ -275,3 +275,16 @@ To update the structured body, edit and re-import the source. PAGE-014 and
 CMS-011 inherit safe rich-body editing with PAGE-006 autosave/undo/conflict
 protection; this reader does not claim those editors or native post/item/comment
 targets are complete. Standard native JSON plain-text pages remain editable.
+
+
+## Offline Squarespace history
+
+Paste a history CSV in Moves, review every source row and approve the exact fingerprint. Large imports have a Continue import button until completed; undo may also continue in bounded steps. History is added to the inbox or a separate traffic baseline immediately after approval, without publishing a site revision. Existing native edits or replies block strict undo.
+
+Enquiries use UTF-8 CSV with columns `Submitted On`, `Form`, `Name`, `Email`, `Message` and any extra named fields. Dates need an ISO timestamp with an explicit timezone. Add the original form name when combining per-form exports. Every column and original value is retained; source dates are normalized to the same instant in UTC. Imported enquiries are labeled Squarespace and closed, with no acknowledgment, notification, reminder or subscription action. All retained enquiries are browsable, including records beyond the former 100-record limit.
+
+Traffic uses `Month,Page,Visits`: month in YYYY-MM, a page path and a nonnegative whole count. Each source, month and page is unique. The imported baseline shows monthly totals, page counts and a separate overall total, leaving native counts unchanged. This is Pane's documented offline interchange: Squarespace does not offer a native analytics report export, so an owner supplies an independently prepared monthly page table. Sales history remains with the old platform. See [Squarespace Analytics](https://support.squarespace.com/hc/en-us/articles/206544167-Squarespace-Analytics) and [form submissions](https://support.squarespace.com/hc/en-us/articles/206566737-Form-blocks).
+
+The synthetic examples are `fixtures/imports/squarespace-enquiries.csv` (200 records, two forms and quoted multiline fields) and `fixtures/imports/squarespace-analytics.csv` (12 months, two pages, 858 visits). The enquiry fixture uses `{at}` placeholders; only test code expands these into synthetic addresses. Subscriber transfer and other platform adapters are not available.
+
+Person erasure also redacts retained import plans and journals, withdraws affected original CSV bytes, invalidates older archive checkpoints and retains only a hash-based person suppression fence. Remove erased people's records before reviewing another CSV. Undo and restore cannot reintroduce their imported records.

@@ -76,12 +76,12 @@ export async function runFollowUps(env: Bindings, now: number) {
  const db = env.DB
  const live = await db.prepare('SELECT r.site FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first<{site: string}>()
  const site: Site | null = live ? JSON.parse(live.site) : null, {zone, days} = responseWindow(site)
- const pending = await db.prepare("SELECT id,created_at FROM pane_messages WHERE status='new' AND follow_up_at IS NULL LIMIT 100").all<{id: string; created_at: string}>()
+ const pending = await db.prepare("SELECT id,created_at FROM pane_messages WHERE imported_from IS NULL AND status='new' AND follow_up_at IS NULL LIMIT 100").all<{id: string; created_at: string}>()
  for (const row of pending.results) await db.prepare('UPDATE pane_messages SET follow_up_at=? WHERE id=? AND follow_up_at IS NULL').bind(followUpDue(site, Date.parse(row.created_at)), row.id).run()
  const all = await operators(db), owner = siteOwner(all)
  if (!owner) return {reminded: 0, escalated: 0}
  // An enquiry already reminded to the site owner has nobody further to tell.
- const due = (await db.prepare("SELECT id,name,created_at,assignee,follow_up_at,reminded_at FROM pane_messages WHERE status='new' AND follow_up_at<=? AND escalated_at IS NULL AND (reminded_at IS NULL OR reminder_to!=?) ORDER BY follow_up_at,id LIMIT 50").bind(now, owner.id).all<Due>()).results
+ const due = (await db.prepare("SELECT id,name,created_at,assignee,follow_up_at,reminded_at FROM pane_messages WHERE imported_from IS NULL AND status='new' AND follow_up_at<=? AND escalated_at IS NULL AND (reminded_at IS NULL OR reminder_to!=?) ORDER BY follow_up_at,id LIMIT 50").bind(now, owner.id).all<Due>()).results
  let reminded = 0, escalated = 0
  for (const row of due) {
   const received = new Date(row.created_at).toUTCString()

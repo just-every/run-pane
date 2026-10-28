@@ -1,5 +1,6 @@
 import type { D1Database, D1ImportContext } from '../modules/import-kit/src/d1/types.ts'
 import { destination, mappingVersion, namespace } from './import-source'
+import { historyTargets } from './import-history-targets'
 import { revisionTargets } from './import-targets'
 
 export type ImportActor = { id: string; role: string }
@@ -12,8 +13,8 @@ export async function moveInContext(db: D1Database, actor: ImportActor): Promise
     throw new Error('Only an active owner or admin can move in a site.')
   }
   return {
-    destination, namespace, mappingVersion, batchSize: 1, maxBatches: 1,
-    storage: { database: db, targets: revisionTargets() },
+    destination, namespace, mappingVersion, batchSize: 200, maxBatches: 20,
+    storage: { database: db, targets: historyTargets(revisionTargets()) },
     authorization: {
       principalId: actor.id,
       predicate: (_action, scope) => ({

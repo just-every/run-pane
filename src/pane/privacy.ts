@@ -1,5 +1,6 @@
+import { erasedImportPerson } from './import-history-targets'
+import { privacySql,eraseImportedCustody } from './import-privacy'
 import { expireRejected } from './rejected-content'
-import { wireDatabase } from '@runeditrun/rer/internal/modules/d1-transport/index.mjs'
 import { erasureStatements,invalidateTransfersStatements } from '@runeditrun/rer/internal/modules/portability/journal.mjs'
 import type { QueuedEnquiry } from './outage'
 export const personEmail=(value:unknown)=>{
@@ -37,7 +38,7 @@ export async function erasePersonData(db:D1Database,email:string,confirm:unknown
  const found=await findPersonData(db,email,queued)
  if(!found.canErase)throw Error('Transfer ownership before erasing an owner account. Nothing was erased.')
  if(found.rejected.some(row=>row.held))throw Error('Release the legal hold before person erasure. Nothing was erased.')
- const wire=wireDatabase(db),messageIds=[...new Set([...found.rejected.map(row=>row.id),...found.messages.map(row=>row.id),...found.queued.map(row=>row.id)])],ids=JSON.stringify(found.messages.map(row=>row.id)),people=JSON.stringify(found.accounts.map(row=>row.id)),now=Date.now()
+ const wire=privacySql(db),messageIds=[...new Set([...found.rejected.map(row=>row.id),...found.messages.map(row=>row.id),...found.queued.map(row=>row.id)])],ids=JSON.stringify(found.messages.map(row=>row.id)),people=JSON.stringify(found.accounts.map(row=>row.id)),now=Date.now()
  const statements:any[]=[
   wire.prepare(`UPDATE pane_audit_context SET valid=CASE WHEN
    EXISTS(SELECT 1 FROM oa_operators WHERE id=? AND version=? AND role='owner' AND status='active')
@@ -61,7 +62,7 @@ export async function erasePersonData(db:D1Database,email:string,confirm:unknown
  for(const reply of found.replies)statements.push(...await erasureStatements(wire,'pane_inquiry_replies',{id:reply.id}))
  // A retained anonymized account/activity row cannot carry a row tombstone: the
  // shared redaction checkpoint refuses older archives while newer ones restore.
- statements.push(...await erasureStatements(wire,'rer_portability_state',{id:1}),...await invalidateTransfersStatements(wire),
+ statements.push(...await invalidateTransfersStatements(wire),
   wire.prepare('DELETE FROM pane_rejected_content WHERE lower(trim(email))=?').bind(email),
   wire.prepare('DELETE FROM pane_comments WHERE email=?').bind(email),
   wire.prepare('DELETE FROM pane_messages WHERE id IN (SELECT value FROM json_each(?))').bind(ids),
@@ -80,6 +81,8 @@ export async function erasePersonData(db:D1Database,email:string,confirm:unknown
   wire.prepare('UPDATE oa_sessions SET revoked_at=COALESCE(revoked_at,?) WHERE operator_id IN (SELECT value FROM json_each(?))').bind(now,people),
   wire.prepare('UPDATE oa_tokens SET revoked_at=COALESCE(revoked_at,?) WHERE operator_id IN (SELECT value FROM json_each(?)) OR issuer_id IN (SELECT value FROM json_each(?))').bind(now,people,people),
  )
- await wire.batch(statements)
+ const checkpoint=await erasureStatements(wire,'rer_portability_state',{id:1}) as any[]
+ const imported=found.messages.find(row=>row.imported_from)
+ await eraseImportedCustody(db,email,imported?.id??('person-'+erasedImportPerson(email)),actor.id,statements,checkpoint)
  return {erasedComments:found.comments.length,erasedMessages:messageIds.length,erasedReplies:found.replies.length,anonymizedAccounts:found.accounts.length,downstream:found.downstream,crmDeliveries:found.crmDeliveries,backupFence:true,retained:found.retainedAfterErasure}
 }
