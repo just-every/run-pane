@@ -136,7 +136,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "951dee97817f94053df10238469cd7d8635b875c27bdc77105c5595a9085e60b",
+      "sha256": "52e9f68c0553596ad8399cfde839b7cba0e878a446452ebbb4e4ea5e76d1f960",
       "executable": false
     },
     "AGENTS.md": {
@@ -160,7 +160,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "a250a86fa15121339fe3e02166e9fdade6f46a045caf928a14b35b2c29d34549",
+      "sha256": "ee9257a2298139839e5cfad5ec2cba229a74ee9a4e5138101aa5f02d0c4f2f79",
       "executable": false
     },
     "deploy-demo.json": {
@@ -668,7 +668,7 @@
       "executable": false
     },
     "public/pane-custom-code.js": {
-      "sha256": "7f8253f764ac2cf080f15168513acea30bdf5806ab05471ebaf9210127ad67b8",
+      "sha256": "a7ebbbb251561839c5e3f1a4ae87dfa6e232c5a5ad680e0f985663d99a857144",
       "executable": false
     },
     "public/pane-editor.css": {
@@ -748,7 +748,7 @@
       "executable": false
     },
     "public/pane-reading-order.mjs": {
-      "sha256": "7ce4d5f258d2ba0f23def236bfa3b5c0534dc24c646b2f6a5dc4b16fcdc2d37c",
+      "sha256": "d7fa1658f8ec18a8ab1a02d39202f46ec9b3fb2f30991f92a860819b3879910c",
       "executable": false
     },
     "public/pane-redirects.js": {
@@ -776,7 +776,7 @@
       "executable": false
     },
     "public/pane-section-styles.mjs": {
-      "sha256": "da4b1e9e019896e6d40a298b6bdeb26959f34c9b5efa7207795cbb0165b8acd5",
+      "sha256": "011362800df1348a3cde49696f56382bc236bc4421843435002a2202632beeba",
       "executable": false
     },
     "public/pane-site-styles.mjs": {
@@ -1148,11 +1148,15 @@
       "executable": false
     },
     "scripts/browser-proof.mjs": {
-      "sha256": "132e130e00d57f8ec7859207e37bcd2a6ebf5fb7fa3f7918d2ee1c333fd4e0c9",
+      "sha256": "1ebbda08d1c0ca226bba5b692ddab8c1ea541d7d329bf18bd61d61ede04b27f3",
       "executable": false
     },
     "scripts/build-deployment-spec.mjs": {
       "sha256": "8f973731c4d186380bcdfb18ecee158667304379161390aabd1f5a55c50f7074",
+      "executable": false
+    },
+    "scripts/catalog-journey.mjs": {
+      "sha256": "85b4f99fcc9158d9e5ca1d0dfb8c19bc23a7980a2302f58a9e50f34cadbcdd78",
       "executable": false
     },
     "scripts/collection-template-journey.mjs": {
@@ -1168,7 +1172,7 @@
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
-      "sha256": "295648b2b39cbd182a59ac69802ace5463893bf905a9457defa6cc3cc01bd47f",
+      "sha256": "d8acb51228ae7d0014c1f37da39175046b5b5508445f4c45884685c31f76f50b",
       "executable": false
     },
     "scripts/contract-docs.mjs": {
