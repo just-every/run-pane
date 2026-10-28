@@ -118,3 +118,6 @@
 
 /* Native body actions inherit the existing accessible brand action color. */
 .rer-themed .pane .public-site :is([data-block] [data-embed-allow],.button[data-body-href]){background:var(--pn-fuchsia-deep);border-color:var(--pn-fuchsia-deep)}
+
+
+.rer-themed .pane .public-site .public-menu-cta{background:var(--pn-fuchsia-deep)}

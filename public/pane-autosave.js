@@ -55,6 +55,7 @@ for (const form of document.querySelectorAll('form[data-autosave]')) {
     }
     if (!response.ok) throw Error(result.error ?? 'Draft could not be saved.')
     adopt(result); saved = sent
+    form.dispatchEvent(new CustomEvent('panedraftsaved',{detail:result}))
     status.textContent = signature(state()) === sent ? 'Draft saved. Not published.' : 'Unsaved changes.'
    } catch (error) { status.textContent = 'Draft not saved. ' + (error.message || 'Check your connection, then edit or prepare again.') }
   })()

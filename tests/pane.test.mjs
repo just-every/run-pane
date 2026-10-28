@@ -2205,3 +2205,69 @@ test('brand uploads stay draft until approval and publish served icons, social i
   await call('/api/pane/publication-revoke',{revision:draft.id,confirm:'revoke-publication'});assert.equal((await app.request('/site?pane-brand=logo')).status,404,'Revocation removes public brand delivery')
  }finally{await app.mf.dispose()}
 })
+
+
+test('owner style drafts retain self-hosted fonts through preview, conflict, publication and rollback',async()=>{
+ const f=await runtime();let owner,admin,member,mail
+ const json=(path,body,cookie=owner,headers={})=>f.request(path,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',Cookie:cookie??'',...headers},body:JSON.stringify(body),redirect:'manual'})
+ const data=async()=>(await f.request('/api/pane',{headers:{Cookie:owner}})).json()
+ try{
+ owner=(await json('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Workshop owner'},'')).headers.get('set-cookie').split(';')[0]
+ assert.equal((await f.request('/setup',{method:'POST',headers:{Cookie:owner,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes',redirect:'manual'})).status,303)
+ const auth=createOperatorAuth({db:f.db,config:{...settings,origin,local:true},clientIp:()=>'127.0.0.1',mailSender:{send:async value=>{mail=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+ for(const role of ['admin','member']){
+  await auth.invite(new Request(origin+'/auth/invite',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin,Cookie:owner}}),{email:'synthetic-pane-'+role+'@'+'example.test',displayName:'Workshop '+role,role})
+  const token=new URL(mail.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token'),response=await json('/auth/confirm',{token},'')
+  assert.equal(response.status,303)
+  const cookie=response.headers.get('set-cookie').split(';')[0];if(role==='admin')admin=cookie;else member=cookie
+ }
+ const initial=await(await json('/api/pane/prepare',{site:fixture})).json()
+ await json('/api/pane/publish',{revision:initial.id})
+ const fontBytes=await readFile('public/fonts/noto-serif/noto-serif-latin-wght-normal.woff2')
+ const font={id:'font-'+crypto.randomUUID(),name:'Workshop serif',format:'woff2',data:fontBytes.toString('base64')}
+ const formats=await Promise.all(['woff','ttf','otf'].map(async format=>({id:'font-'+crypto.randomUUID(),name:'Workshop '+format,format,data:(await readFile('tests/fonts/synthetic-pane.'+format)).toString('base64')})))
+ const styles={heading:font.id,body:'figtree',primary:'#075985',text:'#1f0717',background:'#ffffff',sectionBackground:'#f0f9ff',button:'pill',spacing:40,fonts:[font,...formats]}
+ const site={...initial.site,styles},before=(await data()).revisions.length
+ for(const cookie of [admin,member,'']){
+  assert.equal((await json('/api/pane/prepare',{site,base:initial.id},cookie)).status,cookie?403:401)
+  assert.equal((await json('/api/pane/autosave',{site,base:initial.id},cookie)).status,cookie?403:401)
+ }
+ const bad=await json('/api/pane/autosave',{base:initial.id,site:{...site,styles:{...styles,fonts:[{...font,data:Buffer.from('synthetic-pane-1').toString('base64')}]}}})
+ assert.equal(bad.status,400)
+ assert.equal((await data()).revisions.length,before,'Refused font writes preserve the latest draft')
+ const saved=await json('/api/pane/autosave',{base:initial.id,site});assert.equal(saved.status,200,await saved.clone().text());const draft=await saved.json()
+ assert.deepEqual(draft.site.styles,styles)
+ const reopened=await f.request('/app?page=services',{headers:{Cookie:owner}}),reopenedHtml=await reopened.text();assert.ok(reopenedHtml.includes('site styles'));assert.ok(reopenedHtml.includes(fixture.pages.length+' of '+fixture.pages.length+' pages changed'),'A shared style draft marks every page as changed')
+ assert.equal((await json('/app/autosave',{base:draft.id,'styles.primary':'#064e3b'},admin)).status,403,'Form writes obey the owner boundary')
+ assert.equal((await json('/api/pane/import/dry-run',{source:JSON.stringify(fixture)},admin)).status,403,'Import cannot discard owner styles')
+ const token=await(await json('/api/pane/tokens/create',{name:'synthetic-pane-42',scopes:['draft:write'],days:1})).json()
+ assert.ok(token.token)
+ assert.equal((await json('/api/pane/autosave',{base:draft.id,site:{...site,styles:{...styles,primary:'#064e3b'}}},'',{Authorization:'Bearer '+token.token})).status,403,'An owner-scoped agent credential cannot write styles')
+ await json('/api/pane/tokens/revoke',{id:token.id})
+ assert.equal((await json('/api/pane/autosave',{base:draft.id,site},'',{Authorization:'Bearer '+token.token})).status,401,'Revoked credentials stay refused')
+ const stale=await json('/api/pane/autosave',{base:initial.id,site:{...site,styles:{...styles,primary:'#064e3b'}}});assert.equal(stale.status,409);assert.deepEqual((await stale.json()).latest.site.styles,styles)
+ assert.equal((await f.request('/site?pane-font='+font.id+'&pane-revision='+draft.id)).status,404,'A draft font is not public')
+ for(const slug of ['home','about','services']){
+  const preview=await f.request('/preview/'+draft.id+'/'+slug,{headers:{Cookie:owner}});assert.equal(preview.status,200)
+  const html=await preview.text();assert.ok(html.includes('font-display:swap'));assert.ok(html.includes('Pane-'+font.id));assert.ok(html.includes('#075985'));assert.ok(html.includes('border-radius:999px'))
+ }
+ const previewFont='/preview/'+draft.id+'/home?pane-font='+font.id
+ assert.equal((await f.request(previewFont,{redirect:'manual'})).status,303)
+ const cssPath='/preview/'+draft.id+'/home?pane-style-css=1'
+ assert.equal((await f.request(cssPath,{redirect:'manual'})).status,303)
+ const sheet=await f.request(cssPath,{headers:{Cookie:owner}});assert.match(sheet.headers.get('content-type'),/text\/css/);assert.ok((await sheet.text()).includes('Pane-'+font.id))
+ const privateFont=await f.request(previewFont,{headers:{Cookie:owner}});assert.equal(privateFont.headers.get('content-type'),'font/'+font.format);assert.deepEqual(Buffer.from(await privateFont.arrayBuffer()),fontBytes)
+ assert.equal((await json('/api/pane/publish',{revision:draft.id})).status,200)
+ const asset='/site?pane-font='+font.id+'&pane-revision='+draft.id
+ const delivered=await f.request(asset);assert.equal(delivered.status,200);assert.match(delivered.headers.get('cache-control'),/no-store/);assert.equal(delivered.headers.get('x-content-type-options'),'nosniff');assert.deepEqual(Buffer.from(await delivered.arrayBuffer()),fontBytes)
+ assert.equal((await f.request(asset,{method:'HEAD'})).headers.get('content-length'),String(fontBytes.length))
+ assert.equal((await f.request(asset.replace(draft.id,initial.id))).status,404,'A stale live revision cannot deliver a font')
+ for(const item of formats){const response=await f.request('/site?pane-font='+item.id+'&pane-revision='+draft.id);assert.equal(response.status,200);assert.equal(response.headers.get('content-type'),'font/'+item.format);assert.deepEqual(Buffer.from(await response.arrayBuffer()).toString('base64'),item.data)}
+ const archive=await exportData(f.db),restored=await runtime()
+ try{assert.equal((await restore(restored.db,archive)).phase,'complete');const response=await restored.request(asset);assert.equal(response.status,200);assert.deepEqual(Buffer.from(await response.arrayBuffer()),fontBytes)}finally{await restored.mf.dispose()}
+ assert.equal((await json('/api/pane/rollback',{revision:initial.id})).status,200)
+ assert.equal((await f.request(asset)).status,404,'Rollback withdraws the uploaded font from public delivery')
+ for(const expected of [initial,draft])assert.deepEqual((await data()).revisions.find(row=>row.id===expected.id),expected,'Style edits and approvals leave complete prior snapshots immutable')
+ const activityRows=await(await f.request('/api/pane/activity',{headers:{Cookie:owner}})).json();assert.ok(activityRows.some(row=>row.subject==='revision:'+draft.id&&row.action==='edit'),'The style draft has transactional activity')
+ }finally{await f.mf.dispose()}
+})

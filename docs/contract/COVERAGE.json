@@ -2,7 +2,7 @@
   "schema": 1,
   "seed": "contract-md-pane",
   "old": {
-    "commit": "4e8e903fcb5d4b1c99f29788291251412757dd2a",
+    "commit": "680acc2c130432d9fe1d2d225cbad626c368134e",
     "files": [
       "CONTRACT.md",
       "ACCEPTANCE.md",
@@ -1026,7 +1026,7 @@
     {
       "file": "CONTRACT.md",
       "line": 284,
-      "text": "*Status:* partial. Styles are fixed in source CSS; no owner style controls.",
+      "text": "*Status:* partial. Native owner settings retain separate built-in and uploaded heading and body fonts, colors, button shape, page spacing and section background in immutable drafts. Font files are self-hosted with swap display and follow preview, publication and rollback. Gap: Adobe Fonts project connection and the uploaded and Adobe heading and body pairing with live rendering require an owner-authorized test web project ID or grant.",
       "to": "clause",
       "ids": [
         "STYLE-002"
@@ -4102,7 +4102,7 @@
       "file": "CONTRACT.md",
       "line": 1204,
       "cell": "gap",
-      "text": "Styles are fixed in source CSS; no owner style controls.",
+      "text": "Adobe Fonts project connection and the uploaded and Adobe heading and body pairing with live rendering require an owner-authorized Adobe Fonts test web project ID or grant, not held by this run.",
       "to": "gap",
       "ids": [
         "STYLE-002"
@@ -5180,7 +5180,7 @@
     {
       "file": "ACCEPTANCE.md",
       "line": 59,
-      "text": "**STYLE-002 — Site-wide brand styles** (partial). The owner sets fonts, colors, button shapes, spacing and section backgrounds once for the whole site, with live preview. Fonts come from a built-in catalog, from font files the owner uploads (WOFF2, WOFF, TTF or OTF, self-hosted on the site's origin with `font-display: swap`) or from an Adobe Fonts web project the owner connects by project ID. A change applies everywhere in the next revision. **Acceptance evidence:** Change the heading font, primary color and button style, preview three pages showing the change, publish, and roll back to the earlier styles. Upload a WOFF2 font and connect a test Adobe Fonts project, set one as the heading and one as the body font, and see both render on the live site, the uploaded one served from the site's own origin. Implementation: Styles are fixed in source CSS; no owner style controls. Evidence: `public/pane.css` Gap: Styles are fixed in source CSS; no owner style controls.",
+      "text": "**STYLE-002 — Site-wide brand styles** (partial). The owner sets fonts, colors, button shapes, spacing and section backgrounds once for the whole site, with live preview. Fonts come from a built-in catalog, from font files the owner uploads (WOFF2, WOFF, TTF or OTF, self-hosted on the site's origin with `font-display: swap`) or from an Adobe Fonts web project the owner connects by project ID. A change applies everywhere in the next revision. **Acceptance evidence:** Change the heading font, primary color and button style, preview three pages showing the change, publish, and roll back to the earlier styles. Upload a WOFF2 font and connect a test Adobe Fonts project, set one as the heading and one as the body font, and see both render on the live site, the uploaded one served from the site's own origin. Implementation: Native owner settings retain separate built-in and uploaded heading and body fonts, colors, button shape, page spacing and section background in immutable drafts. Font files are self-hosted with swap display and follow preview, publication and rollback. Gap: Adobe Fonts project connection and the uploaded and Adobe heading and body pairing with live rendering require an owner-authorized test web project ID or grant. Evidence: `tests/pane.test.mjs` — “owner style drafts retain self-hosted fonts through preview, conflict, publication and rollback”; `scripts/browser-journey.mjs` — “siteStylesJourney”, implemented in `scripts/styles-journey.mjs` (native settings, built-in face loading, real WOFF2 and WOFF and TTF and OTF decoding, separate fonts, same-origin WOFF2, inherited and local section backgrounds, three-page preview and publication, canvas font loading, shared draft status, rollback, autosave, undo and redo, retained conflict copy, axe and no overflow at 1440 and 390). The route proof includes native owner and scoped credential refusal, exact font bytes, immutable snapshots, transactional activity and portable archive restoration. Gap: Adobe Fonts project connection and the uploaded and Adobe heading and body pairing with live rendering require an owner-authorized Adobe Fonts test web project ID or grant, not held by this run.",
       "to": "generated",
       "note": "The contract generator writes this status or count."
     },

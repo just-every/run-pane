@@ -1,3 +1,4 @@
+import {siteStylesJourney} from './styles-journey.mjs'
 import assert from 'node:assert/strict'
 import { readFile, mkdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
@@ -109,6 +110,7 @@ try {
  await submit(page.getByRole('button',{name:'Approve import'}),'/app/moves');await capture('import-applied')
  await submit(page.getByRole('button',{name:'Undo import'}),'/app/moves');await capture('import-undone')
  await page.goto(origin+'/app/inquiries');await page.getByText('Erase personal data',{exact:true}).click();await submit(page.getByRole('button',{name:'Permanently erase message'}),'/app/inquiries');await capture('message-erased')
+ await siteStylesJourney({page,context,origin,folder})
  console.log('Browser journey passed: sign-in, setup, five-page prepare/preview/publish, contact, visits, change, rollback, reviewed move-in/undo, erasure at 1440 and 390.')
  }
 } catch(error) {await capture('journey-failure');throw error} finally {await browser.close();if(lobbyOnly)await fixtureRuntime?.stop()}

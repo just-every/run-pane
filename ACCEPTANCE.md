@@ -462,8 +462,8 @@ Core · target · **partial**
 1. Change the heading font, primary color and button style, preview three pages showing the change, publish, and roll back to the earlier styles.
 2. Upload a WOFF2 font and connect a test Adobe Fonts project, set one as the heading and one as the body font, and see both render on the live site, the uploaded one served from the site's own origin.
 
-**Evidence.** `public/pane.css`
-**Gap.** Styles are fixed in source CSS; no owner style controls.
+**Evidence.** `tests/pane.test.mjs` — “owner style drafts retain self-hosted fonts through preview, conflict, publication and rollback”; `scripts/browser-journey.mjs` — “siteStylesJourney”, implemented in `scripts/styles-journey.mjs` (native settings, built-in face loading, real WOFF2 and WOFF and TTF and OTF decoding, separate fonts, same-origin WOFF2, inherited and local section backgrounds, three-page preview and publication, canvas font loading, shared draft status, rollback, autosave, undo and redo, retained conflict copy, axe and no overflow at 1440 and 390). The route proof includes native owner and scoped credential refusal, exact font bytes, immutable snapshots, transactional activity and portable archive restoration.
+**Gap.** Adobe Fonts project connection and the uploaded and Adobe heading and body pairing with live rendering require an owner-authorized Adobe Fonts test web project ID or grant, not held by this run.
 
 #### STYLE-003 — Switch templates without rebuilding content
 

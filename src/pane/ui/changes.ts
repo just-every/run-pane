@@ -6,7 +6,7 @@ import { paragraphs } from '../public-view'
 import { normalizeSearch } from '../search-settings'
 
 export type Mark = 'same' | 'changed' | 'new'
-export type PageChange = { changed: boolean; title: boolean; search: boolean; embed: boolean; acknowledgment: boolean; analytics: boolean; structure: boolean; marks: Mark[]; removed: number }
+export type PageChange = { styles?:boolean; changed: boolean; title: boolean; search: boolean; embed: boolean; acknowledgment: boolean; analytics: boolean; structure: boolean; marks: Mark[]; removed: number }
 
 export function pageChange(draft: Page, live: Page | undefined): PageChange {
   const after = paragraphs(draft.body)
@@ -23,12 +23,14 @@ export function pageChange(draft: Page, live: Page | undefined): PageChange {
 
 /** Every page's change, keyed by slug; all unchanged when the draft is the live site. */
 export function siteChanges(draft: Site | undefined, live: Site | undefined, same: boolean): Record<string, PageChange> {
-  return Object.fromEntries((draft?.pages ?? []).map(page => [page.slug, {...pageChange(page, same ? page : live?.pages.find(candidate => (candidate.id ?? candidate.slug) === (page.id ?? page.slug))), ...(page.slug === homeSlug(draft!) && !same && JSON.stringify([draft?.media,draft?.brand,draft?.forms,draft?.access,draft?.locale,draft?.navigation,draft?.socials,draft?.home,draft?.notFound,draft?.folders,draft?.redirects,draft?.pages.map(p=>p.id ?? p.slug)]) !== JSON.stringify([live?.media,live?.brand,live?.forms,live?.access,live?.locale,live?.navigation,live?.socials,live?.home,live?.notFound,live?.folders,live?.redirects,live?.pages.map(p=>p.id ?? p.slug)]) ? {structure:true,changed:true} : {}), ...(page.slug === homeSlug(draft!) && JSON.stringify(draft?.analyticsCampaigns ?? []) !== JSON.stringify(live?.analyticsCampaigns ?? []) ? {analytics: true, changed: true} : {})}]))
+  const stylesChanged=!same&&JSON.stringify(draft?.styles??null)!==JSON.stringify(live?.styles??null)
+  return Object.fromEntries((draft?.pages ?? []).map(page => [page.slug, {...pageChange(page, same ? page : live?.pages.find(candidate => (candidate.id ?? candidate.slug) === (page.id ?? page.slug))), ...(stylesChanged?{styles:true,changed:true}:{}), ...(page.slug === homeSlug(draft!) && !same && JSON.stringify([draft?.media,draft?.brand,draft?.forms,draft?.access,draft?.locale,draft?.navigation,draft?.socials,draft?.home,draft?.notFound,draft?.folders,draft?.redirects,draft?.pages.map(p=>p.id ?? p.slug)]) !== JSON.stringify([live?.media,live?.brand,live?.forms,live?.access,live?.locale,live?.navigation,live?.socials,live?.home,live?.notFound,live?.folders,live?.redirects,live?.pages.map(p=>p.id ?? p.slug)]) ? {structure:true,changed:true} : {}), ...(page.slug === homeSlug(draft!) && JSON.stringify(draft?.analyticsCampaigns ?? []) !== JSON.stringify(live?.analyticsCampaigns ?? []) ? {analytics: true, changed: true} : {})}]))
 }
 
 /** "the title and 2 paragraphs": what one page's change touches, for a sentence. */
 export function changeSummary(change: PageChange): string {
   const count = change.marks.filter(mark => mark !== 'same').length + change.removed, parts = []
+  if (change.styles) parts.push('site styles')
   if (change.structure) parts.push('page organization or shared settings')
   if (change.analytics) parts.push('the campaign labels')
   if (change.acknowledgment) parts.push('the acknowledgment email')

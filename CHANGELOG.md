@@ -1678,3 +1678,7 @@ Generated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses,
 | AGENT-006 | missing | Move a business off its old platform |
 | AGENT-007 | missing | Follow up unanswered enquiries under an approved policy |
 | AGENT-008 | missing | Agent controls, budgets and audit |
+
+## 28 October 2026 — Site styles judgment carried from main
+
+partial. Native owner settings retain separate built-in and uploaded heading and body fonts, colors, button shape, page spacing and section background in immutable drafts. Font files are self-hosted with swap display and follow preview, publication and rollback. Gap: Adobe Fonts project connection and the uploaded and Adobe heading and body pairing with live rendering require an owner-authorized test web project ID or grant.
