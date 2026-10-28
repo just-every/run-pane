@@ -10,7 +10,7 @@ export async function dashboardData(db:D1Database,name:string,role:string,operat
  const [revs, live, messages, visits, approvals, imports, operators, traffic, replies] = await Promise.all([
   db.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 50').all(),
   db.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first(),
-  db.prepare('SELECT * FROM pane_messages ORDER BY created_at DESC,id DESC').all(),
+  db.prepare('SELECT * FROM pane_messages ORDER BY created_at DESC').all(),
   db.prepare('SELECT path,SUM(count) AS count FROM pane_visits GROUP BY path ORDER BY path').all(),
   db.prepare('SELECT * FROM pane_approvals ORDER BY created_at DESC LIMIT 100').all(),
   db.prepare('SELECT id,state,created_at FROM ik_jobs ORDER BY created_at DESC LIMIT 30').all(),

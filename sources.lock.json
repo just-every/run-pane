@@ -3424,7 +3424,7 @@
       "executable": false
     },
     "src/pane/data.ts": {
-      "sha256": "908e42f2e0748025cae9ed94a70bee02f41b82c7302b550048586a202c1cd624",
+      "sha256": "5f2db5fc757a607f48aba0d61f9192b2ef205ad27ad6af459bde0e74a2be9cce",
       "executable": false
     },
     "src/pane/demo/bakery.ts": {
