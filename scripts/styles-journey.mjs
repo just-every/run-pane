@@ -7,6 +7,7 @@ export async function siteStylesJourney({page,context,origin,folder}){
  const call=async(path,data)=>{const response=await context.request.post(origin+path,{headers:{Origin:origin},data});assert.equal(response.status(),200,await response.text());return response.json()}
  const state=async()=>(await context.request.get(origin+'/api/pane')).json()
  const saved=async()=>{await page.waitForFunction(()=>document.querySelector('[data-save-status]')?.textContent==='Draft saved. Not published.');await page.waitForTimeout(80)}
+ const uploadFont=async path=>{const count=await page.locator('[data-font-state]').evaluate(field=>JSON.parse(field.value).length);await page.getByLabel('Upload font',{exact:true}).setInputFiles(path);await page.waitForFunction(count=>JSON.parse(document.querySelector('[data-font-state]').value).length===count+1,count);await saved()}
  const initial=JSON.parse(await readFile('fixtures/static-site.json','utf8'))
  const services=initial.pages.find(page=>page.slug==='services'),override='Each commission has its own workshop plan.'
  const section=(id,text,background)=>({id,kind:'text',ratio:'1:1',gap:24,paddingTop:32,paddingBottom:32,...(background?{background}:{}),blocks:[{id:id+'-text',kind:'text',format:'p',text,column:1,span:12,row:1,order:0,align:'left',vertical:'start'}]})
@@ -41,10 +42,10 @@ export async function siteStylesJourney({page,context,origin,folder}){
   await page.goto(origin+'/app');await page.locator('[data-site-style-settings] > summary').click()
   await page.getByLabel('Heading font',{exact:true}).selectOption('notoDisplay');await saved()
   await page.waitForFunction(()=>{const doc=document.querySelector('[data-style-preview]').contentDocument;return doc&&[...doc.fonts].some(face=>face.family.replaceAll('\"','').replaceAll("'",'')==='Noto Serif Display'&&face.status==='loaded')})
-  await page.getByLabel('Upload font',{exact:true}).setInputFiles('public/fonts/noto-serif/noto-serif-latin-wght-normal.woff2');await saved()
+  await uploadFont('public/fonts/noto-serif/noto-serif-latin-wght-normal.woff2')
   const font=(await state()).draft.site.styles.fonts[0]
   for(const format of ['woff','ttf','otf']){
-   await page.getByLabel('Upload font',{exact:true}).setInputFiles('tests/fonts/synthetic-pane.'+format);await saved()
+   await uploadFont('tests/fonts/synthetic-pane.'+format)
    const added=(await state()).draft.site.styles.fonts.at(-1)
    await page.getByLabel('Body font',{exact:true}).selectOption(added.id);await saved()
    await page.waitForFunction(id=>{const doc=document.querySelector('[data-style-preview]').contentDocument;return doc&&[...doc.fonts].some(face=>face.family.replaceAll('\"','')==='Pane-'+id&&face.status==='loaded')},added.id)

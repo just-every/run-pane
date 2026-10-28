@@ -13,7 +13,7 @@ for(const root of document.querySelectorAll('[data-site-style-settings]')){
  }
  upload.addEventListener('change',async()=>{
   const file=upload.files?.[0];if(!file)return
-  upload.disabled=true
+  upload.disabled=true;status.textContent='Checking font…'
   try{
    const format=file.name.split('.').at(-1).toLowerCase(),fonts=JSON.parse(field.value)
    if(!['woff2','woff','ttf','otf'].includes(format)||file.size>393216||fonts.length>=4)throw Error('Choose a WOFF2, WOFF, TTF or OTF font up to 384 KiB, with up to four fonts per revision.')
