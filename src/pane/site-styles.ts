@@ -14,5 +14,6 @@ export function normalizeSiteStyles(value:unknown):SiteStyles|undefined {
 }
 export function stylesFromForm(input:Record<string,unknown>,site:Site):SiteStyles|undefined {
  if(input['style.headingFont']===undefined)return site.styles
- return normalizeSiteStyles(Object.fromEntries(Object.keys(siteStyleDefaults).map(key=>[key,typeof siteStyleDefaults[key as keyof SiteStyles]==='number'?Number(input['style.'+key]):input['style.'+key]])))
+ const styles=normalizeSiteStyles(Object.fromEntries(Object.keys(siteStyleDefaults).map(key=>[key,typeof siteStyleDefaults[key as keyof SiteStyles]==='number'?Number(input['style.'+key]):input['style.'+key]])))
+ return !site.styles&&JSON.stringify(styles)===JSON.stringify(siteStyleDefaults)?undefined:styles
 }

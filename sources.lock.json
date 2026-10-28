@@ -764,7 +764,7 @@
       "executable": false
     },
     "public/pane-site-styles.mjs": {
-      "sha256": "fcccf363ea71b65d264a2062e38cf61907ddc916ba1e37cde6f3ab6286f93284",
+      "sha256": "413f3807299da19e966aa8ace4113a1e31112f4fae4f5bb6297a612fb33b09a7",
       "executable": false
     },
     "public/pane-tags.js": {
@@ -1152,7 +1152,7 @@
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
-      "sha256": "802b349ef0da4ecda423c77d4446d5aed76dd7a66c66dc32b101a2dc29731f00",
+      "sha256": "531e974662ac4ffcbd92004ca666c5efb7a13c1c1732933e685bd7dec2a3615b",
       "executable": false
     },
     "scripts/contract-docs.mjs": {
@@ -3692,7 +3692,7 @@
       "executable": false
     },
     "src/pane/site-styles.ts": {
-      "sha256": "f214e7aa569774ca2df82e7938abe205dc76de1462d98292ea04899a9300dc0f",
+      "sha256": "469cdd0aaa64d94f9f133cb3ca96d141bf976e1f506d7c65e271662ac36d18f1",
       "executable": false
     },
     "src/pane/submission-export.ts": {
