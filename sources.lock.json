@@ -3728,7 +3728,7 @@
       "executable": false
     },
     "src/pane/ui/form-settings.ts": {
-      "sha256": "38a6e006d38b37372f66a9442e3d4c671cd18f17fa9c52ac9f04c543609d3c6a",
+      "sha256": "9c2bf7d291a5ccd9f31bfcdac08a37ab8da494afce9b36623c66329f84968234",
       "executable": false
     },
     "src/pane/ui/goal-settings.ts": {
