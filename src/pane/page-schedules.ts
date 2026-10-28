@@ -10,6 +10,7 @@ export async function savePageSchedule(db:D1Database,actor:{id:string;role:strin
  if(actor.role!=='owner'||!await db.prepare("SELECT 1 FROM oa_operators WHERE id=? AND role='owner' AND status='active'").bind(actor.id).first())throw new PostDenied('Only the native owner schedules page publication.')
  const draft=await latestContent(db);if(!draft||draft.id!==input.base)throw new DraftConflict(draft)
  const id=String(input.page),request=String(input.request),zone=normalizeTimeZone(input.timeZone),starts=String(input.start),at=localInstant(starts,zone)
+ if(at<=Date.now())throw Error('Choose a future business-local publication time.')
  await publishPage(db,actor.id,draft.id,id,request,{source:draft.id,at,preview:true})
  const ends=input.end?String(input.end):null,endsAt=ends?localInstant(ends,zone):null
  if(endsAt!==null&&draft.site.pages.filter(page=>!page.deleted).length<2)throw Error('Keep at least one other page before scheduling page expiry.')
@@ -28,10 +29,18 @@ export async function runPageSchedules(db:D1Database,now:number,runId:string){
  if(clock&&now<clock.scheduled_at)return
  await db.prepare('INSERT INTO pane_schedule_ticks(id,scheduled_at,revision) SELECT ?,?,live FROM pane_state WHERE id=1 ON CONFLICT(id) DO NOTHING').bind(runId,now).run()
 
+ const failures:unknown[]=[]
  for(const row of await pageScheduleRows(db)){
-  if(!row.actor||row.starts_at>now)continue
-  if(!await db.prepare("SELECT 1 FROM oa_operators WHERE id=? AND role='owner' AND status='active'").bind(row.actor).first())continue
+  if(!row.actor||row.starts_at>now||row.expired_revision)continue
+  try{
+  if(!await db.prepare("SELECT 1 FROM oa_operators WHERE id=? AND role='owner' AND status='active'").bind(row.actor).first())throw new PostDenied('The approving owner is no longer active.')
   if(!row.executed_revision){
+   if(row.ends_at!==null&&row.ends_at<=now){
+    await db.batch([
+     db.prepare("UPDATE pane_page_schedules SET expired_revision=source WHERE id=?").bind(row.id),
+     db.prepare(`INSERT INTO pane_schedule_events(id,run_id,revision,rule,kind,occurrence,occurrence_at,time_zone,executed_at,data) VALUES(?,?,?,?,'page-window-missed',?,?,?,?,?) ON CONFLICT(id) DO NOTHING`).bind(JSON.stringify(['page-missed',row.id]),runId,row.source,'page:'+row.page,row.starts,row.starts_at,row.time_zone,now,'{}'),
+    ]);continue
+   }
    const latest=await latestContent(db);if(!latest)continue
    await publishPage(db,row.actor,latest.id,row.page,row.request,{source:row.source,at:now,queue:row.id,finish:[
     db.prepare(`INSERT INTO pane_schedule_events(id,run_id,revision,rule,kind,occurrence,occurrence_at,time_zone,executed_at,data) VALUES(?,?,?,?,'page-publish',?,?,?,?,?)`)
@@ -40,7 +49,12 @@ export async function runPageSchedules(db:D1Database,now:number,runId:string){
    ]})
   }
   if(row.ends_at!==null&&row.ends_at<=now&&!row.expired_revision)await expirePage(db,row,now,runId)
+  }catch{
+   try{await db.prepare(`INSERT INTO pane_schedule_events(id,run_id,revision,rule,kind,occurrence,occurrence_at,time_zone,executed_at,data) VALUES(?,?,?,?,'page-schedule-failed',?,?,?,?,?) ON CONFLICT(id) DO NOTHING`)
+    .bind(JSON.stringify(['page-failure',row.id,row.executed_revision?'expiry':'publication']),runId,row.source,'page:'+row.page,row.executed_revision?row.ends:row.starts,row.executed_revision?row.ends_at:row.starts_at,row.time_zone,now,JSON.stringify({error:'The scheduled page change was refused. Review the source and owner approval; other schedules continue.'})).run()}catch(error){failures.push(error)}
+  }
  }
+ if(failures.length)throw new AggregateError(failures,'Page schedule failures could not be recorded.')
 }
 async function expirePage(db:D1Database,row:PageSchedule,now:number,runId:string){
  const [draft,liveRow,source]=await Promise.all([latestContent(db),db.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first(),db.prepare('SELECT * FROM pane_revisions WHERE id=?').bind(row.source).first()])

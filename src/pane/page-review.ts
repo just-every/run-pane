@@ -31,7 +31,7 @@ export async function publishPage(db:D1Database,actor:string,base:string,id:stri
  if(!liveRow)throw Error('Publish the initial site before approving individual pages.')
  const draft=revision(latest),live=revision(liveRow)
  const source=scheduled?await db.prepare('SELECT * FROM pane_revisions WHERE id=?').bind(scheduled.source).first():latest
- if(!source)throw Error('The approved page schedule source is unavailable.')
+ if(!source||await db.prepare('SELECT 1 FROM pane_revoked_revisions WHERE revision=?').bind(source.id).first())throw Error('The approved page schedule source is unavailable or revoked.')
  const reviewedSite=revision(source).site,page=reviewedSite.pages.find(page=>pageId(page)===id)
  const reviewed=request?revision(request).site.pages.find(candidate=>pageId(candidate)===id):undefined
  if(!page || page.deleted || !reviewed || JSON.stringify(page)!==JSON.stringify(reviewed))throw Error('Request review again after changing this page.')
