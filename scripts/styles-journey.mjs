@@ -91,6 +91,62 @@ export async function siteStylesJourney({page,context,origin,folder}){
   assert.equal((await context.request.get(origin+'/site?pane-font='+font.id+'&pane-revision='+draft.id)).status(),404)
   await screen('rollback',width)
  }
+ // Only the paid Adobe network edge is faked; all settings and revisions use native doors.
+ const adobeBody=await readFile('public/fonts/noto-sans-mono/noto-sans-mono-latin-400-normal.woff2')
+ const adobeRequests=[]
+ await context.route('https://use.typekit.net/**',async route=>{
+  const url=new URL(route.request().url());adobeRequests.push(url.pathname)
+  if(url.pathname==='/syn0001.css')return route.fulfill({contentType:'text/css',body:'@import url("https://p.typekit.net/synthetic-pane.css");@font-face{font-family:"synthetic-pane-adobe";src:url("https://use.typekit.net/synthetic-pane.woff2") format("woff2");font-display:swap;font-weight:100 900} '})
+  assert.equal(url.pathname,'/synthetic-pane.woff2','The browser only loads the selected Adobe test project')
+  return route.fulfill({contentType:'font/woff2',headers:{'access-control-allow-origin':'*'},body:adobeBody})
+ })
+ await context.route('https://p.typekit.net/**',route=>route.fulfill({contentType:'text/css',body:''}))
+ async function adobeRendered(id){
+  await page.evaluate(()=>document.fonts.ready)
+  const result=await page.evaluate(id=>{
+   const heading=getComputedStyle(document.querySelector('.public-main h1')).fontFamily,body=getComputedStyle(document.querySelector('.public-content p')).fontFamily
+   const loaded=family=>[...document.fonts].some(font=>font.family.replaceAll('"','')===family&&font.status==='loaded')
+   const canvas=document.createElement('canvas').getContext('2d'),measure=family=>{canvas.font='32px '+family;return canvas.measureText('Workshop furniture repairs').width}
+   return {heading,body,headingLoaded:loaded('Pane-'+id),bodyLoaded:loaded('synthetic-pane-adobe'),distinct:measure(heading)!==measure(body),resources:performance.getEntriesByType('resource').map(entry=>entry.name)}
+  },id)
+  assert.ok(result.heading.includes(id)&&result.body.includes('synthetic-pane-adobe')&&result.headingLoaded&&result.bodyLoaded&&result.distinct,'Uploaded headings and Adobe body text both decode and render distinctly')
+  assert.ok(result.resources.some(url=>new URL(url).origin===origin&&new URL(url).searchParams.get('pane-font')===id),'Uploaded headings stay on this origin')
+  assert.ok(result.resources.includes('https://use.typekit.net/syn0001.css')&&result.resources.includes('https://use.typekit.net/synthetic-pane.woff2'),'Adobe body text uses its hosted CSS and font')
+ }
+ for(const width of [1440,390]){
+  await page.setViewportSize({width,height:1000})
+  const first=await call('/api/pane/prepare',{site:initial});await call('/api/pane/publish',{revision:first.id})
+  await page.goto(origin+'/app');await page.getByRole('radio',{name:'Desktop',exact:true}).check();await page.locator('[data-site-style-settings] > summary').click()
+  await uploadFont('public/fonts/noto-serif/noto-serif-latin-wght-normal.woff2')
+  const font=(await state()).draft.site.styles.fonts[0]
+  await page.locator('[data-adobe-settings] > summary').click()
+  await page.locator('[data-adobe-project]').fill('syn0001');await page.locator('[data-adobe-families]').fill('synthetic-pane-adobe')
+  const before=(await state()).draft.id,requestsBefore=adobeRequests.length
+  await page.locator('[data-adobe-connect]').click();assert.equal(JSON.parse(await page.locator('[data-adobe-state]').inputValue()),null,'Connection without explicit owner authorization is refused')
+  assert.equal((await state()).draft.id,before);assert.equal(adobeRequests.length,requestsBefore,'Staging project details sends nothing to Adobe')
+  await page.locator('[data-adobe-authorize]').check();await page.locator('[data-adobe-connect]').click();await saved()
+  await page.getByLabel('Heading font',{exact:true}).selectOption(font.id);await page.getByLabel('Body font',{exact:true}).selectOption('adobe:synthetic-pane-adobe');await saved()
+  await page.waitForFunction(()=>[...document.fonts].some(font=>font.family.replaceAll('"','')==='synthetic-pane-adobe'&&font.status==='loaded'))
+  await screen('adobe-settings',width)
+  await page.reload();assert.equal(await page.getByLabel('Body font',{exact:true}).inputValue(),'adobe:synthetic-pane-adobe')
+  const draft=(await state()).draft
+  await page.goto(origin+'/site');assert.equal(await page.locator('[data-adobe-fonts]').count(),0,'Draft Adobe connection is not live before approval')
+  for(const slug of ['home','services','contact']){await page.goto(origin+'/preview/'+draft.id+'/'+slug);await adobeRendered(font.id);await screen('adobe-preview-'+slug,width)}
+  await page.goto(origin+'/app');await Promise.all([page.waitForURL(url=>url.searchParams.has('notice')),page.getByRole('button',{name:'Approve & publish',exact:true}).click()])
+  for(const slug of ['home','services','contact']){await page.goto(origin+(slug==='home'?'/site':'/site/'+slug));await adobeRendered(font.id);await screen('adobe-live-'+slug,width)}
+  await page.goto(origin+'/app');await page.locator('[data-site-style-settings] > summary').click();await page.locator('[data-adobe-settings] > summary').click();await page.locator('[data-adobe-disconnect]').click();await saved()
+  assert.equal(await page.getByLabel('Body font',{exact:true}).inputValue(),'figtree');assert.equal((await state()).draft.site.styles.adobe,undefined)
+  await screen('adobe-disconnected',width)
+  await page.getByRole('button',{name:'Undo',exact:true}).click();await saved();assert.equal(await page.getByLabel('Body font',{exact:true}).inputValue(),'adobe:synthetic-pane-adobe');assert.equal((await state()).draft.site.styles.adobe.project,'syn0001')
+  await page.getByRole('button',{name:'Redo',exact:true}).click();await saved();assert.equal(await page.getByLabel('Body font',{exact:true}).inputValue(),'figtree');assert.equal((await state()).draft.site.styles.adobe,undefined)
+  assert.equal((await context.request.get(origin+'/site')).status(),200);assert.ok((await(await context.request.get(origin+'/site')).text()).includes('https://use.typekit.net/syn0001.css'),'Disconnect is a draft until separately published')
+  await Promise.all([page.waitForURL(url=>url.searchParams.has('notice')),page.getByRole('button',{name:'Approve & publish',exact:true}).click()])
+  await page.goto(origin+'/site');assert.equal(await page.locator('[data-adobe-fonts]').count(),0);assert.match(await page.locator('.public-content p').first().evaluate(node=>getComputedStyle(node).fontFamily),/Figtree/)
+  assert.deepEqual((await state()).revisions.find(row=>row.id===draft.id),draft,'Disconnect leaves the approved Adobe revision immutable')
+  await page.goto(origin+'/app/sites');const restore=page.locator('form[action="/app/rollback"]').filter({has:page.locator(`input[value="${first.id}"]`)})
+  await Promise.all([page.waitForURL(url=>url.searchParams.has('notice')),restore.getByRole('button').click()]);await page.goto(origin+'/site');assert.equal(await page.locator('[data-site-styles]').count(),0);await screen('adobe-rollback',width)
+ }
+ await context.unroute('https://use.typekit.net/**');await context.unroute('https://p.typekit.net/**')
  if(baseline){const restored=await call('/api/pane/prepare',{site:baseline});await call('/api/pane/publish',{revision:restored.id})}
  console.log('Site style journey passed: owner upload, separate heading and body rendering, same-origin font loading, autosave, undo and redo, retained conflict copy, three-page preview and publication, immutable rollback, axe and no overflow at 1440 and 390.')
 }
