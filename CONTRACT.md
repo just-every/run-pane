@@ -853,7 +853,7 @@ An owner moving in brings their history: past form submissions exported from XML
 
 **Acceptance evidence:** Import an XML-export site builder form-submissions CSV of 200 rows and a subscriber list with 20 unsubscribed contacts; see the 200 enquiries in the inbox with original dates and no notifications sent, and see the subscribers in Mango and in a Mailchimp test audience with consent dates and source kept and the 20 unsubscribed contacts suppressed. Import a 12-month XML-export site builder Analytics visits-by-page CSV and see each month's visits per page in `STATS-001`, labeled imported, matching the CSV's totals.
 
-*Status:* missing. Only the static-site JSON move-in exists; no submission or subscriber import.
+*Status:* partial. Reviewed offline Squarespace enquiry CSV import preserves original timestamps, forms and every field in the native inbox beyond 100 records without notification or reminder delivery; monthly visits by page import as a separate labeled baseline with reconciliation, duplicate protection, strict undo and person-erasure custody and replay fences. Gap: subscriber transfer to Mango and Mailchimp with original consent date and source, unsubscribed and bounced suppression including the twenty-unsubscribed-contact proof, requires an authorized Mango installation and Mailchimp test audience and key; other source-platform history adapters remain omitted.
 
 ### Portability, privacy and US norms
 

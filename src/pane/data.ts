@@ -10,7 +10,7 @@ export async function dashboardData(db:D1Database,name:string,role:string,operat
  const [revs, live, messages, visits, approvals, imports, operators, traffic, replies] = await Promise.all([
   db.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 50').all(),
   db.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first(),
-  db.prepare('SELECT * FROM pane_messages ORDER BY created_at DESC LIMIT 100').all(),
+  db.prepare('SELECT * FROM pane_messages ORDER BY created_at DESC,id DESC').all(),
   db.prepare('SELECT path,SUM(count) AS count FROM pane_visits GROUP BY path ORDER BY path').all(),
   db.prepare('SELECT * FROM pane_approvals ORDER BY created_at DESC LIMIT 100').all(),
   db.prepare('SELECT id,state,created_at FROM ik_jobs ORDER BY created_at DESC LIMIT 30').all(),
@@ -18,7 +18,8 @@ export async function dashboardData(db:D1Database,name:string,role:string,operat
   trafficBreakdowns(db),
   db.prepare('SELECT id,message_id,subject,body,status,created_at FROM pane_inquiry_replies ORDER BY created_at,id').all<import('./model').Dashboard['replies'][number]>(),
  ])
- for(const message of messages.results)message.files=(await db.prepare('SELECT id,name,size FROM pane_files WHERE message_id=? ORDER BY id').bind(message.id).all()).results
+ const files=(await db.prepare('SELECT id,message_id,name,size FROM pane_files ORDER BY id').all()).results
+ for(const message of messages.results)message.files=files.filter(file=>file.message_id===message.id)
  const revisions = revs.results.map(revision)
  const liveRevision = live ? revision(live) : null
  const schedules = await scheduleOverview(db,revisions[0]??null,liveRevision)
