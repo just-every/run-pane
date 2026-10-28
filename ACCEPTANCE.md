@@ -312,7 +312,7 @@ Core · target · **partial**
 
 #### PAGE-008 — Custom code, embeds and CSS
 
-Core · target · **done** · Cites BASE-PUBLIC-001, BASE-SECRET-001
+Core · target · **done** · Cites BASE-PUBLIC-001, BASE-SECRET-001 · Rules D-4
 
 **Requirement.** An owner adds custom CSS, an HTML embed block, site-wide header and footer code (for example a verification tag) and per-page header code on any page, including a form's or booking's thank-you page (for example a Google Ads conversion snippet). Custom code can subscribe to Pane's goal events (`STATS-002`) through a documented the documented goal event browser event carrying the goal name and value, so a hand-written tag fires on a lead rather than a page view. Custom header code is marked third-party and waits for consent under `PRIV-001`. Embeds run sandboxed under a per-site content security policy the owner sees, and nothing they add can reach the workspace or a session.
 
@@ -452,7 +452,7 @@ Core · target · **missing** · Cites BASE-ROLE-001
 
 #### PAGE-017 — Third-party tag and pixel marketplace with per-tag consent categories
 
-Core · target · **done** · Cites BASE-PUBLIC-001, BASE-SECRET-001
+Core · target · **done** · Cites BASE-PUBLIC-001, BASE-SECRET-001 · Rules D-4
 
 **Requirement.** An owner selects third-party tags and pixels from a marketplace and assigns each its consent category. Each tag loads only after the visitor grants its category, honors GPC and immediate withdrawal, and stays outside the workspace. PAGE-008 custom code and its shared analytics choice do not supply this marketplace.
 
@@ -552,7 +552,7 @@ Core · target · **done** · Cites BASE-INPUT-003
 
 #### MEDIA-004 — Video, map, social embeds and Instagram feed
 
-Core · target · **partial** · Cites BASE-PUBLIC-001, BASE-SECRET-001
+Core · target · **partial** · Cites BASE-PUBLIC-001, BASE-SECRET-001 · Rules D-4
 
 **Requirement.** A video block plays an uploaded library video (`MEDIA-001`) in an accessible player with controls, captions from an uploaded WebVTT file, a poster frame, and optional autoplay-muted and loop, streamed at sizes matched to the screen; or it embeds YouTube and Vimeo videos. Blocks also embed a Google Maps location for each business address, and Instagram or Facebook posts. An Instagram feed block connects the business's Instagram professional account through Instagram's official API and shows its most recent posts (count and grid or carousel layout chosen by the editor) on the live site, refreshed automatically at least hourly, with images re-served through `MEDIA-002` and each tile linking to its post; the connection refreshes its token before it expires, and a broken connection shows in `LINK-005` while the block keeps the last posts it fetched. Third-party embeds load only after consent where `PRIV-001` requires it.
 
@@ -1152,7 +1152,7 @@ Core · target · **partial** · Cites BASE-AGENT-006, BASE-AGENT-007, BASE-AGEN
 
 #### STATS-001 — Traffic by page, source, device and campaign
 
-Core · target · **done**
+Core · target · **done** · Rules D-4
 
 **Requirement.** The workspace shows visits by page, day, referrer, device type, country or US state and UTM campaign, still without cookies or personal identifiers, and still not counting browsers that send Global Privacy Control or Do Not Track.
 
@@ -1164,7 +1164,7 @@ Core · target · **done**
 
 #### STATS-002 — Conversion goals and click insights
 
-Core · target · **done**
+Core · target · **done** · Rules D-4
 
 **Requirement.** The owner sets goals (form submissions, bookings, checkouts, signups, phone-number and email clicks, outbound clicks) and sees conversions and conversion rate by page, source and campaign, plus a simple funnel from landing page to goal. Each goal can be mapped to a Meta standard event and a Google Ads conversion action (`STATS-005`) and is raised in the browser as a the documented goal event event for custom code (`PAGE-008`).
 
@@ -1176,7 +1176,7 @@ Core · target · **done**
 
 #### STATS-003 — Vane and Google Analytics 4 with consent
 
-Core · target · **done** · Cites BASE-PUBLIC-001, BASE-SECRET-001
+Core · target · **done** · Cites BASE-PUBLIC-001, BASE-SECRET-001 · Rules D-4
 
 **Requirement.** The owner connects Vane (first) or Google Analytics 4 by measurement ID through one Google tag that `STATS-005` reuses for Google Ads. Vane runs cookie-free; GA4 loads only after consent where `PRIV-001` requires it, and never under GPC.
 
@@ -1200,7 +1200,7 @@ Core · target · **missing**
 
 #### STATS-005 — Meta Pixel and Google Ads conversion tracking
 
-Core · target · **missing**
+Core · target · **missing** · Rules D-4
 
 **Requirement.** The owner connects the Meta Pixel by pixel ID and the Google tag for Google Ads by its `AW-` conversion ID from native connection panels, with no code. Page views go to both. Each `STATS-002` goal maps to a Meta standard event and to a Google Ads conversion action the owner picks from the connected account (or enters as a conversion label): by default a form submission sends `Lead`, a booking confirmed through `LINK-001` sends `Schedule`, a checkout confirmed through `LINK-002` sends `Purchase` with its USD value, a newsletter signup sends `CompleteRegistration` and a phone or email click sends `Contact`. Browser events fire when the goal completes, with an event ID. Optionally, Pane also sends the same event server-side from the stored submission through the Meta Conversions API and Google Ads enhanced conversions, with the visitor's email and phone normalized and SHA-256 hashed and the same event ID so the platform de-duplicates it. Everything waits for consent and nothing is sent under GPC (`PRIV-001`); the access tokens are installation secrets with their health in `LINK-005`.
 

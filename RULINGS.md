@@ -12,7 +12,7 @@ Evidence limits: approval of these defaults is not implementation acceptance. Pr
 
 ### RL-2 — Assistance initiation stays within native roles
 
-Date: 2026-10-27 · Ruler: ct · Governs: AI-002, AI-005, AI-006, ROLE-001
+Date: 2026-10-27 (source judgment date; the clarification records no separate ruling date) · Ruler: ct · Governs: AI-002, AI-005, AI-006, ROLE-001
 
 A native owner using the editor can satisfy AI-002’s functional acceptance; that journey does not require a non-owner actor. ROLE-001 owns editor and author initiation of assistance within their existing content permissions, enforced server-side by ACCESS-001. The owner-only interim default grants no additional role authority. AI-002 remains partial while applicable ROLE-001 initiation is unproved, even if its owner functional journey passes. Retain selected-text rewriting, shortening and tone adjustment, alt text for five images, Spanish and other-language translation into separate draft pages, individual acceptance and rejection, accepted-only draft changes, and every standing payload, audit, five-step undo and redo, and conflict rider. This clarification approves no implementation, status promotion or completion.
 
