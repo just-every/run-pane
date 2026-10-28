@@ -38,7 +38,7 @@ try{
  const pdf=Buffer.alloc(5*1024*1024,32);pdf.write('%PDF-1.7\nsynthetic-pane-72')
  for(const width of [1440,390]){
   await page.setViewportSize({width,height:1000});await live.setViewportSize({width,height:1000})
-  await page.goto(origin+'/app/sites');await settings.getByText('Workshop quote',{exact:true}).click();await page.evaluate(axe);assert.deepEqual(await settings.evaluate(async node=>(await axe.run(node)).violations.map(item=>item.id)),[],'Form settings pass axe');assert.ok(await settings.locator('label,button,p').evaluateAll(nodes=>nodes.filter(node=>node.checkVisibility()).every(node=>parseFloat(getComputedStyle(node).fontSize)>=13)));await capture(page,'saved-form-builder',width)
+  await page.goto(origin+'/app/sites');await settings.getByText('Workshop quote',{exact:true}).click();await page.evaluate(axe);assert.deepEqual(await settings.evaluate(async node=>(await axe.run(node)).violations.map(item=>item.id)),[],'Form settings pass axe');assert.ok(await settings.locator('label,button,p').evaluateAll(nodes=>nodes.filter(node=>node.checkVisibility()).every(node=>parseFloat(getComputedStyle(node).fontSize)>=13)));await capture(page,'saved-form-builder',width);await settings.locator('details[open] [data-fields] > fieldset').last().screenshot({path:resolve(folder,'sms-consent-settings-'+width+'.png')})
   await page.goto(origin+'/app?page=about');await page.getByText('Form placement',{exact:true}).click();await capture(page,'form-placement',width)
   await live.goto(origin+'/site/about');await fill();
   const emailChoice=live.getByRole('checkbox',{name:'Send me studio news by email.',exact:true}),smsChoice=live.getByRole('checkbox',{name:/Send me studio updates by text/})
