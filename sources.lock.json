@@ -4060,7 +4060,7 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "4b87325ee30a684b913514a3d03e8d8edf263f0691a4c4438b03ffbf6198b3c4",
+      "sha256": "947fa03e8afc5f680a800e970c12dffaac77879e0b610bcc174a8eb16d559fb9",
       "executable": false
     },
     "tests/post-fixture.mjs": {

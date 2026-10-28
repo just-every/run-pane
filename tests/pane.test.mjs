@@ -1658,7 +1658,7 @@ function submissionRows(text){
  assert.equal(quoted,false,'CSV quotes are balanced')
  return rows
 }
-test('native submission CSV filters stable forms and inclusive UTC dates beyond the inbox limit without exposing erased or unauthorized records',async()=>{
+test('native submission CSV filters stable forms and inclusive UTC dates across more than 100 browsable enquiries without exposing erased or unauthorized records',async()=>{
  let instant=Date.parse('2030-06-19T23:59:59.999Z')
  const {app,call,cookie,site,submit}=await formFixture({now:()=>instant})
  const email=['synthetic-pane-81','example.test'].join('@'),get=(query,credential=cookie)=>app.request('/api/pane/submissions/export?'+query,{headers:{Cookie:credential}})
@@ -1676,7 +1676,7 @@ test('native submission CSV filters stable forms and inclusive UTC dates beyond 
   for(let i=0;i<101;i++){instant=Date.parse('2030-06-20T12:00:00.000Z')+i*60000;expected.push(await send('contact',{name:'Synthetic visitor '+i}))}
   instant=Date.parse('2030-06-20T23:59:59.999Z');const last=await send();expected.push(last)
   instant=Date.parse('2030-06-21T00:00:00.000Z');const after=await send()
-  const dashboard=await (await app.request('/api/pane',{headers:{Cookie:cookie}})).json();assert.equal(dashboard.messages.length,100);assert.ok(!dashboard.messages.some(row=>row.id===first),'The first exported record is beyond the inbox cutoff')
+  const dashboard=await (await app.request('/api/pane',{headers:{Cookie:cookie}})).json();assert.equal(dashboard.messages.length,106);assert.ok(dashboard.messages.some(row=>row.id===first),'The earliest record remains browsable alongside every later enquiry')
   const response=await get(range);assert.equal(response.status,200);assert.match(response.headers.get('content-type'),/text\/csv/);assert.match(response.headers.get('cache-control'),/private, no-store/);assert.match(response.headers.get('content-disposition'),/attachment/)
   const text=await response.text(),rows=submissionRows(text),header=rows.shift(),id=header.indexOf('submission_id'),field=key=>header.indexOf('field:'+key)
   assert.deepEqual(rows.map(row=>row[id]).sort(),expected.sort(),'CSV contains the complete independently specified form and date set')
