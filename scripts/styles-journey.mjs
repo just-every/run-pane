@@ -53,6 +53,7 @@ export async function siteStylesJourney({page,context,origin,folder}){
   await page.getByLabel('Heading font',{exact:true}).selectOption(font.id)
   await page.getByLabel('Primary color',{exact:true}).fill('#075985')
   await page.getByLabel('Button shape',{exact:true}).selectOption('pill')
+  const initialSpacing=await page.getByLabel('Page spacing',{exact:true}).inputValue()
   await page.getByLabel('Page spacing',{exact:true}).fill('40');await saved()
   let draft=(await state()).draft
   const preview=page.frameLocator('[data-style-preview]');await preview.locator('.public-main h1').waitFor()
@@ -61,8 +62,10 @@ export async function siteStylesJourney({page,context,origin,folder}){
   await screen('settings',width)
   await page.locator('[data-style-preview]').scrollIntoViewIfNeeded();await screen('settings-preview',width)
   const avatar=page.locator('.avatar[data-tip]').first();await page.keyboard.press('Tab');await avatar.focus();assert.equal(await page.getByRole('tooltip').innerText(),'Account and team');await page.keyboard.press('Escape')
-  await page.getByRole('button',{name:'Undo',exact:true}).click();await saved();assert.equal(await page.getByLabel('Page spacing',{exact:true}).inputValue(),'32')
+  await page.getByRole('button',{name:'Undo',exact:true}).click();await saved();assert.equal(await page.getByLabel('Page spacing',{exact:true}).inputValue(),initialSpacing)
   await page.getByRole('button',{name:'Redo',exact:true}).click();await saved();assert.equal(await page.getByLabel('Page spacing',{exact:true}).inputValue(),'40')
+  await page.reload();assert.equal(await page.locator('.pill-changes').innerText(),initial.pages.length+' of '+initial.pages.length+' pages changed');await page.locator('[data-site-style-settings] > summary').click()
+  await screen('settings-saved',width)
   const stale=await context.newPage();await stale.goto(origin+'/app');await stale.locator('[data-site-style-settings] > summary').click()
   await page.getByLabel('Section background',{exact:true}).fill('#f0f9ff');await saved()
   await stale.getByLabel('Primary color',{exact:true}).fill('#064e3b');await stale.locator('[data-conflict]:not([hidden])').waitFor()
@@ -72,6 +75,7 @@ export async function siteStylesJourney({page,context,origin,folder}){
   await page.screenshot({path:resolve(folder,`styles-saved-${width}.png`),fullPage:true})
   await stale.getByRole('button',{name:'Use latest draft'}).click();await stale.waitForLoadState('domcontentloaded');await stale.close()
   draft=(await state()).draft
+  await page.goto(origin+'/app/canvas?page=services');await rendered(font.id);await screen('canvas',width)
   for(const slug of ['home','services','contact']){await page.goto(origin+'/preview/'+draft.id+'/'+slug);await rendered(font.id);if(slug==='services'){assert.equal(await page.locator('[data-section=workshop-services]').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(240, 249, 255)');assert.equal(await page.locator('[data-section=workshop-local]').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 247, 237)')}await screen('preview-'+slug,width)}
   await page.goto(origin+'/app');await Promise.all([page.waitForURL(url=>url.searchParams.has('notice')),page.getByRole('button',{name:'Approve & publish',exact:true}).click()])
   for(const slug of ['home','services','contact']){await page.goto(origin+(slug==='home'?'/site':'/site/'+slug));await rendered(font.id);await screen('live-'+slug,width)}

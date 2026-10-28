@@ -2116,6 +2116,19 @@ test('brand uploads stay draft until approval and publish served icons, social i
 
 
 test('owner style drafts retain self-hosted fonts through preview, conflict, publication and rollback',async()=>{
+ const f=await runtime();let owner,admin,member,mail
+ const json=(path,body,cookie=owner,headers={})=>f.request(path,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',Cookie:cookie??'',...headers},body:JSON.stringify(body),redirect:'manual'})
+ const data=async()=>(await f.request('/api/pane',{headers:{Cookie:owner}})).json()
+ try{
+ owner=(await json('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Workshop owner'},'')).headers.get('set-cookie').split(';')[0]
+ assert.equal((await f.request('/setup',{method:'POST',headers:{Cookie:owner,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes',redirect:'manual'})).status,303)
+ const auth=createOperatorAuth({db:f.db,config:{...settings,origin,local:true},clientIp:()=>'127.0.0.1',mailSender:{send:async value=>{mail=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+ for(const role of ['admin','member']){
+  await auth.invite(new Request(origin+'/auth/invite',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin,Cookie:owner}}),{email:'synthetic-pane-'+role+'@'+'example.test',displayName:'Workshop '+role,role})
+  const token=new URL(mail.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token'),response=await json('/auth/confirm',{token},'')
+  assert.equal(response.status,303)
+  const cookie=response.headers.get('set-cookie').split(';')[0];if(role==='admin')admin=cookie;else member=cookie
+ }
  const initial=await(await json('/api/pane/prepare',{site:fixture})).json()
  await json('/api/pane/publish',{revision:initial.id})
  const fontBytes=await readFile('public/fonts/noto-serif/noto-serif-latin-wght-normal.woff2')
@@ -2132,6 +2145,7 @@ test('owner style drafts retain self-hosted fonts through preview, conflict, pub
  assert.equal((await data()).revisions.length,before,'Refused font writes preserve the latest draft')
  const saved=await json('/api/pane/autosave',{base:initial.id,site});assert.equal(saved.status,200,await saved.clone().text());const draft=await saved.json()
  assert.deepEqual(draft.site.styles,styles)
+ const reopened=await f.request('/app?page=services',{headers:{Cookie:owner}}),reopenedHtml=await reopened.text();assert.ok(reopenedHtml.includes('site styles'));assert.ok(reopenedHtml.includes(fixture.pages.length+' of '+fixture.pages.length+' pages changed'),'A shared style draft marks every page as changed')
  assert.equal((await json('/app/autosave',{base:draft.id,'styles.primary':'#064e3b'},admin)).status,403,'Form writes obey the owner boundary')
  assert.equal((await json('/api/pane/import/dry-run',{source:JSON.stringify(fixture)},admin)).status,403,'Import cannot discard owner styles')
  const token=await(await json('/api/pane/tokens/create',{name:'synthetic-pane-42',scopes:['draft:write'],days:1})).json()
@@ -2147,7 +2161,7 @@ test('owner style drafts retain self-hosted fonts through preview, conflict, pub
  }
  const previewFont='/preview/'+draft.id+'/home?pane-font='+font.id
  assert.equal((await f.request(previewFont,{redirect:'manual'})).status,303)
- const privateFont=await f.request(previewFont,{headers:{Cookie:owner}});assert.equal(privateFont.headers.get('content-type'),'font/woff2');assert.deepEqual(Buffer.from(await privateFont.arrayBuffer()),fontBytes)
+ const privateFont=await f.request(previewFont,{headers:{Cookie:owner}});assert.equal(privateFont.headers.get('content-type'),'font/'+font.format);assert.deepEqual(Buffer.from(await privateFont.arrayBuffer()),fontBytes)
  assert.equal((await json('/api/pane/publish',{revision:draft.id})).status,200)
  const asset='/site?pane-font='+font.id+'&pane-revision='+draft.id
  const delivered=await f.request(asset);assert.equal(delivered.status,200);assert.match(delivered.headers.get('cache-control'),/no-store/);assert.equal(delivered.headers.get('x-content-type-options'),'nosniff');assert.deepEqual(Buffer.from(await delivered.arrayBuffer()),fontBytes)
@@ -2160,4 +2174,5 @@ test('owner style drafts retain self-hosted fonts through preview, conflict, pub
  assert.equal((await f.request(asset)).status,404,'Rollback withdraws the uploaded font from public delivery')
  for(const expected of [initial,draft])assert.deepEqual((await data()).revisions.find(row=>row.id===expected.id),expected,'Style edits and approvals leave complete prior snapshots immutable')
  const activityRows=await(await f.request('/api/pane/activity',{headers:{Cookie:owner}})).json();assert.ok(activityRows.some(row=>row.subject==='revision:'+draft.id&&row.action==='edit'),'The style draft has transactional activity')
+ }finally{await f.mf.dispose()}
 })
