@@ -133,6 +133,7 @@ export async function siteStylesJourney({page,context,origin,folder}){
   await page.reload();assert.equal(await page.getByLabel('Body font',{exact:true}).inputValue(),'adobe:synthetic-pane-adobe')
   const draft=(await state()).draft
   await page.goto(origin+'/site');assert.equal(await page.locator('[data-adobe-fonts]').count(),0,'Draft Adobe connection is not live before approval')
+  const canvasRequestStart=adobeRequests.length;await page.goto(origin+'/app/canvas?page=services');await adobeRendered(font.id,canvasRequestStart);await screen('adobe-canvas',width)
   for(const slug of ['home','services','contact']){const requestStart=adobeRequests.length;await page.goto(origin+'/preview/'+draft.id+'/'+slug);await adobeRendered(font.id,requestStart);await screen('adobe-preview-'+slug,width)}
   await page.goto(origin+'/app');await Promise.all([page.waitForURL(url=>url.searchParams.has('notice')),page.getByRole('button',{name:'Approve & publish',exact:true}).click()])
   for(const slug of ['home','services','contact']){const requestStart=adobeRequests.length;await page.goto(origin+(slug==='home'?'/site':'/site/'+slug));await adobeRendered(font.id,requestStart);await screen('adobe-live-'+slug,width)}
