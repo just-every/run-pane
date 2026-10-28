@@ -1344,7 +1344,7 @@
       "executable": false
     },
     "scripts/forms-journey.mjs": {
-      "sha256": "6b5bb13dea9f12f63b85b18064af2abb16bb68390df6fafffe18de44b9d1335d",
+      "sha256": "84e72483106ac3e7d530bf36c8b662d2390be14429b7d65b5f719d14cfeced7f",
       "executable": false
     },
     "scripts/gallery-brand-journey.mjs": {
