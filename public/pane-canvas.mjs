@@ -1,3 +1,4 @@
+import {effectiveSection,inheritedSectionFields} from './pane-site-styles.mjs'
 import {canvasBody} from './pane-canvas-body.mjs'
 import {safeBodyHref} from './pane-body-links.mjs'
 import {galleryEditor} from './pane-gallery-editor.mjs'
@@ -8,6 +9,7 @@ import {layoutRules,layoutMarkup} from './pane-layout.mjs'
 const editor=document.querySelector('[data-layout-editor]'),form=editor.querySelector('form'),field=form.querySelector('[data-layout-state]'),canvas=editor.querySelector('[data-layout-canvas]'),content=canvas.querySelector('.public-content')
 let sections=JSON.parse(field.value),sectionId=sections[0].id,blockId,dragged,selection
 const sectionFields=['anchor','kind','ratio','gap','paddingTop','paddingBottom','height','background'],numeric=['gap','paddingTop','paddingBottom','column','span','row','order']
+const siteStyles=JSON.parse(form.querySelector('[data-site-styles]').value)
 const current=()=>sections.find(section=>section.id===sectionId)??sections[0]
 const block=()=>current().blocks.find(block=>block.id===blockId)
 const device=form.querySelector('[data-layout-device]')
@@ -37,7 +39,8 @@ function settings(){
   const key=input.dataset.layoutField,target=key==='hidden'?(block()??current()):sectionFields.includes(key)?current():block()
   const phoneKey=key==='hidden'||(sectionFields.includes(key)?mobileSectionFields:mobileBlockFields).includes(key)
   input.disabled=!target||(key==='format'&&target?.kind!=='text')||(key==='hidden'&&!isPhone())||(isPhone()&&!phoneKey)
-  const value=isPhone()&&target&&phoneKey?(sectionFields.includes(key)?{...target,...target.phone}:key==='hidden'?{...target,...target.phone}:mobileBlock(current(),target))[key]:target?.[key]
+  const effective=target===current()?effectiveSection(target,siteStyles):target
+  const value=isPhone()&&target&&phoneKey?(sectionFields.includes(key)?{...target,...target.phone}:key==='hidden'?{...target,...target.phone}:mobileBlock(current(),target))[key]:effective?.[key]
   if(key==='hidden')input.checked=!!(block()??current()).phone?.hidden;else input.value=(key==='align'&&block()?.format==='div'?selectedParagraph(canvas.querySelector(`[data-block="${blockId}"]`))?.dataset.textAlign:undefined)??value??({height:'auto',background:'',format:'p'}[key]??'')
  }
  for(const button of form.querySelectorAll('[data-text-command]'))button.disabled=!['text','quote'].includes(block()?.kind)
@@ -48,7 +51,7 @@ function settings(){
 function render(){
  const style=content.querySelector('style[data-pane-layout]'),sheet=style.sheet
  while(sheet.cssRules.length)sheet.deleteRule(0)
- for(const rule of layoutRules(sections))sheet.insertRule(rule,sheet.cssRules.length)
+ for(const rule of layoutRules(sections,siteStyles))sheet.insertRule(rule,sheet.cssRules.length)
  for(const node of [...content.children])if(node!==style)node.remove()
  content.insertAdjacentHTML('beforeend',layoutMarkup(sections,undefined,galleries?.media()??JSON.parse(form.querySelector('[data-media-state]').value),{collections:JSON.parse(form.querySelector('[data-body-collections]').value)}))
  for(const section of content.querySelectorAll('[data-section]')){section.draggable=true;section.tabIndex=0;section.setAttribute('aria-label','Section '+(sections.findIndex(item=>item.id===section.dataset.section)+1))}
@@ -236,6 +239,7 @@ form.addEventListener('input',event=>{
   }
   record(node);render();return
  }
+ if(!isPhone()&&target===current()&&inheritedSectionFields.includes(key))target.defaults=(target.defaults??[]).filter(field=>field!==key)
  if(key==='format'&&target.kind==='text'&&value!=='blockquote')delete target.attribution
  if((key==='background'||key==='anchor')&&!value)delete target.background;else target[key]=key==='hidden'?event.target.checked:numeric.includes(key)?Number(value):value
  if(key==='column')target.span=Math.min(target.span,13-target.column)
@@ -249,7 +253,7 @@ form.addEventListener('input',event=>{
 form.addEventListener('click',event=>{
  const action=event.target.dataset.layoutAction;if(!action)return
  let section=current(),selected=block(),items=selected?section.blocks:sections,index=items.indexOf(selected??section)
- if(action==='add-section'){const added={id:identity(),kind:'text',ratio:'1:1',gap:24,paddingTop:32,paddingBottom:32,blocks:[newBlock()]};sections.push(added);sectionId=added.id;blockId=undefined}
+ if(action==='add-section'){const added={id:identity(),defaults:[...inheritedSectionFields],kind:'text',ratio:'1:1',gap:24,paddingTop:32,paddingBottom:32,blocks:[newBlock()]};sections.push(added);sectionId=added.id;blockId=undefined}
  if(action==='add-block'){const added=newBlock();added.row=Math.max(...section.blocks.map(block=>block.row))+1;section.blocks.push(added);blockId=added.id}
  if(action==='duplicate'){const copy=structuredClone(selected??section);copy.id=identity();if(selected)copy.row=Math.max(...section.blocks.map(block=>block.row))+1;if(!selected)delete copy.anchor;if(!selected)copy.blocks=copy.blocks.map(block=>({...block,id:identity()}));items.splice(index+1,0,copy);if(selected)blockId=copy.id;else sectionId=copy.id}
  if(action==='delete'){if(items.length===1){form.querySelector('[data-layout-selection]').textContent='Keep at least one section and one text block.';return}items.splice(index,1);sectionId=sections[0].id;blockId=undefined}
@@ -261,7 +265,7 @@ form.addEventListener('click',event=>{
  if(action==='up'||action==='down'){const destination=Math.max(0,Math.min(items.length-1,index+(action==='up'?-1:1)));items.splice(index,1);items.splice(destination,0,selected??section);if(selected)items.forEach((block,index)=>block.row=index+1)}
  if(action==='reset'&&isPhone()){delete (selected??section).phone;commit();return}
  if(action==='reset'&&selected?.image)delete selected.image.crop
- if(action==='reset'){if(selected)Object.assign(selected,{column:1,span:12,row:1,order:0,align:'left',vertical:'start'});else{Object.assign(section,{kind:'text',ratio:'1:1',gap:24,paddingTop:32,paddingBottom:32,height:'auto'});delete section.background}}
+ if(action==='reset'){if(selected)Object.assign(selected,{column:1,span:12,row:1,order:0,align:'left',vertical:'start'});else{Object.assign(section,{defaults:[...inheritedSectionFields],kind:'text',ratio:'1:1',gap:24,paddingTop:32,paddingBottom:32,height:'auto'});delete section.background}}
  commit()
 })
 canvas.addEventListener('dragstart',event=>{const section=event.target.closest('[data-section]');if(!section)return;dragged={section:section.dataset.section,block:event.target.closest('[data-block]')?.dataset.block};event.dataTransfer.setData('text/plain',JSON.stringify(dragged));event.stopPropagation()})

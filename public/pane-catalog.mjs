@@ -1,6 +1,11 @@
+import {calendarMarkup} from './pane-calendar.mjs'
 import {linkedBody} from './pane-body-markup.mjs'
 const escape=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 export const catalogRules=[
+ '[data-calendar] table{table-layout:fixed;width:100%;border-collapse:collapse}',
+ '[data-calendar] td,[data-calendar] th{padding:8px 2px;vertical-align:top;overflow-wrap:anywhere}',
+ '[data-calendar] ul{padding-left:16px}',
+ '[data-calendar-panel][hidden]{display:none}',
  '[data-block-type="summary"] ul,[data-block-type="collection-list"] ul{list-style:none;padding:0;display:grid;gap:16px}',
  '[data-list-layout="grid"]{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}',
  '[data-block-type="audio"] audio{display:block;width:100%;max-width:100%}',
@@ -14,6 +19,8 @@ export const catalogRules=[
  '[data-block-type="chart"] th,[data-block-type="chart"] td{text-align:left;padding:8px}'
 ]
 export function catalogMarkup(block,attributes,options){
+ if(block.calendar)return calendarMarkup(block,attributes,options)
+ if(block.connection){const c=block.connection;return `<section ${attributes} data-catalog-block><h2>${escape(block.text)}</h2>${c.description?`<p>${escape(c.description)}</p>`:''}${block.kind==='product'?`<p>${escape(new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(c.cents/100))}</p>`:''}<a class="button pane-button-primary" href="${escape(c.url)}" data-provider="${escape(c.provider)}">${escape(c.label)}</a></section>`}
  if(block.kind==='html')return `<div ${attributes} data-catalog-block>${options?.htmlMarkup?.()||'<p>Owner HTML stays off in the editor.</p>'}</div>`
  if(block.listing){
   const settings=block.listing,collection=options?.collections?.find(collection=>collection.id===settings.collection)

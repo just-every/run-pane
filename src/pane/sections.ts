@@ -1,3 +1,5 @@
+import {normalizeBlockConnection,type BlockConnection} from './block-connections'
+import {normalizeBlockCalendar,type BlockCalendar} from './block-calendar'
 import {normalizeBodyLink,type BodyLink} from '../../public/pane-body-links.mjs'
 import {normalizeEmbed,type Embed} from './embeds'
 import {normalizeGallery,type Gallery} from './gallery'
@@ -8,12 +10,14 @@ export type RichNode = {tag:'text';text:string} | {tag:'a';href:string;newTab:bo
 export type PhoneBlock = {column?:number;span?:number;row?:number;order?:number;align?:TextBlock['align'];vertical?:TextBlock['vertical'];hidden?:boolean}
 export type TextBlock = {
  phone?: PhoneBlock;
- id: string; kind: 'text'|'image'|'gallery'|'quote'|'video'|'button'|'line'|'spacer'|'accordion'|'chart'|'shape'|'scrolling-text'|'social-links'|'audio'|'map'|'social-post'|'search'|'form'|'summary'|'collection-list'|'html'; listing?:{collection:string;layout:'list'|'grid';limit:number;sort:string;descending:boolean;filter?:{field:string;value:string}}; audio?:{file?:string;download:boolean}; buttonStyle?:'primary'|'secondary'|'tertiary'; chart?:{type:'bar'|'line'|'pie';rows:[string,number][]}; shape?:{form:'circle'|'square'|'triangle';color:string;outlined:boolean}; summary?:string; size?:number; caption?:string; attribution?:string; link?:BodyLink; embed?:Embed; gallery?:Gallery; image?:ImageContent; text: string; format?: 'p'|'h1'|'h2'|'h3'|'h4'|'blockquote'|'pre'|'p-large'|'p-small'|'div'; content?: RichNode[];
+ connection?:BlockConnection; calendar?:BlockCalendar;
+ id: string; kind: 'text'|'image'|'gallery'|'quote'|'video'|'button'|'line'|'spacer'|'accordion'|'chart'|'shape'|'scrolling-text'|'social-links'|'audio'|'map'|'social-post'|'search'|'form'|'summary'|'collection-list'|'html'|'booking'|'product'|'buy-button'|'calendar'; listing?:{collection:string;layout:'list'|'grid';limit:number;sort:string;descending:boolean;filter?:{field:string;value:string}}; audio?:{file?:string;download:boolean}; buttonStyle?:'primary'|'secondary'|'tertiary'; chart?:{type:'bar'|'line'|'pie';rows:[string,number][]}; shape?:{form:'circle'|'square'|'triangle';color:string;outlined:boolean}; summary?:string; size?:number; caption?:string; attribution?:string; link?:BodyLink; embed?:Embed; gallery?:Gallery; image?:ImageContent; text: string; format?: 'p'|'h1'|'h2'|'h3'|'h4'|'blockquote'|'pre'|'p-large'|'p-small'|'div'; content?: RichNode[];
  column: number; span: number; row: number; order: number;
  align: 'left' | 'center' | 'right' | 'justify'; vertical: 'start' | 'center' | 'end';
 }
 export type Section = {
  phone?: {gap?:number;paddingTop?:number;paddingBottom?:number;height?:Section['height'];hidden?:boolean};
+ defaults?:('gap'|'paddingTop'|'paddingBottom'|'background')[];
  id: string; anchor?:string; component?: string; kind: 'text' | 'columns'; ratio: '1:1' | '1:2' | '2:1' | '1:1:1';
  gap: number; paddingTop: number; paddingBottom: number;
  height?: 'auto'|'small'|'medium'|'large'|'full'; background?: string; blocks: TextBlock[];
@@ -86,8 +90,9 @@ export function normalizeSections(value: unknown): Section[] | undefined {
  let characters = 0
  return value.map(raw => {
   const section = object(raw)
-  if (Object.keys(section).some(key => !['anchor','phone','id','component','kind','ratio','gap','paddingTop','paddingBottom','background','height','blocks'].includes(key))) throw Error('Unsupported section field.')
+  if (Object.keys(section).some(key => !['defaults','anchor','phone','id','component','kind','ratio','gap','paddingTop','paddingBottom','background','height','blocks'].includes(key))) throw Error('Unsupported section field.')
   const id = identity(section.id)
+  if(section.defaults!==undefined&&(!Array.isArray(section.defaults)||section.defaults.some(key=>!['gap','paddingTop','paddingBottom','background'].includes(String(key)))||new Set(section.defaults).size!==section.defaults.length))throw Error('Choose supported inherited section styles.')
   const anchor=section.anchor
   if(anchor!==undefined&&(typeof anchor!=='string'||! /^[a-zA-Z][a-zA-Z0-9_-]{0,79}$/.test(anchor)||anchor==='main'))throw Error('Use a section anchor beginning with a letter, up to 80 letters, numbers, dashes or underscores.')
   const fragment=String(anchor??'section-'+id)
@@ -98,8 +103,12 @@ export function normalizeSections(value: unknown): Section[] | undefined {
   if (section.background !== undefined && (typeof section.background !== 'string' || !/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(section.background))) throw Error('Use a hex section background with 3, 4, 6 or 8 digits.')
   const blocks = section.blocks.map(raw => {
    const block = object(raw)
-   if (Object.keys(block).some(key => !['listing','audio','buttonStyle','chart','shape','summary','size','caption','attribution','link','embed','phone','gallery','image','id','kind','text','column','span','row','order','align','vertical','format','content'].includes(key))) throw Error('Unsupported block field.')
-   if (!['text','image','gallery','quote','video','button','line','spacer','accordion','chart','shape','scrolling-text','social-links','audio','map','social-post','search','form','summary','collection-list','html'].includes(String(block.kind)) || typeof block.text !== 'string' || (['text','quote','video','button','accordion','chart','shape','scrolling-text','social-links','audio','map','social-post','search','form','summary','collection-list','html'].includes(String(block.kind))&&!block.text.trim())) throw Error('Choose a text block with content or a prepared image.')
+   if (Object.keys(block).some(key => !['connection','calendar','listing','audio','buttonStyle','chart','shape','summary','size','caption','attribution','link','embed','phone','gallery','image','id','kind','text','column','span','row','order','align','vertical','format','content'].includes(key))) throw Error('Unsupported block field.')
+   if (!['text','image','gallery','quote','video','button','line','spacer','accordion','chart','shape','scrolling-text','social-links','audio','map','social-post','search','form','summary','collection-list','html','booking','product','buy-button','calendar'].includes(String(block.kind)) || typeof block.text !== 'string' || (['text','quote','video','button','accordion','chart','shape','scrolling-text','social-links','audio','map','social-post','search','form','summary','collection-list','html','booking','product','buy-button','calendar'].includes(String(block.kind))&&!block.text.trim())) throw Error('Choose a text block with content or a prepared image.')
+   const connected=['booking','product','buy-button'].includes(String(block.kind))
+   const connection=connected?normalizeBlockConnection(block.connection,String(block.kind)):undefined
+   const calendar=block.kind==='calendar'?normalizeBlockCalendar(block.calendar):undefined
+   if(block.connection!==undefined&&!connected||block.calendar!==undefined&&block.kind!=='calendar')throw Error('Connection and calendar settings must match the block type.')
    const buttonStyle=block.kind==='button'?choice(block.buttonStyle,['primary','secondary','tertiary'] as const,'primary'):undefined
    if(block.buttonStyle!==undefined&&block.kind!=='button')throw Error('Button styles require a button block.')
    let listing:TextBlock['listing']
@@ -156,9 +165,9 @@ export function normalizeSections(value: unknown): Section[] | undefined {
    if (characters > 20000) throw Error('Section text exceeds 20,000 characters.')
    const column = number(block.column,1,12,1), span = number(block.span,1,12,12)
    if (column + span > 13) throw Error('A block must fit the twelve-column grid.')
-   return {...(block.phone===undefined?{}:{phone:phone(block.phone,true)}),id:identity(block.id),kind:block.kind as TextBlock['kind'],...(listing?{listing}:{}),...(audio?{audio}:{}),...(buttonStyle?{buttonStyle}:{}),...(chart?{chart}:{}),...(shape?{shape}:{}),...(summary?{summary}:{}),...(size!==undefined?{size}:{}),...(caption===undefined?{}:{caption}),...(attribution===undefined?{}:{attribution}),...(link?{link}:{}),...(embed?{embed}:{}),...(gallery?{gallery}:{}),...(image?{image}:{}),...(content?{content}:{}),...(block.format===undefined?{}:{format:choice(block.format,['p','h1','h2','h3','h4','blockquote','pre','p-large','p-small','div'] as const,'p')}),text,column,span,row:number(block.row,1,100,1),order:number(block.order,0,100,0),align:choice(block.align,['left','center','right','justify'] as const,'left'),vertical:choice(block.vertical,['start','center','end'] as const,'start')}
+   return {...(block.phone===undefined?{}:{phone:phone(block.phone,true)}),id:identity(block.id),kind:block.kind as TextBlock['kind'],...(connection?{connection}:{}),...(calendar?{calendar}:{}),...(listing?{listing}:{}),...(audio?{audio}:{}),...(buttonStyle?{buttonStyle}:{}),...(chart?{chart}:{}),...(shape?{shape}:{}),...(summary?{summary}:{}),...(size!==undefined?{size}:{}),...(caption===undefined?{}:{caption}),...(attribution===undefined?{}:{attribution}),...(link?{link}:{}),...(embed?{embed}:{}),...(gallery?{gallery}:{}),...(image?{image}:{}),...(content?{content}:{}),...(block.format===undefined?{}:{format:choice(block.format,['p','h1','h2','h3','h4','blockquote','pre','p-large','p-small','div'] as const,'p')}),text,column,span,row:number(block.row,1,100,1),order:number(block.order,0,100,0),align:choice(block.align,['left','center','right','justify'] as const,'left'),vertical:choice(block.vertical,['start','center','end'] as const,'start')}
   })
-  return {id,...(anchor?{anchor:String(anchor)}:{}),...(section.phone===undefined?{}:{phone:phone(section.phone,false)}),...(section.height===undefined?{}:{height:choice(section.height,['auto','small','medium','large','full'] as const,'auto')}),...(section.component ? {component:String(section.component)} : {}),kind:choice(section.kind,['text','columns'] as const,'text'),ratio:choice(section.ratio,['1:1','1:2','2:1','1:1:1'] as const,'1:1'),gap:number(section.gap,0,160,24),paddingTop:number(section.paddingTop,0,240,32),paddingBottom:number(section.paddingBottom,0,240,32),...(section.background === undefined ? {} : {background:String(section.background).toLowerCase()}),blocks}
+  return {id,...(section.defaults?{defaults:section.defaults as Section['defaults']}:{}),...(anchor?{anchor:String(anchor)}:{}),...(section.phone===undefined?{}:{phone:phone(section.phone,false)}),...(section.height===undefined?{}:{height:choice(section.height,['auto','small','medium','large','full'] as const,'auto')}),...(section.component ? {component:String(section.component)} : {}),kind:choice(section.kind,['text','columns'] as const,'text'),ratio:choice(section.ratio,['1:1','1:2','2:1','1:1:1'] as const,'1:1'),gap:number(section.gap,0,160,24),paddingTop:number(section.paddingTop,0,240,32),paddingBottom:number(section.paddingBottom,0,240,32),...(section.background === undefined ? {} : {background:String(section.background).toLowerCase()}),blocks}
  })
 }
 /** Canonical reading order is the stored order, independent of visual overlap. */

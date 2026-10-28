@@ -1,4 +1,4 @@
-import {catalogProjects} from './catalog-fixture.mjs'
+import {catalogProjects,catalogEvents,catalogHandoffs} from './catalog-fixture.mjs'
 import {createHash,createHmac} from 'node:crypto'
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
@@ -2026,12 +2026,14 @@ test('native canvas publishes typed destinations and stable section anchors whil
    draft=await ok(await app.request('/api/pane/library/upload',{method:'POST',headers:{Cookie:cookie,Origin:origin},body}));audioFiles.push(draft.site.libraryFiles.at(-1))
    assert.equal((await app.request('/site/files/'+audioFiles.at(-1).id)).status,404,'Unpublished audio bytes stay private')
   }
-  const audioSite=structuredClone(draft.site);audioSite.collections=[structuredClone(catalogProjects)];const blocks=audioSite.pages[0].sections[0].blocks
+  const audioSite=structuredClone(draft.site);audioSite.collections=[structuredClone(catalogProjects),structuredClone(catalogEvents)];const blocks=audioSite.pages[0].sections[0].blocks
   for(const [index,file] of audioFiles.entries())blocks.push({id:'audio-'+index,kind:'audio',text:'Workshop audio '+index,audio:{file:file.id,download:index===0},row:16+index})
   for(const [index,url] of ['https://open.spotify.com/embed/track/syntheticpane14','https://w.soundcloud.com/player/?url=https%3A%2F%2Fapi.soundcloud.com%2Ftracks%2F14'].entries())blocks.push({id:'provider-audio-'+index,kind:'audio',text:'Provider audio '+index,audio:{download:false},embed:{title:'Provider audio '+index,url},row:18+index})
   for(const [index,[kind,title,url]] of [['map','Workshop map','https://www.google.com/maps/embed?pb=synthetic-pane-14'],['social-post','Workshop social post','https://www.instagram.com/p/syntheticpane14/embed/']].entries())blocks.push({id:'provider-block-'+index,kind,text:title,embed:{title,url},row:23+index})
   for(const [index,kind] of ['summary','collection-list'].entries())blocks.push({id:'projects-'+kind,kind,text:'Featured projects '+index,listing:{collection:'synthetic-pane-projects',layout:index?'list':'grid',limit:index?10:2,sort:index?'title':'rank',descending:index===1,...(index?{}:{filter:{field:'featured',value:'yes'}})},row:26+index})
   blocks.push({id:'site-search',kind:'search',text:'Search this site',row:25})
+  for(const [index,[kind,provider,url,label]] of catalogHandoffs.entries())blocks.push({id:'handoff-'+index,kind,text:label,connection:{provider,url,label,description:kind==='product'?'A hardwood repair kit.':'',...(kind==='product'?{cents:4500}:{})},row:30+index})
+  blocks.push({id:'workshop-calendar',kind:'calendar',text:'Workshop dates',calendar:{collection:'synthetic-pane-events',start:'start',end:'end',month:'2026-11',view:'month'},row:36})
   for(const [index,buttonStyle] of ['primary','secondary','tertiary'].entries())blocks.push({id:'variant-'+index,kind:'button',buttonStyle,text:buttonStyle+' action',link:{href:'page:synthetic-pane-target',newTab:false},row:20+index})
   audioSite.pages[0].body+='\n\nWorkshop audio 0\n\nWorkshop audio 1\n\nProvider audio 0\n\nProvider audio 1\n\nprimary action\n\nsecondary action\n\ntertiary action'
   audioSite.forms=[{id:'synthetic-pane-form',name:'Workshop enquiry',submit:'Send enquiry',confirmation:'Thank you.',fields:[{key:'name',type:'text',label:'Your name',required:true,help:'',placeholder:''},{key:'email',type:'email',label:'Email',required:true,help:'',placeholder:''},{key:'message',type:'text',label:'Message',required:true,help:'',placeholder:''}]}];audioSite.pages[0].formId='synthetic-pane-form'
@@ -2049,6 +2051,9 @@ test('native canvas publishes typed destinations and stable section anchors whil
   assert.match(html,/id="placed-form-field-name"/);assert.match(html,/for="copied-form-field-name"/);assert.equal((html.match(/data-typed-form/g)??[]).length,2,'Each duplicated native form receives independent control identities')
   const invalidAnswer=new FormData();invalidAnswer.set('idempotency',crypto.randomUUID());invalidAnswer.set('name','field-Visitor');invalidAnswer.set('email','invalid');invalidAnswer.set('message','Please repair a field-table.')
   const invalidResponse=await app.request('/site',{method:'POST',headers:{Origin:origin},body:invalidAnswer});assert.equal(invalidResponse.status,400);const invalidHtml=await invalidResponse.text();assert.ok(invalidHtml.includes('value="field-Visitor"'),'Placed form errors retain the submitted value without rewriting content')
+  for(const [kind,provider,url,label] of catalogHandoffs){assert.ok(html.includes('data-block-type="'+kind+'"'));assert.ok(html.includes('href="'+url.replaceAll('&','&amp;')+'" data-provider="'+provider+'">'+label+'</a>'),'The exact chosen provider owns the handoff')}
+  assert.ok(html.includes('$45.00'));assert.ok(html.includes('A hardwood repair kit.'));assert.ok(html.includes('data-block-type="calendar"'));assert.ok(html.includes('<time datetime="2026-11-08">8</time><ul><li><a href="/site/workshops/woodworking">Woodworking weekend</a>'),'A multi-day collection item occupies the second day');assert.equal((await app.request('/site/workshops/open-studio')).status,200)
+  for(const mutate of [value=>value.pages[0].sections[0].blocks.find(block=>block.connection?.provider==='stripe').connection.url='https://example.test/payment',value=>value.pages[0].sections[0].blocks.find(block=>block.kind==='product').connection.cents=-1,value=>value.pages[0].sections[0].blocks.find(block=>block.calendar).calendar.start='rank',value=>value.collections.find(item=>item.id==='synthetic-pane-events').items[0].values.end='2026-10-31']){const invalid=structuredClone(draft.site);mutate(invalid);assert.equal((await call('/api/pane/prepare',{site:invalid,base:draft.id})).status,400,'Invalid provider and calendar data never replaces the draft')}
   for(const kind of ['map','social-post','search'])assert.ok(html.includes('data-block-type="'+kind+'"'),kind+' renders on the published page')
   assert.equal((html.match(/<audio controls preload="none"/g)??[]).length,2,'Both uploaded formats have native players without automatic download')
   for(const variant of ['primary','secondary','tertiary'])assert.ok(html.includes('data-button-style="'+variant+'"'),variant+' is retained in published output')
@@ -2058,5 +2063,31 @@ test('native canvas publishes typed destinations and stable section anchors whil
   draft=await ok(await call('/api/pane/prepare',{site:deleted,base:draft.id}))
   for(const path of ['/app?page=home','/app/canvas?page=home']){const response=await app.request(path,{headers:{Cookie:cookie}}),screen=await response.text();assert.equal(response.status,200);assert.ok(screen.includes('Broken links:'));assert.ok(screen.includes('anchor:synthetic-pane-target:synthetic-pane-section'));assert.ok(screen.includes('page:synthetic-pane-target'))}
   assert.match(await read(),/href="\/site\/our-studio#find-us"/,'Unpublished target deletion does not change the live revision')
+ }finally{await app.mf.dispose()}
+})
+
+test('owner site styles inherit across revisions while local geometry and previous publications remain intact',async()=>{
+ const app=await runtime();let cookie=''
+ const call=(path,body)=>app.request(path,{method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)})
+ const ok=async response=>{assert.equal(response.status,200,await response.clone().text());return response.json()}
+ try{
+  cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Workshop owner'})).headers.get('set-cookie').split(';')[0]
+  await app.request('/setup',{method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
+  const owner=cookie,site=JSON.parse(await readFile('fixtures/static-site.json','utf8'))
+  site.styles={headingFont:'georgia',bodyFont:'figtree',primary:'#114477',heading:'#221122',text:'#332233',background:'#ffffff',button:'pill',gap:36,paddingTop:48,paddingBottom:56,sectionBackground:'#fff8fc'}
+  site.pages[0].sections=[{id:'inherited',defaults:['gap','paddingTop','paddingBottom','background'],blocks:[{id:'style-text',kind:'text',text:site.pages[0].body}]}]
+  let draft=await ok(await call('/api/pane/prepare',{site}));await ok(await call('/api/pane/publish',{revision:draft.id}));const first=draft
+  const page=await app.request('/site'),html=await page.text();assert.ok(html.includes('font-family:Georgia,serif'));assert.ok(html.includes('gap:36px;padding:48px 0 56px;background:#fff8fc'));assert.ok(html.includes('border-radius:999px'));assert.ok(page.headers.get('content-security-policy').includes("'sha256-"),'Published style bytes are covered by CSP')
+  const changed=structuredClone(draft.site);changed.styles.headingFont='mono';changed.styles.gap=44;changed.pages[0].sections[0].defaults=['paddingTop','paddingBottom','background'];changed.pages[0].sections[0].gap=12
+  draft=await ok(await call('/api/pane/prepare',{site:changed,base:draft.id}));const privatePreview=await (await app.request('/preview/'+draft.id+'/home',{headers:{Cookie:owner}})).text();assert.ok(privatePreview.includes('gap:12px;padding:48px 0 56px'));assert.ok(privatePreview.includes("font-family:'JetBrains Mono'"));assert.ok((await (await app.request('/site')).text()).includes('font-family:Georgia,serif'),'Unapproved styles stay private')
+  let message
+  const auth=createOperatorAuth({db:app.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{message=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+  await auth.invite(new Request(origin+'/auth/invite',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin,Cookie:owner}}),{email:'style-admin'+settings.OWNER_EMAIL,displayName:'Style admin',role:'admin'})
+  cookie=(await call('/auth/confirm',{token:new URL(message.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token')})).headers.get('set-cookie').split(';')[0]
+  const forbidden=structuredClone(draft.site);forbidden.styles.primary='#123456';assert.equal((await call('/api/pane/prepare',{site:forbidden,base:draft.id})).status,403,'An administrator cannot change owner styles')
+  const form=new URLSearchParams({base:draft.id,...Object.fromEntries(Object.entries(forbidden.styles).map(([key,value])=>['style.'+key,String(value)]))})
+  assert.equal((await app.request('/api/pane/autosave',{method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:form.toString()})).status,403,'The form door cannot bypass owner authority')
+  cookie=owner;await ok(await call('/api/pane/publish',{revision:draft.id}));await ok(await call('/api/pane/rollback',{revision:first.id}));assert.ok((await (await app.request('/site')).text()).includes('font-family:Georgia,serif'));const data=await (await app.request('/api/pane',{headers:{Cookie:owner}})).json();assert.deepEqual(data.revisions.find(item=>item.id===first.id).site.styles,first.site.styles,'Later edits preserve the immutable earlier style settings')
+  const invalid=structuredClone(draft.site);invalid.styles.headingFont='url(https://example.test/font)';assert.equal((await call('/api/pane/prepare',{site:invalid,base:draft.id})).status,400)
  }finally{await app.mf.dispose()}
 })

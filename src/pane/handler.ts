@@ -257,13 +257,14 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    if(!owner&&input.site&&['blogs','libraryFiles','blogPosts'].some(key=>input.site[key]!==undefined&&JSON.stringify(input.site[key]??null)!==JSON.stringify(previousAccess?.[key as keyof typeof previousAccess]??null)))return json({error:'Only the native owner can change blog settings or the file library.'},403)
    if(input.site)input.site={...input.site,blogPosts:previousAccess?.blogPosts,...(!owner?{blogs:previousAccess?.blogs,libraryFiles:previousAccess?.libraryFiles}:{})}
    const proposed=normalizeSite(input.site?{...input.site,...(!owner&&actor.role!=='admin'&&previousAccess?.posts?{posts:previousAccess.posts}:{})}:await siteFromForm(env.DB,input))
+   if((!owner||scopes)&&JSON.stringify(proposed.styles??null)!==JSON.stringify(previousAccess?.styles??null))return json({error:'Only the native owner changes site styles.'},403)
    if((!owner||scopes)&&(JSON.stringify(proposed.customCode??null)!==JSON.stringify(previousAccess?.customCode??null)||proposed.pages.some(page=>JSON.stringify(page.customCode??null)!==JSON.stringify(previousAccess?.pages.find(old=>(old.id??old.slug)===(page.id??page.slug))?.customCode??null))))return json({error:'Only the owner authors custom code.'},403)
    if(!owner&&(JSON.stringify(proposed.forms??null)!==JSON.stringify(previousAccess?.forms??null)||JSON.stringify(proposed.access??null)!==JSON.stringify(previousAccess?.access??null)||proposed.pages.some(page=>JSON.stringify(page.access??null)!==JSON.stringify(previousAccess?.pages.find(old=>(old.id??old.slug)===(page.id??page.slug))?.access??null))))return json({error:'Only the owner changes access.'},403)
    if(!caps.includes('settings:write')){
     const latest=await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
     const current=latest?revision(latest).site:null
     if(latest&&input.base!==latest.id)throw new DraftConflict(latest?revision(latest):null)
-    for(const key of ['posts','blogs','libraryFiles','brand','promotion','locale','automations','goals','analyticsCampaigns','analytics','responseDays','robots'] as const)if(JSON.stringify(proposed[key]??null)!==JSON.stringify(current?.[key]??null))return json({error:'Only owners and admins can change business settings.'},403)
+    for(const key of ['styles','posts','blogs','libraryFiles','brand','promotion','locale','automations','goals','analyticsCampaigns','analytics','responseDays','robots'] as const)if(JSON.stringify(proposed[key]??null)!==JSON.stringify(current?.[key]??null))return json({error:'Only owners and admins can change business settings.'},403)
    }
    result=await prepare(env.DB,actor.id,proposed, action==='autosave' ? String(input.base??'') : typeof input.base==='string' ? input.base : undefined)
    if(action==='autosave')return json(visibleRevision(result as import('./model').Revision,caps,actor))

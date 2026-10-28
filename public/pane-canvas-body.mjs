@@ -1,8 +1,10 @@
+import {canvasConnections} from './pane-canvas-connections.mjs'
 import {normalizeBodyLink} from './pane-body-links.mjs'
 export function canvasBody(form,{block,section,newBlock,commit,select,textSelection,record}){
  const input=name=>form.querySelector(`[data-body-${name}]`),status=input('status')
  const destination=()=>normalizeBodyLink({href:input('href').value,newTab:input('new-tab').checked})
  const add=item=>{item.row=Math.max(...section().blocks.map(block=>block.row))+1;section().blocks.push(item);select(item.id);commit()}
+ const connections=canvasConnections(form,{block,add:value=>add({...newBlock(),...value}),commit})
  function listFields(){
   const collection=JSON.parse(input('collections').value).find(collection=>collection.id===input('list-collection').value)
   const fields=(collection?.fields??[]).filter(field=>['text','number','price','date','option'].includes(field.type))
@@ -10,6 +12,7 @@ export function canvasBody(form,{block,section,newBlock,commit,select,textSelect
  }
  input('list-collection').addEventListener('change',listFields)
  function refresh(){
+  connections.refresh()
   const item=block(),link=item?.link
   if(['line','spacer','accordion','chart','shape','scrolling-text','social-links','search','form','summary','collection-list','html'].includes(item?.kind)){input('native-kind').value=item.kind;input('native-summary').value=item.summary??'';input('native-text').value=item.text;input('native-size').value=item.size??32;if(item.chart){input('chart-type').value=item.chart.type;input('chart-rows').value=item.chart.rows.map(row=>row.join(' | ')).join('\n')}if(item.shape){input('shape-form').value=item.shape.form;input('shape-color').value=item.shape.color;input('shape-outline').checked=item.shape.outlined}}
   if(item?.listing){input('list-collection').value=item.listing.collection;listFields();input('list-layout').value=item.listing.layout;input('list-limit').value=item.listing.limit;input('list-sort').value=item.listing.sort;input('list-descending').checked=item.listing.descending;input('list-filter').value=item.listing.filter?.field??'';input('list-value').value=item.listing.filter?.value??''}
