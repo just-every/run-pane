@@ -333,6 +333,15 @@ async function catalogJourney(){
  const bytes=Buffer.from('%PDF-1.4\nsynthetic-pane-14\n%%EOF'),upload=await context.request.post(origin+'/api/pane/library/upload',{headers:{Origin:origin},multipart:{base:draft.id,file:{name:'visit-guide.pdf',mimeType:'application/pdf',buffer:bytes}}})
  assert.equal(upload.status(),200,await upload.text());draft=await upload.json();const file=draft.site.libraryFiles[0]
  const destinations=[['Page','page:synthetic-pane-anchor-page','/site/about'],['Anchor','anchor:synthetic-pane-anchor-page:synthetic-pane-anchor-section','/site/about#visit'],['External','https://example.test/visit','https://example.test/visit'],['PDF','file:'+file.id,'/site/files/'+file.id],['Email','mailto:hello@example.test?subject=Visit%20the%20studio','mailto:hello@example.test?subject=Visit%20the%20studio'],['Telephone','tel:+13125550123','tel:+13125550123'],['Message','sms:+13125550123?body=Hello%20there','sms:+13125550123?body=Hello%20there']]
+ for(const [width,name] of [[1440,'mp3'],[390,'m4a']]){
+  await page.setViewportSize({width,height:1000});await page.goto(origin+'/app/canvas?page=home');await page.getByText('Links and body blocks',{exact:true}).click()
+  const before=(await state()).draft
+  const [response]=await Promise.all([page.waitForResponse(response=>new URL(response.url()).pathname==='/api/pane/library/upload'),page.waitForEvent('load'),page.locator('[data-body-audio-upload]').setInputFiles('./fixtures/media/synthetic-pane-14.'+name)])
+  assert.equal(response.status(),200,'Audio uploads on a freshly opened canvas without another edit')
+  const after=(await state()).draft;assert.notEqual(after.id,before.id);assert.deepEqual(after.site.pages,before.site.pages,'Uploading audio preserves the unchanged page')
+  assert.ok(after.site.libraryFiles.find(file=>file.name==='synthetic-pane-14.'+name),'Fresh-canvas upload enters the native library')
+  await page.getByText('Links and body blocks',{exact:true}).click();await page.getByText('Audio',{exact:true}).scrollIntoViewIfNeeded();await page.screenshot({path:resolve(folder,'catalog-fresh-audio-'+width+'.png'),fullPage:false})
+ }
  await page.setViewportSize({width:1440,height:1000});await page.goto(origin+'/app/canvas?page=home')
  let text=page.locator('[data-layout-canvas] [contenteditable=true]').first()
  const paste=async(html)=>{await text.evaluate((node,html)=>{node.focus();const range=document.createRange();range.selectNodeContents(node);const selected=getSelection();selected.removeAllRanges();selected.addRange(range);const data=new DataTransfer();data.setData('text/html',html);node.dispatchEvent(new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:data}))},html);await saved()}
@@ -355,7 +364,6 @@ async function catalogJourney(){
  await page.locator('[data-layout-canvas] [data-block-type="line"]').focus();await page.getByRole('button',{name:'Duplicate selection',exact:true}).click();await saved();assert.equal(await page.locator('[data-layout-canvas] [data-block-type="line"]').count(),2)
  await page.getByRole('button',{name:'Delete selection',exact:true}).click();await saved();assert.equal(await page.locator('[data-layout-canvas] [data-block-type="line"]').count(),1)
  for(const name of ['mp3','m4a']){
-  await Promise.all([page.waitForEvent('load'),page.locator('[data-body-audio-upload]').setInputFiles('./fixtures/media/synthetic-pane-14.'+name)]);await page.getByText('Links and body blocks',{exact:true}).click()
   const file=(await state()).draft.site.libraryFiles.find(file=>file.name==='synthetic-pane-14.'+name)
   assert.ok(file,'Native audio upload enters the immutable library');await page.locator('[data-body-audio-file]').selectOption(file.id);await page.locator('[data-body-audio-title]').fill('Workshop '+name);await page.locator('[data-body-audio-download]').setChecked(name==='mp3');await page.getByRole('button',{name:'Add audio',exact:true}).click();await saved()
  }
@@ -429,6 +437,24 @@ async function catalogJourney(){
   await page.evaluate(await readFile(resolve('node_modules/axe-core/axe.min.js'),'utf8'));assert.deepEqual((await page.evaluate(()=>axe.run(document))).violations.map(item=>item.id),[],'Catalog live accessibility')
   await page.getByRole('searchbox',{name:'Search this site',exact:true}).fill('Heading one');await Promise.all([page.waitForURL('**/site/search?q=Heading+one'),page.locator('[data-block-type="search"]').getByRole('button',{name:'Search',exact:true}).click()]);assert.equal(await page.getByRole('list',{name:'Search results'}).getByRole('link',{name:'Made to last',exact:true}).getAttribute('href'),'/site','The native search block reaches the published matching page');await page.goto(origin+'/site')
   await page.getByRole('link',{name:'Anchor link',exact:true}).click();await page.waitForURL('**/site/about#visit');assert.equal(await page.locator('#visit').count(),1);await page.waitForFunction(()=>Math.abs(document.querySelector('#visit').getBoundingClientRect().top)<3)
+ }
+ // Duplicating an HTML placement must create one independent content instance.
+ await page.goto(origin+'/app/canvas?page=home');await page.locator('[data-layout-canvas] [data-block-type="html"]').focus();await page.getByRole('button',{name:'Duplicate selection',exact:true}).click();await saved()
+ assert.equal(await page.locator('[data-layout-canvas] [data-block-type="html"]').count(),2)
+ draft=(await state()).draft;await call('/api/pane/publish',{revision:draft.id})
+ for(const width of [1440,390]){
+  await page.setViewportSize({width,height:1000});await page.goto(origin+'/site')
+  const placements=page.locator('[data-block-type="html"]'),frames=placements.locator('[data-code-frame] > iframe')
+  assert.equal(await placements.count(),2);assert.equal(await frames.count(),0)
+  const onePerPlacement=async()=>assert.deepEqual(await placements.evaluateAll(nodes=>nodes.map(node=>node.querySelectorAll('[data-code-frame] > iframe').length)),[1,1],'Two HTML placements create exactly two frames')
+  await placements.first().getByRole('button',{name:'Allow custom code',exact:true}).click();await onePerPlacement()
+  for(const frame of await frames.all())assert.equal(await frame.getAttribute('sandbox'),'allow-scripts')
+  await placements.last().getByRole('button',{name:'Allow custom code',exact:true}).click();await onePerPlacement()
+  await page.reload();await onePerPlacement()
+  await placements.first().scrollIntoViewIfNeeded();await page.screenshot({path:resolve(folder,'catalog-two-html-'+width+'.png'),fullPage:false})
+  await placements.last().getByRole('button',{name:'Keep custom code off',exact:true}).click();assert.equal(await frames.count(),0,'Withdrawal removes both placements')
+  await placements.last().getByRole('button',{name:'Allow custom code',exact:true}).click();await onePerPlacement()
+  await placements.first().getByRole('button',{name:'Keep custom code off',exact:true}).click();assert.equal(await frames.count(),0)
  }
  // Edit the anchor through the native layout field, then rename the page.
  await page.setViewportSize({width:1440,height:1000});await page.goto(origin+'/app/canvas?page=about');await page.getByText('Layout settings',{exact:true}).click();await page.getByLabel('Section anchor ID',{exact:true}).fill('find-us');await saved()

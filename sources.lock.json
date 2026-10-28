@@ -664,7 +664,7 @@
       "executable": false
     },
     "public/pane-custom-code.js": {
-      "sha256": "19643c32c998602a9a13eacecb016eab02bd62606ede08c6d79af2ca692a9441",
+      "sha256": "a7ebbbb251561839c5e3f1a4ae87dfa6e232c5a5ad680e0f985663d99a857144",
       "executable": false
     },
     "public/pane-editor.css": {
@@ -1152,7 +1152,7 @@
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
-      "sha256": "c3a69d62f8c8f5276ef64a67567a6dca699879e7f2b30321ca61a2a5ad7b1fc3",
+      "sha256": "c41392ec1617b656627bac23b4978bc789a99f9db3c1b6f2abadfc1ee734d7b2",
       "executable": false
     },
     "scripts/contract-docs.mjs": {
@@ -3736,7 +3736,7 @@
       "executable": false
     },
     "src/pane/ui/canvas.ts": {
-      "sha256": "be3d861d822919b530c4a1be4b9039918b9902527866ffc22e17c8d75815d537",
+      "sha256": "371bafd3bfee50c459f16d24ff1401d4913cd9c2cd5a1908711044f55a2c0ad9",
       "executable": false
     },
     "src/pane/ui/changes.ts": {

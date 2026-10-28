@@ -1,5 +1,7 @@
 // Only approved live revisions contain this loader. Code has an opaque origin and no network authority.
 for(const region of document.querySelectorAll('[data-custom-code]')){
+if(region.dataset.codeInitialized)continue
+region.dataset.codeInitialized='true'
 const key='pane:consent:analytics'
 const sent=new URLSearchParams(location.search).get('sent')
 const sourcePage=sent==='1'?region.dataset.page:sent
