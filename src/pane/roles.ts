@@ -43,6 +43,7 @@ export function permittedDashboard(data:Dashboard,caps:Capability[],actor:{id:st
  }
 }
 export function routeCapability(path:string,method:string):Capability|undefined{
+ if(['/app/library','/api/pane/library'].includes(path))return 'settings:write'
  if(path==='/app/collections'||path.startsWith('/app/collections/')||path==='/api/pane/collections'||path.startsWith('/api/pane/collections/'))return 'collections:write'
  if(method==='GET'&&['/app/submissions/export','/api/pane/submissions/export'].includes(path))return 'inbox:read'
  if(['/app/comments','/api/pane/comments'].includes(path)&&method==='GET')return 'comments:moderate'

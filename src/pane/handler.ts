@@ -15,6 +15,9 @@ import {latestContent,ownPost,postView,PostDenied,savePost,publishPost} from './
 import {postForm} from './post-forms'
 import {postsEditor} from './ui/posts'
 import {uploadLibraryFile,publicLibraryFiles} from './library-files'
+import {changeLibrary,libraryAssets} from './media-library'
+import {MediaInUse} from './media-usage'
+import {mediaLibrary} from './ui/media-library'
 import {aiHistory,undoAiHistory} from './ai-history'
 import {proposeAi,decideAi} from './ai'
 import {canvasEditor} from './ui/canvas'
@@ -70,6 +73,14 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    const required=request.method==='GET'?({'/api/pane':'status:read','/api/pane/pages':'pages:read','/api/pane/collections':'collections:read'} as Record<string,string>)[path]:
     path==='/api/pane/prepare'||path==='/api/pane/autosave'?'draft:write':path.startsWith('/api/pane/import/')?'imports:write':undefined
    if(!required||!scopes.includes(required))return json({error:'Token scope refused.'},403)
+  }
+  if(['/app/library','/api/pane/library'].includes(path)){
+   if(!owner||scopes)return json({error:'Native owner only.'},403)
+   if(request.method==='GET'){
+    const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps,actor)
+    if(api)return json({base:data.draft?.id,assets:data.draft?libraryAssets(data.draft.site,url.searchParams,data.live?.site):[]})
+    return document('Media library',shell(data,'pages',mediaLibrary(data)))
+   }
   }
   if(request.method==='GET'&&['/app/submissions/export','/api/pane/submissions/export'].includes(path))return await submissionCsv(env.DB,url.searchParams)
   const collectionReply=await collectionPrivateResponse(request,env,actor,!!scopes);if(collectionReply)return collectionReply
@@ -178,6 +189,9 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    const currentStyles=await env.DB.prepare('SELECT site FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first<{site:string}>()
    if(JSON.stringify(imported?.styles??null)!==JSON.stringify(currentStyles?JSON.parse(currentStyles.site).styles??null:null))return json({error:'Only the native owner changes site styles, including imports.'},403)
    if(imported?.customCode||imported?.pages.some(page=>page.customCode))return json({error:'Only a native owner authors custom code, including imports.'},403)
+  }
+  if(action==='library'){
+   return json(await changeLibrary(env.DB,actor.id,input))
   }
   if(action.startsWith('comments/')){
    if(scopes)return json({error:'Native session required.'},403)
@@ -386,6 +400,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   if(result&&typeof result==='object'&&'site' in result)result=visibleRevision(result as import('./model').Revision,caps,actor)
   return api?json(result):new Response(null,{status:303,headers:{location:back+(back.includes('?')?'&':'?')+'notice='+encodeURIComponent(notice)}})
  } catch(error) {
+  if(error instanceof MediaInUse)return json({error:error.message,uses:error.uses},409)
   if(error instanceof PostDenied)return json({error:error.message},403)
   if(error instanceof DraftConflict)return json({error:error.message,latest:!editor?postView(error.latest,actor.id,false):visibleRevision(error.latest,caps,actor)},409)
   const message=error instanceof Error?error.message:'Request failed.'

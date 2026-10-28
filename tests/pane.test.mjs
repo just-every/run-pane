@@ -2097,6 +2097,98 @@ test('gallery publications resolve immutable library images and enforce the page
  }
 })
 
+test('native media library uploads, organizes and reuses private assets while refusing used deletion and stale edits',async()=>{
+ for(const isolatedLive of [false,true]){
+  const app=await runtime({isolatedLive});let cookie
+  const call=(path,body,credential=cookie)=>app.request(path,{method:'POST',headers:{Cookie:credential??'',Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)})
+  const read=async()=> (await app.request('/api/pane',{headers:{Cookie:cookie}})).json()
+  const save=async body=>{const response=await call('/api/pane/library',body);assert.equal(response.status,200,await response.clone().text());return response.json()}
+  try{
+   cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic bakery owner'})).headers.get('set-cookie').split(';')[0]
+   await app.request('/setup',{method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
+   const initial=await (await call('/api/pane/prepare',{site:fixture})).json()
+   const png=await readFile('public/brand/icon-192.png'),original='data:image/png;base64,'+png.toString('base64')
+   const image={src:original,original,width:png.readUInt32BE(16),height:png.readUInt32BE(20),alt:'',decorative:false}
+   const images=Array.from({length:50},(_,index)=>({id:'synthetic-pane-'+index,name:'Bakery photo '+index,image}))
+   const pdf=Buffer.from('%PDF-1.4\n1 0 obj <</Type /Catalog>> endobj\n%%EOF\n')
+   const files=Array.from({length:3},(_,index)=>({id:crypto.randomUUID(),name:'Bakery menu '+index+'.pdf',type:'application/pdf',size:pdf.length,data:pdf.toString('base64')}))
+   const upload={base:initial.id,action:'upload',images,files}
+   let draft=await save(upload)
+   assert.equal(draft.site.media.length,50);assert.equal(draft.site.libraryFiles.length,3)
+   assert.equal((await call('/api/pane/library',upload)).status,409,'Replaying a capture cannot duplicate assets or overwrite a newer revision')
+   const snapshot=structuredClone(draft),asset=images[0].id
+   assert.equal((await app.request('/site/files/'+files[0].id)).status,404,'A private upload has no public delivery')
+   for(const page of ['home','about','services'])draft=await save({base:draft.id,action:'place',kind:'image',id:asset,page})
+   draft=await save({base:draft.id,action:'place',kind:'pdf',id:files[0].id,page:'home'})
+   const refusal=await call('/api/pane/library',{base:draft.id,action:'delete',kind:'image',id:asset})
+   assert.equal(refusal.status,409)
+   assert.deepEqual((await refusal.json()).uses.map(use=>({slug:use.slug,title:use.title,kind:use.kind})),fixture.pages.slice(0,3).map(page=>({slug:page.slug,title:page.title,kind:'page'})))
+   assert.equal((await call('/api/pane/library',{base:draft.id,action:'delete',kind:'pdf',id:files[0].id})).status,409)
+   const undoUsed=await call('/api/pane/library',{base:draft.id,action:'restore',site:initial.site})
+   assert.equal(undoUsed.status,409,'Restoring an older capture cannot bypass usage-aware deletion')
+   assert.deepEqual((await undoUsed.json()).uses.map(use=>use.slug),['home','about','services'])
+   assert.equal((await call('/api/pane/publish',{revision:draft.id})).status,400,'Library placements cannot bypass missing-alt refusal')
+   const edit={action:'update',kind:'image',id:asset,name:'Celebration cakes',folder:'Celebrations',caption:'A cake for a birthday',alt:'A birthday cake with flowers',decorative:false}
+   const old=draft.id;draft=await save({base:draft.id,...edit})
+   const stale=await call('/api/pane/library',{base:old,...edit,alt:'Lost edit'})
+   assert.equal(stale.status,409);assert.equal((await stale.json()).latest.id,draft.id)
+   const search=async query=>(await (await app.request('/api/pane/library?'+new URLSearchParams(query),{headers:{Cookie:cookie}})).json()).assets
+   assert.deepEqual((await search({q:'BIRTHDAY',type:'image',folder:'Celebrations'})).map(asset=>asset.id),[asset])
+   assert.deepEqual((await search({type:'pdf'})).map(asset=>asset.id),files.map(file=>file.id))
+   assert.equal((await search({folder:'__unfiled'})).length,52)
+   assert.deepEqual(await search({q:'birthday',type:'pdf'}),[])
+   assert.deepEqual((await (await app.request('/api/pane/library',{headers:{Cookie:cookie}})).json()).assets.find(item=>item.id===asset).uses.map(use=>use.slug),['home','about','services'])
+   assert.match(await (await app.request('/app/library',{headers:{Cookie:cookie}})).text(),/Celebration cakes/)
+   assert.equal((await read()).draft.site.media[0].image.original,original,'Reopening preserves exact retained upload bytes')
+   assert.deepEqual((await read()).revisions.find(row=>row.id===snapshot.id),snapshot,'Metadata and placements never mutate the original uploaded revision')
+   assert.equal((await call('/api/pane/publish',{revision:draft.id})).status,200)
+   const live=structuredClone(draft),placed=draft.site.pages[0].sections.flatMap(section=>section.blocks).find(block=>block.gallery)
+   const path='/site?pane-image='+encodeURIComponent(placed.id+':'+asset)+'&width=0'
+   const delivered=await app.request(path);assert.equal(delivered.headers.get('content-type'),'image/png');assert.deepEqual(Buffer.from(await delivered.arrayBuffer()),png);assert.equal(delivered.headers.get('cache-control'),'private, no-store')
+   const download=await app.request('/site/files/'+files[0].id);assert.equal(download.status,200);assert.match(download.headers.get('content-disposition'),/^attachment/);assert.deepEqual(Buffer.from(await download.arrayBuffer()),pdf)
+   assert.ok(!(await (await app.request('/site')).text()).includes(original),'Live HTML never embeds original bytes')
+   draft=await save({base:draft.id,...edit,alt:'An unpublished alternative'})
+   assert.match(await (await app.request('/site')).text(),/alt="A birthday cake with flowers"/)
+   assert.deepEqual((await read()).revisions.find(row=>row.id===live.id),live,'Draft edits preserve the approved immutable source')
+   const withoutUses=structuredClone(draft.site)
+   for(const page of withoutUses.pages){page.sections=undefined;page.body=fixture.pages.find(item=>item.slug===page.slug).body}
+   draft=await (await call('/api/pane/prepare',{site:withoutUses,base:draft.id})).json()
+   const liveRefusal=await call('/api/pane/library',{base:draft.id,action:'delete',kind:'image',id:asset})
+   assert.equal(liveRefusal.status,409);assert.deepEqual((await liveRefusal.json()).uses.map(use=>use.slug),['home','about','services'],'Approved placements still prevent deletion after draft placements are removed')
+   assert.equal((await call('/api/pane/publish',{revision:draft.id})).status,200)
+   draft=await save({base:draft.id,action:'delete',kind:'image',id:asset})
+   assert.equal(draft.site.media.length,49);assert.equal(draft.site.media.some(item=>item.id===asset),false)
+   draft=await save({base:draft.id,action:'delete',kind:'pdf',id:files[0].id})
+   assert.equal(draft.site.libraryFiles.length,2)
+   assert.equal((await app.request(path)).status,404);assert.equal((await app.request('/site/files/'+files[0].id)).status,404)
+   const count=(await read()).revisions.length
+   for(const body of [{base:draft.id,action:'upload',images:[images[1]]},{base:draft.id,action:'upload',files:[{...files[0],data:'c3ludGhldGljLXBhbmUtMQ==',size:16}]},{base:draft.id,...edit,id:images[1].id,folder:'x'.repeat(121)}])assert.equal((await call('/api/pane/library',body)).status,400)
+   assert.equal((await read()).revisions.length,count,'Rejected uploads and metadata never create revisions')
+   assert.equal((await app.request('/api/pane/library')).status,401)
+   const scoped=await (await call('/api/pane/tokens/create',{name:'Synthetic media integration',scopes:['status:read','draft:write']})).json()
+   for(const method of ['GET','POST'])assert.equal((await app.request('/api/pane/library',{method,headers:{Origin:origin,Authorization:'Bearer '+scoped.token,...(method==='POST'?{'Content-Type':'application/json'}:{})},...(method==='POST'?{body:JSON.stringify(upload)}:{})})).status,403,'Owner-scoped integration tokens have no library authority')
+   await call('/api/pane/tokens/revoke',{id:scoped.id})
+   assert.equal((await app.request('/api/pane/library',{headers:{Authorization:'Bearer '+scoped.token}})).status,401)
+   const audit=await (await app.request('/api/pane/activity',{headers:{Cookie:cookie}})).json()
+   assert.ok(audit.some(entry=>entry.subject==='api:library'&&entry.action==='api.POST.200'&&entry.actor==='Synthetic bakery owner'),'Successful library writes retain native actor attribution in activity')
+   let message
+   const auth=createOperatorAuth({db:app.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{message=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+   const invited=await auth.invite(new Request(origin+'/auth/invite',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin,Cookie:cookie}}),{email:['synthetic-pane-20','example.test'].join('@'),displayName:'Library contributor',role:'admin'})
+   const token=new URL(message.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token')
+   const contributor=(await call('/auth/confirm',{token},'')).headers.get('set-cookie').split(';')[0]
+   for(const action of ['upload','update','delete','place','restore'])assert.equal((await call('/api/pane/library',{base:draft.id,action,kind:'image',id:images[1].id,site:draft.site,images:[images[0]]},contributor)).status,403)
+   assert.equal((await app.request('/app/library',{headers:{Cookie:contributor}})).status,403)
+   assert.equal((await app.request('/api/pane/library',{headers:{Cookie:contributor}})).status,403)
+   const person=await app.db.prepare('SELECT id FROM oa_operators WHERE display_name=?').bind('Library contributor').first()
+   assert.equal((await call('/api/pane/team/revoke',{operatorId:person.id,confirm:'revoke-access'})).status,200)
+   assert.equal((await app.request('/api/pane/library',{headers:{Cookie:contributor}})).status,401,'Revoked credentials cannot reopen library bytes')
+   assert.equal((await call('/api/pane/people/erase',{id:person.id,confirm:'erase-person'})).status,200)
+   assert.equal((await call('/api/pane/library',upload,contributor)).status,401,'An erased person cannot replay an earlier upload')
+   assert.equal((await read()).draft.id,draft.id)
+  }finally{await app.mf.dispose()}
+ }
+})
+
 test('brand uploads stay draft until approval and publish served icons, social images and profile structured data',async()=>{
  const app=await runtime();let cookie
  const call=(path,body)=>app.request(path,{method:'POST',headers:{Cookie:cookie??'',Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)})

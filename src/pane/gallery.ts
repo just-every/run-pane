@@ -1,11 +1,12 @@
 import {normalizeImage,type ImageContent} from './images'
-export type MediaImage={id:string;name:string;image:ImageContent}
+import {mediaMetadata,type MediaMetadata} from './media-metadata'
+export type MediaImage=MediaMetadata&{id:string;name:string;image:ImageContent}
 export type Gallery={layout:'grid'|'masonry'|'slideshow'|'carousel';columns:number;phoneColumns:number;gap:number;phoneGap:number;lightbox:boolean;items:{asset:string;caption:string;href?:string}[]}
 export function normalizeMedia(value:unknown):MediaImage[]|undefined{
  if(value===undefined)return undefined
  if(!Array.isArray(value)||value.length>100)throw Error('The image library holds up to 100 images.')
  const ids=new Set<string>()
- return value.map(item=>{if(!item||typeof item!=='object'||typeof item.id!=='string'||!/^[a-zA-Z0-9_-]{1,80}$/.test(item.id)||ids.has(item.id)||typeof item.name!=='string'||item.name.length>200)throw Error('Invalid library image.');ids.add(item.id);return {id:item.id,name:item.name,image:normalizeImage(item.image)}})
+ return value.map(item=>{if(!item||typeof item!=='object'||typeof item.id!=='string'||!/^[a-zA-Z0-9_-]{1,80}$/.test(item.id)||ids.has(item.id)||typeof item.name!=='string'||!item.name.trim()||item.name.length>200)throw Error('Invalid library image.');ids.add(item.id);return {id:item.id,name:item.name.normalize('NFC').trim(),...mediaMetadata(item),image:normalizeImage(item.image)}})
 }
 export function normalizeGallery(value:unknown):Gallery{
  if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Provide a gallery.')
