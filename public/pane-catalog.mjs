@@ -5,7 +5,7 @@ export const catalogRules=[
  '[data-calendar] table{table-layout:fixed;width:100%;border-collapse:collapse}',
  '[data-calendar] td,[data-calendar] th{padding:8px 2px;vertical-align:top;overflow-wrap:anywhere}',
  '[data-calendar] ul{padding-left:16px}',
- '[data-calendar] td ul{list-style:none;padding:0;margin:6px 0}',
+ '.pane .public-site [data-calendar] td ul{list-style:none;padding:0;margin:6px 0}',
  '[data-calendar] th,[data-calendar] td a{font-size:13px;line-height:1.4}',
  '[data-calendar] td a{display:block;margin-block:4px}',
  '[data-calendar-panel][hidden]{display:none}',

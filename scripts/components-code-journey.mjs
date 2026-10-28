@@ -431,9 +431,9 @@ async function catalogJourney(){
  }
  // Edit the anchor through the native layout field, then rename the page.
  await page.setViewportSize({width:1440,height:1000});await page.goto(origin+'/app/canvas?page=about');await page.getByText('Layout settings',{exact:true}).click();await page.getByLabel('Section anchor ID',{exact:true}).fill('find-us');await saved()
- draft=(await state()).draft;const renamed=structuredClone(draft.site);renamed.pages.find(item=>item.id==='synthetic-pane-anchor-page').slug='our-studio';draft=await call('/api/pane/prepare',{site:renamed,base:draft.id});await call('/api/pane/publish',{revision:draft.id})
+ await page.goto(origin+'/app?page=about');await page.getByText('Pages and folders',{exact:true}).click();await page.locator('[data-page-id="synthetic-pane-anchor-page"]').getByLabel('Address',{exact:true}).fill('our-studio');await saved();draft=(await state()).draft;await call('/api/pane/publish',{revision:draft.id})
  await page.goto(origin+'/site');for(const suffix of ['link','button']){assert.equal(await page.getByRole('link',{name:'Anchor '+suffix,exact:true}).getAttribute('href'),'/site/our-studio#find-us');assert.equal(await page.getByRole('link',{name:'Page '+suffix,exact:true}).getAttribute('href'),'/site/our-studio')}
- const deleted=structuredClone(draft.site);deleted.pages.find(item=>item.id==='synthetic-pane-anchor-page').deleted=true;await call('/api/pane/prepare',{site:deleted,base:draft.id});await page.goto(origin+'/app?page=home');await page.getByRole('status').filter({hasText:'Broken links:'}).waitFor()
+ await page.goto(origin+'/app?page=our-studio');await page.getByText('Pages and folders',{exact:true}).click();await page.locator('[data-page-id="synthetic-pane-anchor-page"]').getByRole('button',{name:'Delete page: Our studio',exact:true}).click();await saved();await page.goto(origin+'/app?page=home');await page.getByRole('status').filter({hasText:'Broken links:'}).waitFor()
  for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await capture('catalog-broken-links-'+width)}
  console.log('Catalog destinations, stable anchors, native blocks, Markdown, styled paste, keyboard and axe passed; changed screens captured at 1440 and 390.')
 }
