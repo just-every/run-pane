@@ -54,7 +54,7 @@ function blockRows(site: Site, page: Page, change: PageChange): string {
   if ((page.kind === 'contact'||page.slug === 'contact')) rows.push(`<li class="block-row"><span class="tile tile-contact">${icon('form')}</span><span class="block-copy"><strong>Form</strong> · Send a message to Inquiries<small>Your name, email address and message</small></span></li>`)
   if (change.removed) rows.push(`<li class="block-row is-removed"><span class="tile tile-plain">${icon('text')}</span><span class="block-copy"><strong>Removed</strong> · ${change.removed} paragraph${change.removed === 1 ? '' : 's'}<small>On the live page, not in this draft</small></span></li>`)
   rows.push(`<li class="block-row block-footer"><span class="tile tile-plain">${icon('menu')}</span><span class="block-copy"><strong>Footer</strong> · On every page<small>${escape([site.name, site.description].filter(Boolean).join(' · '))}</small></span></li>`)
-  return `<ol class="phone-blocks" aria-label="Blocks on this page">${rows.join('')}</ol>`
+  return `<ol class="phone-blocks" tabindex="0" aria-label="Blocks on this page">${rows.join('')}</ol>`
 }
 
 function editCard(site: Site, page: Page, base: string, canEdit: boolean, inSync: boolean, canSettings: boolean, owner: boolean): string {

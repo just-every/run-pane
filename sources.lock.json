@@ -188,7 +188,7 @@
       "executable": false
     },
     "docs/BLOCKS.md": {
-      "sha256": "f0066d978b82e52404cf992a3947071fb09531bf02f0bc5e3649e98cd675bfd7",
+      "sha256": "ba442f8fd97ac60c8a3f4fedc2165db6ef1fa7100994ffb5a87e94612e6907a5",
       "executable": false
     },
     "docs/CLAIMS.md": {
@@ -1152,7 +1152,7 @@
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
-      "sha256": "967b6bd3c6bf3b2b1c7e8facb6b115d24f9c818fb6d15de36699b002d7ee3e13",
+      "sha256": "b92c41b319a1e742d2d4728359bc679037f8765d39814292ae953131095ec307",
       "executable": false
     },
     "scripts/contract-docs.mjs": {
@@ -1340,7 +1340,7 @@
       "executable": false
     },
     "scripts/gallery-brand-journey.mjs": {
-      "sha256": "cfa6f28b306480d7b01711dab039a1344c6de8f182307b06ae34288887c7378c",
+      "sha256": "8c6f279bca6bae81f949143cf31e5f76078cbb40dfd207aa77b1e6253147c5f8",
       "executable": false
     },
     "scripts/gates-journey.mjs": {
@@ -3448,7 +3448,7 @@
       "executable": false
     },
     "src/pane/embeds.ts": {
-      "sha256": "086a29fc6c8b0ea79d0318d4ed03e5e6f03d99cfbcba3b6a675938b257d4db15",
+      "sha256": "d24c26fa474ef9ba4c1a274d0346d4aa072b0fa632b231734e2b35288fac8cd0",
       "executable": false
     },
     "src/pane/followups.ts": {
@@ -3764,7 +3764,7 @@
       "executable": false
     },
     "src/pane/ui/editor.ts": {
-      "sha256": "f03768d2c823ec111c3ea9d8496e7b9b93dcc95db514f2590612327c566f3d02",
+      "sha256": "5bc37726c2c87b136f1f73e8c9a64226d73acfe9bce5e727adc37aecbec0844a",
       "executable": false
     },
     "src/pane/ui/form-settings.ts": {
