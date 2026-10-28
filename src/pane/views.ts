@@ -1,4 +1,3 @@
-import {adobePolicy} from './adobe-fonts'
 import { codeHashes } from './custom-code'
 import { permissionsPolicy } from './document-security'
 import { analyticsSources, type Analytics } from './analytics'
@@ -24,8 +23,7 @@ export async function document(title: string, body: string, kind: 'app' | 'site'
   const sources = (list: string[]) => list.length ? ' ' + list.join(' ') : ''
   const imagePolicy=(body.includes('src="data:image/png;base64,')||(body.includes('data-image-upload')||body.includes('data-collection-image'))||body.includes('data-library-upload')||body.includes('data-brand-settings')||body.includes('data-post-featured')||body.includes('data-gallery-settings'))?frame.policy.replace("img-src 'self'","img-src 'self' data:"):frame.policy
   const rasterPolicy=((body.includes('data-image-upload')||body.includes('data-collection-image'))||body.includes('data-post-featured'))?imagePolicy.replace("img-src 'self'","img-src 'self' blob:"):imagePolicy
-  const basePolicy = extra.image.length ? rasterPolicy.replace("img-src 'self'", `img-src 'self'${sources(extra.image)}`) : rasterPolicy
-  const policy = body.includes('data-site-style-settings')||body.includes('data-adobe-fonts')?adobePolicy(basePolicy):basePolicy
+  const policy = extra.image.length ? rasterPolicy.replace("img-src 'self'", `img-src 'self'${sources(extra.image)}`) : rasterPolicy
   const pageTitle = kind === 'site' ? title : `${title} · ${branding.name}`
   const head = kind === 'site' && iconHead ? frame.head.replace(iconHead, '') : frame.head
   return new Response(`<!doctype html><html lang="${escape(locale)}"${frame.htmlClass}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(pageTitle)}</title>${fontHead}${head}<link rel="stylesheet" href="/pane.css"></head><body class="pane pane-${kind}"><a class="skip-link" href="#main">Skip to content</a>${body}</body></html>`, {

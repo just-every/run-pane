@@ -584,7 +584,7 @@
       "executable": false
     },
     "public/pane-adobe-fonts.mjs": {
-      "sha256": "d05efa55abffe8a2f6d9be68db078f5a77cd9c00177154cf1c47efc85d52bfdf",
+      "sha256": "1b8f0f4c893f70928581dd857f0ee8256709e31e669b65c8309fea2ea159c837",
       "executable": false
     },
     "public/pane-ai.css": {
@@ -1432,7 +1432,7 @@
       "executable": false
     },
     "scripts/styles-journey.mjs": {
-      "sha256": "4c5034773062cb5667a241109a08de75fb0b8d6d80cc2e334daf88ff9e8e1f7b",
+      "sha256": "95d95ad7c33015f755b1fd8ecd60fedfa81c57f813d90865f0d0ec245cd1329b",
       "executable": false
     },
     "scripts/templates-journey.mjs": {
@@ -3312,7 +3312,7 @@
       "executable": false
     },
     "src/pane/adobe-fonts.ts": {
-      "sha256": "b00b6eb8c5be09341e68c553994830ce258d4cd5afa9ec467f992494ac3a2c7f",
+      "sha256": "2e567db62d02525b2a6285807c1b4e08e0bd80eb618a8807a7fcbb2d215b258d",
       "executable": false
     },
     "src/pane/ai-history.ts": {
@@ -3364,7 +3364,7 @@
       "executable": false
     },
     "src/pane/collection-handlers.ts": {
-      "sha256": "fdf8f673114fd1732a1a48ea22157d5cec49ac6f9ccfc3b52585f301e546cd08",
+      "sha256": "d43019f74e3f68194948ca774c134ed48c53046eebb7582afdb36e9c3f229eed",
       "executable": false
     },
     "src/pane/collection-integrity.ts": {
@@ -3476,7 +3476,7 @@
       "executable": false
     },
     "src/pane/handler.ts": {
-      "sha256": "b4986260789313e1fa53539f36863486bc9a2ce6b7a8caef69cea361f8b353a9",
+      "sha256": "e8c3553bfebefce983f8179d85bb14f614317e0975527545dc1ae429bb254df8",
       "executable": false
     },
     "src/pane/image-response.ts": {
@@ -3740,7 +3740,7 @@
       "executable": false
     },
     "src/pane/ui/adobe-font-settings.ts": {
-      "sha256": "4a8e00f2c2d977cba4229b46ddd07dc63b9b0295718cf88bd5b003189e270be6",
+      "sha256": "a890f21aba38e5b6ced653df422807a318ee64b9ae36f455aba9606cb7ba1ea3",
       "executable": false
     },
     "src/pane/ui/ai-assist.ts": {
@@ -3904,7 +3904,7 @@
       "executable": false
     },
     "src/pane/views.ts": {
-      "sha256": "86d117c4af2ec098bfe5e43e1e041e2932a59ce96d64592b9b555ef13b9de5ab",
+      "sha256": "06a5e9286fd61f9f6e5a8aecad12e18e6002a9b473fe80e545767218d8cf6b5a",
       "executable": false
     },
     "src/pane/visit-data.ts": {

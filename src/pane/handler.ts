@@ -1,3 +1,4 @@
+import {adobeResponse} from './adobe-fonts'
 import {siteStyleCss} from './site-styles'
 import {layoutCss} from '../../public/pane-layout.mjs'
 import {fontResponse} from './fonts'
@@ -111,7 +112,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    if(path.endsWith('/canvas')){
     if(!current)throw Error('Save a post first.')
     ownPost(current.site,url.searchParams.get('id'),actor.id,owner||actor.role==='admin')
-    return document('Post body',canvasEditor(data,'',url.searchParams.get('id')??''),'site')
+    return adobeResponse(await document('Post body',canvasEditor(data,'',url.searchParams.get('id')??''),'site'),data.draft?.site.styles)
    }
    data.notice=url.searchParams.get('notice')??undefined
    const selected=url.searchParams.get('id')??''
@@ -155,7 +156,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
     const page=site.pages.find(page=>page.slug===slug)
     return new Response(siteStyleCss(site.styles,url.pathname)+(page?.sections?layoutCss(page.sections):''),{headers:{'content-type':'text/css; charset=utf-8','cache-control':'private, no-store','x-content-type-options':'nosniff'}})
    }
-   return document('Preview',publicPage(site,slug,'preview',false,false,undefined,undefined,url.pathname),'site')
+   return adobeResponse(await document('Preview',publicPage(site,slug,'preview',false,false,undefined,undefined,url.pathname),'site'),site.styles)
   }
   if(request.method==='GET' && ['/api/pane/activity','/api/pane/activity/export'].includes(path)) {
    if(!owner)return json({error:'Owner only.'},403)
@@ -166,13 +167,13 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    const data=permittedDashboard(await dashboardData(env.DB,actor.displayName,actor.role,actor.id),caps,actor)
    if(env.PANE_LIVE&&owner){const review=await env.PANE_LIVE.get(env.PANE_LIVE.idFromName('published-site')).fetch('https://pane.internal/review');Object.assign(data,await review.json())}
    if(path==='/app/templates'){if(!owner&&actor.role!=='admin')return json({error:'Native owner or admin only.'},403);return document('Templates',shell(data,'sites',templateCatalog(data)))}
-   if(path==='/app/canvas')return document('Visual canvas',canvasEditor(data,url.searchParams.get('page')??''),'site')
+   if(path==='/app/canvas')return adobeResponse(await document('Visual canvas',canvasEditor(data,url.searchParams.get('page')??''),'site'),data.draft?.site.styles)
    if(api&&path!=='/api/pane')return json({error:'Not found.'},404)
    if(api)return json(scopes?{role:actor.role,draft:data.draft?{id:data.draft.id}:null,live:data.live?{id:data.live.id}:null}:{...data,activity:undefined})
    if(!screens[path])return json({error:'Not found.'},404)
    if(path==='/app/inquiries')data.submissionForms=await submissionForms(env.DB,(data.live??data.draft)?.site)
    data.notice=url.searchParams.get('notice')??undefined
-   return document(screens[path][1],workspace(data,path,url.searchParams.get('page')??''),'app',undefined,undefined,data.locale)
+   return adobeResponse(await document(screens[path][1],workspace(data,path,url.searchParams.get('page')??''),'app',undefined,undefined,data.locale),path==='/app'?data.draft?.site.styles:undefined)
   }
   if(request.method!=='POST')return json({error:'Method not allowed.'},405)
   if(Number(request.headers.get('content-length')??0)>1800000)return json({error:'Input exceeds 1.8 MB.'},413)

@@ -28,3 +28,11 @@ export function adobePolicy(policy:string):string{
   .replace("font-src 'self'","font-src 'self' https://use.typekit.net")
   .replace("img-src 'self'","img-src 'self' https://p.typekit.net")
 }
+
+/** Preview permission follows the stored owner grant, never page markup. */
+export function adobeResponse(response:Response,styles:SiteStyles|undefined):Response{
+ if(styles?.adobe?.authorized!==true||!response.headers.get('content-type')?.includes('text/html'))return response
+ const headers=new Headers(response.headers)
+ headers.set('content-security-policy',adobePolicy(headers.get('content-security-policy')??''))
+ return new Response(response.body,{status:response.status,headers})
+}

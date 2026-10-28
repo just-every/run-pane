@@ -24,6 +24,7 @@ export function initAdobeFonts(root,renderFonts){
   if(!authorize.checked){invalid(authorize,'Authorize your Adobe web project before connecting or updating it.');return}
   apply({project:id,families:unique,authorized:true})
   status.textContent='Adobe configuration added to draft. Choose its fonts for headings or body text. Review the preview before publishing.'
+  form.requestSubmit()
  })
  disconnect.addEventListener('click',()=>{
   apply(null);status.textContent='Adobe configuration removed from draft.';connect.focus()

@@ -125,7 +125,8 @@ export async function siteStylesJourney({page,context,origin,folder}){
   const before=(await state()).draft.id,requestsBefore=adobeRequests.length
   await page.locator('[data-adobe-connect]').click();assert.equal(JSON.parse(await page.locator('[data-adobe-state]').inputValue()),null,'Connection without explicit owner authorization is refused')
   assert.equal((await state()).draft.id,before);assert.equal(adobeRequests.length,requestsBefore,'Staging project details sends nothing to Adobe')
-  await page.locator('[data-adobe-authorize]').check();await page.locator('[data-adobe-connect]').click();await saved()
+  await page.locator('[data-adobe-authorize]').check();await Promise.all([page.waitForURL(url=>url.searchParams.has('notice')),page.locator('[data-adobe-connect]').click()])
+  await page.getByRole('radio',{name:'Desktop',exact:true}).check();await page.locator('[data-site-style-settings] > summary').click();await page.locator('[data-adobe-settings] > summary').click()
   await page.getByLabel('Heading font',{exact:true}).selectOption(font.id);await page.getByLabel('Body font',{exact:true}).selectOption('adobe:synthetic-pane-adobe');await saved()
   await page.waitForFunction(()=>[...document.fonts].some(font=>font.family.replaceAll('"','')==='synthetic-pane-adobe'&&font.status==='loaded'))
   await screen('adobe-settings',width)
