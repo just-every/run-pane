@@ -3532,7 +3532,7 @@
       "executable": false
     },
     "src/pane/import-history-targets.ts": {
-      "sha256": "3583c649425410f7094d9111f62012c8ec72989bbebf475def2e170780e53995",
+      "sha256": "651a7ecdf648c639bdc4ad9c0a911247b869654e46a31ba37740c3b46c8613e1",
       "executable": false
     },
     "src/pane/import-html.ts": {
@@ -4116,7 +4116,7 @@
       "executable": false
     },
     "tests/pane-imports.test.mjs": {
-      "sha256": "b9a563ac35e719c7aa4a8e2118e86d0c974f6e8211c0dbb180c951e4ca8803ed",
+      "sha256": "5a03ba387e3c868744c7a7deb6120a1dca03ff97017b9bd414c068dc50b7cb1d",
       "executable": false
     },
     "tests/pane.test.mjs": {
