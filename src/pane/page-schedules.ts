@@ -31,7 +31,7 @@ export async function runPageSchedules(db:D1Database,now:number,runId:string){
 
  const failures:unknown[]=[]
  for(const row of await pageScheduleRows(db)){
-  if(!row.actor||row.starts_at>now||row.expired_revision)continue
+  if(!row.actor||row.starts_at>now||row.expired_revision||row.executed_revision&&row.ends_at===null)continue
   try{
   if(!await db.prepare("SELECT 1 FROM oa_operators WHERE id=? AND role='owner' AND status='active'").bind(row.actor).first())throw new PostDenied('The approving owner is no longer active.')
   if(!row.executed_revision){

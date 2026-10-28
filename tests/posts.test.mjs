@@ -411,7 +411,7 @@ test('reviewed posts, pages and items publish at Chicago nine with immutable app
   await tick('2026-11-10T15:00:00Z')
   await ok(await call('/api/pane/collections/items/save',{base:(await state()).draft.id,collection:'offers',id:'morning',slug:'morning',title:'Separately approved offer',values:{description:'New approved details'}}))
   await ok(await call('/api/pane/collections/items/publish',{base:(await state()).draft.id,collection:'offers',id:'morning'}))
-  const replacementLive=(await state()).live.id;await tick('2026-11-11T15:00:00Z');assert.equal((await state()).live.id,replacementLive);assert.match(await(await f.request(origin+'/site/offers/morning')).text(),/Separately approved offer/)
+  const replacementLive=(await state()).live.id;await tick('2026-11-11T15:00:00Z');assert.equal((await state()).live.id,replacementLive);assert.match(await(await f.request(origin+'/site/offers/morning')).text(),/Separately approved offer/);assert.ok((await state()).schedules.history.some(event=>event.kind==='item-published'&&event.revision===laterItem.id),'Actual execution history remains visible after an independent replacement')
 
 
   // A revoked source cannot regain approval at its scheduled time or starve another item or page.

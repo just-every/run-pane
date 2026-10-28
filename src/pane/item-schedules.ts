@@ -79,9 +79,9 @@ async function expireItem(db:D1Database,entry:ItemSchedule,now:number){
 }
 
 export async function itemScheduleOverview(db:D1Database,draft:Revision|null|undefined,lastTick:number|null){
- const rows=(await itemSchedules(db)).filter(entry=>entry.cancelled_at===null)
+ const all=await itemSchedules(db),rows=all.filter(entry=>entry.cancelled_at===null)
  const items=rows.map(entry=>({id:entry.id,collection:entry.collection_id,item:entry.item_id,title:draft?.site.collections?.find(collection=>collection.id===entry.collection_id)?.items.find(item=>item.id===entry.item_id)?.title??entry.item_id,source:entry.source_revision,occurrence:entry.starts,end:entry.ends,timeZone:entry.time_zone,state:entry.failure_at!==null&&entry.failure_at>(entry.failure_action==='expiry'?entry.expired_at??-1:entry.executed_at??-1)?'Review required':entry.expired_at!==null?'Finished':entry.executed_at!==null?'Published':entry.actor?'Approved':'Awaiting approval'}))
- const history=rows.flatMap(entry=>[
+ const history=all.flatMap(entry=>[
   ...(entry.executed_at!==null?[{id:entry.id,revision:entry.source_revision,rule:'item:'+entry.collection_id+':'+entry.item_id,occurrence:entry.starts,kind:'item-published',timeZone:entry.time_zone,executedAt:entry.executed_at,detail:'Published revision '+entry.result_revision}]:[]),
   ...(entry.expired_at!==null?[{id:entry.id+':expiry',revision:entry.source_revision,rule:'item:'+entry.collection_id+':'+entry.item_id,occurrence:entry.ends!,kind:entry.expiry_revision?'item-unpublished':entry.executed_at===null?'item-window-missed':'item-expiry-preserved-newer',timeZone:entry.time_zone,executedAt:entry.expired_at,detail:entry.expiry_revision?'Published revision '+entry.expiry_revision:entry.executed_at===null?'The publication window elapsed without execution.':'A newer item version was retained.'}]:[]),
   ...(entry.failure_at!==null?[{id:entry.id+':failure',revision:entry.source_revision,rule:'item:'+entry.collection_id+':'+entry.item_id,occurrence:entry.failure_action==='expiry'?entry.ends!:entry.starts,kind:'item-'+entry.failure_action+'-failed',timeZone:entry.time_zone,executedAt:entry.failure_at,detail:'The scheduled change was refused. Review the item and its collection, then cancel or approve a new schedule. Other schedules continue.'}]:[]),
