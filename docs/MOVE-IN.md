@@ -275,3 +275,34 @@ To update the structured body, edit and re-import the source. PAGE-014 and
 CMS-011 inherit safe rich-body editing with PAGE-006 autosave/undo/conflict
 protection; this reader does not claim those editors or native post/item/comment
 targets are complete. Standard native JSON plain-text pages remain editable.
+
+
+## WXR comment carrier
+
+The native owner's post Settings includes Comment portability. This is a comment
+transfer for an existing native post; it does not complete the whole-site import.
+Paste WXR, enter the original post URL, choose the existing destination post
+and review the complete comment set. No request is sent to the original URL. Up to 100 comments from one source post can be transferred together.
+
+Review makes no writes. Apply checks the reviewed fingerprint and current native
+revision, validates the entire set, and atomically stores the original names,
+private email addresses, websites, UTC dates, text, states and parent references.
+Unknown states, invalid dates, missing parents and threads deeper than one level
+are refused without partial writes. Source text is escaped on native screens.
+A previously imported or erased source identifier cannot be replayed.
+
+Conservative default pending CT approval: only the native owner imports or
+releases a transfer. Imported comments remain private, including source-approved
+comments. From Comments, the owner explicitly selects and releases imported
+comments; their original approved, pending or spam states remain unchanged.
+Moderation cannot bypass the owner's release. No import or release sends email
+or push. Original author names are preserved without inventing native accounts
+or granting author permissions. Imported records participate in person lookup,
+portable person export, guarded erasure and the existing archive fence.
+
+Export comments as WXR requires a fresh native owner sign-in. The private download
+contains commenter addresses and original states and threads; it must be handled
+as personal data. It is a comment carrier with post identifiers and plain body
+text, not a complete rich-body, media or whole-site export. The ordinary public
+RSS feed never contains commenter email. Full WordPress and Squarespace migration
+journeys and the remaining open-format exports retain their contract gaps.
