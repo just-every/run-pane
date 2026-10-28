@@ -1,3 +1,4 @@
+import {saveItemSchedule} from './item-schedules'
 import type {Bindings} from '../auth.server'
 import {dashboardData} from './data'
 import {DraftConflict} from './content'
@@ -12,7 +13,7 @@ import {document} from './views'
 
 export type CollectionActor={id:string;role:string;displayName?:string}
 const json=(value:unknown,status=200)=>Response.json(value,{status,headers:{'cache-control':'no-store'}})
-const paths=['','/schema','/template','/items/save','/body','/items/publish','/starters','/canvas']
+const paths=['','/schema','/template','/items/save','/body','/items/publish','/items/schedule','/starters','/canvas']
 const parsed=(value:unknown)=>typeof value==='string'?JSON.parse(value):value
 async function inputs(request:Request):Promise<Record<string,unknown>>{
  const input=request.headers.get('content-type')?.includes('application/json')?await request.json():Object.fromEntries(await request.formData())
@@ -50,7 +51,7 @@ export async function collectionPrivateResponse(request:Request,env:Bindings,act
    }
    return document('Collections',shell(data,'collections',collectionsEditor(data,collection,item)))
   }
-  if(request.method!=='POST'||!['/schema','/template','/items/save','/body','/items/publish','/starters'].includes(action))return json({error:'Method not allowed.'},405)
+  if(request.method!=='POST'||!['/schema','/template','/items/save','/body','/items/publish','/items/schedule','/starters'].includes(action))return json({error:'Method not allowed.'},405)
   const input=await inputs(request),db=env.DB
   let result,back='/app/collections'
   if(action==='/schema'){
@@ -63,6 +64,8 @@ export async function collectionPrivateResponse(request:Request,env:Bindings,act
    allow(input,['collection','item','id','field','sections','media'])
    if(input.item!==undefined&&input.id!==undefined&&input.item!==input.id)throw Error('Choose one description item.')
    result=await saveCollectionBody(db,actor.id,{...input,sections:parsed(input.sections),...(input.media===undefined?{}:{media:parsed(input.media)})});back=destination(input.collection,input.item??input.id)
+  }else if(action==='/items/schedule'){
+   allow(input,['collection','id','start','end','timeZone','approve','cancel']);result=await saveItemSchedule(db,actor,input);back=destination(input.collection,input.id)
   }else if(action==='/starters'){
    allow(input,[]);result=await addStarterCollections(db,actor.id,input.base)
   }else{

@@ -308,7 +308,7 @@ test('designed collection templates publish every item with exact metadata and p
  }finally{await f.mf.dispose()}
 })
 
-test('reviewed posts and pages publish at Chicago nine with immutable approval, complete execution history and overdue unapproved refusal',async()=>{
+test('reviewed posts, pages and items publish at Chicago nine with immutable approval, complete execution history and overdue unapproved refusal',async()=>{
  const origin='http://127.0.0.1:8787',f=await runtime({isolatedLive:true,now:Date.parse('2026-10-01T12:00:00Z')})
  let cookie=''
  const call=(path,data,extra={})=>f.request(origin+path,{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/json',...extra},body:JSON.stringify(data)})
@@ -378,6 +378,32 @@ test('reviewed posts and pages publish at Chicago nine with immutable approval, 
   const replacement=await ok(await call('/api/pane/prepare',{base:(await state()).draft.id,site:later}));await ok(await call('/api/pane/publish',{revision:replacement.id}))
   const newerPageLive=(await state()).live.id
   await tick('2026-11-07T15:00:00Z');assert.equal((await state()).live.id,newerPageLive,'A preserved newer page causes no extra publication');assert.ok((await(await f.request(origin+'/site/hours')).text()).includes('Separately approved newer hours'));assert.equal((await state()).schedules.history.filter(event=>event.kind==='page-expiry-preserved-newer').length,1)
+
+  // Collection schedules use the same native owner door and retain later draft work.
+  await ok(await call('/api/pane/collections/schema',{base:(await state()).draft.id,id:'offers',prefix:'offers',title:'Offers',fields:[{id:'description',label:'Description',type:'text'}]}))
+  for(const [id,title] of [['morning','Approved workshop offer'],['waiting','Unapproved workshop offer'],['cancelled','Cancelled workshop offer']])await ok(await call('/api/pane/collections/items/save',{base:(await state()).draft.id,collection:'offers',id,slug:id,title,values:{description:'Reviewed offer details'}}))
+  const itemSource=(await state()).draft,itemInput={base:itemSource.id,collection:'offers',id:'morning',start:'2026-11-08T09:00',end:'2026-11-09T09:00',timeZone:'America/Chicago'}
+  assert.equal((await call('/api/pane/collections/items/schedule',{...itemInput,approve:'yes'},{Cookie:''})).status,401)
+  assert.equal((await call('/api/pane/collections/items/schedule',{...itemInput,approve:'yes'},{Origin:'https://elsewhere.invalid'})).status,403)
+  await ok(await call('/api/pane/collections/items/schedule',{...itemInput,approve:'yes'}))
+  await ok(await call('/api/pane/collections/items/schedule',{...itemInput,id:'waiting'}))
+  await ok(await call('/api/pane/collections/items/schedule',{...itemInput,id:'cancelled',approve:'yes'}));await ok(await call('/api/pane/collections/items/schedule',{base:itemSource.id,collection:'offers',id:'cancelled',cancel:'yes'}))
+  await ok(await call('/api/pane/collections/items/save',{base:itemSource.id,collection:'offers',id:'morning',slug:'morning',title:'Later private offer',values:{description:'Private offer details'}}))
+  await tick('2026-11-08T14:59:00Z');assert.equal((await f.request(origin+'/site/offers/morning')).status,404)
+  await tick('2026-11-08T15:00:00Z');assert.match(await(await f.request(origin+'/site/offers/morning')).text(),/Approved workshop offer/)
+  const itemState=await state();assert.equal(itemState.draft.site.collections.find(collection=>collection.id==='offers').items.find(item=>item.id==='morning').title,'Later private offer');assert.deepEqual(itemState.revisions.find(row=>row.id===itemSource.id),itemSource)
+  assert.equal((await f.request(origin+'/site/offers/waiting')).status,404);assert.equal((await f.request(origin+'/site/offers/cancelled')).status,404)
+  assert.ok(itemState.schedules.draftDue.includes('Item awaiting approval: Unapproved workshop offer'))
+  const itemHistory=itemState.schedules.history.filter(event=>event.kind==='item-published');assert.equal(itemHistory.length,1);assert.equal(itemHistory[0].revision,itemSource.id);assert.equal(itemHistory[0].executedAt,Date.parse('2026-11-08T15:00:00Z'))
+  const itemLive=itemState.live.id;await tick('2026-11-08T15:00:00Z');await tick('2026-11-08T14:00:00Z');assert.equal((await state()).live.id,itemLive)
+  await tick('2026-11-09T14:59:00Z');assert.equal((await f.request(origin+'/site/offers/morning')).status,200)
+  await tick('2026-11-09T15:00:00Z');assert.equal((await f.request(origin+'/site/offers/morning')).status,404);assert.equal((await state()).schedules.history.filter(event=>event.kind==='item-unpublished').length,1)
+  const laterItem=(await state()).draft;await ok(await call('/api/pane/collections/items/schedule',{...itemInput,base:laterItem.id,start:'2026-11-10T09:00',end:'2026-11-11T09:00',approve:'yes'}))
+  await tick('2026-11-10T15:00:00Z')
+  await ok(await call('/api/pane/collections/items/save',{base:(await state()).draft.id,collection:'offers',id:'morning',slug:'morning',title:'Separately approved offer',values:{description:'New approved details'}}))
+  await ok(await call('/api/pane/collections/items/publish',{base:(await state()).draft.id,collection:'offers',id:'morning'}))
+  const replacementLive=(await state()).live.id;await tick('2026-11-11T15:00:00Z');assert.equal((await state()).live.id,replacementLive);assert.match(await(await f.request(origin+'/site/offers/morning')).text(),/Separately approved offer/)
+
 
 
 
