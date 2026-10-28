@@ -303,3 +303,6 @@
 
 .pane .content-schedule, .pane .content-schedule label { min-width: 0; max-width: 100%; }
 .pane .content-schedule select { width: 100%; min-width: 0; max-width: 100%; }
+
+/* Canvas actions use the existing darker brand token for readable white labels. */
+.rer-themed .pane .canvas-tools button:not(.secondary){background:var(--pn-fuchsia-deep);border-color:var(--pn-fuchsia-deep)}
