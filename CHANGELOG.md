@@ -1,13 +1,12 @@
 # Changelog
 
-## Unreleased
-
 ## 2026-10-28 — Adobe font status carried from main
 
 Source: main `ddd123a340b811ad2fef47993c1cc2eedffe6bc0`, STYLE-002.
 
 *Status:* partial. Native owner settings retain separate built-in and uploaded heading and body fonts, colors, button shape, page spacing and section background in immutable drafts. Font files are self-hosted with swap display and follow preview, publication and rollback. Adobe web project settings now retain explicit native-owner authorization, project ID and CSS family names; selected fonts load directly from Adobe through its CSS embed in previews and approved revisions. Disconnecting is revisioned and resets Adobe selections, with undo and redo. Gap: authorized Adobe provider access and the uploaded and Adobe heading and body live-render receipt remain unavailable. Conservative default: native owner only, explicit authorization before any preview load, separate publication approval; provider boundaries and scoped delegation remain held under the standing scope policy.
 
+## Unreleased
 
 - Connect Vane and Google Analytics 4 from the site settings: Vane counts page views and goals cookie-free; Google loads only after a visitor allows it, never for Global Privacy Control or Do Not Track. Give icon-only controls tooltips.
 - Rebuild the app as the owner-picked phone-first editor: one top bar with the site switcher and Sites, Pages, Inquiries and Moves; the page on a phone with its edit card and not-live card, the desktop preview and the five pages as bricks. Edit one page at a time instead of a pages JSON field.
