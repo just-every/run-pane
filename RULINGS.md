@@ -22,6 +22,60 @@ Date: 2026-10-22 · Ruler: ct · Governs: AUDIT-001
 
 Approved by ct (22 Oct): an owner-only, append-only metadata log and export, and owner-only erasure; no bodies, addresses, request queries or credentials in events; no automatic purge; explicit non-owner account erasure permanently anonymizes that actor's entries while the log stays.
 
+### RL-4 — Custom code authority, isolation and revocation
+
+Date: 2026-10-25 20:55Z · Ruler: ct · Governs: PAGE-008, PAGE-017, PRIV-001, STATS-005
+
+Approved by ct (25 October 20:55Z): native owner only authoring, deny by default, audited immutable approval, live only opaque execution, no automatic outbound action, no external custom scripts or resource loading CSS. Published code is never edited in place: every change creates a new immutable draft and needs a new explicit approval. The opaque sandbox cannot read cookies, local or session storage, other frame documents or visitor identity. The owner can revoke an approval in Publication settings; the live page is unavailable on the next request, including isolated live storage, and a revoked revision cannot be restored or republished. Revocation remains in the activity log; restoring delivery requires a new draft and explicit approval.
+
+This records the native decision and its boundaries; it changes no clause status.
+
+### RL-5 — Explicit native member admission
+
+Date: 2026-10-25 18:50Z · Ruler: ct · Governs: PAGE-011, PAGE-016
+
+Approved ct semantics (25 Oct 18:50Z): only the native owner configures access; admission is an explicit allowlist of active invited native accounts checked on every request. Unadmitted and inactive accounts are refused beside an admitted active account; removal or deactivation takes effect on the next request. The owner is not admitted automatically; owner preview works without changing member state. No paid entitlement is inferred. Password proofs expire after one hour and rotation invalidates earlier proofs.
+
+This records the native decision and its boundaries; it changes no clause status.
+
+### RL-6 — Rejected upload custody and rescue
+
+Date: 2026-10-25 18:50Z · Ruler: ct · Governs: FORM-001, FORM-002
+
+Approved ct semantics (25 Oct 18:50Z): rejected upload bytes are discarded from every store; only validated text and file metadata can enter owner-opted-in spam review for the stated 30-day period, subject to explicit legal holds. Rejection reasons reach the submitter. Rescue creates a normal submission only on explicit confirmed owner action, carries no file bytes and sends no automatic reply. Visitors reselect a file after rejection.
+
+This records the native decision and its boundaries; it changes no clause status.
+
+### RL-7 — Rejected content retention, legal holds and erasure
+
+Date: 2026-10-23 09:30Z and 11:28Z · Ruler: ct · Governs: FORM-001, FORM-002, CMS-010
+
+Approved ct semantics (23 Oct 09:30Z and 11:28Z): rejected content retention is off by default; explicit owner opt-in retains validated names, email addresses and answers for 30 days. Only the owner reviews retained content, marks it not spam for one time inbox delivery without an automatic reply, confirms permanent purge, and explicitly places or releases legal holds. Holds prevent expiry, rescue, purge and person erasure until released; person export includes held records. Expiry runs on scheduled processing and before review. Person lookup, export and guarded atomic erasure include retained rejections and replay fences. Rejected content and its opt-in setting are excluded from installation archives, so restore starts with capture off. Metadata remains separate and contains no answers or addresses. FORM-001 and CMS-010 inherit all three protection checks, owner review, retention, hold and privacy boundaries before shipping.
+
+This records the native decision and its boundaries; it changes no clause status.
+
+### RL-8 — Scoped helper credential restrictions
+
+Date: 2026-10-22 · Ruler: ct · Governs: API-001, AGENT-008
+
+Approved by ct (22 Oct): only a natively signed-in owner creates and revokes tokens, each shown once; seven day default, thirty day hard maximum; explicit status, page-read and collection-read, draft-write and import-write scopes; a token cannot mint tokens, publish, roll back, erase, read the audit log or administer roles (those stay human); an out of scope call is refused and logged with its token ID; credentials are excluded from archives.
+
+This records the native decision and its boundaries; it changes no clause status.
+
+### RL-9 — Composable native roles
+
+Date: 2026-10-22 · Ruler: ct · Governs: ROLE-001, ACCESS-001, CMS-010
+
+Approved by ct (22 Oct): only the owner assigns roles; grants compose by union and an explicit assignment replaces legacy member access; unassigned native members keep their ACCESS-001 read only access until a grant replaces it; editors cannot change business and robots settings or publish; authors write and submit their own private posts through the native API; comment moderator authority remains denied until its CMS doors exist.
+
+This records the native decision and its boundaries; it changes no clause status.
+
+### RL-10 — WXR comment carrier riders remain unresolved
+
+Date: 2026-10-28 (recorded here; the supplied note has no original ruling date) · Ruler: ct (reported in the supplied note) · Governs: CMS-010, IMPORT-001, IMPORT-002, EXPORT-001
+
+The historical status reports a ct note approving the owner only WXR comment carrier default with riders, but the exact rider wording was not supplied. The rider record is unresolved; this entry does not invent its terms or claim final policy approval. Retain the conservative native owner floor and CMS-010's partial status. Native push proof, live Turnstile acceptance, whole site imports and automatic post mapping remain engineering gaps; the missing rider wording is not an implementation acceptance or permission to remove comment portability.
+
 ### RL-101 — Explicit controlled public-site capture
 
 Date: 2026-10-28 · Ruler: ct · Governs: IMPORT-003, IMPORT-004

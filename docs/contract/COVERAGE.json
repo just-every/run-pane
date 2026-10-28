@@ -844,7 +844,22 @@
     {
       "file": "CONTRACT.md",
       "line": 193,
-      "text": "*Status:* done. Native owners author revisioned site CSS, HTML, header and footer code and page header or HTML code. Only an explicitly approved immutable live revision can execute it. Third-party HTML and scripts run in an opaque sandbox with outbound connections, forms and nested frames denied; the live CSP authorizes only the exact approved inline script and style hashes. Consent also applies resource-free CSS to the live document and copies inert verification metadata into its header. Workspace and preview documents stay inert. The shared pane:consent:analytics browser choice controls activation; no choice means off, GPC and DNT override saved grants, and withdrawal removes the active frame, CSS and metadata and clears analytics cookies in the open session. The sandbox receives pane:goal with the public goal name and numeric occurrence value 1; form events arrive on the accepted thank-you view, including a configured page redirect, without sending answers or identity. Permissions Policy remains camera=(), microphone=(), geolocation=() for every nested frame; no allow attribute delegates a feature. Approved by ct (25 October 20:55Z): native owner-only authoring, deny by default, audited immutable approval, live-only opaque execution, no automatic outbound action, no external custom scripts or resource-loading CSS. Published code is never edited in place: every change creates a new immutable draft and needs a new explicit approval. The opaque sandbox cannot read cookies, local or session storage, other frame documents or visitor identity. The owner can revoke an approval in Publication settings; the live page is unavailable on the next request, including isolated live storage, and a revoked revision cannot be restored or republished. Revocation remains in the activity log; restoring delivery requires a new draft and explicit approval. Third-party tag and pixel marketplace with per-tag consent categories is provided separately by PAGE-017. PRIV-001 and STATS-005 inherit this gate and immediate withdrawal duty.",
+      "text": "*Status:* done. Native owners author revisioned site CSS, HTML, header and footer code and page header or HTML code. Only an explicitly approved immutable live revision can execute it. Third-party HTML and scripts run in an opaque sandbox with outbound connections, forms and nested frames denied; the live CSP authorizes only the exact approved inline script and style hashes. Consent also applies resource-free CSS to the live document and copies inert verification metadata into its header. Workspace and preview documents stay inert. The shared pane:consent:analytics browser choice controls activation; no choice means off, GPC and DNT override saved grants, and withdrawal removes the active frame, CSS and metadata and clears analytics cookies in the open session. The sandbox receives pane:goal with the public goal name and numeric occurrence value 1; form events arrive on the accepted thank-you view, including a configured page redirect, without sending answers or identity. Permissions Policy remains camera=(), microphone=(), geolocation=() for every nested frame; no allow attribute delegates a feature. ",
+      "to": "changelog"
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 193,
+      "text": "Approved by ct (25 October 20:55Z): native owner-only authoring, deny by default, audited immutable approval, live-only opaque execution, no automatic outbound action, no external custom scripts or resource-loading CSS. Published code is never edited in place: every change creates a new immutable draft and needs a new explicit approval. The opaque sandbox cannot read cookies, local or session storage, other frame documents or visitor identity. The owner can revoke an approval in Publication settings; the live page is unavailable on the next request, including isolated live storage, and a revoked revision cannot be restored or republished. Revocation remains in the activity log; restoring delivery requires a new draft and explicit approval.",
+      "to": "rulings",
+      "ids": [
+        "RL-4"
+      ]
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 193,
+      "text": " Third-party tag and pixel marketplace with per-tag consent categories is provided separately by PAGE-017. PRIV-001 and STATS-005 inherit this gate and immediate withdrawal duty.",
       "to": "changelog"
     },
     {
@@ -961,7 +976,22 @@
     {
       "file": "CONTRACT.md",
       "line": 217,
-      "text": "*Status:* done. Page and folder passwords, explicitly admitted native members, private no-store delivery, protected search and sitemap exclusions, editable coming-soon and site-password gates, preview bypass and disabling are proved. Approved ct semantics (25 Oct 18:50Z): only the native owner configures access; admission is an explicit allowlist of active invited native accounts checked on every request. Unadmitted and inactive accounts are refused beside an admitted active account; removal or deactivation takes effect on the next request. The owner is not admitted automatically; owner preview works without changing member state. No paid entitlement is inferred. Password proofs expire after one hour and rotation invalidates earlier proofs. Paid-access connection remains missing in PAGE-016; Pane never rebuilds billing. LINK-003 owns the optional coming-soon signup.",
+      "text": "*Status:* done. Page and folder passwords, explicitly admitted native members, private no-store delivery, protected search and sitemap exclusions, editable coming-soon and site-password gates, preview bypass and disabling are proved. ",
+      "to": "changelog"
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 217,
+      "text": "Approved ct semantics (25 Oct 18:50Z): only the native owner configures access; admission is an explicit allowlist of active invited native accounts checked on every request. Unadmitted and inactive accounts are refused beside an admitted active account; removal or deactivation takes effect on the next request. The owner is not admitted automatically; owner preview works without changing member state. No paid entitlement is inferred. Password proofs expire after one hour and rotation invalidates earlier proofs.",
+      "to": "rulings",
+      "ids": [
+        "RL-5"
+      ]
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 217,
+      "text": " Paid-access connection remains missing in PAGE-016; Pane never rebuilds billing. LINK-003 owns the optional coming-soon signup.",
       "to": "changelog"
     },
     {
@@ -1586,8 +1616,17 @@
     {
       "file": "CONTRACT.md",
       "line": 422,
-      "text": "*Status:* partial. Native blog and post comment settings, approval by default, one-level threads, escaped public text, private email, bulk moderation, explicit author-attributed replies, bounded cookie-free likes and scheduled email digests now use the existing native authority, form-protection and person-custody doors. SendGrid-edge fakes prove email acceptance and failed delivery retention; the existing Turnstile fixture proves fail-closed application behavior, not live provider acceptance. Gap: Native push notification proof requires MOBILE-002 device and signing authority. Live Turnstile acceptance is not proved by the existing provider fixture. The owner-only WXR comment carrier preserves imported author, UTC date, approval state and one-level threading when explicitly mapped to an existing native post, with private staging, explicit owner release and fresh native sign-in for private export. Whole-site WXR and Squarespace import journeys and automatic native post mapping remain with IMPORT-001 and IMPORT-002; the remaining open-format export stays with EXPORT-001. The supplied ct note approves the owner-only default with riders but omits their exact wording; retain the conservative owner-only floor without claiming final policy approval or DONE.",
+      "text": "*Status:* partial. Native blog and post comment settings, approval by default, one-level threads, escaped public text, private email, bulk moderation, explicit author-attributed replies, bounded cookie-free likes and scheduled email digests now use the existing native authority, form-protection and person-custody doors. SendGrid-edge fakes prove email acceptance and failed delivery retention; the existing Turnstile fixture proves fail-closed application behavior, not live provider acceptance. Gap: Native push notification proof requires MOBILE-002 device and signing authority. Live Turnstile acceptance is not proved by the existing provider fixture. The owner-only WXR comment carrier preserves imported author, UTC date, approval state and one-level threading when explicitly mapped to an existing native post, with private staging, explicit owner release and fresh native sign-in for private export. Whole-site WXR and Squarespace import journeys and automatic native post mapping remain with IMPORT-001 and IMPORT-002; the remaining open-format export stays with EXPORT-001. ",
       "to": "changelog"
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 422,
+      "text": "The supplied ct note approves the owner-only default with riders but omits their exact wording; retain the conservative owner-only floor without claiming final policy approval or DONE.",
+      "to": "rulings",
+      "ids": [
+        "RL-10"
+      ]
     },
     {
       "file": "CONTRACT.md",
@@ -2159,8 +2198,17 @@
     {
       "file": "CONTRACT.md",
       "line": 604,
-      "text": "*Status:* done. Reusable revisioned forms support text, email, US phone, address, choice, date, PDF upload and consent fields with configurable labels, required settings, help, placeholders, validation messages, submit labels and confirmations or local redirects. Accepted PDFs are private, limited to 5 MB and checked by signature and type; person export, erasure, replay fencing, current archive restore, old-backup refusal and durable outage intake include their custody. Approved ct semantics (25 Oct 18:50Z): rejected upload bytes are discarded from every store; only validated text and file metadata can enter owner-opted-in spam review for the stated 30-day period, subject to explicit legal holds. Rejection reasons reach the submitter. Rescue creates a normal submission only on explicit confirmed owner action, carries no file bytes and sends no automatic reply. Visitors reselect a file after rejection.",
+      "text": "*Status:* done. Reusable revisioned forms support text, email, US phone, address, choice, date, PDF upload and consent fields with configurable labels, required settings, help, placeholders, validation messages, submit labels and confirmations or local redirects. Accepted PDFs are private, limited to 5 MB and checked by signature and type; person export, erasure, replay fencing, current archive restore, old-backup refusal and durable outage intake include their custody. ",
       "to": "changelog"
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 604,
+      "text": "Approved ct semantics (25 Oct 18:50Z): rejected upload bytes are discarded from every store; only validated text and file metadata can enter owner-opted-in spam review for the stated 30-day period, subject to explicit legal holds. Rejection reasons reach the submitter. Rescue creates a normal submission only on explicit confirmed owner action, carries no file bytes and sends no automatic reply. Visitors reselect a file after rejection.",
+      "to": "rulings",
+      "ids": [
+        "RL-6"
+      ]
     },
     {
       "file": "CONTRACT.md",
@@ -2183,8 +2231,17 @@
     {
       "file": "CONTRACT.md",
       "line": 612,
-      "text": "*Status:* done. Every current contact-form door has a honeypot, independent 20-attempt minute bucket and fail-closed Turnstile hostname, action and form verification. Rejections are counted separately. Approved ct semantics (23 Oct 09:30Z and 11:28Z): rejected-content retention is off by default; explicit owner opt-in retains validated names, email addresses and answers for 30 days. Only the owner reviews retained content, marks it not spam for one-time inbox delivery without an automatic reply, confirms permanent purge, and explicitly places or releases legal holds. Holds prevent expiry, rescue, purge and person erasure until released; person export includes held records. Expiry runs on scheduled processing and before review. Person lookup, export and guarded atomic erasure include retained rejections and replay fences. Rejected content and its opt-in setting are excluded from installation archives, so restore starts with capture off. Metadata remains separate and contains no answers or addresses. FORM-001 and CMS-010 inherit all three protection checks, owner review, retention, hold and privacy boundaries before shipping.",
+      "text": "*Status:* done. Every current contact-form door has a honeypot, independent 20-attempt minute bucket and fail-closed Turnstile hostname, action and form verification. Rejections are counted separately. ",
       "to": "changelog"
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 612,
+      "text": "Approved ct semantics (23 Oct 09:30Z and 11:28Z): rejected-content retention is off by default; explicit owner opt-in retains validated names, email addresses and answers for 30 days. Only the owner reviews retained content, marks it not spam for one-time inbox delivery without an automatic reply, confirms permanent purge, and explicitly places or releases legal holds. Holds prevent expiry, rescue, purge and person erasure until released; person export includes held records. Expiry runs on scheduled processing and before review. Person lookup, export and guarded atomic erasure include retained rejections and replay fences. Rejected content and its opt-in setting are excluded from installation archives, so restore starts with capture off. Metadata remains separate and contains no answers or addresses. FORM-001 and CMS-010 inherit all three protection checks, owner review, retention, hold and privacy boundaries before shipping.",
+      "to": "rulings",
+      "ids": [
+        "RL-7"
+      ]
     },
     {
       "file": "CONTRACT.md",
@@ -2507,7 +2564,22 @@
     {
       "file": "CONTRACT.md",
       "line": 712,
-      "text": "*Status:* partial. The real helper is proved as a natively signed-in admin using a caller-owned mode-0600 file: status, preparation and reviewed import succeed; publication is refused. Scoped tokens store only hashes, bind to an active native person and credential version, and each call, including refusals and calls presenting an expired or revoked token, logs its opaque token ID, its actor when authenticated, and its fixed route and outcome. Pages have a current-draft read API. Approved by ct (22 Oct): only a natively signed-in owner creates and revokes tokens, each shown once; seven-day default, thirty-day hard maximum; explicit status, page-read and collection-read, draft-write and import-write scopes; a token cannot mint tokens, publish, roll back, erase, read the audit log or administer roles (those stay human); an out-of-scope call is refused and logged with its token ID; credentials are excluded from archives. Native collection reads and immediate grant revocation are implemented. Complete public-door proof of populated scoped collection reads through the helper remains required. AGENT-008 inherits the same native authority, scope, credential custody and audit boundaries.",
+      "text": "*Status:* partial. The real helper is proved as a natively signed-in admin using a caller-owned mode-0600 file: status, preparation and reviewed import succeed; publication is refused. Scoped tokens store only hashes, bind to an active native person and credential version, and each call, including refusals and calls presenting an expired or revoked token, logs its opaque token ID, its actor when authenticated, and its fixed route and outcome. Pages have a current-draft read API. ",
+      "to": "changelog"
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 712,
+      "text": "Approved by ct (22 Oct): only a natively signed-in owner creates and revokes tokens, each shown once; seven-day default, thirty-day hard maximum; explicit status, page-read and collection-read, draft-write and import-write scopes; a token cannot mint tokens, publish, roll back, erase, read the audit log or administer roles (those stay human); an out-of-scope call is refused and logged with its token ID; credentials are excluded from archives.",
+      "to": "rulings",
+      "ids": [
+        "RL-8"
+      ]
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 712,
+      "text": " Native collection reads and immediate grant revocation are implemented. Complete public-door proof of populated scoped collection reads through the helper remains required. AGENT-008 inherits the same native authority, scope, credential custody and audit boundaries.",
       "to": "changelog"
     },
     {
@@ -2684,7 +2756,16 @@
     {
       "file": "CONTRACT.md",
       "line": 766,
-      "text": " Approved by ct (22 Oct): only the owner assigns roles; grants compose by union and an explicit assignment replaces legacy member access; unassigned native members keep their ACCESS-001 read-only access until a grant replaces it; editors cannot change business and robots settings or publish; authors write and submit their own private posts through the native API; comment-moderator authority remains denied until its CMS doors exist. Inbox replies are explicit, idempotent sends that retain provider status and never retry automatically. Gap: the clause stays partial until every role is exercised: editor collection editing is now proved by CMS-001, and comment queue and notifications await CMS-010 (which must admit only owner, admin and comment moderators).",
+      "text": "Approved by ct (22 Oct): only the owner assigns roles; grants compose by union and an explicit assignment replaces legacy member access; unassigned native members keep their ACCESS-001 read-only access until a grant replaces it; editors cannot change business and robots settings or publish; authors write and submit their own private posts through the native API; comment-moderator authority remains denied until its CMS doors exist.",
+      "to": "rulings",
+      "ids": [
+        "RL-9"
+      ]
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 766,
+      "text": " Inbox replies are explicit, idempotent sends that retain provider status and never retry automatically. Gap: the clause stays partial until every role is exercised: editor collection editing is now proved by CMS-001, and comment queue and notifications await CMS-010 (which must admit only owner, admin and comment moderators).",
       "to": "changelog"
     },
     {
@@ -4080,7 +4161,15 @@
       "line": 1196,
       "cell": "gap",
       "text": "Native owners author revisioned site CSS, HTML, header and footer code and page header or HTML code. Only an explicitly approved immutable live revision can execute it. Third-party HTML and scripts run in an opaque sandbox with outbound connections, forms and nested frames denied; the live CSP authorizes only the exact approved inline script and style hashes. Consent also applies resource-free CSS to the live document and copies inert verification metadata into its header. Workspace and preview documents stay inert. The shared pane:consent:analytics browser choice controls activation; no choice means off, GPC and DNT override saved grants, and withdrawal removes the active frame, CSS and metadata and clears analytics cookies in the open session. The sandbox receives pane:goal with the public goal name and numeric occurrence value 1; form events arrive on the accepted thank-you view, including a configured page redirect, without sending answers or identity. Permissions Policy remains camera=(), microphone=(), geolocation=() for every nested frame; no allow attribute delegates a feature. Approved by ct (25 October 20:55Z): native owner-only authoring, deny by default, audited immutable approval, live-only opaque execution, no automatic outbound action, no external custom scripts or resource-loading CSS. Published code is never edited in place: every change creates a new immutable draft and needs a new explicit approval. The opaque sandbox cannot read cookies, local or session storage, other frame documents or visitor identity. The owner can revoke an approval in Publication settings; the live page is unavailable on the next request, including isolated live storage, and a revoked revision cannot be restored or republished. Revocation remains in the activity log; restoring delivery requires a new draft and explicit approval. Third-party tag and pixel marketplace with per-tag consent categories is provided separately by PAGE-017. PRIV-001 and STATS-005 inherit this gate and immediate withdrawal duty.",
-      "to": "changelog"
+      "to": "changelog",
+      "also": [
+        {
+          "to": "rulings",
+          "ids": [
+            "RL-4"
+          ]
+        }
+      ]
     },
     {
       "file": "CONTRACT.md",
@@ -4094,7 +4183,15 @@
       "line": 1199,
       "cell": "gap",
       "text": "Page and folder passwords, explicitly admitted native members, private no-store delivery, protected search and sitemap exclusions, editable coming-soon and site-password gates, preview bypass and disabling are proved. Approved ct semantics (25 Oct 18:50Z): only the native owner configures access; admission is an explicit allowlist of active invited native accounts checked on every request. Unadmitted and inactive accounts are refused beside an admitted active account; removal or deactivation takes effect on the next request. The owner is not admitted automatically; owner preview works without changing member state. No paid entitlement is inferred. Password proofs expire after one hour and rotation invalidates earlier proofs. Paid-access connection remains missing in PAGE-016; Pane never rebuilds billing. LINK-003 owns the optional coming-soon signup.",
-      "to": "changelog"
+      "to": "changelog",
+      "also": [
+        {
+          "to": "rulings",
+          "ids": [
+            "RL-5"
+          ]
+        }
+      ]
     },
     {
       "file": "CONTRACT.md",
@@ -4276,6 +4373,12 @@
       "to": "gap",
       "ids": [
         "CMS-008"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/MECHANISM.md"
+        }
       ]
     },
     {
@@ -4296,6 +4399,14 @@
       "to": "gap",
       "ids": [
         "CMS-010"
+      ],
+      "also": [
+        {
+          "to": "rulings",
+          "ids": [
+            "RL-10"
+          ]
+        }
       ]
     },
     {
@@ -4317,6 +4428,12 @@
       "to": "gap",
       "ids": [
         "DOMAIN-001"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/MECHANISM.md"
+        }
       ]
     },
     {
@@ -4367,6 +4484,12 @@
       "to": "gap",
       "ids": [
         "HOST-001"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/MECHANISM.md"
+        }
       ]
     },
     {
@@ -4498,14 +4621,30 @@
       "line": 1245,
       "cell": "gap",
       "text": "Reusable revisioned forms support text, email, US phone, address, choice, date, PDF upload and consent fields with configurable labels, required settings, help, placeholders, validation messages, submit labels and confirmations or local redirects. Accepted PDFs are private, limited to 5 MB and checked by signature and type; person export, erasure, replay fencing, current archive restore, old-backup refusal and durable outage intake include their custody. Approved ct semantics (25 Oct 18:50Z): rejected upload bytes are discarded from every store; only validated text and file metadata can enter owner-opted-in spam review for the stated 30-day period, subject to explicit legal holds. Rejection reasons reach the submitter. Rescue creates a normal submission only on explicit confirmed owner action, carries no file bytes and sends no automatic reply. Visitors reselect a file after rejection.",
-      "to": "changelog"
+      "to": "changelog",
+      "also": [
+        {
+          "to": "rulings",
+          "ids": [
+            "RL-6"
+          ]
+        }
+      ]
     },
     {
       "file": "CONTRACT.md",
       "line": 1246,
       "cell": "gap",
       "text": "Every current contact-form door has a honeypot, independent 20-attempt minute bucket and fail-closed Turnstile hostname, action and form verification. Rejections are counted separately. Approved ct semantics (23 Oct 09:30Z and 11:28Z): rejected-content retention is off by default; explicit owner opt-in retains validated names, email addresses and answers for 30 days. Only the owner reviews retained content, marks it not spam for one-time inbox delivery without an automatic reply, confirms permanent purge, and explicitly places or releases legal holds. Holds prevent expiry, rescue, purge and person erasure until released; person export includes held records. Expiry runs on scheduled processing and before review. Person lookup, export and guarded atomic erasure include retained rejections and replay fences. Rejected content and its opt-in setting are excluded from installation archives, so restore starts with capture off. Metadata remains separate and contains no answers or addresses. FORM-001 and CMS-010 inherit all three protection checks, owner review, retention, hold and privacy boundaries before shipping.",
-      "to": "changelog"
+      "to": "changelog",
+      "also": [
+        {
+          "to": "rulings",
+          "ids": [
+            "RL-7"
+          ]
+        }
+      ]
     },
     {
       "file": "CONTRACT.md",
@@ -4631,30 +4770,24 @@
       "file": "CONTRACT.md",
       "line": 1264,
       "cell": "gap",
-      "text": "Pane-owned composable grants extend native member invitations without changing Base copies, sessions or last-owner protection. Editors edit and preview page and search drafts; inbox users read, explicitly reply and manage enquiries; reporting users read aggregate reports. ",
+      "text": "Pane-owned composable grants extend native member invitations without changing Base copies, sessions or last-owner protection. Editors edit and preview page and search drafts; inbox users read, explicitly reply and manage enquiries; reporting users read aggregate reports. Every current Pane route, preview and search handler enforces capabilities and omits inaccessible response data; grants revoke on the next request, including token calls. Approved by ct (22 Oct): only the owner assigns roles; grants compose by union and an explicit assignment replaces legacy member access; unassigned native members keep their ACCESS-001 read-only access until a grant replaces it; editors cannot change business and robots settings or publish; authors write and submit their own private posts through the native API; comment-moderator authority remains denied until its CMS doors exist. Inbox replies are explicit, idempotent sends that retain provider status and never retry automatically. Gap: the clause stays partial until every role is exercised: editor collection editing is now proved by CMS-001, and comment queue and notifications await CMS-010 (which must admit only owner, admin and comment moderators).",
       "to": "gap",
       "ids": [
         "ROLE-001"
-      ]
-    },
-    {
-      "file": "CONTRACT.md",
-      "line": 1264,
-      "cell": "gap",
-      "text": "Every current Pane route, preview and search handler enforces capabilities and omits inaccessible response data; grants revoke on the next request, including token calls.",
-      "to": "base",
-      "ids": [
-        "BASE-ROLE-001"
-      ]
-    },
-    {
-      "file": "CONTRACT.md",
-      "line": 1264,
-      "cell": "gap",
-      "text": " Approved by ct (22 Oct): only the owner assigns roles; grants compose by union and an explicit assignment replaces legacy member access; unassigned native members keep their ACCESS-001 read-only access until a grant replaces it; editors cannot change business and robots settings or publish; authors write and submit their own private posts through the native API; comment-moderator authority remains denied until its CMS doors exist. Inbox replies are explicit, idempotent sends that retain provider status and never retry automatically. Gap: the clause stays partial until every role is exercised: editor collection editing is now proved by CMS-001, and comment queue and notifications await CMS-010 (which must admit only owner, admin and comment moderators).",
-      "to": "gap",
-      "ids": [
-        "ROLE-001"
+      ],
+      "also": [
+        {
+          "to": "base",
+          "ids": [
+            "BASE-ROLE-001"
+          ]
+        },
+        {
+          "to": "rulings",
+          "ids": [
+            "RL-9"
+          ]
+        }
       ]
     },
     {
@@ -4795,6 +4928,12 @@
       "to": "gap",
       "ids": [
         "PRIV-002"
+      ],
+      "also": [
+        {
+          "to": "docs",
+          "path": "docs/contract/MECHANISM.md"
+        }
       ]
     },
     {
@@ -5376,7 +5515,23 @@
     {
       "file": "ACCEPTANCE.md",
       "line": 45,
-      "text": " Implementation: Native owners author revisioned site CSS, HTML, header and footer code and page header or HTML code. Only an explicitly approved immutable live revision can execute it. Third-party HTML and scripts run in an opaque sandbox with outbound connections, forms and nested frames denied; the live CSP authorizes only the exact approved inline script and style hashes. Consent also applies resource-free CSS to the live document and copies inert verification metadata into its header. Workspace and preview documents stay inert. The shared pane:consent:analytics browser choice controls activation; no choice means off, GPC and DNT override saved grants, and withdrawal removes the active frame, CSS and metadata and clears analytics cookies in the open session. The sandbox receives pane:goal with the public goal name and numeric occurrence value 1; form events arrive on the accepted thank-you view, including a configured page redirect, without sending answers or identity. Permissions Policy remains camera=(), microphone=(), geolocation=() for every nested frame; no allow attribute delegates a feature. Approved by ct (25 October 20:55Z): native owner-only authoring, deny by default, audited immutable approval, live-only opaque execution, no automatic outbound action, no external custom scripts or resource-loading CSS. Published code is never edited in place: every change creates a new immutable draft and needs a new explicit approval. The opaque sandbox cannot read cookies, local or session storage, other frame documents or visitor identity. The owner can revoke an approval in Publication settings; the live page is unavailable on the next request, including isolated live storage, and a revoked revision cannot be restored or republished. Revocation remains in the activity log; restoring delivery requires a new draft and explicit approval. Third-party tag and pixel marketplace with per-tag consent categories is provided separately by PAGE-017. PRIV-001 and STATS-005 inherit this gate and immediate withdrawal duty. Evidence: `tests/pane.test.mjs` — “custom code requires owner authoring and approved immutable live revisions while previews and privacy refusals stay inert” (owner authority including import refusal, unchanged published source, every edit requiring new approval, audited revocation and next-request takedown in both live stores, preview isolation, page scope, resource-loading CSS refusal, GPC and DNT); `scripts/components-code-journey.mjs` — “Reusable components and isolated custom code journey” (custom HTML, effective live CSS, site verification and footer, separate quote thank-you header and goal name and value, no-choice and refusal gating, opaque cookie, storage, other-frame and identity isolation and API refusal including blocked navigation and provider-consent bypass, immediate withdrawal, owner revocation and unavailable live page, saved-grant GPC and DNT, tooltips and no overflow at 1440 and 390); `tests/search.test.mjs` — “only an approved page embed widens its frame policy and workspace previews stay inert”; `scripts/privacy-journey.mjs` — “Privacy browser journey” (existing URL-embed host policy and consent boundary) Gap: Native owners author revisioned site CSS, HTML, header and footer code and page header or HTML code. Only an explicitly approved immutable live revision can execute it. Third-party HTML and scripts run in an opaque sandbox with outbound connections, forms and nested frames denied; the live CSP authorizes only the exact approved inline script and style hashes. Consent also applies resource-free CSS to the live document and copies inert verification metadata into its header. Workspace and preview documents stay inert. The shared pane:consent:analytics browser choice controls activation; no choice means off, GPC and DNT override saved grants, and withdrawal removes the active frame, CSS and metadata and clears analytics cookies in the open session. The sandbox receives pane:goal with the public goal name and numeric occurrence value 1; form events arrive on the accepted thank-you view, including a configured page redirect, without sending answers or identity. Permissions Policy remains camera=(), microphone=(), geolocation=() for every nested frame; no allow attribute delegates a feature. Approved by ct (25 October 20:55Z): native owner-only authoring, deny by default, audited immutable approval, live-only opaque execution, no automatic outbound action, no external custom scripts or resource-loading CSS. Published code is never edited in place: every change creates a new immutable draft and needs a new explicit approval. The opaque sandbox cannot read cookies, local or session storage, other frame documents or visitor identity. The owner can revoke an approval in Publication settings; the live page is unavailable on the next request, including isolated live storage, and a revoked revision cannot be restored or republished. Revocation remains in the activity log; restoring delivery requires a new draft and explicit approval. Third-party tag and pixel marketplace with per-tag consent categories is provided separately by PAGE-017. PRIV-001 and STATS-005 inherit this gate and immediate withdrawal duty.",
+      "text": " Implementation: Native owners author revisioned site CSS, HTML, header and footer code and page header or HTML code. Only an explicitly approved immutable live revision can execute it. Third-party HTML and scripts run in an opaque sandbox with outbound connections, forms and nested frames denied; the live CSP authorizes only the exact approved inline script and style hashes. Consent also applies resource-free CSS to the live document and copies inert verification metadata into its header. Workspace and preview documents stay inert. The shared pane:consent:analytics browser choice controls activation; no choice means off, GPC and DNT override saved grants, and withdrawal removes the active frame, CSS and metadata and clears analytics cookies in the open session. The sandbox receives pane:goal with the public goal name and numeric occurrence value 1; form events arrive on the accepted thank-you view, including a configured page redirect, without sending answers or identity. Permissions Policy remains camera=(), microphone=(), geolocation=() for every nested frame; no allow attribute delegates a feature. ",
+      "to": "docs",
+      "path": "docs/verify.md"
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 45,
+      "text": "Approved by ct (25 October 20:55Z): native owner-only authoring, deny by default, audited immutable approval, live-only opaque execution, no automatic outbound action, no external custom scripts or resource-loading CSS. Published code is never edited in place: every change creates a new immutable draft and needs a new explicit approval. The opaque sandbox cannot read cookies, local or session storage, other frame documents or visitor identity. The owner can revoke an approval in Publication settings; the live page is unavailable on the next request, including isolated live storage, and a revoked revision cannot be restored or republished. Revocation remains in the activity log; restoring delivery requires a new draft and explicit approval.",
+      "to": "rulings",
+      "ids": [
+        "RL-4"
+      ]
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 45,
+      "text": " Third-party tag and pixel marketplace with per-tag consent categories is provided separately by PAGE-017. PRIV-001 and STATS-005 inherit this gate and immediate withdrawal duty. Evidence: `tests/pane.test.mjs` — “custom code requires owner authoring and approved immutable live revisions while previews and privacy refusals stay inert” (owner authority including import refusal, unchanged published source, every edit requiring new approval, audited revocation and next-request takedown in both live stores, preview isolation, page scope, resource-loading CSS refusal, GPC and DNT); `scripts/components-code-journey.mjs` — “Reusable components and isolated custom code journey” (custom HTML, effective live CSS, site verification and footer, separate quote thank-you header and goal name and value, no-choice and refusal gating, opaque cookie, storage, other-frame and identity isolation and API refusal including blocked navigation and provider-consent bypass, immediate withdrawal, owner revocation and unavailable live page, saved-grant GPC and DNT, tooltips and no overflow at 1440 and 390); `tests/search.test.mjs` — “only an approved page embed widens its frame policy and workspace previews stay inert”; `scripts/privacy-journey.mjs` — “Privacy browser journey” (existing URL-embed host policy and consent boundary) Gap: Native owners author revisioned site CSS, HTML, header and footer code and page header or HTML code. Only an explicitly approved immutable live revision can execute it. Third-party HTML and scripts run in an opaque sandbox with outbound connections, forms and nested frames denied; the live CSP authorizes only the exact approved inline script and style hashes. Consent also applies resource-free CSS to the live document and copies inert verification metadata into its header. Workspace and preview documents stay inert. The shared pane:consent:analytics browser choice controls activation; no choice means off, GPC and DNT override saved grants, and withdrawal removes the active frame, CSS and metadata and clears analytics cookies in the open session. The sandbox receives pane:goal with the public goal name and numeric occurrence value 1; form events arrive on the accepted thank-you view, including a configured page redirect, without sending answers or identity. Permissions Policy remains camera=(), microphone=(), geolocation=() for every nested frame; no allow attribute delegates a feature. Approved by ct (25 October 20:55Z): native owner-only authoring, deny by default, audited immutable approval, live-only opaque execution, no automatic outbound action, no external custom scripts or resource-loading CSS. Published code is never edited in place: every change creates a new immutable draft and needs a new explicit approval. The opaque sandbox cannot read cookies, local or session storage, other frame documents or visitor identity. The owner can revoke an approval in Publication settings; the live page is unavailable on the next request, including isolated live storage, and a revoked revision cannot be restored or republished. Revocation remains in the activity log; restoring delivery requires a new draft and explicit approval. Third-party tag and pixel marketplace with per-tag consent categories is provided separately by PAGE-017. PRIV-001 and STATS-005 inherit this gate and immediate withdrawal duty.",
       "to": "docs",
       "path": "docs/verify.md"
     },
@@ -5424,7 +5579,23 @@
     {
       "file": "ACCEPTANCE.md",
       "line": 48,
-      "text": " Implementation: Page and folder passwords, explicitly admitted native members, private no-store delivery, protected search and sitemap exclusions, editable coming-soon and site-password gates, preview bypass and disabling are proved. Approved ct semantics (25 Oct 18:50Z): only the native owner configures access; admission is an explicit allowlist of active invited native accounts checked on every request. Unadmitted and inactive accounts are refused beside an admitted active account; removal or deactivation takes effect on the next request. The owner is not admitted automatically; owner preview works without changing member state. No paid entitlement is inferred. Password proofs expire after one hour and rotation invalidates earlier proofs. Paid-access connection remains missing in PAGE-016; Pane never rebuilds billing. LINK-003 owns the optional coming-soon signup. Evidence: `tests/pane.test.mjs` — “page and folder gates require passwords or explicitly admitted active native members without leaking through discovery” (page and folder passwords, signed-out gates, admitted and unadmitted native accounts, removal and deactivation on the next request, owner preview without admission or member-state change, no inferred paid access, non-owner setting refusal, password rotation, private delivery, separate-visitor refusal and discovery exclusions); “coming-soon and site password gates cover every live URL while previews and disabling restore the published site” (every live path, noindex, site password, preview bypass and disabling); `scripts/gates-journey.mjs` — “Gate browser journey” (owner settings, both admission modes, errors, coming soon, site password, owner preview without member admission, removal refusal, disabling and hover and keyboard tooltips at 1440 and 390) Gap: Page and folder passwords, explicitly admitted native members, private no-store delivery, protected search and sitemap exclusions, editable coming-soon and site-password gates, preview bypass and disabling are proved. Approved ct semantics (25 Oct 18:50Z): only the native owner configures access; admission is an explicit allowlist of active invited native accounts checked on every request. Unadmitted and inactive accounts are refused beside an admitted active account; removal or deactivation takes effect on the next request. The owner is not admitted automatically; owner preview works without changing member state. No paid entitlement is inferred. Password proofs expire after one hour and rotation invalidates earlier proofs. Paid-access connection remains missing in PAGE-016; Pane never rebuilds billing. LINK-003 owns the optional coming-soon signup.",
+      "text": " Implementation: Page and folder passwords, explicitly admitted native members, private no-store delivery, protected search and sitemap exclusions, editable coming-soon and site-password gates, preview bypass and disabling are proved. ",
+      "to": "docs",
+      "path": "docs/verify.md"
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 48,
+      "text": "Approved ct semantics (25 Oct 18:50Z): only the native owner configures access; admission is an explicit allowlist of active invited native accounts checked on every request. Unadmitted and inactive accounts are refused beside an admitted active account; removal or deactivation takes effect on the next request. The owner is not admitted automatically; owner preview works without changing member state. No paid entitlement is inferred. Password proofs expire after one hour and rotation invalidates earlier proofs.",
+      "to": "rulings",
+      "ids": [
+        "RL-5"
+      ]
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 48,
+      "text": " Paid-access connection remains missing in PAGE-016; Pane never rebuilds billing. LINK-003 owns the optional coming-soon signup. Evidence: `tests/pane.test.mjs` — “page and folder gates require passwords or explicitly admitted active native members without leaking through discovery” (page and folder passwords, signed-out gates, admitted and unadmitted native accounts, removal and deactivation on the next request, owner preview without admission or member-state change, no inferred paid access, non-owner setting refusal, password rotation, private delivery, separate-visitor refusal and discovery exclusions); “coming-soon and site password gates cover every live URL while previews and disabling restore the published site” (every live path, noindex, site password, preview bypass and disabling); `scripts/gates-journey.mjs` — “Gate browser journey” (owner settings, both admission modes, errors, coming soon, site password, owner preview without member admission, removal refusal, disabling and hover and keyboard tooltips at 1440 and 390) Gap: Page and folder passwords, explicitly admitted native members, private no-store delivery, protected search and sitemap exclusions, editable coming-soon and site-password gates, preview bypass and disabling are proved. Approved ct semantics (25 Oct 18:50Z): only the native owner configures access; admission is an explicit allowlist of active invited native accounts checked on every request. Unadmitted and inactive accounts are refused beside an admitted active account; removal or deactivation takes effect on the next request. The owner is not admitted automatically; owner preview works without changing member state. No paid entitlement is inferred. Password proofs expire after one hour and rotation invalidates earlier proofs. Paid-access connection remains missing in PAGE-016; Pane never rebuilds billing. LINK-003 owns the optional coming-soon signup.",
       "to": "docs",
       "path": "docs/verify.md"
     },
@@ -5810,7 +5981,23 @@
     {
       "file": "ACCEPTANCE.md",
       "line": 81,
-      "text": " Implementation: Native blog and post comment settings, approval by default, one-level threads, escaped public text, private email, bulk moderation, explicit author-attributed replies, bounded cookie-free likes and scheduled email digests now use the existing native authority, form-protection and person-custody doors. SendGrid-edge fakes prove email acceptance and failed delivery retention; the existing Turnstile fixture proves fail-closed application behavior, not live provider acceptance. Gap: Native push notification proof requires MOBILE-002 device and signing authority. Live Turnstile acceptance is not proved by the existing provider fixture. The owner-only WXR comment carrier preserves imported author, UTC date, approval state and one-level threading when explicitly mapped to an existing native post, with private staging, explicit owner release and fresh native sign-in for private export. Whole-site WXR and Squarespace import journeys and automatic native post mapping remain with IMPORT-001 and IMPORT-002; the remaining open-format export stays with EXPORT-001. The supplied ct note approves the owner-only default with riders but omits their exact wording; retain the conservative owner-only floor without claiming final policy approval or DONE. Evidence: `tests/posts.test.mjs` — “native comment moderation protects notifications, threaded replies, closure and person erasure” (approval by default, honeypot refusal, six-link and blocked-word spam, native role and notification boundaries, notification-linked approval, author and authorized moderator replies, one-level public threads, per-post and timed closure, cookie-free counts, daily digest, metadata-only audit, person export, guarded erasure with both cross-store replay fences and old-archive refusal; matching private review links in plain-text and HTML immediate mail and daily digests); `scripts/comments-journey.mjs` — “Comments browser journey” (native comment settings autosave and durable reopen, selection-only bulk actions, visitor form, moderator notification review, author reply, approved thread, closed form, person export and erasure, axe and tooltips, screens at 1440 and 390). `tests/posts.test.mjs` — “owner WXR comment transfers preserve private reviewed metadata, explicit release and erasure fences” (exact imported names, addresses, bodies, UTC dates, states and parent identities; private staging; owner release; WXR parsing; native sign-in and role refusals; no outbound action; person export and erasure; replay refusal and attributed metadata audit). `scripts/comments-journey.mjs` — “Comments browser journey” also covers the native portability settings, import review, private queue, explicit release and WXR download at 1440 and 390. Gap: Native push notification proof requires MOBILE-002 device and signing authority. Live Turnstile acceptance is not proved by the existing provider fixture. The owner-only WXR comment carrier preserves imported author, UTC date, approval state and one-level threading when explicitly mapped to an existing native post, with private staging, explicit owner release and fresh native sign-in for private export. Whole-site WXR and Squarespace import journeys and automatic native post mapping remain with IMPORT-001 and IMPORT-002; the remaining open-format export stays with EXPORT-001. The supplied ct note approves the owner-only default with riders but omits their exact wording; retain the conservative owner-only floor without claiming final policy approval or DONE.",
+      "text": " Implementation: Native blog and post comment settings, approval by default, one-level threads, escaped public text, private email, bulk moderation, explicit author-attributed replies, bounded cookie-free likes and scheduled email digests now use the existing native authority, form-protection and person-custody doors. SendGrid-edge fakes prove email acceptance and failed delivery retention; the existing Turnstile fixture proves fail-closed application behavior, not live provider acceptance. Gap: Native push notification proof requires MOBILE-002 device and signing authority. Live Turnstile acceptance is not proved by the existing provider fixture. The owner-only WXR comment carrier preserves imported author, UTC date, approval state and one-level threading when explicitly mapped to an existing native post, with private staging, explicit owner release and fresh native sign-in for private export. Whole-site WXR and Squarespace import journeys and automatic native post mapping remain with IMPORT-001 and IMPORT-002; the remaining open-format export stays with EXPORT-001. ",
+      "to": "docs",
+      "path": "docs/verify.md"
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 81,
+      "text": "The supplied ct note approves the owner-only default with riders but omits their exact wording; retain the conservative owner-only floor without claiming final policy approval or DONE.",
+      "to": "rulings",
+      "ids": [
+        "RL-10"
+      ]
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 81,
+      "text": " Evidence: `tests/posts.test.mjs` — “native comment moderation protects notifications, threaded replies, closure and person erasure” (approval by default, honeypot refusal, six-link and blocked-word spam, native role and notification boundaries, notification-linked approval, author and authorized moderator replies, one-level public threads, per-post and timed closure, cookie-free counts, daily digest, metadata-only audit, person export, guarded erasure with both cross-store replay fences and old-archive refusal; matching private review links in plain-text and HTML immediate mail and daily digests); `scripts/comments-journey.mjs` — “Comments browser journey” (native comment settings autosave and durable reopen, selection-only bulk actions, visitor form, moderator notification review, author reply, approved thread, closed form, person export and erasure, axe and tooltips, screens at 1440 and 390). `tests/posts.test.mjs` — “owner WXR comment transfers preserve private reviewed metadata, explicit release and erasure fences” (exact imported names, addresses, bodies, UTC dates, states and parent identities; private staging; owner release; WXR parsing; native sign-in and role refusals; no outbound action; person export and erasure; replay refusal and attributed metadata audit). `scripts/comments-journey.mjs` — “Comments browser journey” also covers the native portability settings, import review, private queue, explicit release and WXR download at 1440 and 390. Gap: Native push notification proof requires MOBILE-002 device and signing authority. Live Turnstile acceptance is not proved by the existing provider fixture. The owner-only WXR comment carrier preserves imported author, UTC date, approval state and one-level threading when explicitly mapped to an existing native post, with private staging, explicit owner release and fresh native sign-in for private export. Whole-site WXR and Squarespace import journeys and automatic native post mapping remain with IMPORT-001 and IMPORT-002; the remaining open-format export stays with EXPORT-001. The supplied ct note approves the owner-only default with riders but omits their exact wording; retain the conservative owner-only floor without claiming final policy approval or DONE.",
       "to": "docs",
       "path": "docs/verify.md"
     },
@@ -6181,7 +6368,23 @@
     {
       "file": "ACCEPTANCE.md",
       "line": 112,
-      "text": " Implementation: Reusable revisioned forms support text, email, US phone, address, choice, date, PDF upload and consent fields with configurable labels, required settings, help, placeholders, validation messages, submit labels and confirmations or local redirects. Accepted PDFs are private, limited to 5 MB and checked by signature and type; person export, erasure, replay fencing, current archive restore, old-backup refusal and durable outage intake include their custody. Approved ct semantics (25 Oct 18:50Z): rejected upload bytes are discarded from every store; only validated text and file metadata can enter owner-opted-in spam review for the stated 30-day period, subject to explicit legal holds. Rejection reasons reach the submitter. Rescue creates a normal submission only on explicit confirmed owner action, carries no file bytes and sends no automatic reply. Visitors reselect a file after rejection. Evidence: `tests/pane.test.mjs` — “reusable typed forms preserve invalid answers, enforce every field type, accept a private five MB PDF and refuse unsafe files through public doors” (two placements, typed validation, required fields, retained direct-POST answers, accessible errors and help, 5 MB PDF, inbox, private download, confirmation, size and type refusals, honeypot and verification refusal); “private uploads join native archive restore and person export and erasure without replaying old files” (private bytes in person export and current archive restore, fresh-proof erasure and old-backup refusal); “durable typed intake retains private upload chunks through workspace outage and drains once after recovery” (durable intake and one-time recovery); “rejected PDFs leave no stored bytes and only opted-in validated text and metadata can be rescued by the owner” (regular D1 and durable intake contain no rejected bytes, default-off retention, 30 days when enabled, reason reaches submitter, text and metadata only, confirmed owner rescue and no automatic reply); `scripts/forms-journey.mjs` — “Typed form browser journey” (real builder, configurable help and validation message, two placements, browser and direct-POST errors with retained answers, private 5 MB PDF, refusals, confirmation, inbox download, rejected-file reason, owner-visible 30-day review and explicit text-only rescue, and hover and keyboard tooltips at 1440 and 390) Gap: Reusable revisioned forms support text, email, US phone, address, choice, date, PDF upload and consent fields with configurable labels, required settings, help, placeholders, validation messages, submit labels and confirmations or local redirects. Accepted PDFs are private, limited to 5 MB and checked by signature and type; person export, erasure, replay fencing, current archive restore, old-backup refusal and durable outage intake include their custody. Approved ct semantics (25 Oct 18:50Z): rejected upload bytes are discarded from every store; only validated text and file metadata can enter owner-opted-in spam review for the stated 30-day period, subject to explicit legal holds. Rejection reasons reach the submitter. Rescue creates a normal submission only on explicit confirmed owner action, carries no file bytes and sends no automatic reply. Visitors reselect a file after rejection.",
+      "text": " Implementation: Reusable revisioned forms support text, email, US phone, address, choice, date, PDF upload and consent fields with configurable labels, required settings, help, placeholders, validation messages, submit labels and confirmations or local redirects. Accepted PDFs are private, limited to 5 MB and checked by signature and type; person export, erasure, replay fencing, current archive restore, old-backup refusal and durable outage intake include their custody. ",
+      "to": "docs",
+      "path": "docs/verify.md"
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 112,
+      "text": "Approved ct semantics (25 Oct 18:50Z): rejected upload bytes are discarded from every store; only validated text and file metadata can enter owner-opted-in spam review for the stated 30-day period, subject to explicit legal holds. Rejection reasons reach the submitter. Rescue creates a normal submission only on explicit confirmed owner action, carries no file bytes and sends no automatic reply. Visitors reselect a file after rejection.",
+      "to": "rulings",
+      "ids": [
+        "RL-6"
+      ]
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 112,
+      "text": " Evidence: `tests/pane.test.mjs` — “reusable typed forms preserve invalid answers, enforce every field type, accept a private five MB PDF and refuse unsafe files through public doors” (two placements, typed validation, required fields, retained direct-POST answers, accessible errors and help, 5 MB PDF, inbox, private download, confirmation, size and type refusals, honeypot and verification refusal); “private uploads join native archive restore and person export and erasure without replaying old files” (private bytes in person export and current archive restore, fresh-proof erasure and old-backup refusal); “durable typed intake retains private upload chunks through workspace outage and drains once after recovery” (durable intake and one-time recovery); “rejected PDFs leave no stored bytes and only opted-in validated text and metadata can be rescued by the owner” (regular D1 and durable intake contain no rejected bytes, default-off retention, 30 days when enabled, reason reaches submitter, text and metadata only, confirmed owner rescue and no automatic reply); `scripts/forms-journey.mjs` — “Typed form browser journey” (real builder, configurable help and validation message, two placements, browser and direct-POST errors with retained answers, private 5 MB PDF, refusals, confirmation, inbox download, rejected-file reason, owner-visible 30-day review and explicit text-only rescue, and hover and keyboard tooltips at 1440 and 390) Gap: Reusable revisioned forms support text, email, US phone, address, choice, date, PDF upload and consent fields with configurable labels, required settings, help, placeholders, validation messages, submit labels and confirmations or local redirects. Accepted PDFs are private, limited to 5 MB and checked by signature and type; person export, erasure, replay fencing, current archive restore, old-backup refusal and durable outage intake include their custody. Approved ct semantics (25 Oct 18:50Z): rejected upload bytes are discarded from every store; only validated text and file metadata can enter owner-opted-in spam review for the stated 30-day period, subject to explicit legal holds. Rejection reasons reach the submitter. Rescue creates a normal submission only on explicit confirmed owner action, carries no file bytes and sends no automatic reply. Visitors reselect a file after rejection.",
       "to": "docs",
       "path": "docs/verify.md"
     },
@@ -6197,7 +6400,23 @@
     {
       "file": "ACCEPTANCE.md",
       "line": 113,
-      "text": " Implementation: Every current contact-form door has a honeypot, independent 20-attempt minute bucket and fail-closed Turnstile hostname, action and form verification. Rejections are counted separately. Approved ct semantics (23 Oct 09:30Z and 11:28Z): rejected-content retention is off by default; explicit owner opt-in retains validated names, email addresses and answers for 30 days. Only the owner reviews retained content, marks it not spam for one-time inbox delivery without an automatic reply, confirms permanent purge, and explicitly places or releases legal holds. Holds prevent expiry, rescue, purge and person erasure until released; person export includes held records. Expiry runs on scheduled processing and before review. Person lookup, export and guarded atomic erasure include retained rejections and replay fences. Rejected content and its opt-in setting are excluded from installation archives, so restore starts with capture off. Metadata remains separate and contains no answers or addresses. FORM-001 and CMS-010 inherit all three protection checks, owner review, retention, hold and privacy boundaries before shipping. Evidence: `tests/pane.test.mjs` — “form protection refuses and separately counts honeypot, per-form bursts and invalid provider proofs” (all current form doors, independent limits, fail-closed verification, normal delivery and separate counts); “rejected content is opt-in, owner-only and expires after thirty days unless explicitly held” (default off, explicit opt-in, owner boundary, escaping, exact retention duration and scheduled expiry); “owner rescues a rejection once without an automatic reply and confirmed purge fences replay” (concurrent rescue, no acknowledgment, confirmed purge and value-free audit); “rejected answers join person export and atomic erasure while legal holds refuse deletion and archives exclude content” (lookup, export, holds, whole-request erasure refusal, erasure and replay fencing, archive exclusion and restore default); `scripts/privacy-journey.mjs` — “Privacy browser journey” (retention settings, rejected answers, holds, rescue, purge confirmation, person export and erasure, no overflow and delayed hover and keyboard focus tooltips at 1440 and 390) Gap: Every current contact-form door has a honeypot, independent 20-attempt minute bucket and fail-closed Turnstile hostname, action and form verification. Rejections are counted separately. Approved ct semantics (23 Oct 09:30Z and 11:28Z): rejected-content retention is off by default; explicit owner opt-in retains validated names, email addresses and answers for 30 days. Only the owner reviews retained content, marks it not spam for one-time inbox delivery without an automatic reply, confirms permanent purge, and explicitly places or releases legal holds. Holds prevent expiry, rescue, purge and person erasure until released; person export includes held records. Expiry runs on scheduled processing and before review. Person lookup, export and guarded atomic erasure include retained rejections and replay fences. Rejected content and its opt-in setting are excluded from installation archives, so restore starts with capture off. Metadata remains separate and contains no answers or addresses. FORM-001 and CMS-010 inherit all three protection checks, owner review, retention, hold and privacy boundaries before shipping.",
+      "text": " Implementation: Every current contact-form door has a honeypot, independent 20-attempt minute bucket and fail-closed Turnstile hostname, action and form verification. Rejections are counted separately. ",
+      "to": "docs",
+      "path": "docs/verify.md"
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 113,
+      "text": "Approved ct semantics (23 Oct 09:30Z and 11:28Z): rejected-content retention is off by default; explicit owner opt-in retains validated names, email addresses and answers for 30 days. Only the owner reviews retained content, marks it not spam for one-time inbox delivery without an automatic reply, confirms permanent purge, and explicitly places or releases legal holds. Holds prevent expiry, rescue, purge and person erasure until released; person export includes held records. Expiry runs on scheduled processing and before review. Person lookup, export and guarded atomic erasure include retained rejections and replay fences. Rejected content and its opt-in setting are excluded from installation archives, so restore starts with capture off. Metadata remains separate and contains no answers or addresses. FORM-001 and CMS-010 inherit all three protection checks, owner review, retention, hold and privacy boundaries before shipping.",
+      "to": "rulings",
+      "ids": [
+        "RL-7"
+      ]
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 113,
+      "text": " Evidence: `tests/pane.test.mjs` — “form protection refuses and separately counts honeypot, per-form bursts and invalid provider proofs” (all current form doors, independent limits, fail-closed verification, normal delivery and separate counts); “rejected content is opt-in, owner-only and expires after thirty days unless explicitly held” (default off, explicit opt-in, owner boundary, escaping, exact retention duration and scheduled expiry); “owner rescues a rejection once without an automatic reply and confirmed purge fences replay” (concurrent rescue, no acknowledgment, confirmed purge and value-free audit); “rejected answers join person export and atomic erasure while legal holds refuse deletion and archives exclude content” (lookup, export, holds, whole-request erasure refusal, erasure and replay fencing, archive exclusion and restore default); `scripts/privacy-journey.mjs` — “Privacy browser journey” (retention settings, rejected answers, holds, rescue, purge confirmation, person export and erasure, no overflow and delayed hover and keyboard focus tooltips at 1440 and 390) Gap: Every current contact-form door has a honeypot, independent 20-attempt minute bucket and fail-closed Turnstile hostname, action and form verification. Rejections are counted separately. Approved ct semantics (23 Oct 09:30Z and 11:28Z): rejected-content retention is off by default; explicit owner opt-in retains validated names, email addresses and answers for 30 days. Only the owner reviews retained content, marks it not spam for one-time inbox delivery without an automatic reply, confirms permanent purge, and explicitly places or releases legal holds. Holds prevent expiry, rescue, purge and person erasure until released; person export includes held records. Expiry runs on scheduled processing and before review. Person lookup, export and guarded atomic erasure include retained rejections and replay fences. Rejected content and its opt-in setting are excluded from installation archives, so restore starts with capture off. Metadata remains separate and contains no answers or addresses. FORM-001 and CMS-010 inherit all three protection checks, owner review, retention, hold and privacy boundaries before shipping.",
       "to": "docs",
       "path": "docs/verify.md"
     },
@@ -6389,7 +6608,23 @@
     {
       "file": "ACCEPTANCE.md",
       "line": 128,
-      "text": " Implementation: The real helper is proved as a natively signed-in admin using a caller-owned mode-0600 file: status, preparation and reviewed import succeed; publication is refused. Scoped tokens store only hashes, bind to an active native person and credential version, and each call, including refusals and calls presenting an expired or revoked token, logs its opaque token ID, its actor when authenticated, and its fixed route and outcome. Pages have a current-draft read API. Approved by ct (22 Oct): only a natively signed-in owner creates and revokes tokens, each shown once; seven-day default, thirty-day hard maximum; explicit status, page-read and collection-read, draft-write and import-write scopes; a token cannot mint tokens, publish, roll back, erase, read the audit log or administer roles (those stay human); an out-of-scope call is refused and logged with its token ID; credentials are excluded from archives. Native collection reads and immediate grant revocation are implemented. Complete public-door proof of populated scoped collection reads through the helper remains required. AGENT-008 inherits the same native authority, scope, credential custody and audit boundaries. Evidence: `tests/pane.test.mjs` — “the real helper uses an authorized admin private session file for status, prepare and import and refuses publication”; “scoped agent tokens intersect native authority and audit allowed, denied, expired and revoked calls without exposing credentials”; `scripts/pane.mjs`; `docs/AGENT.md` Gap: Complete public-door proof of populated scoped collection reads through the helper remains required. AGENT-008 retains budgets and agent controls.",
+      "text": " Implementation: The real helper is proved as a natively signed-in admin using a caller-owned mode-0600 file: status, preparation and reviewed import succeed; publication is refused. Scoped tokens store only hashes, bind to an active native person and credential version, and each call, including refusals and calls presenting an expired or revoked token, logs its opaque token ID, its actor when authenticated, and its fixed route and outcome. Pages have a current-draft read API. ",
+      "to": "docs",
+      "path": "docs/verify.md"
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 128,
+      "text": "Approved by ct (22 Oct): only a natively signed-in owner creates and revokes tokens, each shown once; seven-day default, thirty-day hard maximum; explicit status, page-read and collection-read, draft-write and import-write scopes; a token cannot mint tokens, publish, roll back, erase, read the audit log or administer roles (those stay human); an out-of-scope call is refused and logged with its token ID; credentials are excluded from archives.",
+      "to": "rulings",
+      "ids": [
+        "RL-8"
+      ]
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 128,
+      "text": " Native collection reads and immediate grant revocation are implemented. Complete public-door proof of populated scoped collection reads through the helper remains required. AGENT-008 inherits the same native authority, scope, credential custody and audit boundaries. Evidence: `tests/pane.test.mjs` — “the real helper uses an authorized admin private session file for status, prepare and import and refuses publication”; “scoped agent tokens intersect native authority and audit allowed, denied, expired and revoked calls without exposing credentials”; `scripts/pane.mjs`; `docs/AGENT.md` Gap: Complete public-door proof of populated scoped collection reads through the helper remains required. AGENT-008 retains budgets and agent controls.",
       "to": "docs",
       "path": "docs/verify.md"
     },
@@ -6501,7 +6736,16 @@
     {
       "file": "ACCEPTANCE.md",
       "line": 140,
-      "text": " Approved by ct (22 Oct): only the owner assigns roles; grants compose by union and an explicit assignment replaces legacy member access; unassigned native members keep their ACCESS-001 read-only access until a grant replaces it; editors cannot change business and robots settings or publish; authors write and submit their own private posts through the native API; comment-moderator authority remains denied until its CMS doors exist. Inbox replies are explicit, idempotent sends that retain provider status and never retry automatically. Gap: the clause stays partial until every role is exercised: editor collection editing is now proved by CMS-001, and comment queue and notifications await CMS-010 (which must admit only owner, admin and comment moderators). Evidence: `tests/pane.test.mjs` — “composable Pane roles are invited natively and enforced across workspace, preview, search and every existing API action”; “explicit enquiry replies are retained, delivered once at the provider edge and erased with the parent enquiry”; `scripts/access-journey.mjs` — “Access browser journey” (owner, editor, inbox and reporting at 1440/390)  `tests/search.test.mjs` — “native page writers initiate private assistance within their current grant and retain actor-owned decisions”; “native authors write and submit only own posts and use assistance without exposing other content”; `scripts/ai-journey.mjs` — “editorInitiation”.  `tests/posts.test.mjs` — “authors submit two isolated blogs for exact owner approval and public semantic delivery”; `scripts/posts-journey.mjs` — “Posts browser journey” (native own-post visual authoring, review, owner approval and publication at 1440 and 390). Gap: Pane-owned composable grants extend native member invitations without changing Base copies, sessions or last-owner protection. Editors edit and preview page and search drafts; inbox users read, explicitly reply and manage enquiries; reporting users read aggregate reports. Every current Pane route, preview and search handler enforces capabilities and omits inaccessible response data; grants revoke on the next request, including token calls. Approved by ct (22 Oct): only the owner assigns roles; grants compose by union and an explicit assignment replaces legacy member access; unassigned native members keep their ACCESS-001 read-only access until a grant replaces it; editors cannot change business and robots settings or publish; authors write and submit their own private posts through the native API; comment-moderator authority remains denied until its CMS doors exist. Inbox replies are explicit, idempotent sends that retain provider status and never retry automatically. Gap: the clause stays partial until every role is exercised: editor collection editing is now proved by CMS-001, and comment queue and notifications await CMS-010 (which must admit only owner, admin and comment moderators).",
+      "text": "Approved by ct (22 Oct): only the owner assigns roles; grants compose by union and an explicit assignment replaces legacy member access; unassigned native members keep their ACCESS-001 read-only access until a grant replaces it; editors cannot change business and robots settings or publish; authors write and submit their own private posts through the native API; comment-moderator authority remains denied until its CMS doors exist.",
+      "to": "rulings",
+      "ids": [
+        "RL-9"
+      ]
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 140,
+      "text": " Inbox replies are explicit, idempotent sends that retain provider status and never retry automatically. Gap: the clause stays partial until every role is exercised: editor collection editing is now proved by CMS-001, and comment queue and notifications await CMS-010 (which must admit only owner, admin and comment moderators). Evidence: `tests/pane.test.mjs` — “composable Pane roles are invited natively and enforced across workspace, preview, search and every existing API action”; “explicit enquiry replies are retained, delivered once at the provider edge and erased with the parent enquiry”; `scripts/access-journey.mjs` — “Access browser journey” (owner, editor, inbox and reporting at 1440/390)  `tests/search.test.mjs` — “native page writers initiate private assistance within their current grant and retain actor-owned decisions”; “native authors write and submit only own posts and use assistance without exposing other content”; `scripts/ai-journey.mjs` — “editorInitiation”.  `tests/posts.test.mjs` — “authors submit two isolated blogs for exact owner approval and public semantic delivery”; `scripts/posts-journey.mjs` — “Posts browser journey” (native own-post visual authoring, review, owner approval and publication at 1440 and 390). Gap: Pane-owned composable grants extend native member invitations without changing Base copies, sessions or last-owner protection. Editors edit and preview page and search drafts; inbox users read, explicitly reply and manage enquiries; reporting users read aggregate reports. Every current Pane route, preview and search handler enforces capabilities and omits inaccessible response data; grants revoke on the next request, including token calls. Approved by ct (22 Oct): only the owner assigns roles; grants compose by union and an explicit assignment replaces legacy member access; unassigned native members keep their ACCESS-001 read-only access until a grant replaces it; editors cannot change business and robots settings or publish; authors write and submit their own private posts through the native API; comment-moderator authority remains denied until its CMS doors exist. Inbox replies are explicit, idempotent sends that retain provider status and never retry automatically. Gap: the clause stays partial until every role is exercised: editor collection editing is now proved by CMS-001, and comment queue and notifications await CMS-010 (which must admit only owner, admin and comment moderators).",
       "to": "docs",
       "path": "docs/verify.md"
     },

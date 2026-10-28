@@ -8,7 +8,7 @@ Protect an individual page or a named folder with a password or admitted native 
 
 Passwords need 12 to 200 characters. Pane stores salted PBKDF2 digests; the browser receives an HttpOnly, same-site proof lasting one hour. Rotating a password invalidates previous proofs. Protected responses are private and never stored in the public cache; protected pages are excluded from public search and the sitemap. A site gate also covers unknown live paths and search, answers noindex, and leaves authenticated draft previews available. The site password passes the site gate while page and folder rules still apply.
 
-Paid entitlements remain a future Stall or Nectar connection. Pane neither sells memberships nor infers a paid grant from a native account. Native-member admission remains partial pending ct approval.
+Paid entitlements remain a future Stall or Nectar connection. Pane neither sells memberships nor infers a paid grant from a native account. RL-5 records ct’s 25 October native-member admission decision; it grants no paid entitlement.
 
 ## Reusable forms
 
