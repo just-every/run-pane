@@ -1128,7 +1128,7 @@
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
-      "sha256": "9679de4e4cad98ed544e621b141eed03b45fc258520f7c5a311b084b397f408c",
+      "sha256": "b40eb82f828efb04df63dd74fa51fe224f144bb215cb96619310d59862bc7837",
       "executable": false
     },
     "scripts/contract-docs.mjs": {
@@ -1360,7 +1360,7 @@
       "executable": false
     },
     "scripts/media-library-journey.mjs": {
-      "sha256": "aeb6a1f3cdc420b956b27e7e1e84ed22970cb8f747847b5875e02d8ab30e38f5",
+      "sha256": "55fadbf9511d0064ff31d0f62f499ba15a800ee51211040e74a07959f623b561",
       "executable": false
     },
     "scripts/navigation-journey.mjs": {

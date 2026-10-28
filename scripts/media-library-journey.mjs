@@ -14,6 +14,20 @@ function carePdf(number){
  return {name:`Cake guide ${number}.pdf`,mimeType:'application/pdf',buffer:Buffer.from(body)}
 }
 
+/** Keep this flow's retained trash and approvals out of the following journeys. */
+export async function runMediaLibraryJourney({browser,folder}){
+ const fixture=await import('../tests/browser-runtime.mjs?media-library'),origin=fixture.origin
+ const context=await browser.newContext(),page=await context.newPage()
+ const state=async()=>(await context.request.get(origin+'/api/pane')).json()
+ const call=async(path,data)=>{const response=await context.request.post(origin+path,{headers:{Origin:origin},data});assert.equal(response.status(),200,await response.text());return response.json()}
+ try{
+  await fixture.bootstrap(context);await page.goto(origin+'/setup');await page.getByRole('checkbox').check()
+  await Promise.all([page.waitForURL('**/app'),page.getByRole('button',{name:'Finish setup'}).click()])
+  await mediaLibraryJourney({page,context,origin,state,call,folder})
+ }catch(error){await page.screenshot({path:resolve(folder,'media-library-failure.png'),fullPage:true});throw error}
+ finally{await context.close();await fixture.stop()}
+}
+
 /** Native library flow, called by every components-code journey invocation. */
 export async function mediaLibraryJourney({page,context,origin,state,call,folder}){
  const screens=[],errors=[]
@@ -198,9 +212,6 @@ export async function mediaLibraryJourney({page,context,origin,state,call,folder
    await page.goto(origin+'/app/sites');await Promise.all([page.waitForURL(url=>url.pathname==='/app'&&url.searchParams.has('notice')),page.getByRole('button',{name:'Approve & publish',exact:true}).first().click()])
    assert.equal((await visitor.request.get(origin+'/site/files/'+pdf.id)).status(),404,'A PDF used only on a protected page stays private after fresh approval')
   }finally{await visitor.close()}
-  // Restore the shared native fixture's plain page identities before its next flow.
-  const baseline=JSON.parse(await readFile('fixtures/static-site.json','utf8'))
-  await call('/api/pane/prepare',{site:baseline,base:(await state()).draft.id})
   assert.deepEqual(errors,[])
   console.log('Native media library passed: 50 real images and 3 PDFs; search, filters, metadata, three-page reuse, exact draft and live deletion dependencies, alt approval, immutable custody, undo, conflicts, revoked and protected PDF delivery, keyboard and axe at 1440 and 390.')
  }finally{page.off('pageerror',recordError)}
