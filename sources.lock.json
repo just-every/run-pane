@@ -648,7 +648,7 @@
       "executable": false
     },
     "public/pane-catalog.mjs": {
-      "sha256": "702381e517aeb9f77ecf1dcfb841d3566539457c50592bd32405803d704f40b0",
+      "sha256": "3b5fbd8d5ad969eed291e7caf2124cd7353d35d244b5baff93874535ef18a7c0",
       "executable": false
     },
     "public/pane-collection-template.mjs": {
@@ -1152,7 +1152,7 @@
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
-      "sha256": "ccf4958ae2e0a28e9927a4a4865765d4fbc89549451dd44b754b29de3e9700a8",
+      "sha256": "0ab7d601649bfbdbf7cf1ae2d60e601f66055e5d2b89f8a91813a02c6f48943c",
       "executable": false
     },
     "scripts/contract-docs.mjs": {
