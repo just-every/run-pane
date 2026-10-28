@@ -1,6 +1,6 @@
 # Pane clause claims
 
-Generated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses, subject to exact-commit verification and guarded landing. Provider and field-proof boundaries remain in the source contract. 127 clauses: 51 done, 30 partial, 46 missing.
+Generated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses, subject to exact-commit verification and guarded landing. Provider and field-proof boundaries remain in the source contract. 127 clauses: 51 done, 31 partial, 45 missing.
 
 | Clause | Status | Title |
 | --- | --- | --- |
@@ -41,7 +41,7 @@ Generated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses,
 | STYLE-002 | partial | Site-wide brand styles |
 | STYLE-003 | missing | Switch templates without rebuilding content |
 | STYLE-004 | done | Logo, favicon and brand kit |
-| MEDIA-001 | missing | Media library with alt text and usage |
+| MEDIA-001 | partial | Media library with alt text and usage |
 | MEDIA-002 | done | Responsive image optimization |
 | MEDIA-003 | done | Basic image editing |
 | MEDIA-004 | partial | Video, map, social embeds and Instagram feed |

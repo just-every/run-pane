@@ -2073,6 +2073,7 @@ test('native media library uploads, organizes and reuses private assets while re
    const search=async query=>(await (await app.request('/api/pane/library?'+new URLSearchParams(query),{headers:{Cookie:cookie}})).json()).assets
    assert.deepEqual((await search({q:'BIRTHDAY',type:'image',folder:'Celebrations'})).map(asset=>asset.id),[asset])
    assert.deepEqual((await search({type:'pdf'})).map(asset=>asset.id),files.map(file=>file.id))
+   assert.equal((await search({folder:'__unfiled'})).length,52)
    assert.deepEqual(await search({q:'birthday',type:'pdf'}),[])
    assert.deepEqual((await (await app.request('/api/pane/library',{headers:{Cookie:cookie}})).json()).assets.find(item=>item.id===asset).uses.map(use=>use.slug),['home','about','services'])
    assert.match(await (await app.request('/app/library',{headers:{Cookie:cookie}})).text(),/Celebration cakes/)
@@ -2102,6 +2103,12 @@ test('native media library uploads, organizes and reuses private assets while re
    for(const body of [{base:draft.id,action:'upload',images:[images[1]]},{base:draft.id,action:'upload',files:[{...files[0],data:'c3ludGhldGljLXBhbmUtMQ==',size:16}]},{base:draft.id,...edit,id:images[1].id,folder:'x'.repeat(121)}])assert.equal((await call('/api/pane/library',body)).status,400)
    assert.equal((await read()).revisions.length,count,'Rejected uploads and metadata never create revisions')
    assert.equal((await app.request('/api/pane/library')).status,401)
+   const scoped=await (await call('/api/pane/tokens/create',{name:'Synthetic media integration',scopes:['status:read','draft:write']})).json()
+   for(const method of ['GET','POST'])assert.equal((await app.request('/api/pane/library',{method,headers:{Origin:origin,Authorization:'Bearer '+scoped.token,...(method==='POST'?{'Content-Type':'application/json'}:{})},...(method==='POST'?{body:JSON.stringify(upload)}:{})})).status,403,'Owner-scoped integration tokens have no library authority')
+   await call('/api/pane/tokens/revoke',{id:scoped.id})
+   assert.equal((await app.request('/api/pane/library',{headers:{Authorization:'Bearer '+scoped.token}})).status,401)
+   const audit=await (await app.request('/api/pane/activity',{headers:{Cookie:cookie}})).json()
+   assert.ok(audit.some(entry=>entry.subject==='api:library'&&entry.action==='api.POST.200'&&entry.actor==='Synthetic bakery owner'),'Successful library writes retain native actor attribution in activity')
    let message
    const auth=createOperatorAuth({db:app.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{message=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
    const invited=await auth.invite(new Request(origin+'/auth/invite',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin,Cookie:cookie}}),{email:['synthetic-pane-20','example.test'].join('@'),displayName:'Library contributor',role:'admin'})
