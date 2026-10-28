@@ -181,7 +181,12 @@ export async function mediaLibraryJourney({page,context,origin,state,call,folder
     const conflict=await mutate(second,'update',async()=>{await second.getByLabel('Media name',{exact:true}).fill('Lemon cake selected in the second tab.jpg');await second.getByRole('button',{name:'Save details',exact:true}).click()},409)
     assert.equal(conflict.latest.id,latest.id);await second.locator('[data-library-conflict]').waitFor({state:'visible'})
     assert.equal(await second.getByLabel('Media name',{exact:true}).inputValue(),'Lemon cake selected in the second tab.jpg','Conflict retains the unsaved local fields')
-    for(const width of [1440,390]){await second.setViewportSize({width,height:1000});await accessible(width,second);await capture('media-library-conflict',width,second)}
+    for(const width of [1440,390]){
+     await second.setViewportSize({width,height:1000})
+     const comparison=second.getByLabel('Latest and local file details',{exact:true});await comparison.focus()
+     if(width===390){await second.keyboard.press('ArrowDown');await second.waitForFunction(()=>document.querySelector('[data-library-latest]').scrollTop>0)}
+     await accessible(width,second);await capture('media-library-conflict',width,second)
+    }
     await mutate(second,'update',()=>second.getByRole('button',{name:'Retry my changes',exact:true}).click())
     assert.equal((await state()).draft.site.media.find(item=>item.id===image.id).name,'Lemon cake selected in the second tab.jpg')
     assert.equal((await state()).draft.site.media.find(item=>item.id===image.id).caption,'A newer draft caption from the first tab','Retry preserves the other tab\'s untouched metadata')

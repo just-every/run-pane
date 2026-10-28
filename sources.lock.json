@@ -1360,7 +1360,7 @@
       "executable": false
     },
     "scripts/media-library-journey.mjs": {
-      "sha256": "652b385ac7058fc5e55f70223ef5963132fef52d1069b0af2c451e473bb67cba",
+      "sha256": "51fdcf21cd4a60ce24f4fd73385f1896dc5be4343e469a42437b071495c980bb",
       "executable": false
     },
     "scripts/navigation-journey.mjs": {
@@ -3776,7 +3776,7 @@
       "executable": false
     },
     "src/pane/ui/media-library.ts": {
-      "sha256": "0901e78311f2eca544a9393ba220db6837799a6e254658141c2f6c7538705f3d",
+      "sha256": "853166cfdeeb4373b56691ef6df9937ea4524ce5870c98c7872a8819e839cf9b",
       "executable": false
     },
     "src/pane/ui/moves.ts": {
