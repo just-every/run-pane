@@ -3,6 +3,15 @@
 Your agent can prepare a draft through Pane's authenticated command helper.
 You preview the result and approve publication in the workspace.
 
+Pane does not yet serve the shared company MCP door. Its copied agent-door
+and Business settings source, and their additive database migrations, are
+integration prerequisites; they do not enable company-policy execution.
+The native helper and its scoped integration credentials remain the supported
+agent interface described below. Scheduled publication still requires the
+native owner's approval and runs through Pane's existing scheduler. Shared-door
+adoption must preserve the original delegation's consent, scope and revocation
+checks at the time a queued effect executes before exposing those jobs to agents.
+
 ## Give the helper a session
 
 The helper uses the same native session and server permissions as the forms.
