@@ -38,7 +38,7 @@ export function permittedDashboard(data:Dashboard,caps:Capability[],actor:{id:st
   ...(caps.includes('team')?{}:{ownershipPeople:undefined,privacyRequest:undefined}),
   ...(caps.includes('pages:read')?{}:{pageRequests:[],draft:null,live:null,revisions:[],approvals:[],schedules:undefined}),
   ...(caps.includes('inbox:read')?{}:{formRejectionCount:0,formRejections:[],messages:[],replies:[],assignees:[],replyWindow:{zone:'America/New_York',days:1}}),
-  ...(caps.includes('reports:read')?{}:{visits:[],traffic:{day:[],source:[],referrer:[],device:[],location:[],campaign:[],campaignSource:[],medium:[]},goals:[]}),
+  ...(caps.includes('reports:read')?{}:{visits:[],traffic:{day:[],source:[],referrer:[],device:[],location:[],campaign:[],campaignSource:[],medium:[],imported:{total:0,month:[],page:[]}},goals:[]}),
   ...(caps.includes('imports:read')?{}:{imports:[]}),
   ...(caps.includes('audit')?{}:{activity:undefined}),
  }

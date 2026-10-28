@@ -12,11 +12,86 @@ const site = JSON.parse(await readFile('fixtures/static-site.json', 'utf8'))
 const campaigns = ['spring-open-house', 'summer-workshop']
 const goals = ['Quote request | form | contact', 'Phone calls | phone']
 const visitors = []
+const analyticsCsv = await readFile('fixtures/imports/squarespace-analytics.csv', 'utf8')
+const axeSource = await readFile('node_modules/axe-core/axe.min.js', 'utf8')
+const nativeDimensions = ['day', 'source', 'device', 'location', 'campaign', 'referrer', 'medium', 'campaignSource']
+const nativeCounts = dashboard => ({visits: dashboard.visits, traffic: Object.fromEntries(nativeDimensions.map(dimension => [dimension, dashboard.traffic[dimension]]))})
+const expectedMonths = Array.from({length: 12}, (_, index) => ({label: '2024-' + String(index + 1).padStart(2, '0'), count: (index + 1) * 11}))
+const expectedPages = expectedMonths.flatMap((month, index) => [
+ {month: month.label, path: '/', count: (index + 1) * 10, source: 'Squarespace'},
+ {month: month.label, path: '/contact', count: index + 1, source: 'Squarespace'},
+])
+const emptyBaseline = {total: 0, month: [], page: []}
+const importedBaseline = {total: 858, month: expectedMonths, page: expectedPages}
 async function capture(name) {
  await page.screenshot({path: resolve(folder, name + '.png'), fullPage: true})
  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 2), false, name + ' overflow')
 }
 const data = async () => (await context.request.get(origin + '/api/pane')).json()
+const post = async (path, input) => {
+ const response = await context.request.post(origin + '/api/pane/' + path, {headers: {Origin: origin}, data: input})
+ assert.equal(response.status(), 200, await response.text())
+ return response.json()
+}
+async function tooltip(width) {
+ const account = page.locator('.account > summary')
+ await page.locator('.screen-head h1,.pagebar h1').first().click()
+ await account.hover(); await page.waitForTimeout(120)
+ assert.equal(await page.getByRole('tooltip').count(), 0, 'Tooltip waits on hover')
+ await page.getByRole('tooltip').getByText('Account and team', {exact: true}).waitFor()
+ await page.mouse.move(0, 0); await page.keyboard.press('Escape'); await account.focus()
+ await page.getByRole('tooltip').getByText('Account and team', {exact: true}).waitFor({timeout: 1000})
+ await capture('traffic-import-tooltip-' + width)
+ await page.keyboard.press('Escape')
+ assert.equal(await page.getByRole('tooltip').count(), 0)
+}
+async function importedTrafficJourney(width) {
+ await page.setViewportSize({width, height: 1000})
+ // A distinct upload lets the second viewport create a fresh job after undo.
+ const source = analyticsCsv + (width === 390 ? '\n' : '')
+ const before = await data(), native = nativeCounts(before)
+ assert.deepEqual(before.traffic.imported, emptyBaseline)
+ await page.goto(origin + '/app/moves')
+ await page.locator('textarea[name="source"]').fill(source)
+ await Promise.all([page.waitForURL('**/app/import/dry-run'), page.getByRole('button', {name: 'Check import', exact: true}).click()])
+ const preflight = await data()
+ assert.deepEqual(preflight.traffic.imported, emptyBaseline, 'CSV preflight writes no imported visits')
+ assert.deepEqual(nativeCounts(preflight), native, 'CSV preflight preserves native visits')
+ await capture('traffic-import-preflight-' + width)
+ await Promise.all([page.waitForURL(url => url.pathname === '/app/moves'), page.getByRole('button', {name: 'Approve import', exact: true}).click()])
+ const applied = await data(), job = applied.imports.find(job => job.state === 'completed' && !before.imports.some(previous => previous.id === job.id))
+ assert.ok(job, 'CSV import has a retained completed job')
+ assert.deepEqual(applied.traffic.imported, importedBaseline, 'CSV import preserves all 12 monthly totals and 24 source page rows, totalling 858')
+ assert.deepEqual(nativeCounts(applied), native, 'Historical CSV counts are separate from native visits')
+ await page.goto(origin + '/app/sites')
+ await tooltip(width)
+ const baseline = page.locator('[aria-labelledby="imported-traffic-title"]')
+ assert.equal(await baseline.locator('dl[aria-label="Imported baseline total"] dd').textContent(), '858')
+ assert.deepEqual(await baseline.locator('dl[aria-label="Imported monthly totals"] dt').allTextContents(), expectedMonths.map(row => row.label))
+ assert.deepEqual(await baseline.locator('dl[aria-label="Imported monthly totals"] dd').allTextContents(), expectedMonths.map(row => String(row.count)))
+ assert.deepEqual(await baseline.locator('dl[aria-label="Imported page rows"] dt').allTextContents(), expectedPages.map(row => `${row.month} · ${row.source} · ${row.path}`))
+ assert.deepEqual(await baseline.locator('dl[aria-label="Imported page rows"] dd').allTextContents(), expectedPages.map(row => String(row.count)))
+ await page.evaluate(axeSource)
+ assert.deepEqual(await baseline.evaluate(async node => (await axe.run(node)).violations.map(item => ({id: item.id, nodes: item.nodes.map(node => node.target)}))), [], 'Imported traffic baseline passes axe at ' + width)
+ await baseline.scrollIntoViewIfNeeded()
+ await capture('traffic-imported-dashboard-' + width)
+ await baseline.screenshot({path: resolve(folder, 'traffic-imported-panel-' + width + '.png')})
+ const plan = await post('import/dry-run', {source})
+ await post('import/apply', {source, fingerprint: plan.fingerprint})
+ const reapplied = await data()
+ assert.deepEqual(reapplied.traffic.imported, importedBaseline, 'Reapplying the CSV adds no duplicate historical counts')
+ assert.deepEqual(nativeCounts(reapplied), native, 'Reapplying the CSV preserves native visits')
+ await page.goto(origin + '/app/moves')
+ const undo = page.locator('form[action="/app/import/undo"]').filter({has: page.locator(`input[name="job"][value="${job.id}"]`)})
+ await Promise.all([page.waitForURL(url => url.pathname === '/app/moves' && url.searchParams.has('notice')), undo.getByRole('button', {name: 'Undo import', exact: true}).click()])
+ const undone = await data()
+ assert.deepEqual(undone.traffic.imported, emptyBaseline, 'Undo removes the imported baseline')
+ assert.deepEqual(nativeCounts(undone), native, 'Undo preserves native visits')
+ await page.goto(origin + '/app/sites')
+ assert.equal(await page.locator('[aria-labelledby="imported-traffic-title"] dl').count(), 0)
+ await page.locator('[aria-labelledby="imported-traffic-title"]').scrollIntoViewIfNeeded()
+ await capture('traffic-import-undone-' + width)
+}
 try {
  if (ownsFixture) {
   await fixture.bootstrap(context)
@@ -124,5 +199,6 @@ try {
   const gpcGoals = (await data()).goals
   assert.deepEqual(gpcGoals.map(goal => goal.conversions), dashboard.goals.map(goal => goal.conversions), 'GPC visitors add no goal conversion')
  }
- console.log('Traffic browser journey passed: case-insensitive published labels, registrable Yelp/ChatGPT referrers and channels, safe UTM source/medium and unapproved counts, all dashboard dimensions, quote-form and phone-click goals with funnel and campaign counts, an empty cookie jar, and zero GPC visit or goal events at 1440 and 390.')
+ for (const width of [1440, 390]) await importedTrafficJourney(width)
+ console.log('Traffic browser journey passed at 1440 and 390: published labels, safe attribution, dashboard dimensions, form and phone goals, cookie-free visits and GPC; Squarespace CSV preflight and apply, 858 separate imported visits across 12 months and 24 page rows, unchanged native counts, duplicate-free reapply, undo, tooltips, axe and screenshots.')
 } finally { await browser.close(); if (ownsFixture) await fixture.stop() }

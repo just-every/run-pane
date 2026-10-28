@@ -1,6 +1,7 @@
 import {siteStyleCss} from './site-styles'
 import {layoutCss} from '../../public/pane-layout.mjs'
 import {fontResponse} from './fonts'
+import { privacySql,eraseImportedCustody,commitPrivacySql } from './import-privacy'
 import {submissionCsv,submissionForms} from './submission-export'
 import {collectionPrivateResponse} from './collection-handlers'
 import {collectionPages} from './collection-page'
@@ -47,7 +48,7 @@ import { publicPage } from './public-view'
 import { shell } from './ui/shell'
 import { moveReview, moveReport } from './ui/moves'
 import { crawlChallenge, crawlSource } from './import-crawl'
-import { planMoveIn, applyMoveIn, undoMoveIn, readMoveInReport } from './imports'
+import { planMoveIn, applyMoveIn, undoMoveIn, readMoveInReport, continueMoveIn } from './imports'
 import { replyToInquiry } from './inquiry-replies'
 import { updateInquiry } from './followups'
 const json=(v:unknown,status=200)=>Response.json(v,{status,headers:{'cache-control':'no-store'}})
@@ -382,8 +383,9 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
     return document('Review move-in',shell(data,'moves',moveReview(site,(result as {fingerprint:string}).fingerprint,String(input.source),(result as Awaited<ReturnType<typeof planMoveIn>>).report)))
    }
   } else if(action==='import/apply') {
-   result=await applyMoveIn(env.DB,actor,typeof input.source==='string'?input.source:JSON.stringify(input.source),String(input.fingerprint??''))
-   notice=(result as Awaited<ReturnType<typeof applyMoveIn>>).report.counts.page.planned ? 'Import applied as an unpublished draft. Preview it before publishing.' : 'Import inventory recorded. No supported pages were imported.';back='/app/moves'
+   if(input.job){result=await continueMoveIn(env.DB,actor,String(input.job));notice='Import continued. Check its progress below.';back='/app/moves'}
+   else {result=await applyMoveIn(env.DB,actor,typeof input.source==='string'?input.source:JSON.stringify(input.source),String(input.fingerprint??''))
+   notice=(result as Awaited<ReturnType<typeof applyMoveIn>>).report.counts.page.planned ? 'Import applied as an unpublished draft. Preview it before publishing.' : (result as Awaited<ReturnType<typeof applyMoveIn>>).report.counts.enquiry.planned ? 'Historical enquiries imported without notifications. Check progress below.' : (result as Awaited<ReturnType<typeof applyMoveIn>>).report.counts['visit-baseline'].planned ? 'Traffic baseline imported separately from native counts. Check progress below.' : 'Import inventory recorded. No supported pages were imported.';back='/app/moves'}
   } else if(action==='import/undo') {
    result=await undoMoveIn(env.DB,actor,String(input.job));notice='Import undone. The journal is retained.';back='/app/moves'
   } else if(action==='messages/reply') {
@@ -395,19 +397,23 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    result=await erasePerson(env.DB,String(input.id??''),input.confirm);notice='Person erased and activity attribution anonymized.'
   } else if(action==='messages/erase') {
    const id=String(input.id??'')
-   const wire=wireDatabase(env.DB)
+   const imported=await env.DB.prepare('SELECT email,imported_from FROM pane_messages WHERE id=?').bind(id).first<{email:string;imported_from:string|null}>()
+   const wire=privacySql(env.DB)
    const files=(await env.DB.prepare('SELECT id FROM pane_files WHERE message_id=?').bind(id).all<{id:string}>()).results
    const chunks=(await env.DB.prepare('SELECT id FROM pane_file_chunks WHERE file_id IN (SELECT id FROM pane_files WHERE message_id=?)').bind(id).all<{id:string}>()).results
    const fileFences=[]
    for(const file of files)fileFences.push(...await erasureStatements(wire,'pane_files',{id:file.id}))
    for(const chunk of chunks)fileFences.push(...await erasureStatements(wire,'pane_file_chunks',{id:chunk.id}))
-   await wire.batch([
+   const erasure=[
     ...fileFences,
     ...await erasureStatements(wire,'pane_messages',{id}),
     ...await invalidateTransfersStatements(wire),
     wire.prepare('INSERT OR IGNORE INTO pane_erased_messages(id,created_at) VALUES(?,?)').bind(id,new Date().toISOString()),
     wire.prepare('DELETE FROM pane_messages WHERE id=?').bind(id),
-   ]);result={erased:id};notice='Contact message erased. Its replay fence is retained.';back='/app/inquiries'
+   ] as any[]
+   if(imported?.imported_from)await eraseImportedCustody(env.DB,imported.email,id,actor.id,erasure,await erasureStatements(wire,'rer_portability_state',{id:1}) as any[])
+   else await commitPrivacySql(env.DB,erasure)
+   result={erased:id};notice='Contact message erased. Its replay fence is retained.';back='/app/inquiries'
   } else return json({error:'Not found.'},404)
   if(result&&typeof result==='object'&&'site' in result)result=visibleRevision(result as import('./model').Revision,caps,actor)
   return api?json(result):new Response(null,{status:303,headers:{location:back+(back.includes('?')?'&':'?')+'notice='+encodeURIComponent(notice)}})

@@ -1,3 +1,5 @@
+import { csvRows } from './import-csv'
+import { historyCsv } from './import-history-source'
 import { assertNoCredentials } from '../modules/import-kit/src/provenance/identity.ts'
 import { XMLParser, XMLValidator } from 'fast-xml-parser'
 import { importedBody, importedText } from './import-body'
@@ -133,25 +135,10 @@ function snapshot(raw:any):ImportDocument {
  }
  return finish(raw.format,text(raw.name)||'Imported site',text(raw.description),pages,items,origin)
 }
-/** Quoted CSV fields retain commas, escaped quotes, CRLF and embedded newlines. */
-function csvRows(source:string):string[][]{
- const rows:string[][]=[];let row:string[]=[],field='',quoted=false,closed=false
- const cell=()=>{row.push(field);field='';closed=false},line=()=>{cell();if(row.some(value=>value!==''))rows.push(row);row=[]}
- source=source.replace(/^\uFEFF/,'')
- for(let i=0;i<source.length;i++){
-  const c=source[i]
-  if(quoted){if(c!=='"')field+=c;else if(source[i+1]==='"'){field+='"';i++}else{quoted=false;closed=true}}
-  else if(c===',')cell()
-  else if(c==='\r'||c==='\n'){line();if(c==='\r'&&source[i+1]==='\n')i++}
-  else if(closed){if(c!==' '&&c!=='\t')throw Error('Text after CSV closing quote.')}
-  else if(c==='"'){if(field)throw Error('CSV quote must start a field.');quoted=true}
-  else field+=c
- }
- if(quoted)throw Error('Unclosed CSV quote.');line();return rows
-}
 export function parseImportDocument(source:string):ImportDocument{
  if(typeof source!=='string'||new TextEncoder().encode(source).byteLength>512000)throw Error('Move-in accepts an export up to 512,000 bytes.')
  if(source.trimStart().startsWith('<'))return wordpress(source)
+ if(!source.trimStart().startsWith('{'))return historyCsv(source)
  let raw:any;try{raw=JSON.parse(source)}catch{throw Error('Move-in expects a JSON site object or a WordPress WXR XML export.')}
  assertNoCredentials(raw)
  if(raw?.format)return snapshot(raw)

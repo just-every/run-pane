@@ -1,6 +1,6 @@
 # Pane clause claims
 
-Generated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses, subject to exact-commit verification and guarded landing. Provider and field-proof boundaries remain in the source contract. 127 clauses: 52 done, 31 partial, 44 missing.
+Generated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses, subject to exact-commit verification and guarded landing. Provider and field-proof boundaries remain in the source contract. 127 clauses: 52 done, 32 partial, 43 missing.
 
 | Clause | Status | Title |
 | --- | --- | --- |
@@ -106,7 +106,7 @@ Generated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses,
 | IMPORT-004 | partial | Visual and generated site builder import |
 | IMPORT-005 | done | Migration report and URL map |
 | IMPORT-006 | missing | Verified cutover with the old site kept |
-| IMPORT-007 | missing | Enquiry and subscriber history import |
+| IMPORT-007 | partial | Enquiry and subscriber history import |
 | EXPORT-001 | partial | Open-format site export |
 | PRIV-001 | partial | Consent for analytics and third-party embeds |
 | PRIV-002 | partial | Person-level privacy requests |
