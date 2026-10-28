@@ -15,7 +15,7 @@ import { deliverAcknowledgment } from './acknowledgment'
 import { recordGoal } from './goal-data'
 import type { VisitDimensions } from './visit-dimensions'
 import type { FormRejection } from './form-protection'
-export type QueuedEnquiry={submission?:Submission;uploads?:Omit<Upload,'chunks'>[];id:string;name:string;email:string;message:string;received:string;acknowledgment:unknown;followUp:number;goals:{id:string;page:string}[];dimensions:VisitDimensions}
+export type QueuedEnquiry={consent?:import('./marketing-consent').MarketingConsent;submission?:Submission;uploads?:Omit<Upload,'chunks'>[];id:string;name:string;email:string;message:string;received:string;acknowledgment:unknown;followUp:number;goals:{id:string;page:string}[];dimensions:VisitDimensions}
 export function liveStore(env:Bindings){if(!env.PANE_LIVE)throw Error('Live storage is not configured.');return env.PANE_LIVE.get(env.PANE_LIVE.idFromName('published-site'))}
 export async function liveSnapshot(env:Bindings):Promise<(Revision&{banners?:{text:string}[]})|null>{
  const response=await liveStore(env).fetch('https://pane.internal/live')

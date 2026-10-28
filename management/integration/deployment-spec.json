@@ -258,6 +258,12 @@
       "name": "0037_post_schedule_failures.sql",
       "sha256": "f2db23f363f7f7e9fcc13d25f5e608dfeb91820a67f38738fd4d4bf653e3c205",
       "sql": "ALTER TABLE pane_post_schedules ADD COLUMN failure_at INTEGER;\nALTER TABLE pane_post_schedules ADD COLUMN failure_action TEXT;\n"
+    },
+    {
+      "binding": "DB",
+      "name": "0038_marketing_consent.sql",
+      "sha256": "ed48e0981f6ba308642b65e3cc1b88bca4b90875d5c8353c6f8ef8ea982008d3",
+      "sql": "-- Historic checkboxes confer no marketing permission. New receipts retain the\n-- published prompt and explicit choice on the same atomic enquiry row.\nALTER TABLE pane_messages ADD COLUMN marketing_consent TEXT;\n"
     }
   ],
   "compatibilityDate": "2026-09-08",

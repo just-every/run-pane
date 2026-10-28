@@ -1,7 +1,8 @@
 import type { Site } from './model'
 import { escape,key } from './ui/kit'
-export const fieldTypes=['text','email','phone','address','choice','date','file','consent'] as const
-export type FormField={key:string;type:typeof fieldTypes[number];label:string;help:string;placeholder:string;required:boolean;error?:string;options?:string[]}
+import {marketingField,consentLabel,consentSchema} from './marketing-consent'
+export const fieldTypes=['text','email','phone','address','choice','date','file','consent','email-consent','sms-consent'] as const
+export type FormField={key:string;type:typeof fieldTypes[number];label:string;help:string;placeholder:string;required:boolean;error?:string;options?:string[];business?:string;frequency?:string}
 export type SiteForm={id:string;name:string;submit:string;confirmation:string;redirect?:string;fields:FormField[]}
 export type Upload={id:string;name:string;type:string;size:number;hash:string;chunks:string[]}
 export type FormState={values:Record<string,string>;errors:Record<string,string>}
@@ -12,12 +13,17 @@ export function normalizeForms(value:unknown):SiteForm[]|undefined{
   if(!form||typeof form.id!=='string'||!/^[a-zA-Z0-9-]{1,80}$/.test(form.id)||typeof form.name!=='string'||!form.name.trim()||form.name.length>120||typeof form.submit!=='string'||!form.submit.trim()||form.submit.length>80||typeof form.confirmation!=='string'||!form.confirmation.trim()||form.confirmation.length>1000||!Array.isArray(form.fields)||!form.fields.length||form.fields.length>40)throw Error('A form needs a name, submit label, confirmation and up to forty fields.')
   if(form.redirect&&!/^\/site(?:\/[a-z0-9-]+)*$/.test(form.redirect))throw Error('Choose a live site path for the confirmation redirect.')
   const fields:FormField[]=form.fields.map((field:any)=>{
-   if(!field||typeof field.key!=='string'||!/^[a-z][a-z0-9_]{0,39}$/.test(field.key)||['website','idempotency','attribution','cf-turnstile-response'].includes(field.key)||!fieldTypes.includes(field.type)||typeof field.label!=='string'||!field.label.trim()||field.label.length>120||typeof field.help!=='string'||field.help.length>500||typeof field.placeholder!=='string'||field.placeholder.length>120||typeof field.required!=='boolean'||field.error!==undefined&&(typeof field.error!=='string'||field.error.length>300))throw Error('Each field needs a unique key, supported type, label, help, placeholder and required setting.')
+   if(!field||typeof field.key!=='string'||!/^[a-z][a-z0-9_]{0,39}$/.test(field.key)||['website','idempotency','attribution','cf-turnstile-response','consent_schema'].includes(field.key)||!fieldTypes.includes(field.type)||typeof field.label!=='string'||!field.label.trim()||field.label.length>(marketingField(field)?1000:120)||typeof field.help!=='string'||field.help.length>500||typeof field.placeholder!=='string'||field.placeholder.length>120||typeof field.required!=='boolean'||field.error!==undefined&&(typeof field.error!=='string'||field.error.length>300))throw Error('Each field needs a unique key, supported type, label, help, placeholder and required setting.')
+   if(marketingField(field)&&field.required)throw Error('Marketing consent must be optional and initially unchecked.')
+   if(field.type==='sms-consent'&&[field.business,field.frequency].some(value=>typeof value!=='string'||!value.trim()||value.length>200))throw Error('SMS consent needs the business name and message frequency.')
    if(field.type==='choice'&&(!Array.isArray(field.options)||!field.options.length||field.options.length>30||field.options.some((value:unknown)=>typeof value!=='string'||!value||value.length>120)))throw Error('Choice fields need up to thirty text options.')
-   return {key:field.key,type:field.type,label:field.label.trim(),help:field.help,placeholder:field.placeholder,required:field.required,error:field.error??'',...(field.type==='choice'?{options:[...new Set(field.options)] as string[]}:{})}
+   return {key:field.key,type:field.type,label:field.label.trim(),help:field.help,placeholder:field.placeholder,required:field.required,error:field.error??'',...(field.type==='choice'?{options:[...new Set(field.options)] as string[]} :{}),...(field.type==='sms-consent'?{business:field.business.trim(),frequency:field.frequency.trim()}:{})}
   })
   if(new Set(fields.map(field=>field.key)).size!==fields.length)throw Error('Use unique field keys.')
   if(fields.filter(field=>field.type==='file').length>1)throw Error('Use one private PDF upload per form.')
+  for(const type of ['email-consent','sms-consent'])if(fields.filter(field=>field.type===type).length>1)throw Error('Offer each marketing channel once per form.')
+  if(fields.some(marketingField)&&!fields.some(field=>field.type==='email'&&field.required))throw Error('Marketing choices need a required email field for person privacy requests.')
+  if(fields.some(field=>field.type==='sms-consent')&&!fields.some(field=>field.type==='phone'))throw Error('SMS consent needs a phone field.')
   return {id:form.id,name:form.name.trim(),submit:form.submit.trim(),confirmation:form.confirmation.trim(),...(form.redirect?{redirect:form.redirect}:{}),fields}
  })
  if(new Set(forms.map(form=>form.id)).size!==forms.length)throw Error('Use unique form identities.')
@@ -28,10 +34,10 @@ export function formMarkup(form:SiteForm,path:string,live:boolean,turnstileKey?:
  const fields=form.fields.map(field=>{
   const id='field-'+field.key,error=state?.errors[field.key],value=state?.values[field.key]??'',described=[field.help?id+'-help':'',error?id+'-error':''].filter(Boolean).join(' ')
   const attrs=`id="${id}" name="${field.key}"${field.error?` data-error-message="${escape(field.error)}"`:''}${field.required?' required aria-required="true"':''}${described?` aria-describedby="${described}"`:''}${error?' aria-invalid="true"':''}`
-  const control=field.type==='choice'?`<select ${attrs}><option value="">Choose an option</option>${field.options!.map(option=>`<option${option===value?' selected':''}>${escape(option)}</option>`).join('')}</select>`:field.type==='address'?`<textarea ${attrs} rows="3" maxlength="500" placeholder="${escape(field.placeholder)}">${escape(value)}</textarea>`:field.type==='consent'?`<input ${attrs} type="checkbox" value="yes"${value==='yes'?' checked':''}>`:`<input ${attrs} type="${field.type==='phone'?'tel':field.type==='file'?'file':field.type==='date'?'date':field.type==='email'?'email':'text'}"${field.type==='file'?' accept="application/pdf,.pdf"':` value="${escape(value)}" maxlength="${field.type==='text'?2000:254}" placeholder="${escape(field.placeholder)}"`}${field.type==='phone'?' autocomplete="tel" inputmode="tel"':''}>`
-  return `<div class="field"><label for="${id}">${escape(field.label)}${field.required?' (required)':''}</label>${control}${field.help?`<p class="help" id="${id}-help">${escape(field.help)}</p>`:''}${field.type==='file'?'<p class="help">PDF only, up to 5 MB. Files are private to the inbox. Choose the file again after an error.</p>':''}<p class="field-error" id="${id}-error"${error?' role="alert"':' hidden'}>${escape(error??'')}</p></div>`
+  const control=field.type==='choice'?`<select ${attrs}><option value="">Choose an option</option>${field.options!.map(option=>`<option${option===value?' selected':''}>${escape(option)}</option>`).join('')}</select>`:field.type==='address'?`<textarea ${attrs} rows="3" maxlength="500" placeholder="${escape(field.placeholder)}">${escape(value)}</textarea>`:field.type==='consent'||marketingField(field)?`<input ${attrs} type="checkbox" value="yes"${value==='yes'?' checked':''}>`:`<input ${attrs} type="${field.type==='phone'?'tel':field.type==='file'?'file':field.type==='date'?'date':field.type==='email'?'email':'text'}"${field.type==='file'?' accept="application/pdf,.pdf"':` value="${escape(value)}" maxlength="${field.type==='text'?2000:254}" placeholder="${escape(field.placeholder)}"`}${field.type==='phone'?' autocomplete="tel" inputmode="tel"':''}>`
+  return `<div class="field"><label for="${id}">${escape(consentLabel(field))}${field.required?' (required)':''}</label>${control}${field.help?`<p class="help" id="${id}-help">${escape(field.help)}</p>`:''}${field.type==='file'?'<p class="help">PDF only, up to 5 MB. Files are private to the inbox. Choose the file again after an error.</p>':''}<p class="field-error" id="${id}-error"${error?' role="alert"':' hidden'}>${escape(error??'')}</p></div>`
  }).join('')
- return `<section class="contact-section" aria-label="${escape(form.name)}"><h2>${escape(form.name)}</h2>${!live?'<p class="notice">Draft preview: submissions are disabled.</p>':''}<form method="post" enctype="multipart/form-data" action="${escape(path)}" class="contact-form" data-typed-form${live?` data-turnstile-key="${escape(turnstileKey??'')}" data-form="${escape(path.slice(6)||'home')}"`:''}>${key()}<input type="hidden" name="attribution"><fieldset${live?'':' disabled'}>${fields}<div class="honeypot" aria-hidden="true"><label>Leave this field empty<input name="website" tabindex="-1" autocomplete="off"></label></div>${live?'<p class="help">Sending uses Cloudflare Turnstile to prevent spam without image puzzles.</p><div data-turnstile-slot></div><p role="status" data-verification-status></p>':''}<button type="submit">${escape(form.submit)}</button></fieldset></form></section>`
+ return `<section class="contact-section" aria-label="${escape(form.name)}"><h2>${escape(form.name)}</h2>${!live?'<p class="notice">Draft preview: submissions are disabled.</p>':''}<form method="post" enctype="multipart/form-data" action="${escape(path)}" class="contact-form" data-typed-form${live?` data-turnstile-key="${escape(turnstileKey??'')}" data-form="${escape(path.slice(6)||'home')}"`:''}>${key()}<input type="hidden" name="attribution">${form.fields.some(marketingField)?`<input type="hidden" name="consent_schema" value="${consentSchema(form)}">`:''}<fieldset${live?'':' disabled'}>${fields}<div class="honeypot" aria-hidden="true"><label>Leave this field empty<input name="website" tabindex="-1" autocomplete="off"></label></div>${live?'<p class="help">Sending uses Cloudflare Turnstile to prevent spam without image puzzles.</p><div data-turnstile-slot></div><p role="status" data-verification-status></p>':''}<button type="submit">${escape(form.submit)}</button></fieldset></form></section>`
 }
 export async function validateForm(form:SiteForm,fields:FormData,id:string){
  const state:FormState={values:{},errors:{}},uploads:Upload[]=[],answers:string[]=[]
@@ -53,9 +59,15 @@ export async function validateForm(form:SiteForm,fields:FormData,id:string){
   else if(value&&field.type==='phone'&&!/^(?:\+?1)?[2-9]\d{2}[2-9]\d{6}$/.test(value.replace(/[ ()\-.]/g,'')))state.errors[field.key]='Enter a valid US phone number.'
   else if(value&&field.type==='date'&&(!/^\d{4}-\d{2}-\d{2}$/.test(value)||Number.isNaN(Date.parse(value))||new Date(value).toISOString().slice(0,10)!==value))state.errors[field.key]='Enter a valid date.'
   else if(value&&field.type==='choice'&&!field.options!.includes(value))state.errors[field.key]='Choose one of the listed options.'
-  else if(value&&field.type==='consent'&&value!=='yes')state.errors[field.key]='Choose this box explicitly.'
+  else if(value&&(field.type==='consent'||marketingField(field))&&value!=='yes')state.errors[field.key]='Choose this box explicitly.'
   answers.push(field.label+': '+value)
  }
+ const marketing=form.fields.filter(marketingField)
+ if(marketing.length&&fields.get('consent_schema')!==consentSchema(form)){
+  for(const field of marketing){state.values[field.key]='';state.errors[field.key]='The consent wording changed. Review it and choose again.'}
+ }
+ const sms=marketing.find(field=>field.type==='sms-consent')
+ if(sms&&state.values[sms.key]==='yes'&&!form.fields.some(field=>field.type==='phone'&&state.values[field.key]))state.errors[sms.key]='Enter a phone number before choosing SMS marketing.'
  for(const field of form.fields)if(state.errors[field.key]&&field.error)state.errors[field.key]=field.error
  const message=form.name+'\n'+answers.join('\n')
  if(message.length>5000)state.errors[form.fields[0].key]='Shorten your answers to 5,000 characters in total.'
