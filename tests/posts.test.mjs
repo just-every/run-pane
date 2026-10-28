@@ -714,6 +714,7 @@ test('owner WXR comment transfers preserve private reviewed metadata, explicit r
   const privacy=await ok(await call('/api/pane/privacy/export',{email:address(10)}));assert.deepEqual(privacy.comments.map(shape),expected.slice(0,2))
   const erased=await ok(await call('/api/pane/privacy/erase',{email:address(10),confirm:'erase-person-data'}));assert.equal(erased.erasedComments,2);assert.equal(erased.backupFence,true)
   assert.equal((await call('/api/pane/comments/import-review',input)).status,400,'An erased source cannot be reimported')
+  const retained=await ok(await get('/api/pane/comments'));assert.equal((await call('/api/pane/comments/import-review',{source:wxr,post:post.id,sourcePost:origin+'/site/news/story'})).status,400,'The downloaded private WXR cannot resurrect erased comments');assert.deepEqual(await ok(await get('/api/pane/comments')),retained,'Refused archive replay changes no remaining comment')
   const after=await (await get('/api/pane/comments/export')).text();assert.ok(!after.includes(address(10)));assert.ok(!after.includes('A preserved reply'))
   const activity=await ok(await get('/api/pane/activity'));assert.ok(activity.some(row=>row.action==='comment.import'&&row.actor==='Transfer owner'));assert.ok(activity.some(row=>row.action==='comment.import-release'&&row.actor==='Transfer owner'));assert.ok(!JSON.stringify(activity).includes(address(10)))
  }finally{await f.mf.dispose()}
