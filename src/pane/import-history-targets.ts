@@ -2,13 +2,21 @@ import type { D1TargetAdapter, D1Sql } from '../modules/import-kit/src/d1/types.
 import type { TargetRow } from '../modules/import-kit/src/types.ts'
 import { sha256 } from '../modules/import-kit/src/provenance/identity.ts'
 
-export const enquiryDefaults = {acknowledgment:null,acknowledgment_status:'not_requested',acknowledgment_provider:null,acknowledgment_provider_id:null,assignee:null,follow_up_at:null,reminded_at:null,reminder_to:null,reminder_status:null,escalated_at:null,escalated_to:null,escalation_status:null,_files:'[]',_replies:'[]'}
+export const enquiryDefaults = {marketing_consent:null,acknowledgment:null,acknowledgment_status:'not_requested',acknowledgment_provider:null,acknowledgment_provider_id:null,assignee:null,follow_up_at:null,reminded_at:null,reminder_to:null,reminder_status:null,escalated_at:null,escalated_to:null,escalation_status:null,_files:'[]',_replies:'[]'}
 export const erasedImportPerson = (email:string) => sha256('pane-import-person:'+email.trim().toLowerCase())
 const sql=(sql:string,...params:unknown[]):D1Sql=>({sql,params})
 const table=(kind:string)=>kind==='enquiry'?'pane_messages':kind==='visit-baseline'?'pane_import_visits':undefined
 const revisionColumn=(kind:string)=>kind==='enquiry'?'import_revision':'kit_revision'
 const columns=(value:TargetRow['value'])=>Object.entries(value as Record<string,unknown>).filter(([name])=>!name.startsWith('_'))
-const dependents=`AND NOT EXISTS(SELECT 1 FROM pane_files WHERE message_id=?) AND NOT EXISTS(SELECT 1 FROM pane_inquiry_replies WHERE message_id=?)`
+const replyColumns=['id','message_id','actor','subject','body','status','created_at']
+/** Compare the observed reply set, so explicit erasure can include native replies
+ * while any concurrent insertion, removal or field change aborts the batch. */
+function repliesMatch(id:string,snapshot:string):D1Sql {
+ const replies=JSON.parse(snapshot) as Record<string,unknown>[]
+ return sql(`(SELECT COUNT(*) FROM pane_inquiry_replies WHERE message_id=?)=? AND NOT EXISTS(
+  SELECT 1 FROM pane_inquiry_replies actual WHERE actual.message_id=? AND NOT EXISTS(
+   SELECT 1 FROM json_each(?) expected WHERE ${replyColumns.map(key=>`actual."${key}" IS json_extract(expected.value,'$.${key}')`).join(' AND ')}))`,id,replies.length,id,snapshot)
+}
 
 /** Native values, evidence and dependent records all participate in strict undo. */
 export function historyTargets(revisions:D1TargetAdapter):D1TargetAdapter {
@@ -32,8 +40,9 @@ export function historyTargets(revisions:D1TargetAdapter):D1TargetAdapter {
    scope(destination)
    if(!row)return sql(`NOT EXISTS(SELECT 1 FROM ${table(kind)} WHERE id=?)`,id)
    const entries=columns(row.value)
-   if(kind==='enquiry'&&((row.value as any)._files!=='[]'||(row.value as any)._replies!=='[]'))throw Error('NATIVE_EDIT_CONFLICT')
-   return sql(`EXISTS(SELECT 1 FROM ${table(kind)} WHERE id=? AND ${revisionColumn(kind)}=? AND ${entries.map(([key])=>`"${key}" IS ?`).join(' AND ')}) ${kind==='enquiry'?dependents:''}`,id,row.revision,...entries.map(([,v])=>v),...(kind==='enquiry'?[id,id]:[]))
+   if(kind==='enquiry'&&(row.value as any)._files!=='[]')throw Error('NATIVE_EDIT_CONFLICT')
+   const replies=kind==='enquiry'?repliesMatch(id,(row.value as any)._replies):undefined
+   return sql(`EXISTS(SELECT 1 FROM ${table(kind)} WHERE id=? AND ${revisionColumn(kind)}=? AND ${entries.map(([key])=>`"${key}" IS ?`).join(' AND ')}) ${replies?`AND NOT EXISTS(SELECT 1 FROM pane_files WHERE message_id=?) AND ${replies.sql}`:''}`,id,row.revision,...entries.map(([,v])=>v),...(replies?[id,...replies.params??[]]:[]))
   },
   matchesCount(count,destination){scope(destination);return sql('(SELECT COUNT(*) FROM pane_import_targets)+(SELECT COUNT(*) FROM pane_messages WHERE import_revision IS NOT NULL)+(SELECT COUNT(*) FROM pane_import_visits)=?',count)},
   write(row){

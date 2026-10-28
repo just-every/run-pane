@@ -331,6 +331,18 @@ test('import history protects native edits, erases retained personal custody and
  const email='synthetic-pane-501'+'@'+'example.test',csv='Submitted On,Form,Name,Email,Message\n2023-01-01T00:00:00Z,Consultation,synthetic-pane-501,'+email+',Private source answer\n2023-01-02T00:00:00Z,Workshop,synthetic-pane-502,synthetic-pane-502'+'@'+'example.test,Keep this answer'
  const plan=await ok(await call('dry-run',{source:csv})),job=await finishHistory(await ok(await call('apply',{source:csv,fingerprint:plan.fingerprint})))
  const request=async(action,input,cookie=owner)=>f.request('/api/pane/'+action,{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify(input)})
+ const directEmail='synthetic-pane-504'+'@'+'example.test',directSource='Submitted On,Form,Name,Email,Message\n2023-01-03T00:00:00Z,Consultation,synthetic-pane-504,'+directEmail+',Private direct answer'
+ const directPlan=await ok(await call('dry-run',{source:directSource})),directJob=await finishHistory(await ok(await call('apply',{source:directSource,fingerprint:directPlan.fingerprint})))
+ const direct=(await data()).messages.find(message=>message.email===directEmail)
+ const reply=async message=>ok(await request('messages/reply',{id:message.id,idempotency:crypto.randomUUID(),confirm:'send-reply',subject:'Historical enquiry reply',body:'Private retained reply'}))
+ await reply(direct)
+ assert.equal((await call('undo',{job:directJob.id})).status,400,'Undo refuses to discard a native reply even when parent fields are unchanged')
+ assert.equal((await request('messages/erase',{id:direct.id},member)).status,403)
+ await ok(await request('messages/erase',{id:direct.id}))
+ const directErased=await ok(await request('privacy/export',{email:directEmail}))
+ assert.equal(directErased.messages.length,0);assert.equal(directErased.replies.length,0)
+ assert.equal((await call('dry-run',{job:directJob.id})).status,400,'Message erasure withdraws source custody after a reply')
+ assert.equal((await call('dry-run',{source:directSource})).status,400,'Message erasure fences replay after a reply')
  const person=async()=>ok(await request('privacy/export',{email}))
  const row=(await data()).messages.find(row=>row.email===email)
  const credential=await ok(await request('tokens/create',{name:'synthetic-pane-503',scopes:['imports:write']}))
@@ -340,7 +352,8 @@ test('import history protects native edits, erases retained personal custody and
 
  await ok(await request('messages/update',{id:row.id,status:'replied'}));assert.equal((await call('undo',{job:job.id})).status,400,'Undo refuses to discard native handling')
  assert.equal((await data()).messages.find(message=>message.id===row.id).status,'replied')
- const found=await person();assert.equal(found.messages.length,1);assert.equal(JSON.parse(found.messages[0].submission).fields.find(field=>field.label==='Message').value,'Private source answer')
+ await reply(row)
+ const found=await person();assert.equal(found.replies.length,1);assert.equal(found.replies[0].body,'Private retained reply');assert.equal(found.messages.length,1);assert.equal(JSON.parse(found.messages[0].submission).fields.find(field=>field.label==='Message').value,'Private source answer')
  const service=await createPortability({db:f.db,policy:productPolicy}),archive=await service.exports.create()
  while((await service.exports.advance(archive,{maxParts:100})).phase==='building'){}
  const records=[];for await(const record of readArchive(await service.exports.download(archive)))records.push(record)
@@ -359,13 +372,13 @@ test('import history protects native edits, erases retained personal custody and
   assert.equal(restoredPerson.imported_from,'Squarespace');assert.equal(restoredPerson.created_at,'2023-01-01T00:00:00.000Z');assert.equal(JSON.parse(restoredPerson.submission).formName,'Consultation')
  }finally{await positive.mf.dispose()}
  assert.equal((await request('privacy/erase',{email,confirm:'erase-person-data'},member)).status,403)
- await ok(await request('privacy/erase',{email,confirm:'erase-person-data'}));assert.equal((await person()).messages.length,0)
+ await ok(await request('privacy/erase',{email,confirm:'erase-person-data'}));assert.equal((await person()).messages.length,0);assert.equal((await person()).replies.length,0)
  assert.ok((await data()).messages.some(message=>message.name==='synthetic-pane-502'),'Unrelated imported enquiry remains')
  assert.equal((await call('dry-run',{job:job.id})).status,400,'Erasure withdraws the retained source CSV')
  for(const source of [csv,csv.replace('Private source answer','Changed source answer')]){assert.equal((await call('dry-run',{source})).status,400,'An erased person cannot return through a changed capture');assert.equal((await call('apply',{source,fingerprint:plan.fingerprint})).status,400)}
  const fresh=await service.exports.create();while((await service.exports.advance(fresh,{maxParts:100})).phase==='building'){}
  const after=[];for await(const record of readArchive(await service.exports.download(fresh)))after.push(record)
- assert.doesNotMatch(JSON.stringify(after),/Private source answer|synthetic-pane-501/)
+ assert.doesNotMatch(JSON.stringify(after),/Private source answer|Private retained reply|Private direct answer|synthetic-pane-501|synthetic-pane-504/)
  await undoHistory(job.id);assert.equal((await data()).messages.some(row=>row.email===email||row.name==='synthetic-pane-502'),false,'Undo after erasure removes only the remaining record and never resurrects the person')
  const destination=await runtime()
  try{
