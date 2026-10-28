@@ -293,7 +293,7 @@ test('reviewed Squarespace CSV retains all 200 dated enquiry forms and fields wi
  for(let n=1;n<=200;n++){
   const row=imported.find(row=>row.name==='synthetic-pane-'+n);assert.ok(row,'Enquiry '+n+' remains browsable')
   assert.equal(row.message,'Historical enquiry '+n);assert.equal(row.email,'synthetic-pane-'+n+'@'+'example.test');assert.equal(row.created_at,new Date(Date.UTC(2023,0,n)).toISOString());assert.equal(row.status,'closed');assert.equal(row.acknowledgment_status,'not_requested')
-  assert.equal(row.follow_up_at,null);assert.equal(row.reminded_at,null);assert.equal(row.escalated_at,null)
+  assert.equal(row.marketing_consent,null,'Historic CSV fields confer no marketing permission');assert.equal(row.follow_up_at,null);assert.equal(row.reminded_at,null);assert.equal(row.escalated_at,null)
   const submission=JSON.parse(row.submission);assert.equal(submission.formName,n%2?'Consultation':'Workshop');assert.equal(submission.formId,row.form_id)
   assert.equal(submission.fields.find(field=>field.label==='Project').value,'Project '+n)
   assert.equal(submission.fields.find(field=>field.label==='Notes').value,n===1?'Quoted "care", first\nsecond':'Notes '+n)

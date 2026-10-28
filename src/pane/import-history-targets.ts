@@ -2,7 +2,7 @@ import type { D1TargetAdapter, D1Sql } from '../modules/import-kit/src/d1/types.
 import type { TargetRow } from '../modules/import-kit/src/types.ts'
 import { sha256 } from '../modules/import-kit/src/provenance/identity.ts'
 
-export const enquiryDefaults = {acknowledgment:null,acknowledgment_status:'not_requested',acknowledgment_provider:null,acknowledgment_provider_id:null,assignee:null,follow_up_at:null,reminded_at:null,reminder_to:null,reminder_status:null,escalated_at:null,escalated_to:null,escalation_status:null,_files:'[]',_replies:'[]'}
+export const enquiryDefaults = {marketing_consent:null,acknowledgment:null,acknowledgment_status:'not_requested',acknowledgment_provider:null,acknowledgment_provider_id:null,assignee:null,follow_up_at:null,reminded_at:null,reminder_to:null,reminder_status:null,escalated_at:null,escalated_to:null,escalation_status:null,_files:'[]',_replies:'[]'}
 export const erasedImportPerson = (email:string) => sha256('pane-import-person:'+email.trim().toLowerCase())
 const sql=(sql:string,...params:unknown[]):D1Sql=>({sql,params})
 const table=(kind:string)=>kind==='enquiry'?'pane_messages':kind==='visit-baseline'?'pane_import_visits':undefined

@@ -1,6 +1,6 @@
 # Pane clause claims
 
-Generated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses, subject to exact-commit verification and guarded landing. Provider and field-proof boundaries remain in the source contract. 127 clauses: 51 done, 31 partial, 45 missing.
+Generated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses, subject to exact-commit verification and guarded landing. Provider and field-proof boundaries remain in the source contract. 127 clauses: 51 done, 32 partial, 44 missing.
 
 | Clause | Status | Title |
 | --- | --- | --- |
@@ -83,7 +83,7 @@ Generated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses,
 | FORM-005 | missing | Lead routing to Orbit, HubSpot and signed webhooks |
 | FORM-006 | done | Enquiry ownership, status and follow-up |
 | FORM-007 | partial | Submission export and Google Sheets |
-| FORM-008 | missing | Consent capture for email and SMS |
+| FORM-008 | partial | Consent capture for email and SMS |
 | LINK-001 | missing | Booking through Dial, Calendly or Acuity |
 | LINK-002 | missing | Checkout through Stall, Stripe Payment Links or PayPal |
 | LINK-003 | missing | Newsletter signup through Mango or Mailchimp |
