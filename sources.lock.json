@@ -684,7 +684,7 @@
       "executable": false
     },
     "public/pane-media-library.css": {
-      "sha256": "813ed8f5c51b8356686c62b3ce14a501c9c4154348f8305b623f03ae4cadad03",
+      "sha256": "5510c7476dca662fce1b1646c6d718f9df2b45fda8326da4b1a87237623d9062",
       "executable": false
     },
     "public/pane-media-library.mjs": {
@@ -3540,7 +3540,7 @@
       "executable": false
     },
     "src/pane/media-library.ts": {
-      "sha256": "e9f40c2b2c7aaaaa905acc7449e682e23aa883a3b5110f168c4f7a9ea8cc3330",
+      "sha256": "52fe1d57ef8c136726e983c60ec63ac1c28ea0c8845a8964586ea90f9c7697bf",
       "executable": false
     },
     "src/pane/media-metadata.ts": {
@@ -4016,7 +4016,7 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "59d76f6f9a6c4fa314157ec6a53af3ffaed387394c870b8c57513ecd836ab92c",
+      "sha256": "008a75cffc0713f8682cc4cea647178777e2aa6abc7d5e8e8f4333e80d683274",
       "executable": false
     },
     "tests/post-fixture.mjs": {

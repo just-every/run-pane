@@ -39,9 +39,6 @@ export async function changeLibrary(db:D1Database,actor:string,input:Record<stri
   const asset=kind==='image'?site.media?.find(item=>item.id===id):site.libraryFiles?.find(item=>item.id===id)
   if(!asset)throw Error('Library file not found.')
   if(input.action==='delete'){
-   const liveRow=await db.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first()
-   const uses=distinctUses([...mediaUses(site,kind,id),...(liveRow?mediaUses(revision(liveRow).site,kind,id):[])])
-   if(uses.length)throw new MediaInUse(uses)
    if(kind==='image')site.media=site.media!.filter(item=>item.id!==id)
    else site.libraryFiles=site.libraryFiles!.filter(item=>item.id!==id)
   }else if(input.action==='update'){
@@ -59,6 +56,13 @@ export async function changeLibrary(db:D1Database,actor:string,input:Record<stri
    page.sections=normalizeSections([...sections,{id:crypto.randomUUID(),kind:'text',blocks:[block]}])
    page.body=sectionText(page.sections!)
   }else throw Error('Choose a library action.')
+ }
+ // Undo must obey the same deletion guard as the explicit Delete action.
+ const removed=[...(current.site.media??[]).filter(asset=>!site.media?.some(item=>item.id===asset.id)).map(asset=>({kind:'image' as const,id:asset.id})),...(current.site.libraryFiles??[]).filter(asset=>!site.libraryFiles?.some(item=>item.id===asset.id)).map(asset=>({kind:'pdf' as const,id:asset.id}))]
+ if(removed.length){
+  const liveRow=await db.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first(),live=liveRow?revision(liveRow).site:undefined
+  const uses=distinctUses(removed.flatMap(asset=>[...mediaUses(current.site,asset.kind,asset.id),...(live?mediaUses(live,asset.kind,asset.id):[])]))
+  if(uses.length)throw new MediaInUse(uses)
  }
  return prepare(db,actor,site,current.id)
 }

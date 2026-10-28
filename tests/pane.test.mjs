@@ -2065,6 +2065,9 @@ test('native media library uploads, organizes and reuses private assets while re
    assert.equal(refusal.status,409)
    assert.deepEqual((await refusal.json()).uses.map(use=>({slug:use.slug,title:use.title,kind:use.kind})),fixture.pages.slice(0,3).map(page=>({slug:page.slug,title:page.title,kind:'page'})))
    assert.equal((await call('/api/pane/library',{base:draft.id,action:'delete',kind:'pdf',id:files[0].id})).status,409)
+   const undoUsed=await call('/api/pane/library',{base:draft.id,action:'restore',site:initial.site})
+   assert.equal(undoUsed.status,409,'Restoring an older capture cannot bypass usage-aware deletion')
+   assert.deepEqual((await undoUsed.json()).uses.map(use=>use.slug),['home','about','services'])
    assert.equal((await call('/api/pane/publish',{revision:draft.id})).status,400,'Library placements cannot bypass missing-alt refusal')
    const edit={action:'update',kind:'image',id:asset,name:'Celebration cakes',folder:'Celebrations',caption:'A cake for a birthday',alt:'A birthday cake with flowers',decorative:false}
    const old=draft.id;draft=await save({base:draft.id,...edit})
