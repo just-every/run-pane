@@ -288,7 +288,7 @@
       "executable": false
     },
     "management/integration/deployment-spec.json": {
-      "sha256": "66954d8a7ec9e6b9e03c5f83623fa5c0f1e1a5eada23bf5643b367c069a91c90",
+      "sha256": "2da05545bb0fd92fd73fc4e37e1583978942b646384159204107cca74d79cdf9",
       "executable": false
     },
     "migrations/core/0001_owner.sql": {
@@ -3776,7 +3776,7 @@
       "executable": false
     },
     "src/pane/ui/person-privacy.ts": {
-      "sha256": "42488e1181583a7c198482cf5e5774c8280d47c2d4410c606b05be685af04956",
+      "sha256": "2a30d4eecba773eadebe9034761c72b4ecbc0f63a4ec57024541f0e19957952a",
       "executable": false
     },
     "src/pane/ui/posts.ts": {
@@ -4000,7 +4000,7 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "1f763a17c84568084767c5fb08229852c691bdf599d729c1a791672932c871f6",
+      "sha256": "b380a5f8cb3cab9bb25f78c3e5404342304085f225d70e9e365f085040d4ec13",
       "executable": false
     },
     "tests/post-fixture.mjs": {

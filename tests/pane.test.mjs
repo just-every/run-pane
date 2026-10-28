@@ -1362,19 +1362,20 @@ test('person privacy finds three enquiries, exports portable records, atomically
 })
 
 test('person erasure includes pending durable enquiries and prevents their recovery delivery',async()=>{
- const app=await runtime({isolatedLive:true});let mail
+ const {app,submit}=await formFixture({isolatedLive:true,marketing:true});let mail
  const native=createOperatorAuth({db:app.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{mail=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
  const post=(path,body,cookie)=>app.request(path,{method:'POST',headers:{Origin:origin,Cookie:cookie??'','Content-Type':'application/json'},body:JSON.stringify(body)})
  try{
-  await post('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})
   await native.requestMagicLink(new Request(origin+'/auth/magic-link',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin}}),{email:settings.OWNER_EMAIL})
   const token=new URL(mail.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token'),cookie=(await post('/auth/confirm',{token})).headers.get('set-cookie').split(';')[0]
-  const draft=await(await post('/api/pane/prepare',{site:fixture},cookie)).json();await post('/api/pane/publish',{revision:draft.id},cookie)
-  const id=crypto.randomUUID(),email='synthetic-pane-pending@example.test'
-  assert.equal((await app.request('/site/contact',{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({idempotency:id,name:'Synthetic visitor',email,message:'Pending personal data','cf-turnstile-response':'synthetic-pane-3'})})).status,303)
-  const found=await(await post('/api/pane/privacy/find',{email},cookie)).json();assert.equal(found.queued.length,1);assert.equal(found.messages.length,0)
+  const id=crypto.randomUUID(),email=['synthetic-pane-pending','example.test'].join('@')
+  assert.equal((await submit('contact',{email,email_marketing:'yes'},undefined,id)).status,303)
+  const found=await(await post('/api/pane/privacy/find',{email},cookie)).json();assert.equal(found.queued.length,1);assert.equal(found.messages.length,0);assert.deepEqual(found.marketingConsents[0].choices.map(choice=>[choice.channel,choice.granted]),[['email',true],['sms',false]])
+  const exported=await post('/api/pane/privacy/export',{email},cookie);assert.equal(exported.status,200);assert.deepEqual((await exported.json()).marketingConsents,found.marketingConsents)
   const erased=await post('/api/pane/privacy/erase',{email,confirm:'erase-person-data'},cookie);assert.equal(erased.status,200,await erased.clone().text())
   assert.equal((await(await post('/api/pane/privacy/find',{email},cookie)).json()).queued.length,0)
+  assert.equal((await submit('contact',{email,sms_marketing:'yes'},undefined,id)).status,303)
+  assert.deepEqual((await(await post('/api/pane/privacy/find',{email},cookie)).json()).marketingConsents,[])
   await(await app.mf.getWorker()).scheduled({scheduledTime:new Date(),cron:'* * * * *'})
   assert.equal((await app.db.prepare('SELECT COUNT(*) AS total FROM pane_messages').first()).total,0)
   assert.ok(await app.db.prepare('SELECT id FROM pane_erased_messages WHERE id=?').bind(id).first())
@@ -1793,7 +1794,7 @@ test('marketing choices bind published wording to immutable enquiry receipts and
  const email=['synthetic-pane-61','example.test'].join('@'),read=async id=>JSON.parse(await app.db.prepare('SELECT marketing_consent FROM pane_messages WHERE id=?').bind(id).first('marketing_consent'))
  try{
   const html=await (await app.request('/site/contact')).text(),schema=html.match(/name="consent_schema" value="([^"]+)"/)[1]
-  for(const key of ['email_marketing','sms_marketing'])assert.match(html,new RegExp('name="'+key+'" type="checkbox" value="yes">'),'Marketing starts unchecked')
+  for(const key of ['email_marketing','sms_marketing']){const control=html.match(new RegExp('<input[^>]+name="'+key+'"[^>]*>'))?.[0];assert.match(control,/type="checkbox" value="yes"/);assert.doesNotMatch(control,/\bchecked|\brequired/,'Marketing starts optional and unchecked')}
   assert.match(html,/Cedar Street Studio\. Message frequency: Up to four messages per month/)
   for(const mutate of [form=>form.fields.find(field=>field.type==='sms-consent').required=true,form=>delete form.fields.find(field=>field.type==='sms-consent').frequency]){
    const invalid=structuredClone(site);mutate(invalid.forms[0]);assert.equal((await call('/api/pane/prepare',{site:invalid,base:draft.id},cookie)).status,400)
@@ -1813,6 +1814,7 @@ test('marketing choices bind published wording to immutable enquiry receipts and
   instant+=60000;await submit('contact',{sms_marketing:'yes'},undefined,id);assert.deepEqual(await read(id),original,'Retries cannot rewrite choices, wording, time or page')
   const smsId=crypto.randomUUID();assert.equal((await submit('about',{sms_marketing:'yes'},undefined,smsId)).status,303);assert.deepEqual((await read(smsId)).choices.map(choice=>[choice.channel,choice.granted]),[['email',false],['sms',true]])
   const absentId=crypto.randomUUID();assert.equal((await submit('contact',{},undefined,absentId)).status,303);assert.deepEqual((await read(absentId)).choices.map(choice=>choice.granted),[false,false])
+  const policies=await (await call('/api/pane/policies/generate',{base:prepared.id},cookie)).json();assert.ok(policies.id);const policy=policies.site.pages.find(page=>page.slug==='privacy-policy').body;assert.match(policy,/separate and optional/);assert.ok(policy.includes(marketingFields[1].label));assert.doesNotMatch(policy,/Mailchimp|Orbit|Mango/,'Unconnected providers are never invented')
   const inbox=await (await app.request('/app/inquiries',{headers:{Cookie:cookie}})).text();assert.match(inbox,/Marketing consent records/);assert.match(inbox,/SMS: Not consented/);assert.match(inbox,/2030-06-20T12:00:00.000Z/)
   const csv=submissionRows(await (await app.request('/api/pane/submissions/export?form='+quoteDefinition.id,{headers:{Cookie:cookie}})).text());assert.deepEqual(JSON.parse(csv.find(row=>row[0]===id)[csv[0].indexOf('marketing_consent')]),original)
   const archive=await exportData(app.db),destination=await runtime()
