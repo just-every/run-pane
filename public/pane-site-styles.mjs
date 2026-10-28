@@ -24,8 +24,16 @@ for(const root of document.querySelectorAll('[data-site-style-settings]')){
  })
  form.addEventListener('draftrestore',render)
  form.addEventListener('panedraftsaved',event=>{
-  const frame=root.querySelector('[data-style-preview]'),link=root.querySelector('[data-style-preview-link]')
-  const url=new URL(link.href);url.pathname=url.pathname.replace(/^\/preview\/[^/]+/,'/preview/'+event.detail.id);link.href=url.href;frame.src=url.href
+  const preview=document.querySelector('[data-style-preview]'),link=root.querySelector('[data-style-preview-link]'),message=root.querySelector('[data-style-status]')
+  const url=new URL(link.href);url.pathname=url.pathname.replace(/^\/preview\/[^/]+/,'/preview/'+event.detail.id);link.href=url.href
+  if(!preview)return
+  for(const site of preview.querySelectorAll('.public-site'))site.toggleAttribute('data-site-styles',!!event.detail.site.styles)
+  let sheet=preview.querySelector('[data-style-sheet]')
+  if(!sheet){sheet=document.createElement('link');sheet.rel='stylesheet';sheet.dataset.styleSheet='';preview.append(sheet)}
+  const requested=url.pathname+'?pane-style-css=1'
+  sheet.onload=()=>{if(new URL(sheet.href).pathname!==url.pathname)return;preview.querySelectorAll('style[data-pane-layout]').forEach(style=>style.remove());message.textContent='Desktop preview updated.'}
+  sheet.onerror=()=>{message.textContent='Preview could not update. Open the saved preview to see this draft.'}
+  sheet.href=requested
  })
  render()
 }

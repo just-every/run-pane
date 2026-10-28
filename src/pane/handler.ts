@@ -1,3 +1,5 @@
+import {siteStyleCss} from './site-styles'
+import {layoutCss} from '../../public/pane-layout.mjs'
 import {fontResponse} from './fonts'
 import {submissionCsv,submissionForms} from './submission-export'
 import {collectionPrivateResponse} from './collection-handlers'
@@ -138,9 +140,11 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    site.pages=[...site.pages,...collectionPages(site)]
    if(!activePages(site).some(page=>page.slug===slug))return json({error:'Preview not found.'},404)
    if(url.searchParams.has('pane-font'))return fontResponse(site.styles?.fonts,url.searchParams.get('pane-font'),request.method)
-   const response=await document('Preview',publicPage(site,slug,'preview',false,false,undefined,undefined,url.pathname),'site')
-   const headers=new Headers(response.headers);headers.set('x-frame-options','SAMEORIGIN');headers.set('content-security-policy',headers.get('content-security-policy')!.replace("frame-ancestors 'none'","frame-ancestors 'self'"))
-   return new Response(response.body,{status:response.status,headers})
+   if(url.searchParams.has('pane-style-css')){
+    const page=site.pages.find(page=>page.slug===slug)
+    return new Response(siteStyleCss(site.styles,url.pathname)+(page?.sections?layoutCss(page.sections):''),{headers:{'content-type':'text/css; charset=utf-8','cache-control':'private, no-store','x-content-type-options':'nosniff'}})
+   }
+   return document('Preview',publicPage(site,slug,'preview',false,false,undefined,undefined,url.pathname),'site')
   }
   if(request.method==='GET' && ['/api/pane/activity','/api/pane/activity/export'].includes(path)) {
    if(!owner)return json({error:'Owner only.'},403)

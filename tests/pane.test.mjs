@@ -2161,6 +2161,9 @@ test('owner style drafts retain self-hosted fonts through preview, conflict, pub
  }
  const previewFont='/preview/'+draft.id+'/home?pane-font='+font.id
  assert.equal((await f.request(previewFont,{redirect:'manual'})).status,303)
+ const cssPath='/preview/'+draft.id+'/home?pane-style-css=1'
+ assert.equal((await f.request(cssPath,{redirect:'manual'})).status,303)
+ const sheet=await f.request(cssPath,{headers:{Cookie:owner}});assert.match(sheet.headers.get('content-type'),/text\/css/);assert.ok((await sheet.text()).includes('Pane-'+font.id))
  const privateFont=await f.request(previewFont,{headers:{Cookie:owner}});assert.equal(privateFont.headers.get('content-type'),'font/'+font.format);assert.deepEqual(Buffer.from(await privateFont.arrayBuffer()),fontBytes)
  assert.equal((await json('/api/pane/publish',{revision:draft.id})).status,200)
  const asset='/site?pane-font='+font.id+'&pane-revision='+draft.id
