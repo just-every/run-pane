@@ -1,12 +1,13 @@
 import type {Site} from './model'
 import {builtInFonts,normalizeFonts,type SiteFont} from './fonts'
-export type SiteStyles={heading:string;body:string;primary:string;text:string;background:string;sectionBackground:string;button:'rounded'|'square'|'pill';spacing:number;fonts:SiteFont[]}
+export type SiteStyles={heading:string;body:string;primary:string;text:string;background:string;sectionBackground:string;button:'rounded'|'square'|'pill';spacing:number;gap?:number;paddingTop?:number;paddingBottom?:number;fonts:SiteFont[]}
 export const defaultStyles:SiteStyles={heading:'figtree',body:'figtree',primary:'#d4005f',text:'#4a3a45',background:'#ffffff',sectionBackground:'#ffffff',button:'rounded',spacing:32,fonts:[]}
 export function normalizeStyles(value:unknown):SiteStyles|undefined{
  if(value===undefined)return undefined
  if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Provide site style settings.')
  const raw=value as Record<string,unknown>
- if(Object.keys(raw).some(key=>!Object.hasOwn(defaultStyles,key)))throw Error('Unsupported site style setting.')
+ if(Object.keys(raw).some(key=>!Object.hasOwn(defaultStyles,key)&&!['gap','paddingTop','paddingBottom'].includes(key)))throw Error('Unsupported site style setting.')
+ for(const key of ['gap','paddingTop','paddingBottom'])if(raw[key]!==undefined&&(!Number.isInteger(raw[key])||Number(raw[key])<0||Number(raw[key])>(key==='gap'?160:240)))throw Error('Choose bounded section spacing.')
  const result={...defaultStyles,...raw,fonts:normalizeFonts(raw.fonts)} as SiteStyles
  for(const key of ['heading','body'] as const)if(typeof result[key]!=='string'||!Object.hasOwn(builtInFonts,result[key])&&!result.fonts.some(font=>font.id===result[key]))throw Error('Choose a built-in or uploaded font.')
  for(const key of ['primary','text','background','sectionBackground'] as const){if(typeof result[key]!=='string'||!/^#[a-fA-F0-9]{6}$/.test(result[key]))throw Error('Use a six-digit hex color.');result[key]=result[key].toLowerCase()}
@@ -16,7 +17,7 @@ export function normalizeStyles(value:unknown):SiteStyles|undefined{
 export function stylesFromForm(input:Record<string,unknown>,site:Site):{styles?:SiteStyles}{
  if(!Object.keys(input).some(key=>key.startsWith('styles.')))return {styles:site.styles}
  const value:Record<string,unknown>={...defaultStyles,...site.styles}
- for(const key of Object.keys(defaultStyles))if(input['styles.'+key]!==undefined)value[key]=key==='fonts'?JSON.parse(String(input['styles.'+key])):key==='spacing'?Number(input['styles.'+key]):input['styles.'+key]
+ for(const key of [...Object.keys(defaultStyles),'gap','paddingTop','paddingBottom'])if(input['styles.'+key]!==undefined)value[key]=key==='fonts'?JSON.parse(String(input['styles.'+key])):['spacing','gap','paddingTop','paddingBottom'].includes(key)?Number(input['styles.'+key]):input['styles.'+key]
  const styles=normalizeStyles(value)
  return {styles:!site.styles&&JSON.stringify(styles)===JSON.stringify(defaultStyles)?undefined:styles}
 }

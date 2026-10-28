@@ -90,7 +90,7 @@ const socialPaths: Record<SocialNetwork, string> = {
  yelp: '<path d="m10 2 4-1v8l-2 1zm6 7 5-2 1 4-6 1zm0 5 6 1-2 4-5-3zm-4 2 2 1-1 6-4-1zm-3-4v3l-7 1v-4z"/>',
  google: '<path d="M21 12h-9m8.3-5.2A9 9 0 1 0 21 12v-1h-9" fill="none" stroke="currentColor" stroke-width="3"/>',
 }
-function socialLinks(site: NavigationSite): string {
+export function socialLinks(site: NavigationSite): string {
  const socials = normalizeSocials(site.socials)
  const links = socialNetworks.filter(network => socials[network]).map(network => `<a href="${escape(socials[network])}" aria-label="${socialNames[network]}" data-tip="${socialNames[network]} profile" rel="me"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true" focusable="false">${socialPaths[network]}</svg></a>`).join('')
  return links ? `<div class="public-socials" role="group" aria-label="Social profiles">${links}</div>` : ''

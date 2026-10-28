@@ -1,3 +1,4 @@
+import {effectiveSection} from '../../public/pane-site-styles.mjs'
 import {collectionPages} from './collection-page'
 import { parseFragment, type DefaultTreeAdapterMap } from 'parse5'
 import type { Site } from './model'
@@ -47,12 +48,12 @@ export function accessibilityFindings(site: Site): AccessibilityFinding[] {
     for(const block of section.blocks)for(const image of [block.image,...(block.gallery?.items.map(item=>site.media?.find(asset=>asset.id===item.asset)?.image)??[])])if(image&&!image.decorative&&!image.alt?.trim())findings.push({slug:page.slug,image:true,message:'An image needs alternative text or an explicit decorative mark before publishing.'})
     const tags = section.blocks.filter(block=>block.kind==='text').flatMap(block => [block.format ?? 'p', ...(block.content ? richTags(block.content) : [])])
     tags.forEach(heading)
-    const surface = background(section.background??site.styles?.sectionBackground??site.styles?.background)
+    const surface = background(effectiveSection(section,site.styles).background??site.styles?.background)
     // At the narrowest published size H1–H3 qualify as large bold text.
     const headingText = tags.some(tag => /^h[1-3]$/.test(tag))
     const bodyText = section.blocks.some(block => block.kind==='text' && !/^h[1-3]$/.test(block.format ?? 'p') && (block.format !== 'div' || !block.content || block.content.some(node => !/^h[1-3]$/.test(node.tag))))
-    if (headingText && contrast(ink, surface) < 3) warn(`Section ${index + 1} heading contrast is below 3:1; choose a lighter background.`)
-    if (bodyText && contrast(body, surface) < 4.5) warn(`Section ${index + 1} text contrast is below 4.5:1; choose a lighter background.`)
+    if (headingText && contrast(site.styles?.heading??ink, surface) < 3) warn(`Section ${index + 1} heading contrast is below 3:1; choose a lighter background.`)
+    if (bodyText && contrast(site.styles?.text??body, surface) < 4.5) warn(`Section ${index + 1} text contrast is below 4.5:1; choose a lighter background.`)
    }
    let phonePrevious=1
    for(const section of page.sections.filter(section=>!section.phone?.hidden))for(const block of section.blocks.filter(block=>block.kind==='text'&&!block.phone?.hidden)){

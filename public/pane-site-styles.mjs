@@ -1,4 +1,10 @@
-for(const root of document.querySelectorAll('[data-site-style-settings]')){
+export const inheritedSectionFields=['gap','paddingTop','paddingBottom','background']
+export function effectiveSection(section,styles){
+ const values={gap:24,paddingTop:32,paddingBottom:32,sectionBackground:'#ffffff',...styles},result={...section}
+ for(const field of section.defaults??[])result[field]=field==='background'?values.sectionBackground:values[field]
+ return result
+}
+for(const root of typeof document==='undefined'?[]:document.querySelectorAll('[data-site-style-settings]')){
  const form=root.closest('form'),field=root.querySelector('[data-font-state]'),upload=root.querySelector('[data-font-upload]'),status=root.querySelector('[data-font-status]')
  function render(){
   const fonts=JSON.parse(field.value)

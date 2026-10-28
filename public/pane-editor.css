@@ -294,6 +294,9 @@
 
 .pane .canvas-scroll{max-width:100%;overflow:auto}.pane [data-layout-canvas]{min-width:0;margin-inline:auto}.pane .canvas-devices{display:grid;gap:8px;margin-bottom:16px;max-width:36rem}.pane .canvas-devices select{min-height:44px}.pane [data-layout-canvas] [data-phone-override]{outline:2px dotted var(--pn-action);outline-offset:2px}.pane [data-layout-canvas] [data-selected]{outline-style:dashed}
 .pane [data-image-settings][hidden]{display:none}
+.pane .canvas-tools{min-width:0;grid-template-columns:minmax(0,1fr)}
+.pane .canvas-tools :is(fieldset,details,label,.canvas-devices){min-width:0;max-width:100%;box-sizing:border-box}
+.pane .canvas-tools :is(input,select,textarea){min-width:0;max-width:100%;box-sizing:border-box}
 
 /* Preserve the workspace palette with enough contrast for small action text. */
 .rer-themed .pane .screen-pages .primary,
@@ -306,3 +309,6 @@
 
 /* Canvas actions use the existing darker brand token for readable white labels. */
 .rer-themed .pane .canvas-tools button:not(.secondary){background:var(--pn-fuchsia-deep);border-color:var(--pn-fuchsia-deep)}
+/* Keep small preview labels readable in the existing page-editor palette. */
+.rer-themed .pane .screen-pages .block-tag { background: color-mix(in srgb, var(--pn-action) 95%, var(--pn-ink)); }
+.rer-themed .pane .screen-pages .pill-new { color: color-mix(in srgb, var(--pn-fuchsia-deep) 85%, var(--pn-ink)); }

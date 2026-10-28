@@ -1,5 +1,8 @@
 // Only approved live revisions contain this loader. Code has an opaque origin and no network authority.
-const region=document.querySelector('[data-custom-code]'),key='pane:consent:analytics'
+for(const region of document.querySelectorAll('[data-custom-code]')){
+if(region.dataset.codeInitialized)continue
+region.dataset.codeInitialized='true'
+const key='pane:consent:analytics'
 const sent=new URLSearchParams(location.search).get('sent')
 const sourcePage=sent==='1'?region.dataset.page:sent
 let thanks=JSON.parse(region.dataset.thankGoals).filter(goal=>goal.page===sourcePage)
@@ -25,8 +28,10 @@ function choose(choice,remember=false){
 }
 region.querySelector('[data-code-allow]').addEventListener('click',()=>choose('allow',true))
 region.querySelector('[data-code-deny]').addEventListener('click',()=>choose('deny',true))
-addEventListener('pane:consent',event=>{if(event.detail.source!=='custom-code')choose(event.detail.choice)})
+addEventListener('pane:consent',event=>{choose(event.detail.choice)})
 addEventListener('storage',event=>{if(event.key===key)choose(event.newValue)})
 addEventListener('pane:goal',event=>{if(frame&&!quiet&&!JSON.parse(document.querySelector('script[data-goals]')?.dataset.goals??'[]').some(goal=>goal.type==='form'&&goal.name===event.detail.name))frame.contentWindow.postMessage({type:'pane:goal',detail:{name:event.detail.name,value:event.detail.value??1}},'*')})
 let saved;try{saved=localStorage.getItem(key)}catch{}
 choose(saved)
+
+}
