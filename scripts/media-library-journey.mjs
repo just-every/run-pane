@@ -42,7 +42,14 @@ export async function mediaLibraryJourney({page,context,origin,state,call,folder
  }
  const initial={name:'Riverbend Bakery',description:'Celebration cakes and care guides from our neighbourhood bakery.',pages:[{id:'library-home',slug:'home',title:'Our celebration cakes',body:'A cake for every community table.'},{id:'library-occasions',slug:'occasions',title:'Special occasions',body:'Plan a celebration with our bakery.'},{id:'library-visit',slug:'visit-us',title:'Visit our bakery',body:'Come in for a slice and a conversation.'}]}
  try{
-  await call('/api/pane/prepare',{site:initial});await page.setViewportSize({width:1440,height:1000});await page.goto(origin+'/app/library')
+  await call('/api/pane/prepare',{site:initial})
+  for(const width of [1440,390]){
+   await page.setViewportSize({width,height:1000});await page.goto(origin+'/app')
+   assert.equal(await page.getByRole('link',{name:'Media library',exact:true}).count(),1)
+   await capture('media-library-pages-entry',width)
+  }
+  await page.setViewportSize({width:1440,height:1000})
+  await page.getByRole('link',{name:'Media library',exact:true}).click();await page.waitForURL('**/app/library')
   const images=await page.evaluate(async()=>{
    const source=new Image();source.src='/site/cake-3.webp';await source.decode()
    return Array.from({length:50},(_,index)=>{
