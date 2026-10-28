@@ -101,7 +101,7 @@ export async function siteStylesJourney({page,context,origin,folder}){
   return route.fulfill({contentType:'font/woff2',headers:{'access-control-allow-origin':'*'},body:adobeBody})
  })
  await context.route('https://p.typekit.net/**',route=>route.fulfill({contentType:'text/css',body:''}))
- async function adobeRendered(id){
+ async function adobeRendered(id,requestStart){
   await page.evaluate(()=>document.fonts.ready)
   const result=await page.evaluate(id=>{
    const heading=getComputedStyle(document.querySelector('.public-main h1')).fontFamily,body=getComputedStyle(document.querySelector('.public-content p')).fontFamily
@@ -111,7 +111,8 @@ export async function siteStylesJourney({page,context,origin,folder}){
   },id)
   assert.ok(result.heading.includes(id)&&result.body.includes('synthetic-pane-adobe')&&result.headingLoaded&&result.bodyLoaded&&result.distinct,'Uploaded headings and Adobe body text both decode and render distinctly')
   assert.ok(result.resources.some(url=>new URL(url).origin===origin&&new URL(url).searchParams.get('pane-font')===id),'Uploaded headings stay on this origin')
-  assert.ok(result.resources.includes('https://use.typekit.net/syn0001.css')&&result.resources.includes('https://use.typekit.net/synthetic-pane.woff2'),'Adobe body text uses its hosted CSS and font')
+  const requests=adobeRequests.slice(requestStart)
+  assert.ok(result.resources.includes('https://use.typekit.net/syn0001.css')&&requests.includes('/syn0001.css')&&requests.includes('/synthetic-pane.woff2'),'This page requests the hosted Adobe CSS and font before decoding and rendering them')
  }
  for(const width of [1440,390]){
   await page.setViewportSize({width,height:1000})
@@ -131,9 +132,9 @@ export async function siteStylesJourney({page,context,origin,folder}){
   await page.reload();assert.equal(await page.getByLabel('Body font',{exact:true}).inputValue(),'adobe:synthetic-pane-adobe')
   const draft=(await state()).draft
   await page.goto(origin+'/site');assert.equal(await page.locator('[data-adobe-fonts]').count(),0,'Draft Adobe connection is not live before approval')
-  for(const slug of ['home','services','contact']){await page.goto(origin+'/preview/'+draft.id+'/'+slug);await adobeRendered(font.id);await screen('adobe-preview-'+slug,width)}
+  for(const slug of ['home','services','contact']){const requestStart=adobeRequests.length;await page.goto(origin+'/preview/'+draft.id+'/'+slug);await adobeRendered(font.id,requestStart);await screen('adobe-preview-'+slug,width)}
   await page.goto(origin+'/app');await Promise.all([page.waitForURL(url=>url.searchParams.has('notice')),page.getByRole('button',{name:'Approve & publish',exact:true}).click()])
-  for(const slug of ['home','services','contact']){await page.goto(origin+(slug==='home'?'/site':'/site/'+slug));await adobeRendered(font.id);await screen('adobe-live-'+slug,width)}
+  for(const slug of ['home','services','contact']){const requestStart=adobeRequests.length;await page.goto(origin+(slug==='home'?'/site':'/site/'+slug));await adobeRendered(font.id,requestStart);await screen('adobe-live-'+slug,width)}
   await page.goto(origin+'/app');await page.locator('[data-site-style-settings] > summary').click();await page.locator('[data-adobe-settings] > summary').click();await page.locator('[data-adobe-disconnect]').click();await saved()
   assert.equal(await page.getByLabel('Body font',{exact:true}).inputValue(),'figtree');assert.equal((await state()).draft.site.styles.adobe,undefined)
   await screen('adobe-disconnected',width)

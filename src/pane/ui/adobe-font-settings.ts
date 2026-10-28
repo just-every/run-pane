@@ -11,9 +11,9 @@ export function adobeFontSettings(adobe?:AdobeProject):string{
 <label for="styles-adobe-families">Font families, separated by commas</label>
 <input id="styles-adobe-families" data-adobe-families value="${escape(adobe?.families.join(', ')??'')}" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="styles-adobe-help styles-adobe-status">
 <label for="styles-adobe-authorize"><input type="checkbox" id="styles-adobe-authorize" data-adobe-authorize aria-describedby="styles-adobe-hosting">I authorize this site to use my Adobe web project.</label>
-<p class="help" id="styles-adobe-hosting">Connecting lets your browser request fonts directly from Adobe for the preview now. Visitors request them from Adobe after you separately approve publication. Adobe receives browser information, including IP addresses, with these requests. Live loading depends on your Adobe account and web project.</p>
+<p class="help" id="styles-adobe-hosting">Selecting an Adobe font lets your browser request it directly from Adobe for the preview. Visitors request them from Adobe after you separately approve publication. Adobe receives browser information, including IP addresses, with these requests. Live loading depends on your Adobe account and web project.</p>
 <div class="actions"><button type="button" class="small" data-adobe-connect>${adobe?'Update configuration':'Connect project'}</button><button type="button" class="small secondary" data-adobe-disconnect${adobe?'':' disabled'}>Disconnect Adobe Fonts</button></div>
 <p class="help">Disconnecting returns any selected Adobe fonts to Figtree.</p>
-<p class="help" id="styles-adobe-status" data-adobe-status role="status">${adobe?'Adobe configuration saved in this draft. Font loading has not been verified.':'No Adobe project configured.'}</p>
+<p class="help" id="styles-adobe-status" data-adobe-status role="status">${adobe?'Adobe configuration saved in this draft. Review the preview before publishing.':'No Adobe project configured.'}</p>
 </details>`
 }

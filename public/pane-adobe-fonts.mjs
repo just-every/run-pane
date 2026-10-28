@@ -23,17 +23,17 @@ export function initAdobeFonts(root,renderFonts){
   if(names.some(name=>!/^[a-z][a-z0-9-]{0,79}$/i.test(name))||unique.length>12){invalid(families,'Enter 1 to 12 CSS font-family names, separated by commas. Use letters, numbers and hyphens, starting with a letter.');return}
   if(!authorize.checked){invalid(authorize,'Authorize your Adobe web project before connecting or updating it.');return}
   apply({project:id,families:unique,authorized:true})
-  status.textContent='Adobe configuration added to draft. Choose its fonts for headings or body text. Font loading has not been verified.'
+  status.textContent='Adobe configuration added to draft. Choose its fonts for headings or body text. Review the preview before publishing.'
  })
  disconnect.addEventListener('click',()=>{
   apply(null);status.textContent='Adobe configuration removed from draft.';connect.focus()
  })
  form.addEventListener('draftrestore',()=>{
-  reset();renderFonts();status.textContent=state()?'Adobe configuration restored in this draft. Font loading has not been verified.':'No Adobe project configured.'
+  reset();renderFonts();status.textContent=state()?'Adobe configuration restored in this draft. Review the preview before publishing.':'No Adobe project configured.'
  })
  form.addEventListener('panedraftsaved',event=>{
   if(JSON.stringify(event.detail.site.styles?.adobe??null)!==field.value)return
-  status.textContent=state()?'Adobe configuration saved in this draft. Font loading has not been verified.':'No Adobe project configured.'
+  status.textContent=state()?'Adobe configuration saved in this draft. Review the preview before publishing.':'No Adobe project configured.'
  })
  reset()
 }

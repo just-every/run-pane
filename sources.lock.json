@@ -584,7 +584,7 @@
       "executable": false
     },
     "public/pane-adobe-fonts.mjs": {
-      "sha256": "573ea9b136e8fb614b5d595fc4f2d8187883c0a4567b0edf967a814fc9b9eed2",
+      "sha256": "d05efa55abffe8a2f6d9be68db078f5a77cd9c00177154cf1c47efc85d52bfdf",
       "executable": false
     },
     "public/pane-ai.css": {
@@ -1432,7 +1432,7 @@
       "executable": false
     },
     "scripts/styles-journey.mjs": {
-      "sha256": "5b3ae0bd114281289ab161f454140cd911381d59428d155f506078b6334e8176",
+      "sha256": "4c5034773062cb5667a241109a08de75fb0b8d6d80cc2e334daf88ff9e8e1f7b",
       "executable": false
     },
     "scripts/templates-journey.mjs": {
@@ -3740,7 +3740,7 @@
       "executable": false
     },
     "src/pane/ui/adobe-font-settings.ts": {
-      "sha256": "8793b14e055980c7c7f7950222e8f14232fa8b231b9e2eb590a193b91d455d96",
+      "sha256": "bffe2c5e1fd63a5456aa37bfc35369b089d88c446577adc325dfd07591cd698a",
       "executable": false
     },
     "src/pane/ui/ai-assist.ts": {
