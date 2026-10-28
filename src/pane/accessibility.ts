@@ -1,4 +1,3 @@
-import {effectiveSection} from '../../public/pane-site-styles.mjs'
 import {collectionPages} from './collection-page'
 import { parseFragment, type DefaultTreeAdapterMap } from 'parse5'
 import type { Site } from './model'

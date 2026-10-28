@@ -8,13 +8,13 @@ import {normalizeSections,sectionText} from './sections'
 import type {Site} from './model'
 
 function assetKind(value:unknown):MediaKind {
- if(value!=='image'&&value!=='pdf')throw Error('Choose an image or PDF.')
+ if(value!=='image'&&value!=='pdf'&&value!=='audio')throw Error('Choose an image, PDF or audio file.')
  return value
 }
 
 export function libraryAssets(site:Site,query:URLSearchParams,live?:Site){
  const q=(query.get('q')??'').normalize('NFC').toLocaleLowerCase(),kind=query.get('type'),folder=query.get('folder')
- return [...(site.media??[]).map(item=>({...item,kind:'image' as const})),...(site.libraryFiles??[]).filter(item=>item.type==='application/pdf').map(item=>({...item,kind:'pdf' as const}))].filter(item=>(!kind||kind===item.kind)&&(!folder||(folder==='__unfiled'?!item.folder:folder===item.folder))&&(!q||[item.name,item.folder,item.caption,'image' in item?item.image.alt:''].some(value=>value?.toLocaleLowerCase().includes(q)))).map(item=>({...item,uses:distinctUses([...mediaUses(site,item.kind,item.id),...(live?mediaUses(live,item.kind,item.id):[])])}))
+ return [...(site.media??[]).map(item=>({...item,kind:'image' as const})),...(site.libraryFiles??[]).map(item=>({...item,kind:item.type==='application/pdf'?'pdf' as const:'audio' as const}))].filter(item=>(!kind||kind===item.kind)&&(!folder||(folder==='__unfiled'?!item.folder:folder===item.folder))&&(!q||[item.name,item.folder,item.caption,'image' in item?item.image.alt:''].some(value=>value?.toLocaleLowerCase().includes(q)))).map(item=>({...item,uses:distinctUses([...mediaUses(site,item.kind,item.id),...(live?mediaUses(live,item.kind,item.id):[])])}))
 }
 
 /** Owner-only callers prepare a revision; approval and public delivery stay separate. */
@@ -52,13 +52,13 @@ export async function changeLibrary(db:D1Database,actor:string,input:Record<stri
    if(!page)throw Error('Choose an existing page.')
    if(page.importedHtml!==undefined||page.layout!==undefined)throw Error('Open this page in the visual canvas before placing a library file.')
    const sections=page.sections??normalizeSections([{id:crypto.randomUUID(),kind:'text',blocks:[{id:crypto.randomUUID(),kind:'text',text:page.body,column:1,span:12,row:1}]}])!
-   const block=kind==='image'?{id:crypto.randomUUID(),kind:'gallery',text:'',column:1,span:12,row:1,gallery:{layout:'grid',columns:1,phoneColumns:1,gap:16,phoneGap:12,lightbox:false,items:[{asset:id,caption:asset.caption??''}]}}:{id:crypto.randomUUID(),kind:'button',text:asset.caption??asset.name,column:1,span:12,row:1,link:{href:'file:'+id,newTab:false}}
+   const block=kind==='image'?{id:crypto.randomUUID(),kind:'gallery',text:'',column:1,span:12,row:1,gallery:{layout:'grid',columns:1,phoneColumns:1,gap:16,phoneGap:12,lightbox:false,items:[{asset:id,caption:asset.caption??''}]}}:kind==='audio'?{id:crypto.randomUUID(),kind:'audio',text:asset.caption??asset.name,column:1,span:12,row:1,audio:{file:id,download:true}}:{id:crypto.randomUUID(),kind:'button',text:asset.caption??asset.name,column:1,span:12,row:1,link:{href:'file:'+id,newTab:false}}
    page.sections=normalizeSections([...sections,{id:crypto.randomUUID(),kind:'text',blocks:[block]}])
    page.body=sectionText(page.sections!)
   }else throw Error('Choose a library action.')
  }
  // Undo must obey the same deletion guard as the explicit Delete action.
- const removed=[...(current.site.media??[]).filter(asset=>!site.media?.some(item=>item.id===asset.id)).map(asset=>({kind:'image' as const,id:asset.id})),...(current.site.libraryFiles??[]).filter(asset=>!site.libraryFiles?.some(item=>item.id===asset.id)).map(asset=>({kind:'pdf' as const,id:asset.id}))]
+ const removed=[...(current.site.media??[]).filter(asset=>!site.media?.some(item=>item.id===asset.id)).map(asset=>({kind:'image' as const,id:asset.id})),...(current.site.libraryFiles??[]).filter(asset=>!site.libraryFiles?.some(item=>item.id===asset.id)).map(asset=>({kind:asset.type==='application/pdf'?'pdf' as const:'audio' as const,id:asset.id}))]
  if(removed.length){
   const liveRow=await db.prepare('SELECT r.* FROM pane_revisions r JOIN pane_state s ON s.live=r.id WHERE s.id=1').first(),live=liveRow?revision(liveRow).site:undefined
   const uses=distinctUses(removed.flatMap(asset=>[...mediaUses(current.site,asset.kind,asset.id),...(live?mediaUses(live,asset.kind,asset.id):[])]))

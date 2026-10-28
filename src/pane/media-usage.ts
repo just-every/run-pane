@@ -3,7 +3,7 @@ import {postFiles} from './library-files'
 import type {Page,Site} from './model'
 
 export type MediaUse={page:string;title:string;slug:string;kind:'page'|'post'|'item'|'component'}
-export type MediaKind='image'|'pdf'
+export type MediaKind='image'|'pdf'|'audio'
 
 /** Include unpublished, protected and retained content; never infer use from a filename. */
 export function mediaUses(site:Site,kind:MediaKind,id:string):MediaUse[]{

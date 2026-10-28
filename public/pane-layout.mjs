@@ -1,4 +1,4 @@
-import {effectiveSection} from './pane-site-styles.mjs'
+import {effectiveSection} from './pane-section-styles.mjs'
 import {catalogMarkup,catalogRules} from './pane-catalog.mjs'
 import {linkedBody,bodyEmbed} from './pane-body-markup.mjs'
 import {galleryMarkup} from './pane-gallery-markup.mjs'

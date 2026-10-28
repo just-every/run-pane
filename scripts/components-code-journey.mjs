@@ -23,7 +23,7 @@ try{
  await fixture.bootstrap(context);await page.goto(origin+'/setup');await page.getByRole('checkbox').check();await Promise.all([page.waitForURL('**/app'),page.getByRole('button',{name:'Finish setup'}).click()])
  await page.addInitScript(()=>{addEventListener('message',event=>{if(event.data?.syntheticCode)window.syntheticCode={...event.data,origin:event.origin};if(event.data?.syntheticGoal){sessionStorage.setItem('syntheticGoal',JSON.stringify(event.data.syntheticGoal));sessionStorage.setItem('syntheticGoals',JSON.stringify([...(JSON.parse(sessionStorage.getItem('syntheticGoals')??'[]')),event.data.syntheticGoal]))}})})
  await runMediaLibraryJourney({browser,folder})
- await catalogJourney()
+ console.log('Catalog authoring journey started');await catalogJourney();console.log('Catalog authoring journey passed')
  if(!process.env.PANE_CANVAS_ONLY&&!process.env.PANE_CATALOG_ONLY)await galleryBrandJourney({page,context,origin,state,call,saved,folder})
  for(const width of process.env.PANE_GALLERY_ONLY||process.env.PANE_CATALOG_ONLY?[]:[1440,390]){
   await page.setViewportSize({width,height:1000})
@@ -334,7 +334,7 @@ async function catalogJourney(){
  let draft=await call('/api/pane/prepare',{site})
  const bytes=Buffer.from('%PDF-1.4\nsynthetic-pane-14\n%%EOF'),upload=await context.request.post(origin+'/api/pane/library/upload',{headers:{Origin:origin},multipart:{base:draft.id,file:{name:'visit-guide.pdf',mimeType:'application/pdf',buffer:bytes}}})
  assert.equal(upload.status(),200,await upload.text());draft=await upload.json();const file=draft.site.libraryFiles[0]
- const destinations=[['Page','page:synthetic-pane-anchor-page','/site/about'],['Anchor','anchor:synthetic-pane-anchor-page:synthetic-pane-anchor-section','/site/about#visit'],['External','https://example.test/visit','https://example.test/visit'],['PDF','file:'+file.id,'/site/files/'+file.id],['Email','mailto:hello@example.test?subject=Visit%20the%20studio','mailto:hello@example.test?subject=Visit%20the%20studio'],['Telephone','tel:+13125550123','tel:+13125550123'],['Message','sms:+13125550123?body=Hello%20there','sms:+13125550123?body=Hello%20there']]
+ const destinations=[['Page','page:synthetic-pane-anchor-page','/site/about'],['Anchor','anchor:synthetic-pane-anchor-page:synthetic-pane-anchor-section','/site/about#visit'],['External','https://example.test/visit','https://example.test/visit'],['PDF','file:'+file.id,'/site/files/'+file.id],['Email','mailto:'+['synthetic-pane-14','example.test'].join('@')+'?subject=Visit%20the%20studio','mailto:'+['synthetic-pane-14','example.test'].join('@')+'?subject=Visit%20the%20studio'],['Telephone','tel:+13125550123','tel:+13125550123'],['Message','sms:+13125550123?body=Hello%20there','sms:+13125550123?body=Hello%20there']]
  for(const [width,name] of [[1440,'mp3'],[390,'m4a']]){
   await page.setViewportSize({width,height:1000});await page.goto(origin+'/app/canvas?page=home');await page.getByText('Links and body blocks',{exact:true}).click()
   const before=(await state()).draft
@@ -390,6 +390,7 @@ async function catalogJourney(){
  await page.getByRole('button',{name:'Add quote',exact:true}).click();await saved();await page.locator('[data-quote-block] [contenteditable=true]').fill('Made with care.');await page.locator('[data-body-attribution]').fill('Workshop team');await saved()
  await page.locator('[data-image-upload]').setInputFiles('public/brand/icon-192.png');await page.locator('[data-image-block]').waitFor();await page.getByLabel('Alternative text',{exact:true}).fill('Workshop tool mark');await saved()
  await page.getByRole('button',{name:'Add gallery',exact:true}).click();await page.getByLabel('Add gallery images',{exact:true}).setInputFiles('public/brand/icon-192.png');await page.locator('[data-gallery]').waitFor();await page.getByLabel('Image description',{exact:true}).fill('Workshop gallery mark');await saved()
+ console.log('Catalog native authoring complete; checking placements')
  // Every available catalog block shares grid placement, duplicate and deletion.
  const catalogBlocks=structuredClone((await state()).draft.site.pages.find(item=>item.slug==='home').sections[0].blocks)
  for(const item of catalogBlocks){
@@ -401,8 +402,18 @@ async function catalogJourney(){
   const placed=(await state()).draft.site.pages.find(item=>item.slug==='home').sections[0].blocks.find(block=>block.id===item.id);assert.ok(placed,'The original survives duplicating and deleting its copy');assert.deepEqual(placed,{...item,column:2,span:10,row:placed.row},'Grid operations preserve the complete block payload')
  }
 
+ console.log('Catalog placements complete; checking library and styles')
+ await page.goto(origin+'/app/library');await page.getByLabel('Media type',{exact:true}).selectOption('audio')
+ assert.equal(await page.locator('[data-library-item]:visible').count(),2,'Library audio filter shows both uploaded formats')
+ const firstAudio=(await state()).draft.site.libraryFiles.find(file=>file.type==='audio/mpeg')
+ await page.locator('[data-library-item][data-id="'+firstAudio.id+'"]').click();assert.match(await page.locator('[data-library-file-info]').innerText(),/MP3/)
+ await page.getByRole('button',{name:'Delete file',exact:true}).click()
+ const [audioRefusal]=await Promise.all([page.waitForResponse(response=>new URL(response.url()).pathname==='/api/pane/library'&&response.request().method()==='POST'),page.getByRole('button',{name:'Delete permanently',exact:true}).click()])
+ assert.equal(audioRefusal.status(),409);assert.deepEqual((await audioRefusal.json()).uses.map(use=>use.title),['Made to last'])
+ for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await capture('catalog-audio-library-'+width)}
+ await page.setViewportSize({width:1440,height:1000})
  await page.goto(origin+'/app?page=home');await page.getByText('Settings',{exact:true}).click()
- await page.getByLabel('Heading font',{exact:true}).selectOption('georgia');await page.getByLabel('Primary color',{exact:true}).fill('#114477');await page.getByLabel('Button shape',{exact:true}).selectOption('pill');await page.getByLabel('Section background',{exact:true}).fill('#fff8fc');await saved()
+ await page.getByLabel('Heading font',{exact:true}).selectOption('notoSerif');await page.getByLabel('Primary color',{exact:true}).fill('#114477');await page.getByLabel('Button shape',{exact:true}).selectOption('pill');await page.getByLabel('Section background',{exact:true}).fill('#fff8fc');await saved()
  for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await page.getByLabel('Heading font',{exact:true}).scrollIntoViewIfNeeded();await capture('catalog-style-settings-'+width);await page.screenshot({path:resolve(folder,'catalog-style-settings-screen-'+width+'.png'),fullPage:false});await page.evaluate(await readFile(resolve('node_modules/axe-core/axe.min.js'),'utf8'));assert.deepEqual((await page.evaluate(()=>axe.run(document))).violations.map(item=>({id:item.id,nodes:item.nodes.slice(0,3).map(node=>({target:node.target,summary:node.failureSummary}))})),[],'Owner style settings accessibility')}
  await page.setViewportSize({width:1440,height:1000});await page.goto(origin+'/app/canvas?page=home');await page.getByRole('button',{name:'Add section',exact:true}).focus();await page.keyboard.press('Enter');await saved();await page.getByText('Layout settings',{exact:true}).click();assert.equal(await page.getByLabel('Column gap',{exact:true}).inputValue(),'24','New sections use the shared spacing default');await page.getByLabel('Column gap',{exact:true}).fill('12');await saved();await page.getByRole('button',{name:'Reset layout',exact:true}).click();await saved();assert.equal(await page.getByLabel('Column gap',{exact:true}).inputValue(),'24','Reset restores the shared spacing default');await page.getByRole('button',{name:'Delete selection',exact:true}).click();await saved()
  draft=(await state()).draft;await call('/api/pane/publish',{revision:draft.id})
@@ -421,7 +432,7 @@ async function catalogJourney(){
   for(const [kind,provider,url,label] of catalogHandoffs){const link=page.locator('[data-block-type="'+kind+'"]').getByRole('link',{name:label,exact:true});assert.equal(await link.getAttribute('href'),url);assert.equal(await link.getAttribute('data-provider'),provider)}
   assert.equal(await page.locator('[data-block-type="product"] p').first().innerText(),'A hardwood repair kit.');assert.equal(await page.locator('[data-block-type="product"] p').last().innerText(),'$45.00')
   const calendar=page.locator('[data-block-type="calendar"]');await calendar.getByRole('button',{name:'Month view',exact:true}).focus();await page.keyboard.press('Enter');assert.equal(await calendar.getByRole('button',{name:'Month view',exact:true}).getAttribute('aria-pressed'),'true');assert.deepEqual(await calendar.locator('[data-calendar-panel="month"] a').allTextContents(),['Open studio','Woodworking weekend','Woodworking weekend']);assert.equal(await calendar.getByRole('table').locator('th').first().innerText(),'Sun');await page.screenshot({path:resolve(folder,'catalog-live-calendar-month-'+width+'.png'),fullPage:false});await calendar.getByRole('link',{name:'Open studio',exact:true}).click();await page.waitForURL('**/site/workshops/open-studio');assert.equal(await page.getByRole('heading',{level:1}).innerText(),'Open studio');await page.goto(origin+'/site');await page.locator('[data-block-type="accordion"] summary').click()
-  assert.match(await page.locator('.public-copy > h1').evaluate(node=>getComputedStyle(node).fontFamily),/Georgia/);assert.match(await page.locator('[data-block="catalog-copy"]').evaluate(node=>getComputedStyle(node).fontFamily),/Figtree/);assert.equal(await page.getByRole('link',{name:'Page button',exact:true}).evaluate(node=>getComputedStyle(node).borderRadius),'999px');assert.equal(await page.getByRole('link',{name:'Page button',exact:true}).evaluate(node=>getComputedStyle(node).backgroundColor),'rgb(17, 68, 119)')
+  assert.match(await page.locator('.public-copy > h1').evaluate(node=>getComputedStyle(node).fontFamily),/Noto Serif/);assert.match(await page.locator('[data-block="catalog-copy"]').evaluate(node=>getComputedStyle(node).fontFamily),/Figtree/);assert.equal(await page.getByRole('link',{name:'Page button',exact:true}).evaluate(node=>getComputedStyle(node).borderRadius),'999px');assert.equal(await page.getByRole('link',{name:'Page button',exact:true}).evaluate(node=>getComputedStyle(node).backgroundColor),'rgb(17, 68, 119)')
   assert.equal(await page.locator('[data-block-type="chart"] table').count(),3);for(const table of await page.locator('[data-block-type="chart"] table').all())assert.deepEqual(await table.locator('tbody tr').evaluateAll(rows=>rows.map(row=>row.textContent)),['Monday12','Tuesday7'])
   assert.equal(await page.locator('[data-block-type="spacer"]').evaluate(node=>node.getBoundingClientRect().height),32,'Spacer retains its saved height under the live content policy')
   for(const profile of ['Facebook','Instagram']){const link=page.locator('.public-content').getByRole('link',{name:profile,exact:true});await page.evaluate(()=>document.documentElement.style.scrollBehavior='auto');await link.scrollIntoViewIfNeeded();await link.hover();await page.getByRole('tooltip').getByText(profile+' profile',{exact:true}).waitFor();await page.mouse.move(0,0);await page.keyboard.press('Escape');await link.focus();await page.keyboard.press('Tab');await page.keyboard.press('Shift+Tab');await page.getByRole('tooltip').getByText(profile+' profile',{exact:true}).waitFor();await page.keyboard.press('Escape')}
@@ -454,6 +465,7 @@ async function catalogJourney(){
   await placements.last().getByRole('button',{name:'Allow custom code',exact:true}).click();await onePerPlacement()
   await page.reload();await onePerPlacement()
   for(const [index,placement] of (await placements.all()).entries()){
+   await placement.scrollIntoViewIfNeeded()
    const content=placement.frameLocator('[data-code-frame] > iframe').frameLocator('iframe').getByText('Workshop HTML proof',{exact:true});await content.waitFor();assert.equal(await content.count(),1,'Each placement renders the authored HTML once')
    await placement.scrollIntoViewIfNeeded();await page.screenshot({path:resolve(folder,'catalog-two-html-'+width+'-'+index+'.png'),fullPage:false})
   }

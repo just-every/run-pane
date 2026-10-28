@@ -1,4 +1,4 @@
-import {effectiveSection,inheritedSectionFields} from './pane-site-styles.mjs'
+import {effectiveSection,inheritedSectionFields} from './pane-section-styles.mjs'
 import {canvasBody} from './pane-canvas-body.mjs'
 import {safeBodyHref} from './pane-body-links.mjs'
 import {galleryEditor} from './pane-gallery-editor.mjs'

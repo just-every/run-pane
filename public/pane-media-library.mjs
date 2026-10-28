@@ -8,7 +8,7 @@ function startLibrary(root){
  const fields=['name','folder','caption','alt','decorative'],drafts=new Map(),undo=[],redo=[],initial=JSON.parse(find('state').textContent)
  let revision=initial.revision,selected='',timer,busy=false,blocked=false,conflict=null,failed=null,preparing=false
  const key=(kind,id)=>`${kind}:${id}`
- const assets=()=>[...(revision.site.media??[]).map(asset=>({...asset,kind:'image'})),...(revision.site.libraryFiles??[]).map(asset=>({...asset,kind:'pdf'}))]
+ const assets=()=>[...(revision.site.media??[]).map(asset=>({...asset,kind:'image'})),...(revision.site.libraryFiles??[]).map(asset=>({...asset,kind:asset.type==='application/pdf'?'pdf':'audio'}))]
  const assetFor=value=>assets().find(asset=>key(asset.kind,asset.id)===value)
  const metadata=asset=>({name:asset.name,folder:asset.folder??'',caption:asset.caption??'',alt:asset.image?.alt??'',decorative:asset.image?.decorative??false})
  const values=()=>Object.fromEntries(fields.map(name=>[name,name==='decorative'?form.elements[name].checked:form.elements[name].value]))
@@ -43,21 +43,21 @@ function startLibrary(root){
    button.setAttribute('aria-pressed',String(selected===key(asset.kind,asset.id)))
    const preview=asset.kind==='image'?document.createElement('img'):document.createElement('span')
    if(asset.kind==='image'){preview.src=asset.image.renditions?.[0]?.src??asset.image.src;preview.alt='';preview.loading='lazy';preview.width=240;preview.height=160}
-   else{preview.className='library-pdf';preview.textContent='PDF';preview.setAttribute('aria-hidden','true')}
+   else{preview.className='library-pdf';preview.textContent=asset.kind==='audio'?'Audio':'PDF';preview.setAttribute('aria-hidden','true')}
    const name=document.createElement('span');name.className='library-item-name';name.textContent=value.name
-   const info=document.createElement('span');info.className='library-item-meta';info.textContent=[asset.kind==='image'?'Image':'PDF',value.folder].filter(Boolean).join(' · ')
+   const info=document.createElement('span');info.className='library-item-meta';info.textContent=[asset.kind==='image'?'Image':asset.kind==='audio'?'Audio':'PDF',value.folder].filter(Boolean).join(' · ')
    button.append(preview,name,info);return button
   }))
   find('count').textContent=`${visible.length} of ${all.length} files`;find('count').dataset.resultCount=String(visible.length);grid.dataset.resultCount=String(visible.length)
-  find('empty').hidden=visible.length>0;find('empty').textContent=all.length?'No files match these filters.':'Your library is empty. Upload images or PDFs to start.'
+  find('empty').hidden=visible.length>0;find('empty').textContent=all.length?'No files match these filters.':'Your library is empty. Upload images, PDFs or audio to start.'
   if(focusKey)grid.querySelector(`[data-id="${CSS.escape(focus.dataset.id)}"][data-kind="${focus.dataset.kind}"]`)?.focus()
  }
 
  function references(asset){
   const result=[],seen=new Set(),href=`file:${asset.id}`,components=new Map((revision.site.components??[]).map(component=>[component.id,component.section]))
   const linked=nodes=>(nodes??[]).some(node=>node.tag==='a'&&node.href===href||linked(node.children))
-  const uses=sections=>(sections??[]).some(section=>(components.get(section.component)??section).blocks.some(block=>asset.kind==='image'?block.gallery?.items.some(item=>item.asset===asset.id):block.link?.href===href||linked(block.content)))
-  const add=(page,label,kind='page',slug=page.slug,id=page.id??page.slug)=>{if((uses(page.sections)||asset.kind==='pdf'&&page.links?.some(link=>link.url===href||link.url==='/site/files/'+asset.id))&&!seen.has(`${kind}:${id}`)){seen.add(`${kind}:${id}`);result.push({page:id,title:label??page.title,slug,kind})}}
+  const uses=sections=>(sections??[]).some(section=>(components.get(section.component)??section).blocks.some(block=>asset.kind==='image'?block.gallery?.items.some(item=>item.asset===asset.id):block.audio?.file===asset.id||block.link?.href===href||linked(block.content)))
+  const add=(page,label,kind='page',slug=page.slug,id=page.id??page.slug)=>{if((uses(page.sections)||asset.kind!=='image'&&page.links?.some(link=>link.url===href||link.url==='/site/files/'+asset.id))&&!seen.has(`${kind}:${id}`)){seen.add(`${kind}:${id}`);result.push({page:id,title:label??page.title,slug,kind})}}
   for(const page of revision.site.pages)add(page)
   for(const post of revision.site.posts??[])add(post.content,post.content.title,'post',post.content.slug,post.id)
   for(const post of revision.site.blogPosts??[])add(post.content,post.content.title,'post',post.content.slug,post.id)
@@ -81,7 +81,7 @@ function startLibrary(root){
   form.elements.name.maxLength=asset.kind==='image'?200:120
   for(const name of fields){if(name==='decorative')form.elements[name].checked=value[name];else form.elements[name].value=value[name]}
   find('image-fields').hidden=asset.kind!=='image';form.elements.alt.disabled=asset.kind!=='image'||value.decorative
-  find('file-info').textContent=asset.kind==='image'?`${asset.image.width} × ${asset.image.height} pixels · Image`:`${Math.ceil(asset.size/1024)} KiB · PDF`
+  find('file-info').textContent=asset.kind==='image'?`${asset.image.width} × ${asset.image.height} pixels · Image`:`${Math.ceil(asset.size/1024)} KiB · ${asset.type==='audio/mpeg'?'MP3':asset.type==='audio/mp4'?'M4A':'PDF'}`
   const page=find('page').value;find('page').replaceChildren(...revision.site.pages.filter(page=>!page.deleted).map(page=>new Option(page.title,page.id??page.slug)))
   if([...find('page').options].some(option=>option.value===page))find('page').value=page
   find('place').disabled=busy||!!conflict||!find('page').value
@@ -94,7 +94,7 @@ function startLibrary(root){
  }
 
  function comparison(latest){
-  const lines=[`Latest revision: ${latest.id}`,`Images: ${latest.site.media?.length??0} · PDFs: ${latest.site.libraryFiles?.length??0}`]
+  const lines=[`Latest revision: ${latest.id}`,`Images: ${latest.site.media?.length??0} · Files: ${latest.site.libraryFiles?.length??0}`]
   for(const draft of drafts.values())if(draft.dirty){const asset=(draft.kind==='image'?latest.site.media:latest.site.libraryFiles)?.find(asset=>asset.id===draft.id);lines.push(`\n${draft.values.name}\nLatest: ${asset?JSON.stringify(metadata(asset)): 'File was removed'}\nYour changes: ${JSON.stringify(draft.values)}`)}
   return lines.join('\n')
  }
@@ -172,15 +172,15 @@ function startLibrary(root){
   try{
    const images=[],pdfs=[]
    for(const file of files){
-    if(file.type==='application/pdf'){
-     if(!file.size||file.size>512*1024)throw Error(`${file.name}: choose a PDF up to 512 KiB.`)
-     const bytes=new Uint8Array(await file.arrayBuffer());if(new TextDecoder().decode(bytes.slice(0,5))!=='%PDF-')throw Error(`${file.name}: this file is not a PDF.`)
+    if(['application/pdf','audio/mpeg','audio/mp4','audio/x-m4a'].includes(file.type)){
+     if(!file.size||file.size>512*1024)throw Error(`${file.name}: choose a PDF, MP3 or M4A up to 512 KiB.`)
+     const bytes=new Uint8Array(await file.arrayBuffer());if(file.type==='application/pdf'&&new TextDecoder().decode(bytes.slice(0,5))!=='%PDF-')throw Error(`${file.name}: this file is not a PDF.`)
      let binary='';for(const byte of bytes)binary+=String.fromCharCode(byte)
-     pdfs.push({id:crypto.randomUUID(),name:file.name,type:'application/pdf',size:file.size,data:btoa(binary)})
+     pdfs.push({id:crypto.randomUUID(),name:file.name,type:file.type==='audio/x-m4a'?'audio/mp4':file.type,size:file.size,data:btoa(binary)})
     }else images.push({id:crypto.randomUUID(),name:file.name,image:await readImage(file)})
    }
    preparing=false;const saved=await request({action:'upload',images,files:pdfs})
-   if(saved){const first=images[0]??pdfs[0];selected=key(images.length?'image':'pdf',first.id);refresh()}
+   if(saved){const first=images[0]??pdfs[0];selected=key(images.length?'image':first.type==='application/pdf'?'pdf':'audio',first.id);refresh()}
   }catch(error){say(`${error.message} No files from this upload were saved.`)}
   finally{preparing=false;event.target.value='';controls()}
  })

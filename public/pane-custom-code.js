@@ -31,7 +31,9 @@ region.querySelector('[data-code-deny]').addEventListener('click',()=>choose('de
 addEventListener('pane:consent',event=>{choose(event.detail.choice)})
 addEventListener('storage',event=>{if(event.key===key)choose(event.newValue)})
 addEventListener('pane:goal',event=>{if(frame&&!quiet&&!JSON.parse(document.querySelector('script[data-goals]')?.dataset.goals??'[]').some(goal=>goal.type==='form'&&goal.name===event.detail.name))frame.contentWindow.postMessage({type:'pane:goal',detail:{name:event.detail.name,value:event.detail.value??1}},'*')})
-let saved;try{saved=localStorage.getItem(key)}catch{}
-choose(saved)
+// Responsive reading order settles before restoring a consented frame.
+function restore(){let saved;try{saved=localStorage.getItem(key)}catch{};choose(saved)}
+if(document.readyState==='complete')restore()
+else document.addEventListener('DOMContentLoaded',restore,{once:true})
 
 }
