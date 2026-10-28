@@ -82,7 +82,7 @@ try{
   if(width===1440){
    const text=await readFile(path,'utf8'),actual=[...text.matchAll(/^"([a-f0-9-]{36})",/gm)].map(match=>match[1]);assert.deepEqual(actual.sort(),expected.sort(),'Workspace CSV includes the entire form and date set beyond 100');assert.ok(!actual.some(id=>[before,after,other].includes(id)));assert.match(text,/"A comma, a ""quote"" and a new line"/)
    assert.equal((await visitor.request.get(origin+'/api/pane/submissions/export?form='+exportForms[0].id)).status(),401)
-   assert.equal((await data()).messages.length,100);assert.ok(!(await data()).messages.some(row=>row.id===first))
+   assert.equal((await data()).messages.length,110);assert.ok((await data()).messages.some(row=>row.id===first),'The earliest enquiry remains browsable with all later records')
    const minimum=await exports.locator('label,button,p').evaluateAll(nodes=>Math.min(...nodes.map(node=>parseFloat(getComputedStyle(node).fontSize))));assert.ok(minimum>=13,'Export text meets the readable minimum')
   }
   const overflow=await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(node=>node.getBoundingClientRect().right>innerWidth+2).slice(0,8).map(node=>({tag:node.tagName,classes:node.className,right:node.getBoundingClientRect().right})));assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,'Submission export overflow '+JSON.stringify(overflow))
