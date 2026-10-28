@@ -1,4 +1,4 @@
-Old reference: `680acc2c130432d9fe1d2d225cbad626c368134e`.
+Old reference: `740a24c21a771fe79072b9c269d0650cdbd50584`.
 
 | Clause | Journey | Door | What it shows | Result |
 | --- | --- | --- | --- | --- |
@@ -55,3 +55,4 @@ Old reference: `680acc2c130432d9fe1d2d225cbad626c368134e`.
 | AI-003 | `scripts/ai-journey.mjs` — “AI-003 and AI-002 browser journey” | native search assistance and provider fake | search proposals, two accepted title/description edits, rejected remainder and separate publication under the held journey; company-policy MCP journey is missing | none |
 | AI-005 | `scripts/ai-riders.mjs` — “riderProof”; `tests/search.test.mjs` — “native page writers initiate private assistance within their current grant and retain actor-owned decisions”; `tests/search.test.mjs` — “native authors write and submit only own posts and use assistance without exposing other content” | native assistance disclosure and observed provider fake | named processor/page/images, selected-only payload, no linked fetch, generation actor, metadata audit and connected policy starter; company-policy MCP journey is missing | none |
 | AI-006 | `scripts/ai-journey.mjs` — “AI-003 and AI-002 browser journey”; `scripts/ai-journey.mjs` — “editorInitiation”; `scripts/ai-riders.mjs` — “riderProof” | native assistance editor/history and provider fake | mixed decisions, unchanged rejected content, immutable source, five undo/redo, reopen and retained conflicts under the held journey; company-policy MCP journey is missing | none |
+| CMS-005 | `tests/posts.test.mjs` — “reviewed posts, pages and items publish at Chicago nine with immutable approval, complete execution history and overdue unapproved refusal”; `scripts/scheduling-journey.mjs` — “Business-local scheduling journey” | native scheduling forms, public HTTP, clock and cron | Chicago nine publication and DST expiry for posts, pages, items and announcements; exact source, later private work, actual execution history and unapproved refusal | covered |

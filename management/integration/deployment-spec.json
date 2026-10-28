@@ -264,6 +264,12 @@
       "name": "0038_marketing_consent.sql",
       "sha256": "ed48e0981f6ba308642b65e3cc1b88bca4b90875d5c8353c6f8ef8ea982008d3",
       "sql": "-- Historic checkboxes confer no marketing permission. New receipts retain the\n-- published prompt and explicit choice on the same atomic enquiry row.\nALTER TABLE pane_messages ADD COLUMN marketing_consent TEXT;\n"
+    },
+    {
+      "binding": "DB",
+      "name": "0039_item_schedules.sql",
+      "sha256": "b946d1d96a5c32edee552109a07ac8e551e7678e60b21273e1862d99400227a9",
+      "sql": "CREATE TABLE pane_item_schedules (\n id TEXT PRIMARY KEY,\n collection_id TEXT NOT NULL,\n item_id TEXT NOT NULL,\n source_revision TEXT NOT NULL REFERENCES pane_revisions(id),\n actor TEXT REFERENCES oa_operators(id),\n starts TEXT NOT NULL,\n starts_at INTEGER NOT NULL,\n time_zone TEXT NOT NULL,\n ends TEXT,\n ends_at INTEGER,\n executed_at INTEGER,\n result_revision TEXT REFERENCES pane_revisions(id),\n expired_at INTEGER,\n expiry_revision TEXT REFERENCES pane_revisions(id),\n cancelled_at INTEGER,\n failure_at INTEGER,\n failure_action TEXT\n);\nCREATE INDEX pane_item_schedules_due ON pane_item_schedules(starts_at);\nCREATE TRIGGER pane_activity_item_schedule AFTER INSERT ON pane_item_schedules\nWHEN EXISTS(SELECT 1 FROM pane_audit_context WHERE id=1) BEGIN\n INSERT INTO pane_activity(actor,action,subject,created_at) VALUES((SELECT actor FROM pane_audit_context WHERE id=1),CASE WHEN NEW.actor IS NULL THEN 'item.schedule' ELSE 'item.schedule-approve' END,'item:'||NEW.collection_id||':'||NEW.item_id,strftime('%Y-%m-%dT%H:%M:%fZ','now'));\nEND;\nCREATE TRIGGER pane_activity_item_schedule_cancel AFTER UPDATE OF cancelled_at ON pane_item_schedules\nWHEN OLD.cancelled_at IS NULL AND NEW.cancelled_at IS NOT NULL AND EXISTS(SELECT 1 FROM pane_audit_context WHERE id=1) BEGIN\n INSERT INTO pane_activity(actor,action,subject,created_at) VALUES((SELECT actor FROM pane_audit_context WHERE id=1),'item.schedule-cancel','item:'||NEW.collection_id||':'||NEW.item_id,strftime('%Y-%m-%dT%H:%M:%fZ','now'));\nEND;\n"
     }
   ],
   "compatibilityDate": "2026-09-08",

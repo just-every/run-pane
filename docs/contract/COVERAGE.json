@@ -2,7 +2,7 @@
   "schema": 1,
   "seed": "contract-md-pane",
   "old": {
-    "commit": "680acc2c130432d9fe1d2d225cbad626c368134e",
+    "commit": "740a24c21a771fe79072b9c269d0650cdbd50584",
     "files": [
       "CONTRACT.md",
       "ACCEPTANCE.md",
@@ -1443,12 +1443,6 @@
       "ids": [
         "CMS-005"
       ]
-    },
-    {
-      "file": "CONTRACT.md",
-      "line": 381,
-      "text": "*Status:* partial. Approved immutable posts now publish and optionally unpublish at the chosen business-local time. Later private edits remain private; replacement publications are preserved. Announcement sections activate and expire across daylight saving. Sites records actual execution and flags overdue unapproved post and announcement schedules without publishing them. Gap: Selective page and collection-item publication and expiry remain unimplemented. These future scheduling doors must retain the approved immutable-revision fence, actual execution history and due-unapproved refusal. Native post publication and expiry now isolate invalidated schedules, show their sanitized failures and reconcile committed changes to public durable state even when another entry fails. Announcement schedules retain their existing proof. This does not complete the remaining page and item target.",
-      "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
@@ -3963,20 +3957,20 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1160,
+      "line": 1161,
       "text": "Judged from the code and tests at commit `3b35726211c3a5ac20eeba8b0f8b82b37d2995d4` (27 October 2026). Continued on candidate branch `cloud/sx-pane-c-i983`. The final candidate additionally isolates the existing starter-template proof with its own native owner session. Exact-candidate Verify loads the route assertions and both collection browser journeys. CMS-001 and CMS-002 retain their acceptance sentences and explicit receiving-duty citations. Other clause statuses retain their earlier judgments; PAGE-015 and API-001 remain partial.",
       "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
-      "line": 1186,
+      "line": 1189,
       "cell": "gap",
       "text": "None.",
       "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
-      "line": 1187,
+      "line": 1190,
       "cell": "gap",
       "text": "A focused visual canvas extends the approved Pages editor without replacing its composition. Editors add, duplicate, delete and reorder text sections and text blocks, edit text in place, set twelve-column placement, row and overlap order, horizontal and vertical alignment, column ratios and gaps, hex backgrounds, minimum height and padding, and reset local layout overrides to the existing theme defaults. The canvas and live page import one section renderer. Immutable revisions retain stable identities and reading text; the existing autosave, undo, redo, retained conflict copy and explicit latest-version selection apply. Native text canvas and live block boxes match within two CSS pixels at 1440 and 390; the chrome-masked native content screenshots differ by no more than 0.5%. Native raster image blocks now support original, square, 4:3, 3:2, 16:9 and free aspect ratios, bounded focal points and reset without changing the retained pixels. Gap: media-library integration, image backgrounds and overlays, background video with loading, reduced-motion and data-saver stills need MEDIA-001 and MEDIA-003 or MEDIA-004. The native canvas now retains structured inline formats, nested lists, large and small paragraphs and justified text through the shared renderer. The full PAGE-014 catalog and destinations, all section presets, touch-gesture drag proof, STYLE-002 owner-configured site defaults and full media-page geometry and screenshot parity remain unproved. PAGE-002 stays partial.",
       "to": "gap",
@@ -3986,21 +3980,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1188,
-      "cell": "gap",
-      "text": "None.",
-      "to": "changelog"
-    },
-    {
-      "file": "CONTRACT.md",
-      "line": 1189,
-      "cell": "gap",
-      "text": "Editors save a validated section or the current page text as a reusable component with a stable identity. Linked placements resolve in each new immutable site revision, the editor lists every page using the component, and detachment retains an independent section snapshot. Component text uses the existing autosave, undo, redo and conflict boundary. Shared changes require whole-site approval; old revisions remain unchanged. PAGE-002 retains its separate visual-canvas and media obligations.",
-      "to": "changelog"
-    },
-    {
-      "file": "CONTRACT.md",
-      "line": 1190,
+      "line": 1191,
       "cell": "gap",
       "text": "None.",
       "to": "changelog"
@@ -4008,6 +3988,20 @@
     {
       "file": "CONTRACT.md",
       "line": 1192,
+      "cell": "gap",
+      "text": "Editors save a validated section or the current page text as a reusable component with a stable identity. Linked placements resolve in each new immutable site revision, the editor lists every page using the component, and detachment retains an independent section snapshot. Component text uses the existing autosave, undo, redo and conflict boundary. Shared changes require whole-site approval; old revisions remain unchanged. PAGE-002 retains its separate visual-canvas and media obligations.",
+      "to": "changelog"
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 1193,
+      "cell": "gap",
+      "text": "None.",
+      "to": "changelog"
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 1195,
       "cell": "gap",
       "text": "scheduled page publication, post states and review, delegated publishing and notification approval through ROLE-002 remain unimplemented. URL and shared organization changes still use explicit whole-site approval with reviewed redirects.",
       "to": "gap",
@@ -4017,23 +4011,9 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1193,
-      "cell": "gap",
-      "text": "Native owners author revisioned site CSS, HTML, header and footer code and page header or HTML code. Only an explicitly approved immutable live revision can execute it. Third-party HTML and scripts run in an opaque sandbox with outbound connections, forms and nested frames denied; the live CSP authorizes only the exact approved inline script and style hashes. Consent also applies resource-free CSS to the live document and copies inert verification metadata into its header. Workspace and preview documents stay inert. The shared pane:consent:analytics browser choice controls activation; no choice means off, GPC and DNT override saved grants, and withdrawal removes the active frame, CSS and metadata and clears analytics cookies in the open session. The sandbox receives pane:goal with the public goal name and numeric occurrence value 1; form events arrive on the accepted thank-you view, including a configured page redirect, without sending answers or identity. Permissions Policy remains camera=(), microphone=(), geolocation=() for every nested frame; no allow attribute delegates a feature. Approved by ct (25 October 20:55Z): native owner-only authoring, deny by default, audited immutable approval, live-only opaque execution, no automatic outbound action, no external custom scripts or resource-loading CSS. Published code is never edited in place: every change creates a new immutable draft and needs a new explicit approval. The opaque sandbox cannot read cookies, local or session storage, other frame documents or visitor identity. The owner can revoke an approval in Publication settings; the live page is unavailable on the next request, including isolated live storage, and a revoked revision cannot be restored or republished. Revocation remains in the activity log; restoring delivery requires a new draft and explicit approval. Third-party tag and pixel marketplace with per-tag consent categories is provided separately by PAGE-017. PRIV-001 and STATS-005 inherit this gate and immediate withdrawal duty.",
-      "to": "changelog"
-    },
-    {
-      "file": "CONTRACT.md",
-      "line": 1194,
-      "cell": "gap",
-      "text": "None.",
-      "to": "changelog"
-    },
-    {
-      "file": "CONTRACT.md",
       "line": 1196,
       "cell": "gap",
-      "text": "Page and folder passwords, explicitly admitted native members, private no-store delivery, protected search and sitemap exclusions, editable coming-soon and site-password gates, preview bypass and disabling are proved. Approved ct semantics (25 Oct 18:50Z): only the native owner configures access; admission is an explicit allowlist of active invited native accounts checked on every request. Unadmitted and inactive accounts are refused beside an admitted active account; removal or deactivation takes effect on the next request. The owner is not admitted automatically; owner preview works without changing member state. No paid entitlement is inferred. Password proofs expire after one hour and rotation invalidates earlier proofs. Paid-access connection remains missing in PAGE-016; Pane never rebuilds billing. LINK-003 owns the optional coming-soon signup.",
+      "text": "Native owners author revisioned site CSS, HTML, header and footer code and page header or HTML code. Only an explicitly approved immutable live revision can execute it. Third-party HTML and scripts run in an opaque sandbox with outbound connections, forms and nested frames denied; the live CSP authorizes only the exact approved inline script and style hashes. Consent also applies resource-free CSS to the live document and copies inert verification metadata into its header. Workspace and preview documents stay inert. The shared pane:consent:analytics browser choice controls activation; no choice means off, GPC and DNT override saved grants, and withdrawal removes the active frame, CSS and metadata and clears analytics cookies in the open session. The sandbox receives pane:goal with the public goal name and numeric occurrence value 1; form events arrive on the accepted thank-you view, including a configured page redirect, without sending answers or identity. Permissions Policy remains camera=(), microphone=(), geolocation=() for every nested frame; no allow attribute delegates a feature. Approved by ct (25 October 20:55Z): native owner-only authoring, deny by default, audited immutable approval, live-only opaque execution, no automatic outbound action, no external custom scripts or resource-loading CSS. Published code is never edited in place: every change creates a new immutable draft and needs a new explicit approval. The opaque sandbox cannot read cookies, local or session storage, other frame documents or visitor identity. The owner can revoke an approval in Publication settings; the live page is unavailable on the next request, including isolated live storage, and a revoked revision cannot be restored or republished. Revocation remains in the activity log; restoring delivery requires a new draft and explicit approval. Third-party tag and pixel marketplace with per-tag consent categories is provided separately by PAGE-017. PRIV-001 and STATS-005 inherit this gate and immediate withdrawal duty.",
       "to": "changelog"
     },
     {
@@ -4045,7 +4025,21 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1198,
+      "line": 1199,
+      "cell": "gap",
+      "text": "Page and folder passwords, explicitly admitted native members, private no-store delivery, protected search and sitemap exclusions, editable coming-soon and site-password gates, preview bypass and disabling are proved. Approved ct semantics (25 Oct 18:50Z): only the native owner configures access; admission is an explicit allowlist of active invited native accounts checked on every request. Unadmitted and inactive accounts are refused beside an admitted active account; removal or deactivation takes effect on the next request. The owner is not admitted automatically; owner preview works without changing member state. No paid entitlement is inferred. Password proofs expire after one hour and rotation invalidates earlier proofs. Paid-access connection remains missing in PAGE-016; Pane never rebuilds billing. LINK-003 owns the optional coming-soon signup.",
+      "to": "changelog"
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 1200,
+      "cell": "gap",
+      "text": "None.",
+      "to": "changelog"
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 1201,
       "cell": "gap",
       "text": "Newsletter signup awaits LINK-003 and an authorized Mango or Mailchimp audience. No address collection or automatic subscription action is added; this conservative default keeps PAGE-013 partial pending ct scope approval.",
       "to": "gap",
@@ -4063,7 +4057,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1199,
+      "line": 1202,
       "cell": "gap",
       "text": "The shared native canvas retains structured text with Heading 1 to Heading 4, paragraph, large and small paragraph, quote and preformatted styles, bold, italic, underline and strikethrough, bulleted and numbered lists with one nested level, and four block alignments including justified text. Paragraphs and list items inside a mixed document also retain independent left, center, right or justified alignment. Semantic trees are validated at the immutable revision boundary and use the same canvas and live renderer; search reads their matching text. Literal Word and Google Docs text formatting and list markup can be pasted without executing scripts, loading media or retaining arbitrary attributes. Safe HTML paste now keeps supported links, headings, formatting and lists without loading remote media. CMS-004 proves captioned images, an attributed quote, a consented YouTube embed, a page button and stable post and PDF and telephone links in the native post body. Gap: the remaining block catalog, every remaining link and button destination, cross-page anchors, Markdown, complete Word and Google Docs paste fidelity and the full catalog keyboard and axe journey remain unproved.",
       "to": "gap",
@@ -4075,7 +4069,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1200,
+      "line": 1203,
       "cell": "gap",
       "text": "Native page, post and collection-item trash and selective history are implemented. Exact-candidate lifecycle clock proof and fresh completion judgment remain required.",
       "to": "gap",
@@ -4085,7 +4079,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1201,
+      "line": 1204,
       "cell": "gap",
       "text": "No paid-access connection to Stall or Nectar exists. PAGE-011 proves explicit native admission only; LINK-002 must supply the provider connection and every-request entitlement proof. Billing is never rebuilt in Pane.",
       "to": "gap",
@@ -4095,14 +4089,14 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1202,
+      "line": 1205,
       "cell": "gap",
       "text": "Native owners select Plausible Analytics and Meta Pixel from site settings and assign each a consent category; Meta requires advertising. Every configuration change is a new immutable draft requiring explicit publication approval. Live tags remain off until their separate category is granted, with GPC and DNT overriding saved grants. Withdrawal destroys the executing frame in the current session. Each provider executes in an opaque sandbox without cookies, storage, other frame documents or visitor identity, with only its named script and connection origins permitted; forms and nested frames remain denied. Workspace and preview pages stay inert. Existing owner-only audited approval revocation takes down the live page and tag delivery on the next request in both live stores. PAGE-008 owner-authored code retains its separate resource-free sandbox and shared analytics choice. PRIV-001 and STATS-005 inherit this category gate and withdrawal boundary; actual goal mapping and provider conversion receipts remain STATS-005 work.",
       "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
-      "line": 1203,
+      "line": 1206,
       "cell": "gap",
       "text": "One fixed responsive layout; no template catalog. Every future template must provide the native CMS-001 starter collection pack.",
       "to": "gap",
@@ -4112,7 +4106,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1204,
+      "line": 1207,
       "cell": "gap",
       "text": "Adobe Fonts project connection and the uploaded and Adobe heading and body pairing with live rendering require an owner-authorized Adobe Fonts test web project ID or grant, not held by this run.",
       "to": "gap",
@@ -4122,7 +4116,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1205,
+      "line": 1208,
       "cell": "gap",
       "text": "No templates to switch between.",
       "to": "gap",
@@ -4132,14 +4126,14 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1206,
+      "line": 1209,
       "cell": "gap",
       "text": "None.",
       "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
-      "line": 1207,
+      "line": 1210,
       "cell": "gap",
       "text": "Official Unsplash search and import, photographer attribution and download-event proof require an owner-authorized Unsplash developer app and key not held. Live provider-storage qualification remains held with the shared Cloudflare family; MP4 and MOV transcoding and poster frames and other-file support remain unimplemented. Native owner-only image and PDF library uses existing whole-draft storage bounds. PAGE-002 and collection holds remain unchanged.",
       "to": "gap",
@@ -4149,21 +4143,21 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1208,
+      "line": 1211,
       "cell": "gap",
       "text": "Native image uploads retain their original privately and prepare bounded 480, 960 and 1600-pixel WebP renditions, without upscaling smaller images, plus a PNG fallback. The shared renderer supplies srcset, screen-matched sizes, intrinsic dimensions and stable aspect ratios, and loads below-fold live images lazily. Public image requests read only the current approved page, enforce its access gate on every request, never serve the original and use private no-store delivery so revocation and protection cannot leak through public caches. Rotation and reset regenerate the matching rendition set. Native PNG, JPEG and WebP uploads allow up to 768 KiB, with a bounded whole-draft budget; a 6000-pixel photographic upload is proved at both widths. MEDIA-001, MEDIA-004 and CMS-011 inherit this rendition and custody pipeline when their image doors ship.",
       "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
-      "line": 1209,
+      "line": 1212,
       "cell": "gap",
       "text": "None. Native uploads are bounded to 768 KiB and kept privately; public documents use only the prepared display image.",
       "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
-      "line": 1210,
+      "line": 1213,
       "cell": "gap",
       "text": "YouTube URL embed isolation is proved at both widths. Uploaded video, captions/renditions, actual playback, other named provider embeds and the official Instagram feed/refresh/revocation remain unproved.",
       "to": "gap",
@@ -4173,7 +4167,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1213,
+      "line": 1216,
       "cell": "gap",
       "text": "Collection-list authoring, filtering and date-relative evaluation remain unimplemented.",
       "to": "gap",
@@ -4183,24 +4177,14 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1214,
+      "line": 1217,
       "cell": "gap",
       "text": "CMS-006 retains feed validation, podcast support and subscriber delivery; CMS-010 retains comments; CMS-011 retains its remaining catalog, and PAGE-014 retains the remaining blocks and destinations.",
       "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
-      "line": 1215,
-      "cell": "gap",
-      "text": "Selective page and collection-item publication and expiry remain unimplemented. These future scheduling doors must retain the approved immutable-revision fence, actual execution history and due-unapproved refusal. Native post publication and expiry now isolate invalidated schedules, show their sanitized failures and reconcile committed changes to public durable state even when another entry fails. Announcement schedules retain their existing proof. This does not complete the remaining page and item target.",
-      "to": "gap",
-      "ids": [
-        "CMS-005"
-      ]
-    },
-    {
-      "file": "CONTRACT.md",
-      "line": 1216,
+      "line": 1219,
       "cell": "gap",
       "text": "Native blog RSS serves only the current approved posts of its own blog and carries the same semantic body with absolute destinations. Gap: W3C validator and Apple Podcasts validation, two audio episodes, collection feeds, Mango and Mailchimp consented campaign delivery and visible delivery state remain unproved.",
       "to": "gap",
@@ -4210,7 +4194,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1217,
+      "line": 1220,
       "cell": "gap",
       "text": "Only the static-site JSON move-in exists (`MOVEIN-001`).",
       "to": "gap",
@@ -4220,7 +4204,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1218,
+      "line": 1221,
       "cell": "gap",
       "text": "Visitors search the current published pages at `/site/search`, with Unicode-normalized matching and links to results. Drafts stay private and publication/rollback update results atomically. Posts, collection items and protected-page filtering still await CMS-001, CMS-002, CMS-004 and PAGE-011.",
       "to": "gap",
@@ -4230,7 +4214,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1219,
+      "line": 1222,
       "cell": "gap",
       "text": "No events or calendar. PAGE-015 requires this future content door to retain deletion actor and time, at least 30-day trash availability, immutable source, original URL and menu place, draft-only single-item restoration and history without changing unrelated content, separate permission-checked publication that removes only its deletion redirect, and exact restore actor and time in activity.",
       "to": "gap",
@@ -4240,7 +4224,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1220,
+      "line": 1223,
       "cell": "gap",
       "text": "Native push notification proof requires MOBILE-002 device and signing authority. Live Turnstile acceptance is not proved by the existing provider fixture. WXR comment export and imported author, date, approval state and threading remain unproved under EXPORT-001, IMPORT-001 and IMPORT-002. A recorded exact-candidate Verify and guarded landing remain pending; no DONE claim is made.",
       "to": "gap",
@@ -4250,7 +4234,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1221,
+      "line": 1224,
       "cell": "gap",
       "text": "The native post limb is proved by the CMS-004 route test and native browser journey: the complete acceptance post body, semantic live DOM, keyboard reading order, axe, linked-post rename without a redirect hop and absolute-URL semantic RSS. Gap: the remaining PAGE-014 catalog, destinations and Markdown, search indexing under CMS-008 and open post export under EXPORT-001 remain unproved. Future collection and event editors inherit the same shared semantic body, safe references, image-description and rendition custody, autosave, five-step undo and redo, conflict retention and transactional activity obligations before shipping.",
       "to": "gap",
@@ -4261,7 +4245,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1222,
+      "line": 1225,
       "cell": "gap",
       "text": "The business site is served only at `/site` on the Worker origin; no domain connection or alias domains.",
       "to": "gap",
@@ -4271,7 +4255,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1223,
+      "line": 1226,
       "cell": "gap",
       "text": "No domain or certificate handling beyond the Worker's default hostname.",
       "to": "gap",
@@ -4281,7 +4265,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1224,
+      "line": 1227,
       "cell": "gap",
       "text": "No DNS reading or writing.",
       "to": "gap",
@@ -4291,7 +4275,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1225,
+      "line": 1228,
       "cell": "gap",
       "text": "No domain guidance.",
       "to": "gap",
@@ -4301,7 +4285,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1226,
+      "line": 1229,
       "cell": "gap",
       "text": "No DNS reading, forwarding detection or Email Routing setup.",
       "to": "gap",
@@ -4311,7 +4295,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1227,
+      "line": 1230,
       "cell": "gap",
       "text": "Live pages are served at `/site` with `no-store`, reading D1 on every request; no edge cache or performance budget.",
       "to": "gap",
@@ -4321,7 +4305,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1229,
+      "line": 1232,
       "cell": "gap",
       "text": "No in-product update channel.",
       "to": "gap",
@@ -4331,7 +4315,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1230,
+      "line": 1233,
       "cell": "gap",
       "text": "No usage or cost view.",
       "to": "gap",
@@ -4341,7 +4325,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1231,
+      "line": 1234,
       "cell": "gap",
       "text": "Installation runs through `rer deploy` or the `npx @runeditrun/rer` command line only; no browser install path.",
       "to": "gap",
@@ -4351,7 +4335,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1232,
+      "line": 1235,
       "cell": "gap",
       "text": "Current pages have editable search titles and descriptions, defaults and a saved search preview. Posts and collection items still depend on CMS-001, CMS-002 and CMS-004.",
       "to": "gap",
@@ -4361,14 +4345,14 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1233,
+      "line": 1236,
       "cell": "gap",
       "text": "None.",
       "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
-      "line": 1234,
+      "line": 1237,
       "cell": "gap",
       "text": "Published revisions generate sitemap.xml with last-modified dates and noindex exclusions, and editable robots.txt; drafts never change either and rollback restores them. Hidden/protected pages and post/item URLs await PAGE-001, PAGE-011 and CMS-001 to CMS-004.",
       "to": "gap",
@@ -4378,7 +4362,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1235,
+      "line": 1238,
       "cell": "gap",
       "text": "Current pages have canonical URLs, custom canonical overrides and noindex controls; draft previews and development-origin pages send noindex. Primary custom-domain routing and www/apex acceptance await DOMAIN-001.",
       "to": "gap",
@@ -4388,7 +4372,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1236,
+      "line": 1239,
       "cell": "gap",
       "text": "No structured data.",
       "to": "gap",
@@ -4398,7 +4382,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1237,
+      "line": 1240,
       "cell": "gap",
       "text": "No social metadata.",
       "to": "gap",
@@ -4408,7 +4392,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1238,
+      "line": 1241,
       "cell": "gap",
       "text": "No search console connection.",
       "to": "gap",
@@ -4418,7 +4402,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1239,
+      "line": 1242,
       "cell": "gap",
       "text": "No Google Business Profile connection.",
       "to": "gap",
@@ -4428,14 +4412,14 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1240,
+      "line": 1243,
       "cell": "gap",
       "text": "None.",
       "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
-      "line": 1241,
+      "line": 1244,
       "cell": "gap",
       "text": "No languages or translated pages.",
       "to": "gap",
@@ -4445,21 +4429,21 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1242,
+      "line": 1245,
       "cell": "gap",
       "text": "Reusable revisioned forms support text, email, US phone, address, choice, date, PDF upload and consent fields with configurable labels, required settings, help, placeholders, validation messages, submit labels and confirmations or local redirects. Accepted PDFs are private, limited to 5 MB and checked by signature and type; person export, erasure, replay fencing, current archive restore, old-backup refusal and durable outage intake include their custody. Approved ct semantics (25 Oct 18:50Z): rejected upload bytes are discarded from every store; only validated text and file metadata can enter owner-opted-in spam review for the stated 30-day period, subject to explicit legal holds. Rejection reasons reach the submitter. Rescue creates a normal submission only on explicit confirmed owner action, carries no file bytes and sends no automatic reply. Visitors reselect a file after rejection.",
       "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
-      "line": 1243,
+      "line": 1246,
       "cell": "gap",
       "text": "Every current contact-form door has a honeypot, independent 20-attempt minute bucket and fail-closed Turnstile hostname, action and form verification. Rejections are counted separately. Approved ct semantics (23 Oct 09:30Z and 11:28Z): rejected-content retention is off by default; explicit owner opt-in retains validated names, email addresses and answers for 30 days. Only the owner reviews retained content, marks it not spam for one-time inbox delivery without an automatic reply, confirms permanent purge, and explicitly places or releases legal holds. Holds prevent expiry, rescue, purge and person erasure until released; person export includes held records. Expiry runs on scheduled processing and before review. Person lookup, export and guarded atomic erasure include retained rejections and replay fences. Rejected content and its opt-in setting are excluded from installation archives, so restore starts with capture off. Metadata remains separate and contains no answers or addresses. FORM-001 and CMS-010 inherit all three protection checks, owner review, retention, hold and privacy boundaries before shipping.",
       "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
-      "line": 1244,
+      "line": 1247,
       "cell": "gap",
       "text": "Enquiries appear in the workspace inbox only; no notification email or reply.",
       "to": "gap",
@@ -4469,7 +4453,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1246,
+      "line": 1249,
       "cell": "gap",
       "text": "Submissions are stored locally only.",
       "to": "gap",
@@ -4479,7 +4463,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1248,
+      "line": 1251,
       "cell": "gap",
       "text": "Google Sheet connection, append on submission, connector lifecycle and real provider proof remain unimplemented. Held: an owner-authorized Google user and Sheet, test-user access, OAuth scopes and callback registration on the real origin. Earlier flattened enquiries remain archive-only because their original form identity and structured values were not captured.",
       "to": "gap",
@@ -4489,7 +4473,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1249,
+      "line": 1252,
       "cell": "gap",
       "text": "Mango email-only propagation, Mailchimp subscription with marketing permission and member consent text, time and page while SMS consent remains absent, Orbit contact consent delivery and all real-provider proofs remain unimplemented. Held: authorized Mango and Orbit tenants and a Mailchimp test audience and key, none supplied for this run.",
       "to": "gap",
@@ -4499,7 +4483,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1250,
+      "line": 1253,
       "cell": "gap",
       "text": "No booking embeds; the previous contract excluded bookings.",
       "to": "gap",
@@ -4509,7 +4493,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1251,
+      "line": 1254,
       "cell": "gap",
       "text": "No checkout; the previous contract excluded payments.",
       "to": "gap",
@@ -4519,7 +4503,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1252,
+      "line": 1255,
       "cell": "gap",
       "text": "No newsletter signup.",
       "to": "gap",
@@ -4529,7 +4513,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1253,
+      "line": 1256,
       "cell": "gap",
       "text": "No outgoing events.",
       "to": "gap",
@@ -4539,7 +4523,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1254,
+      "line": 1257,
       "cell": "gap",
       "text": "No connections to show.",
       "to": "gap",
@@ -4549,7 +4533,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1255,
+      "line": 1258,
       "cell": "gap",
       "text": "Complete public-door proof of populated scoped collection reads through the helper remains required. AGENT-008 retains budgets and agent controls.",
       "to": "gap",
@@ -4559,7 +4543,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1259,
+      "line": 1262,
       "cell": "gap",
       "text": "No reports.",
       "to": "gap",
@@ -4569,7 +4553,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1260,
+      "line": 1263,
       "cell": "gap",
       "text": "No Meta Pixel, Google Ads connection, goal-to-event mapping or server-side conversions.",
       "to": "gap",
@@ -4579,7 +4563,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1261,
+      "line": 1264,
       "cell": "gap",
       "text": "Pane-owned composable grants extend native member invitations without changing Base copies, sessions or last-owner protection. Editors edit and preview page and search drafts; inbox users read, explicitly reply and manage enquiries; reporting users read aggregate reports. Every current Pane route, preview and search handler enforces capabilities and omits inaccessible response data; grants revoke on the next request, including token calls. Approved by ct (22 Oct): only the owner assigns roles; grants compose by union and an explicit assignment replaces legacy member access; unassigned native members keep their ACCESS-001 read-only access until a grant replaces it; editors cannot change business and robots settings or publish; authors write and submit their own private posts through the native API; comment-moderator authority remains denied until its CMS doors exist. Inbox replies are explicit, idempotent sends that retain provider status and never retry automatically. Gap: the clause stays partial until every role is exercised: editor collection editing is now proved by CMS-001, and comment queue and notifications await CMS-010 (which must admit only owner, admin and comment moderators).",
       "to": "gap",
@@ -4589,7 +4573,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1262,
+      "line": 1265,
       "cell": "gap",
       "text": "Only the owner can publish.",
       "to": "gap",
@@ -4599,7 +4583,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1264,
+      "line": 1267,
       "cell": "gap",
       "text": "Email-link and OIDC sign-in exist; no passkeys, TOTP, recovery codes or owner-required two-step sign-in.",
       "to": "gap",
@@ -4609,14 +4593,14 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1265,
+      "line": 1268,
       "cell": "gap",
       "text": "Successful current revision, publication, rollback, import, enquiry, native person/role and connection writes are recorded atomically with request attribution. The owner reads and exports the ordered metadata log; explicit non-owner account erasure removes identifying account data and anonymizes its activity attribution. Approved by ct (22 Oct): an owner-only, append-only metadata log and export, and owner-only erasure; no bodies, addresses, request queries or credentials in events; no automatic purge; explicit non-owner account erasure permanently anonymizes that actor's entries while the log stays. Future content, connector, agent and role doors (CMS-001, CMS-004, CMS-010, LINK-005, AGENT-008, ROLE-002/003/004) inherit transactional audit before shipping. Native link approval/callback/unlink and settings are proved with a network-edge provider, using persisted owner approval attribution. The shared erasure checkpoint refuses a pre-erasure archive when supplied with the current erasure journal. A current archive restores the retained ordered metadata log with anonymous actor attribution; the erased address, prior session and API token cannot regain access. A fresh destination requires that current journal to know about later erasure. Recorded publication approvals are migrated; other events before this migration cannot be reconstructed.",
       "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
-      "line": 1266,
+      "line": 1269,
       "cell": "gap",
       "text": "Documented synthetic WXR 1.0–1.2 reader imports supported pages as unpublished semantic snapshots with heading and list and inline-link and formatting and section-anchor fidelity and reports posts, comment state and parent and post metadata, authors, taxonomy, menus, shortcodes and media references as exceptions. The fixture inventories 100 posts and 50 threaded and approved and pending and spam comments; two supported pages are applied and reconciled, with no native post and comment success claimed. Gap: native posts and taxonomy and authors and menus and threaded comments, complete published-page capture and fidelity, original media delivery, editable rich bodies and every old-URL redirect await CMS-004, CMS-010 and CMS-011, PAGE-014, MEDIA-001 and MEDIA-002 and IMPORT-006.",
       "to": "gap",
@@ -4626,7 +4610,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1267,
+      "line": 1270,
       "cell": "gap",
       "text": "No XML-export site builder import.",
       "to": "gap",
@@ -4636,7 +4620,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1268,
+      "line": 1271,
       "cell": "gap",
       "text": "Native owners and admins explicitly capture a published crawl-only site builder sitemap, same-origin linked pages and blog RSS after an operator-bound expiring DNS TXT proof. The reviewed exact-byte capture maps supported semantic pages (headings and lists and inline destinations and section anchors) to an unpublished draft, retains an auditable proof receipt, reconciles counts and supports retained report and undo; missing captures and native post and media and form and fidelity exceptions remain explicit. Offline uploads grant no network authority. Gap: native blog bodies, rich editing, complete-page text and framing fidelity, original media delivery and every old-URL redirect await CMS-004 and CMS-011, PAGE-014, MEDIA-001 and MEDIA-002 and IMPORT-006. Conservative default ADOPTED pending ct approval: native owner and admin consent per crawl, exact DNS-controlled public HTTPS origin only, public-address screening, no source redirects and credentials and scripts and forms, bounded capture, receipt retained with import custody; scoped tokens cannot start outbound crawls. DNS and source edges are synthetic; no live incumbent receipt is claimed.",
       "to": "gap",
@@ -4654,7 +4638,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1269,
+      "line": 1272,
       "cell": "gap",
       "text": "Separate DNS-controlled, explicitly authorized collection-based visual site builder, design-first visual site builder and AI-generated site builder crawls and offline captures map supported semantic pages to unpublished drafts, preserve their headings and lists and inline destinations and anchors and report capture and media and form and fidelity exceptions. Every row and exact field value in two collection-based visual site builder collections and one design-first visual site builder collection is retained as an unsupported collection item. Exact-byte proof receipts, reviewed apply, retained reports and undo use the same import doors. Gap: native CMS CSV item writes and bodies, rich editing, complete-page text and framing fidelity, original media delivery and every old-URL redirect await CMS-001, CMS-007 and CMS-011, PAGE-014, MEDIA-001 and MEDIA-002 and IMPORT-006. IMPORT-003 conservative crawl default ADOPTED pending ct approval applies to all three providers; synthetic DNS and source-network proof is not a live incumbent receipt. Offline capture envelopes are Pane interchange, not official provider export claims.",
       "to": "gap",
@@ -4672,14 +4656,14 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1270,
+      "line": 1273,
       "cell": "gap",
       "text": "IMPORT-001/002/003/004 and CMS-007 inherit report/reconciliation/undo when additional targets ship.",
       "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
-      "line": 1271,
+      "line": 1274,
       "cell": "gap",
       "text": "No cutover.",
       "to": "gap",
@@ -4689,7 +4673,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1272,
+      "line": 1275,
       "cell": "gap",
       "text": "Only the static-site JSON move-in exists; no submission or subscriber import.",
       "to": "gap",
@@ -4699,7 +4683,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1273,
+      "line": 1276,
       "cell": "gap",
       "text": "Only Pane's own installation archive exports.",
       "to": "gap",
@@ -4709,7 +4693,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1274,
+      "line": 1277,
       "cell": "gap",
       "text": "Current GA4 and embed doors are consent-gated, revocable and suppressed under GPC, including saved grants. Gap: the explicit Meta and Google Ads and server-conversion journey requires STATS-005, while PAGE-008 now proves custom-code consent, privacy refusal and current-session withdrawal under its ct-approved default. The provider journey remains unproved.",
       "to": "gap",
@@ -4719,7 +4703,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1275,
+      "line": 1278,
       "cell": "gap",
       "text": "Owner-only email lookup/export covers current enquiries, replies, queued intake, account/role/external-identity records, credential-free access metadata and activity. Explicit erasure requires native fresh proof and commits all matched D1 deletions, account/activity anonymization, replay tombstones, old-archive redaction checkpoint and transfer invalidation in one guarded transaction. A concurrent new record aborts rather than permitting partial erasure. Pending durable enquiries are included and fenced before deletion; an owner account requires handover first. Existing single-account erasure now carries the same old-archive checkpoint. Browser-local consent choices have no email identifier; recorded acknowledgment mail services are listed for owner follow-up without automatic outbound erasure. Gap: real CRM delivery inventory/receipt proof awaits FORM-005. FORM-001 files, FORM-008 consents, CMS-010 comments and LINK-003 subscribers inherit lookup, export, erasure and backup fencing before shipping.",
       "to": "gap",
@@ -4729,7 +4713,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1276,
+      "line": 1279,
       "cell": "gap",
       "text": "Privacy, terms and accessibility starters derive from the actual revision and are clearly labeled for owner review, not legal advice. GA4, Vane, connected embed origins, current form fields, Turnstile and applicable acknowledgment relay are named truthfully. Generation never overwrites an existing page and uses the normal immutable draft and owner publication path. Gap: the acceptance journey naming a real connected CRM still requires FORM-005 and an authorized CRM tenant. FORM-005, FORM-008, CMS-010, FORM-001 and LINK-003 must extend the real collection and connection inventory when they add a door. When AI assistance is connected, the actual-service inventory and privacy starter name OpenAI as the AI processor accessed through Base AI and describe the selected page and named image inputs sent only after the owner’s explicit request; pre-request consent copy makes the same disclosure. This addition does not certify provider terms, legal compliance or accessibility.",
       "to": "gap",
@@ -4739,7 +4723,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1279,
+      "line": 1282,
       "cell": "gap",
       "text": "The current workspace is checked for overflow at 390 wide; the target editor, inbox replies and approvals on a phone are not built.",
       "to": "gap",
@@ -4749,7 +4733,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1280,
+      "line": 1283,
       "cell": "gap",
       "text": "No native app.",
       "to": "gap",
@@ -4759,7 +4743,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1281,
+      "line": 1284,
       "cell": "gap",
       "text": "No automations.",
       "to": "gap",
@@ -4769,14 +4753,14 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1282,
+      "line": 1285,
       "cell": "gap",
       "text": "None.",
       "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
-      "line": 1283,
+      "line": 1286,
       "cell": "gap",
       "text": "No social connections.",
       "to": "gap",
@@ -4786,7 +4770,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1284,
+      "line": 1287,
       "cell": "gap",
       "text": "No alerts.",
       "to": "gap",
@@ -4796,7 +4780,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1285,
+      "line": 1288,
       "cell": "gap",
       "text": "Whole-site generation from verified business facts is not implemented; current owner assistance is scoped by AI-002 and AI-003.",
       "to": "gap",
@@ -4806,21 +4790,21 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1286,
+      "line": 1289,
       "cell": "gap",
       "text": "CMS-011 retains the remaining catalog-wide rich body workflow. AI-004 retains bulk work, SEO-010 retains multilingual-site delivery and AGENT-008 retains USD budgets and agent controls.",
       "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
-      "line": 1287,
+      "line": 1290,
       "cell": "gap",
       "text": "SEO-005 retains structured-data implementation, AI-004 retains bulk work and AGENT-008 retains USD budgets and agent controls.",
       "to": "changelog"
     },
     {
       "file": "CONTRACT.md",
-      "line": 1288,
+      "line": 1291,
       "cell": "gap",
       "text": "No collection or bulk AI operations.",
       "to": "gap",
@@ -4830,7 +4814,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1289,
+      "line": 1292,
       "cell": "gap",
       "text": "No agent; the interview, fact store and sourcing do not exist.",
       "to": "gap",
@@ -4840,7 +4824,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1290,
+      "line": 1293,
       "cell": "gap",
       "text": "No fact watching.",
       "to": "gap",
@@ -4850,7 +4834,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1291,
+      "line": 1294,
       "cell": "gap",
       "text": "Enquiries reach the workspace inbox (`INBOX-001`) but nothing checks delivery; no agent.",
       "to": "gap",
@@ -4860,7 +4844,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1292,
+      "line": 1295,
       "cell": "gap",
       "text": "No search data or link checks.",
       "to": "gap",
@@ -4870,7 +4854,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1293,
+      "line": 1296,
       "cell": "gap",
       "text": "Revisions and day counts exist but no conversion data or experiments.",
       "to": "gap",
@@ -4880,7 +4864,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1294,
+      "line": 1297,
       "cell": "gap",
       "text": "Only the reviewed static JSON move-in exists (`MOVEIN-001`).",
       "to": "gap",
@@ -4890,7 +4874,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1295,
+      "line": 1298,
       "cell": "gap",
       "text": "No reply drafting or sending.",
       "to": "gap",
@@ -4900,7 +4884,7 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1296,
+      "line": 1299,
       "cell": "gap",
       "text": "No agents run inside Pane; outside agents use the command helper (`API-001`). Every future agent door must enforce the existing API-001 native authority intersection, explicit scope, credential custody and transactional metadata audit.",
       "to": "gap",
@@ -4910,22 +4894,9 @@
     },
     {
       "file": "CONTRACT.md",
-      "line": 1297,
+      "line": 1300,
       "text": "Every future agent door must enforce the existing API-001 native authority intersection, explicit scope, credential custody and transactional metadata audit.",
       "to": "changelog"
-    },
-    {
-      "file": "CONTRACT.md",
-      "line": 1299,
-      "text": "Scheduling replay implementation note (CMS-005 remains partial; current Status judgment retained): selective reviewed page publication and expiry are implemented by src/pane/page-schedules.ts. tests/posts.test.mjs and scripts/scheduling-journey.mjs retain the candidate page and immutable-source assertions alongside the current post-schedule failure-isolation proof. This replay does not promote CMS-005 or alter its current acceptance judgment.",
-      "to": "changelog"
-    },
-    {
-      "file": "ACCEPTANCE.md",
-      "line": 3,
-      "text": "Generated from [CONTRACT.md](CONTRACT.md) by the seed contract-docs command. Edit the contract source, then regenerate. 127 clauses: 51 done, 32 partial, 44 missing.",
-      "to": "docs",
-      "path": "docs/verify.md"
     },
     {
       "file": "ACCEPTANCE.md",
@@ -5646,22 +5617,6 @@
       "file": "ACCEPTANCE.md",
       "line": 75,
       "text": " Implementation: Native authors compose their own structured posts in the shared canvas, submit an exact review, and the native owner explicitly approves that reviewed post. Each approval publishes only that post and its blog metadata, preserving unrelated live content and private drafts. News and Recipes each have three posts, their own public index and RSS feed, categories, tags, explicit public bylines and author pages, month archives and pagination. Featured and inline images use the existing prepared rendition boundary. The acceptance body, stable destinations, absolute-URL semantic RSS, consented video, keyboard and axe checks and click-only Facebook, X, LinkedIn, Pinterest and email sharing are proved through the route test and native browser journey. Comments remain off. `scripts/posts-journey.mjs` additionally proves each named share origin and endpoint, email’s mailto scheme, exact post URLs and complete retained conflict-download title and body; `tests/posts.test.mjs` — “authors submit two isolated blogs for exact owner approval and public semantic delivery” additionally refuses reviewed inline images lacking alt text or an explicit decorative choice, returns an accessibility warning and preserves every revision and approval. Gap: CMS-006 retains feed validation, podcast support and subscriber delivery; CMS-010 retains comments; CMS-011 retains its remaining catalog, and PAGE-014 retains the remaining blocks and destinations. Evidence: `tests/posts.test.mjs` — “authors submit two isolated blogs for exact owner approval and public semantic delivery” (six posts in two blogs, native author isolation, signed-out and foreign-origin refusal, native owner-only current-review approval, stale review and revision refusal, exact approving owner and transactional activity, immutable sources and unrelated live content, exact filtered post sets, isolated RSS, semantic body and stable destinations, approved PDF bytes and private-file refusal, click-only share URLs); `scripts/posts-journey.mjs` — “Posts browser journey” (native blog settings autosave with stale-save value retention and private PDF upload, author composition, both blog indices and isolated feeds, category and tag and author and month archive pages, excerpts and responsive featured images, pagination, full body composition and live semantic DOM, keyboard reading order and axe, two captioned raster images, attributed quote, consented YouTube, page button and post and PDF and telephone links, post rename without a redirect hop, semantic absolute-URL RSS, all five share actions with zero third-party requests before a click, five durable undo and redo steps, reopen and stale-tab retention, account and editor tooltips, native post-screen axe, 1440 and 390). The canvas shard in `scripts/browser-proof.mjs` always loads this journey.  `scripts/posts-journey.mjs` additionally proves each named share origin and endpoint, email’s mailto scheme, exact post URLs and complete retained conflict-download title and body; `tests/posts.test.mjs` — “authors submit two isolated blogs for exact owner approval and public semantic delivery” additionally refuses reviewed inline images lacking alt text or an explicit decorative choice, returns an accessibility warning and preserves every revision and approval. Gap: CMS-006 retains feed validation, podcast support and subscriber delivery; CMS-010 retains comments; CMS-011 retains its remaining catalog, and PAGE-014 retains the remaining blocks and destinations.",
-      "to": "docs",
-      "path": "docs/verify.md"
-    },
-    {
-      "file": "ACCEPTANCE.md",
-      "line": 76,
-      "text": "**CMS-005 — Scheduled publishing and expiry** (partial). Pages, posts, collection items and announcement sections can be scheduled to publish and to unpublish at a date and time in the business's US time zone, daylight saving included. The workspace shows what actually went live and flags a scheduled change that has not been approved by its time. **Acceptance evidence:** Schedule a post for 9:00 America/Chicago and a promotion to expire across a daylight saving change; see each happen at the right local time and see an unapproved schedule flagged, not published.",
-      "to": "clause",
-      "ids": [
-        "CMS-005"
-      ]
-    },
-    {
-      "file": "ACCEPTANCE.md",
-      "line": 76,
-      "text": " Implementation: Approved immutable posts now publish and optionally unpublish at the chosen business-local time. Later private edits remain private; replacement publications are preserved. Announcement sections activate and expire across daylight saving. Sites records actual execution and flags overdue unapproved post and announcement schedules without publishing them. Gap: Selective page and collection-item publication and expiry remain unimplemented. These future scheduling doors must retain the approved immutable-revision fence, actual execution history and due-unapproved refusal. Native post publication and expiry now isolate invalidated schedules, show their sanitized failures and reconcile committed changes to public durable state even when another entry fails. Announcement schedules retain their existing proof. This does not complete the remaining page and item target. Evidence: `tests/posts.test.mjs` — “approved immutable posts publish at Chicago nine while unapproved times are flagged and retries stay fenced” (09:00 Chicago publication and optional expiry, approved immutable source, actual execution history, retained later drafts, unapproved post flag and refusal, native owner authority, invalid DST choices, cancellation and replay fences with ordinary and durable live storage); `tests/posts.test.mjs` — “an invalidated blog schedule cannot starve other publications or leave an expired post public” and “committed publications and expiries reconcile durable reads even when failure recording is unavailable” (independent due entries, visible sanitized failure history, public state matching committed publications and expiries through a later failure, banner reconciliation before surfacing a storage failure); `tests/pane.test.mjs` — “approved business-local schedules drive banners and reminders while drafts, roles and invalid DST dates stay fenced” (Denver promotion expiry across spring DST and unapproved schedule refusal); `scripts/scheduling-journey.mjs` — “Business-local scheduling journey” (native post scheduling controls, 09:00 Chicago execution history, optional post expiry, unapproved post flag, Chicago announcement activation and expiry across fall DST, changed screens at 1440 and 390); `scripts/post-schedules-journey.mjs` — “Invalidated post schedule journey” (native invalidated approval, unrelated publication, successful expiry, matching public durable state and visible failure screens at 1440 and 390) Gap: Selective page and collection-item publication and expiry remain unimplemented. These future scheduling doors must retain the approved immutable-revision fence, actual execution history and due-unapproved refusal. Native post publication and expiry now isolate invalidated schedules, show their sanitized failures and reconcile committed changes to public durable state even when another entry fails. Announcement schedules retain their existing proof. This does not complete the remaining page and item target.",
       "to": "docs",
       "path": "docs/verify.md"
     },
@@ -6968,12 +6923,6 @@
     },
     {
       "file": "docs/CLAIMS.md",
-      "line": 3,
-      "text": "Generated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses, subject to exact-commit verification and guarded landing. Provider and field-proof boundaries remain in the source contract. 127 clauses: 51 done, 32 partial, 44 missing.",
-      "to": "changelog"
-    },
-    {
-      "file": "docs/CLAIMS.md",
       "line": 5,
       "text": "| Clause | Status | Title |",
       "to": "changelog"
@@ -7246,12 +7195,6 @@
       "file": "docs/CLAIMS.md",
       "line": 51,
       "text": "| CMS-004 | done | Blog with categories, tags and authors |",
-      "to": "changelog"
-    },
-    {
-      "file": "docs/CLAIMS.md",
-      "line": 52,
-      "text": "| CMS-005 | partial | Scheduled publishing and expiry |",
       "to": "changelog"
     },
     {
@@ -7738,6 +7681,58 @@
       "file": "docs/CLAIMS.md",
       "line": 133,
       "text": "| AGENT-008 | missing | Agent controls, budgets and audit |",
+      "to": "changelog"
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 381,
+      "text": "*Status:* done. Pages, posts, collection items and announcement sections publish and expire in the chosen business-local time zone. Exact owner approval binds an immutable source; later private drafts stay private and separately approved newer versions survive old expiries. Sites shows actual execution, flags overdue unapproved changes and records sanitized refusals without starving unrelated schedules. Native owner authority, revoked-source refusal, session revocation, replay fencing and private-history visibility are exercised through the scheduling journeys.",
+      "to": "changelog"
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 1163,
+      "text": "CMS-005 judged from the code and journeys on candidate branch `cloud/sx-pane-x-cms-005` (28 October 2026), including retained execution history after an independent replacement. The landing handoff identifies the exact candidate commit and its Verify; other clause judgments remain unchanged.",
+      "to": "changelog"
+    },
+    {
+      "file": "CONTRACT.md",
+      "line": 1302,
+      "text": "Scheduling implementation note (CMS-005): `src/pane/page-schedules.ts` and `src/pane/item-schedules.ts` retain approved immutable sources, refuse revoked publication sources, isolate due failures and preserve later drafts. The existing post and announcement journeys remain in Verify alongside the expanded native scheduling journey.",
+      "to": "changelog"
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 3,
+      "text": "Generated from [CONTRACT.md](CONTRACT.md) by the seed contract-docs command. Edit the contract source, then regenerate. 127 clauses: 52 done, 31 partial, 44 missing.",
+      "to": "changelog"
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 76,
+      "text": "**CMS-005 — Scheduled publishing and expiry** (done). Pages, posts, collection items and announcement sections can be scheduled to publish and to unpublish at a date and time in the business's US time zone, daylight saving included. The workspace shows what actually went live and flags a scheduled change that has not been approved by its time. **Acceptance evidence:** Schedule a post for 9:00 America/Chicago and a promotion to expire across a daylight saving change; see each happen at the right local time and see an unapproved schedule flagged, not published.",
+      "to": "clause",
+      "ids": [
+        "CMS-005"
+      ]
+    },
+    {
+      "file": "ACCEPTANCE.md",
+      "line": 76,
+      "text": " Implementation: Pages, posts, collection items and announcement sections publish and expire in the chosen business-local time zone. Exact owner approval binds an immutable source; later private drafts stay private and separately approved newer versions survive old expiries. Sites shows actual execution, flags overdue unapproved changes and records sanitized refusals without starving unrelated schedules. Native owner authority, revoked-source refusal, session revocation, replay fencing and private-history visibility are exercised through the scheduling journeys. Evidence: `tests/posts.test.mjs` — “reviewed posts, pages and items publish at Chicago nine with immutable approval, complete execution history and overdue unapproved refusal” (selected page and collection-item publication and expiry, immutable source and later drafts, actual execution, unapproved changes, replacement and cancellation and replay fences, denied member and deactivated-session writes, private item history and revoked-source failure isolation); `tests/posts.test.mjs` — “approved immutable posts publish at Chicago nine while unapproved times are flagged and retries stay fenced” (09:00 Chicago publication and optional expiry, approved immutable source, actual execution history, retained later drafts, unapproved post flag and refusal, native owner authority, invalid DST choices, cancellation and replay fences with ordinary and durable live storage); `tests/posts.test.mjs` — “an invalidated blog schedule cannot starve other publications or leave an expired post public” and “committed publications and expiries reconcile durable reads even when failure recording is unavailable” (independent due entries, visible sanitized failure history, public state matching committed publications and expiries through a later failure, banner reconciliation before surfacing a storage failure); `tests/pane.test.mjs` — “approved business-local schedules drive banners and reminders while drafts, roles and invalid DST dates stay fenced” (Denver promotion expiry across spring DST and unapproved schedule refusal); `scripts/scheduling-journey.mjs` — “Business-local scheduling journey” (native page and post and item scheduling controls, saved approval state, 09:00 Chicago execution history, optional expiry, overdue unapproved flags, Chicago announcement activation and expiry across fall DST, axe and tooltips, changed screens at 1440 and 390); `scripts/post-schedules-journey.mjs` — “Invalidated post schedule journey” (native invalidated approval, unrelated publication, successful expiry, matching public durable state and visible failure screens at 1440 and 390)",
+      "to": "docs",
+      "path": "docs/verify.md"
+    },
+    {
+      "file": "docs/CLAIMS.md",
+      "line": 3,
+      "text": "Generated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses, subject to exact-commit verification and guarded landing. Provider and field-proof boundaries remain in the source contract. 127 clauses: 52 done, 31 partial, 44 missing.",
+      "to": "changelog"
+    },
+    {
+      "file": "docs/CLAIMS.md",
+      "line": 52,
+      "text": "| CMS-005 | done | Scheduled publishing and expiry |",
       "to": "changelog"
     }
   ]

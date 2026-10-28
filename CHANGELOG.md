@@ -1682,3 +1682,17 @@ Generated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses,
 ## 28 October 2026 — Site styles judgment carried from main
 
 partial. Native owner settings retain separate built-in and uploaded heading and body fonts, colors, button shape, page spacing and section background in immutable drafts. Font files are self-hosted with swap display and follow preview, publication and rollback. Gap: Adobe Fonts project connection and the uploaded and Adobe heading and body pairing with live rendering require an owner-authorized test web project ID or grant.
+
+## 28 October 2026 — Scheduling judgment carried from main
+
+CMS-005 judged from the code and journeys on candidate branch `cloud/sx-pane-x-cms-005` (28 October 2026), including retained execution history after an independent replacement. The landing handoff identifies the exact candidate commit and its Verify; other clause judgments remain unchanged.
+
+done. Pages, posts, collection items and announcement sections publish and expire in the chosen business-local time zone. Exact owner approval binds an immutable source; later private drafts stay private and separately approved newer versions survive old expiries. Sites shows actual execution, flags overdue unapproved changes and records sanitized refusals without starving unrelated schedules. Native owner authority, revoked-source refusal, session revocation, replay fencing and private-history visibility are exercised through the scheduling journeys.
+
+`src/pane/page-schedules.ts` and `src/pane/item-schedules.ts` retain approved immutable sources, refuse revoked publication sources, isolate due failures and preserve later drafts. The existing post and announcement journeys remain in Verify alongside the expanded native scheduling journey.
+
+Generated from [CONTRACT.md](CONTRACT.md) by the seed contract-docs command. Edit the contract source, then regenerate. 127 clauses: 52 done, 31 partial, 44 missing.
+
+Generated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses, subject to exact-commit verification and guarded landing. Provider and field-proof boundaries remain in the source contract. 127 clauses: 52 done, 31 partial, 44 missing.
+
+| CMS-005 | done | Scheduled publishing and expiry |

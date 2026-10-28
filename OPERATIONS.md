@@ -71,6 +71,11 @@ health.
 
 The Worker cron runs each minute through `src/server.ts`. The Pages editor's Schedules controls use the business's US IANA time zone. Publish approves the exact revision's holiday/promotion windows and quarterly page-review rule; draft rules never run. Sites shows the last platform check, actual transitions, overdue unapproved drafts and outstanding stale-page reviews. Mark reviewed records the signed-in owner/admin and clears that page's reminders.
 
+
+The native owner can schedule one reviewed page from its editor, one submitted post from Posts, or one saved collection item under its Publication settings. Each approval binds the immutable saved source and its business-local start and optional end. Later private drafts remain private. Saving an unapproved time never grants publication: Sites flags it when due. Rescheduling replaces the active time for that content; item and post schedules also offer explicit cancellation.
+
+Cron processes content independently, records completed publications and expiries in Sites, and reports sanitized refusals without stopping unrelated schedules. Revoked sources and inactive approving owners cannot publish. Expiry withdraws the version that the schedule published and preserves a separately approved newer version. Schedule records are retained in native installation exports; no external delivery or provider scheduling is involved.
+
 A page is stale when neither its published content nor its recorded review changed since the previous quarterly occurrence. Reminder recurrence preserves local time across daylight saving; nonexistent or repeated dates are rejected on entry. A later recurring occurrence that crosses a clock gap or repetition is flagged in schedule event history for correction instead of choosing an offset. Banners use plain escaped text; reminders stay in the workspace. The schedule clock, execution history, active banners and page reviews are included in native exports.
 
 ## Hosted delivery

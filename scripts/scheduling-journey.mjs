@@ -15,7 +15,7 @@ const saved=()=>page.waitForFunction(()=>document.querySelector('[data-save-stat
 const siteText=async()=>(await context.request.get(origin+'/site')).text()
 async function capture(name,width){await page.screenshot({path:resolve(folder,`${name}-${width}.png`),fullPage:true});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,`${name} overflow at ${width}`)}
 async function tooltip(){await page.evaluate(()=>{document.activeElement?.blur();window.scrollTo({top:0,behavior:'instant'})});await page.mouse.move(0,500);const account=page.locator('[data-tip="Account and team"]');await account.hover();await page.getByRole('tooltip').getByText('Account and team',{exact:true}).waitFor();await page.mouse.move(0,500);await page.keyboard.press('Escape');await account.focus();await page.keyboard.press('Tab');await page.keyboard.press('Shift+Tab');await page.getByRole('tooltip').getByText('Account and team',{exact:true}).waitFor();await page.keyboard.press('Escape')}
-async function accessible(){await page.evaluate(await readFile('node_modules/axe-core/axe.min.js','utf8'));assert.deepEqual(await page.evaluate(async()=> (await axe.run(document)).violations),[],'Scheduled publication controls pass axe')}
+async function accessible(selector){await page.evaluate(await readFile('node_modules/axe-core/axe.min.js','utf8'));assert.deepEqual(await page.evaluate(async selector=> (await axe.run(selector?document.querySelector(selector):document)).violations,selector),[],'Scheduled publication controls pass axe')}
 async function tick(iso){await fixture.advance(iso)}
 try {
  await fixture.bootstrap(context);await page.goto(origin+'/setup');await page.getByRole('checkbox').check()
@@ -79,6 +79,26 @@ try {
  for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await page.goto(origin+'/site/about');await page.getByText('Scheduled studio page',{exact:true}).waitFor();await capture('scheduled-page-live',width);await page.goto(origin+'/app/sites');const status=page.getByRole('region',{name:'Schedules and reviews'});if(width===1440)assert.ok((await status.innerText()).includes('Page awaiting approval: Visit the workshop'));await status.getByText('Schedule event history',{exact:true}).click();await status.scrollIntoViewIfNeeded();await capture('page-schedule-history-and-refusal',width)}
  await tick('2026-10-18T13:59:00Z');assert.equal((await context.request.get(origin+'/site/about')).status(),200)
  await tick('2026-10-18T14:00:00Z');assert.equal((await context.request.get(origin+'/site/about')).status(),404);assert.equal((await dashboard()).schedules.history.filter(event=>event.kind==='page-expire').length,1)
+
+ // The collection item flow runs once; record the same settings and outcome at both release widths.
+ assert.equal((await post('/api/pane/collections/schema',{base:(await dashboard()).draft.id,id:'offers',prefix:'offers',title:'Workshop offers',fields:[{id:'description',label:'Description',type:'text'}]})).status(),200)
+ for(const [id,title] of [['morning','Scheduled workshop offer'],['waiting','Unapproved workshop offer']])assert.equal((await post('/api/pane/collections/items/save',{base:(await dashboard()).draft.id,collection:'offers',id,slug:id,title,values:{description:'Reviewed offer details'}})).status(),200)
+ const itemSource=(await dashboard()).draft.id
+ await page.setViewportSize({width:1440,height:1000});await page.goto(origin+'/app/collections?collection=offers&item=morning');await page.getByText('Publication settings',{exact:true}).click()
+ await page.getByLabel('Item publication time zone',{exact:true}).selectOption('America/Chicago');await page.getByLabel('Publish item at',{exact:true}).fill('2026-10-19T09:00');await page.getByLabel('Unpublish item at (optional)',{exact:true}).fill('2026-10-20T09:00')
+ for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await tooltip();if(width===1440)await accessible();await page.getByLabel('Item publication time zone',{exact:true}).scrollIntoViewIfNeeded();await capture('item-schedule-settings',width)}
+ await page.setViewportSize({width:1440,height:1000})
+ await Promise.all([page.waitForURL(url=>url.pathname==='/app/collections'&&url.searchParams.get('item')==='morning'),page.getByRole('button',{name:'Approve item schedule',exact:true}).click()])
+ await page.getByText('Publication settings',{exact:true}).click();await page.getByText('Approved for',{exact:false}).waitFor();assert.equal(await page.getByLabel('Publish item at',{exact:true}).inputValue(),'2026-10-19T09:00')
+ assert.equal((await post('/api/pane/collections/items/schedule',{base:itemSource,collection:'offers',id:'waiting',start:'2026-10-19T09:00',timeZone:'America/Chicago'})).status(),200)
+ assert.equal((await post('/api/pane/collections/items/save',{base:itemSource,collection:'offers',id:'morning',slug:'morning',title:'Private later offer',values:{description:'Private later details'}})).status(),200)
+ await tick('2026-10-19T13:59:00Z');assert.equal((await context.request.get(origin+'/site/offers/morning')).status(),404)
+ await tick('2026-10-19T14:00:00Z');assert.ok((await(await context.request.get(origin+'/site/offers/morning')).text()).includes('Scheduled workshop offer'));assert.equal((await context.request.get(origin+'/site/offers/waiting')).status(),404)
+ const itemState=await dashboard();assert.equal(itemState.draft.site.collections.find(collection=>collection.id==='offers').items.find(item=>item.id==='morning').title,'Private later offer');assert.ok(itemState.schedules.draftDue.includes('Item awaiting approval: Unapproved workshop offer'))
+ const itemEvents=itemState.schedules.history.filter(event=>event.kind==='item-published');assert.equal(itemEvents.length,1);assert.equal(itemEvents[0].revision,itemSource);assert.equal(itemEvents[0].executedAt,Date.parse('2026-10-19T14:00:00Z'))
+ for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await page.goto(origin+'/site/offers/morning');await capture('scheduled-item-live',width);await page.goto(origin+'/app/sites');const region=page.getByRole('region',{name:'Schedules and reviews'});if(width===1440){await region.getByText('Item awaiting approval: Unapproved workshop offer',{exact:true}).waitFor();await accessible('[aria-label="Schedules and reviews"]')}await region.getByText('Schedule event history',{exact:true}).click();await region.scrollIntoViewIfNeeded();await capture('item-execution-and-unapproved',width)}
+ await tick('2026-10-20T13:59:00Z');assert.equal((await context.request.get(origin+'/site/offers/morning')).status(),200)
+ await tick('2026-10-20T14:00:00Z');assert.equal((await context.request.get(origin+'/site/offers/morning')).status(),404);assert.equal((await dashboard()).schedules.history.filter(event=>event.kind==='item-unpublished').length,1)
  for(const [width,year,thanksgiving] of [[1440,2026,26],[390,2028,23]]){
   await page.setViewportSize({width,height:1000})
   const clean=await (await post('/api/pane/prepare',{site:source})).json()
@@ -172,6 +192,6 @@ try {
   for(const text of ['£125.50','+1 303 555 0123','80202 Denver'])assert.ok((await page.locator('.public-content').innerText()).includes(text),text)
   assert.equal(await page.locator('table thead th').first().innerText(),'Mo');await capture('changed-business-formats',width)
  }
- console.log('Business-local scheduling journey passed: reviewed posts and selected pages publish at Chicago 9 AM, expire locally, retain private work, flag unapproved schedules and record execution; promotion DST, reminders, axe and tooltips; screens at 1440 and 390.')
+ console.log('Business-local scheduling journey passed: reviewed posts, selected pages and collection items publish at Chicago 9 AM, expire locally, retain private work, flag unapproved schedules and record execution; promotion DST, reminders, axe and tooltips; screens at 1440 and 390.')
 } catch(error){await page.screenshot({path:resolve(folder,'failure.png'),fullPage:true});throw error}
 finally {await browser.close();await fixture.stop()}

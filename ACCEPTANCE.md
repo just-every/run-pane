@@ -8,10 +8,10 @@ The primary journey: Move the existing business site in, inspect its content and
 
 | Tier | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
-| Core | 41 | 47 | 44 | 132 |
+| Core | 42 | 46 | 44 | 132 |
 | Agent surface | 0 | 0 | 4 | 4 |
 | Later | 0 | 0 | 0 | 0 |
-| Full target | 41 | 47 | 48 | 136 |
+| Full target | 42 | 46 | 48 | 136 |
 
 Judged from the code and tests at commit `3b35726211c3a5ac20eeba8b0f8b82b37d2995d4` (27 October 2026). Field proof register: 12 rows; 0 passed, 0 failed, 12 not run.
 
@@ -621,15 +621,15 @@ Core · target · **done**
 
 #### CMS-005 — Scheduled publishing and expiry
 
-Core · target · **partial**
+Core · target · **done**
 
 **Requirement.** Pages, posts, collection items and announcement sections can be scheduled to publish and to unpublish at a date and time in the business's US time zone, daylight saving included. The workspace shows what actually went live and flags a scheduled change that has not been approved by its time.
 
 **Acceptance.**
 1. Schedule a post for 9:00 America/Chicago and a promotion to expire across a daylight saving change; see each happen at the right local time and see an unapproved schedule flagged, not published.
 
-**Evidence.** `tests/posts.test.mjs` — “approved immutable posts publish at Chicago nine while unapproved times are flagged and retries stay fenced” (09:00 Chicago publication and optional expiry, approved immutable source, actual execution history, retained later drafts, unapproved post flag and refusal, native owner authority, invalid DST choices, cancellation and replay fences with ordinary and durable live storage); `tests/posts.test.mjs` — “an invalidated blog schedule cannot starve other publications or leave an expired post public” and “committed publications and expiries reconcile durable reads even when failure recording is unavailable” (independent due entries, visible sanitized failure history, public state matching committed publications and expiries through a later failure, banner reconciliation before surfacing a storage failure); `tests/pane.test.mjs` — “approved business-local schedules drive banners and reminders while drafts, roles and invalid DST dates stay fenced” (Denver promotion expiry across spring DST and unapproved schedule refusal); `scripts/scheduling-journey.mjs` — “Business-local scheduling journey” (native post scheduling controls, 09:00 Chicago execution history, optional post expiry, unapproved post flag, Chicago announcement activation and expiry across fall DST, changed screens at 1440 and 390); `scripts/post-schedules-journey.mjs` — “Invalidated post schedule journey” (native invalidated approval, unrelated publication, successful expiry, matching public durable state and visible failure screens at 1440 and 390)
-**Gap.** Selective page and collection-item publication and expiry remain unimplemented. These future scheduling doors must retain the approved immutable-revision fence, actual execution history and due-unapproved refusal. Native post publication and expiry now isolate invalidated schedules, show their sanitized failures and reconcile committed changes to public durable state even when another entry fails. Announcement schedules retain their existing proof. This does not complete the remaining page and item target.
+**Evidence.** `tests/posts.test.mjs` — “reviewed posts, pages and items publish at Chicago nine with immutable approval, complete execution history and overdue unapproved refusal”; `scripts/scheduling-journey.mjs` — “Business-local scheduling journey”
+**Gap.** None.
 
 #### CMS-006 — RSS and podcast feeds and new-post notifications
 

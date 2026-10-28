@@ -32,6 +32,7 @@ export function visibleRevision(row:Revision|null,caps:Capability[],actor:{id:st
  return {...row,site:{...site,...(caps.includes('collections:write')&&collections?{collections}:{}),...(caps.includes('posts:write')&&posts?{posts:posts.filter(post=>post.author===actor.id)}:{}),...(trash?{trash:trash.filter(entry=>entry.kind==='page'?caps.includes('pages:read'):entry.kind==='item'?caps.includes('collections:write'):caps.includes('posts:write')&&own.has(entry.id))}:{}),...(postDeletions&&caps.includes('posts:write')?{postDeletions:postDeletions.filter(id=>own.has(id))}:{})}}
 }
 export function permittedDashboard(data:Dashboard,caps:Capability[],actor:{id:string;role:string}):Dashboard{
+ if(data.schedules&&!caps.includes('collections:write'))data={...data,schedules:{...data.schedules,items:[],draftDue:data.schedules.draftDue.filter(label=>!label.startsWith('Item awaiting approval: ')),history:data.schedules.history.filter(event=>!event.rule.startsWith('item:'))}}
  data={...data,draft:visibleRevision(data.draft,caps,actor),live:visibleRevision(data.live,caps,actor),revisions:data.revisions.map(row=>visibleRevision(row,caps,actor)!)}
  return {...data,capabilities:caps,...(data.role==='owner'?{}:{rejectedContent:undefined,spamRetention:undefined,formRejections:[]}),
   ...(caps.includes('team')?{}:{ownershipPeople:undefined,privacyRequest:undefined}),
