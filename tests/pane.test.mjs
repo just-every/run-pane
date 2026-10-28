@@ -2120,7 +2120,8 @@ test('owner style drafts retain self-hosted fonts through preview, conflict, pub
  await json('/api/pane/publish',{revision:initial.id})
  const fontBytes=await readFile('public/fonts/noto-serif/noto-serif-latin-wght-normal.woff2')
  const font={id:'font-'+crypto.randomUUID(),name:'Workshop serif',format:'woff2',data:fontBytes.toString('base64')}
- const styles={heading:font.id,body:'figtree',primary:'#075985',text:'#1f0717',background:'#ffffff',sectionBackground:'#f0f9ff',button:'pill',spacing:40,fonts:[font]}
+ const formats=await Promise.all(['woff','ttf','otf'].map(async format=>({id:'font-'+crypto.randomUUID(),name:'Workshop '+format,format,data:(await readFile('tests/fonts/synthetic-pane.'+format)).toString('base64')})))
+ const styles={heading:font.id,body:'figtree',primary:'#075985',text:'#1f0717',background:'#ffffff',sectionBackground:'#f0f9ff',button:'pill',spacing:40,fonts:[font,...formats]}
  const site={...initial.site,styles},before=(await data()).revisions.length
  for(const cookie of [admin,member,'']){
   assert.equal((await json('/api/pane/prepare',{site,base:initial.id},cookie)).status,cookie?403:401)
@@ -2131,6 +2132,13 @@ test('owner style drafts retain self-hosted fonts through preview, conflict, pub
  assert.equal((await data()).revisions.length,before,'Refused font writes preserve the latest draft')
  const saved=await json('/api/pane/autosave',{base:initial.id,site});assert.equal(saved.status,200,await saved.clone().text());const draft=await saved.json()
  assert.deepEqual(draft.site.styles,styles)
+ assert.equal((await json('/app/autosave',{base:draft.id,'styles.primary':'#064e3b'},admin)).status,403,'Form writes obey the owner boundary')
+ assert.equal((await json('/api/pane/import/dry-run',{source:JSON.stringify(fixture)},admin)).status,403,'Import cannot discard owner styles')
+ const token=await(await json('/api/pane/tokens/create',{name:'synthetic-pane-42',scopes:['draft:write'],days:1})).json()
+ assert.ok(token.token)
+ assert.equal((await json('/api/pane/autosave',{base:draft.id,site:{...site,styles:{...styles,primary:'#064e3b'}}},'',{Authorization:'Bearer '+token.token})).status,403,'An owner-scoped agent credential cannot write styles')
+ await json('/api/pane/tokens/revoke',{id:token.id})
+ assert.equal((await json('/api/pane/autosave',{base:draft.id,site},'',{Authorization:'Bearer '+token.token})).status,401,'Revoked credentials stay refused')
  const stale=await json('/api/pane/autosave',{base:initial.id,site:{...site,styles:{...styles,primary:'#064e3b'}}});assert.equal(stale.status,409);assert.deepEqual((await stale.json()).latest.site.styles,styles)
  assert.equal((await f.request('/site?pane-font='+font.id+'&pane-revision='+draft.id)).status,404,'A draft font is not public')
  for(const slug of ['home','about','services']){
@@ -2145,6 +2153,9 @@ test('owner style drafts retain self-hosted fonts through preview, conflict, pub
  const delivered=await f.request(asset);assert.equal(delivered.status,200);assert.match(delivered.headers.get('cache-control'),/no-store/);assert.equal(delivered.headers.get('x-content-type-options'),'nosniff');assert.deepEqual(Buffer.from(await delivered.arrayBuffer()),fontBytes)
  assert.equal((await f.request(asset,{method:'HEAD'})).headers.get('content-length'),String(fontBytes.length))
  assert.equal((await f.request(asset.replace(draft.id,initial.id))).status,404,'A stale live revision cannot deliver a font')
+ for(const item of formats){const response=await f.request('/site?pane-font='+item.id+'&pane-revision='+draft.id);assert.equal(response.status,200);assert.equal(response.headers.get('content-type'),'font/'+item.format);assert.deepEqual(Buffer.from(await response.arrayBuffer()).toString('base64'),item.data)}
+ const archive=await exportData(f.db),restored=await runtime()
+ try{assert.equal((await restore(restored.db,archive)).phase,'complete');const response=await restored.request(asset);assert.equal(response.status,200);assert.deepEqual(Buffer.from(await response.arrayBuffer()),fontBytes)}finally{await restored.mf.dispose()}
  assert.equal((await json('/api/pane/rollback',{revision:initial.id})).status,200)
  assert.equal((await f.request(asset)).status,404,'Rollback withdraws the uploaded font from public delivery')
  for(const expected of [initial,draft])assert.deepEqual((await data()).revisions.find(row=>row.id===expected.id),expected,'Style edits and approvals leave complete prior snapshots immutable')

@@ -9,7 +9,7 @@ export type AccessibilityFinding = { slug: string; message: string; image?:boole
 type Node = DefaultTreeAdapterMap['node']
 // Published theme values from public/site/theme.css. H1–H3 use ink;
 // the remaining content inherits body. The public canvas background is white.
-const ink = '#1f0717', body = '#4a3a45'
+const defaultInk = '#1f0717', defaultBody = '#4a3a45'
 function background(hex = '#ffffff'): number[] {
  const digits = hex.slice(1), expanded = digits.length <= 4 ? [...digits].map(value => value + value).join('') : digits
  const rgb = [0, 2, 4].map(index => parseInt(expanded.slice(index, index + 2), 16))
@@ -30,8 +30,10 @@ function richTags(nodes: RichNode[]): string[] {
 /** Informational draft checks, in the same stored reading order as live output. */
 export function accessibilityFindings(site: Site): AccessibilityFinding[] {
  const findings: AccessibilityFinding[] = []
+ const ink=site.styles?.text&&site.styles.text!==defaultBody?site.styles.text:defaultInk,body=site.styles?.text??defaultBody
  for (const page of activePages(site)) {
   const warn = (message: string) => findings.push({ slug: page.slug, message })
+  if(site.styles&&contrast(body,background(site.styles.background))<4.5)warn('Site text contrast is below 4.5:1; adjust the text or page background color in Settings.')
   let previous = 1 // publicPage always supplies the page title as H1.
   const heading = (tag: string) => {
    if (!/^h[1-6]$/.test(tag)) return
@@ -45,7 +47,7 @@ export function accessibilityFindings(site: Site): AccessibilityFinding[] {
     for(const block of section.blocks)for(const image of [block.image,...(block.gallery?.items.map(item=>site.media?.find(asset=>asset.id===item.asset)?.image)??[])])if(image&&!image.decorative&&!image.alt?.trim())findings.push({slug:page.slug,image:true,message:'An image needs alternative text or an explicit decorative mark before publishing.'})
     const tags = section.blocks.filter(block=>block.kind==='text').flatMap(block => [block.format ?? 'p', ...(block.content ? richTags(block.content) : [])])
     tags.forEach(heading)
-    const surface = background(section.background)
+    const surface = background(section.background??site.styles?.sectionBackground??site.styles?.background)
     // At the narrowest published size H1–H3 qualify as large bold text.
     const headingText = tags.some(tag => /^h[1-3]$/.test(tag))
     const bodyText = section.blocks.some(block => block.kind==='text' && !/^h[1-3]$/.test(block.format ?? 'p') && (block.format !== 'div' || !block.content || block.content.some(node => !/^h[1-3]$/.test(node.tag))))

@@ -139,7 +139,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    if(!activePages(site).some(page=>page.slug===slug))return json({error:'Preview not found.'},404)
    if(url.searchParams.has('pane-font'))return fontResponse(site.styles?.fonts,url.searchParams.get('pane-font'),request.method)
    const response=await document('Preview',publicPage(site,slug,'preview',false,false,undefined,undefined,url.pathname),'site')
-   const headers=new Headers(response.headers);headers.set('content-security-policy',headers.get('content-security-policy')!.replace("frame-ancestors 'none'","frame-ancestors 'self'"))
+   const headers=new Headers(response.headers);headers.set('x-frame-options','SAMEORIGIN');headers.set('content-security-policy',headers.get('content-security-policy')!.replace("frame-ancestors 'none'","frame-ancestors 'self'"))
    return new Response(response.body,{status:response.status,headers})
   }
   if(request.method==='GET' && ['/api/pane/activity','/api/pane/activity/export'].includes(path)) {
@@ -171,7 +171,9 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
   if(!lifecycleAction&&(!routeCapability(path,'POST')||!caps.includes(routeCapability(path,'POST')!)))return json({error:'Your role cannot perform this action.'},403)
   if((!owner||scopes)&&['/api/pane/import/dry-run','/api/pane/import/apply','/app/import/dry-run','/app/import/apply'].includes(path)&&input.source){
    const imported=parseImportDocument(typeof input.source==='string'?input.source:JSON.stringify(input.source)).site
-   if(imported?.styles||imported?.customCode||imported?.pages.some(page=>page.customCode))return json({error:'Only a native owner authors custom code, including imports.'},403)
+   const currentStyles=await env.DB.prepare('SELECT site FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first<{site:string}>()
+   if(JSON.stringify(imported?.styles??null)!==JSON.stringify(currentStyles?JSON.parse(currentStyles.site).styles??null:null))return json({error:'Only the native owner changes site styles, including imports.'},403)
+   if(imported?.customCode||imported?.pages.some(page=>page.customCode))return json({error:'Only a native owner authors custom code, including imports.'},403)
   }
   if(action.startsWith('comments/')){
    if(scopes)return json({error:'Native session required.'},403)

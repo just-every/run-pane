@@ -40,7 +40,7 @@
 .pane .phone-site strong { font-size: 23px; font-weight: 900; letter-spacing: -.02em; word-spacing: .06em; line-height: 1.1; }
 .pane .phone-site svg { width: 24px; height: 24px; }
 .pane .block-heading { position: relative; padding: 54px 18px 36px; border: 2px solid var(--pn-action); border-radius: 10px; background: color-mix(in srgb, var(--pn-lemon) 38%, white); text-align: center; }
-.pane .block-tag { position: absolute; top: 8px; left: 8px; padding: 3px 10px; border-radius: 6px; background: var(--pn-action); color: var(--pn-white); font-size: 13px; font-weight: 700; }
+.pane .block-tag { position: absolute; top: 8px; left: 8px; padding: 3px 10px; border-radius: 6px; background: var(--pn-fuchsia-deep); color: var(--pn-white); font-size: 13px; font-weight: 700; }
 .pane .block-heading .pill-new { position: absolute; top: 9px; right: 9px; }
 .pane .block-heading h2 { font-size: 33px; font-weight: 900; line-height: 1.02; letter-spacing: var(--pn-track); word-spacing: var(--pn-words); text-wrap: balance; }
 .rer-themed .pane .block-heading p { max-width: 290px; margin: 8px auto 0; color: var(--pn-body); font-size: 15px; line-height: 1.35; }

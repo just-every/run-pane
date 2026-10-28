@@ -1,6 +1,13 @@
 /** Font bytes belong to the immutable site revision, including portable archives. */
 export type SiteFont = {id:string;name:string;format:'woff2'|'woff'|'ttf'|'otf';data:string}
-export const builtInFonts = {figtree:{name:'Figtree',css:'Figtree, sans-serif'},georgia:{name:'Georgia',css:'Georgia, serif'},arial:{name:'Arial',css:'Arial, sans-serif'},verdana:{name:'Verdana',css:'Verdana, sans-serif'},trebuchet:{name:'Trebuchet MS',css:'"Trebuchet MS", sans-serif'},times:{name:'Times New Roman',css:'"Times New Roman", serif'},mono:{name:'Monospace',css:'monospace'}}
+export const builtInFonts = {
+ figtree:{name:'Figtree',css:'Figtree, sans-serif'},
+ notoSans:{name:'Noto Sans',css:'"Noto Sans", sans-serif'},
+ notoSerif:{name:'Noto Serif',css:'"Noto Serif", serif'},
+ notoDisplay:{name:'Noto Serif Display',css:'"Noto Serif Display", serif'},
+ notoMono:{name:'Noto Sans Mono',css:'"Noto Sans Mono", monospace'},
+ jetbrains:{name:'JetBrains Mono',css:'"JetBrains Mono", monospace'},
+}
 export function normalizeFonts(value:unknown):SiteFont[]{
  if(value===undefined)return []
  if(!Array.isArray(value)||value.length>4)throw Error('Keep up to four uploaded fonts in this revision.')
@@ -33,5 +40,6 @@ export function fontResponse(fonts:SiteFont[]|undefined,id:string|null,method:st
  const headers={'cache-control':'private, no-store','x-content-type-options':'nosniff','vary':'Cookie'}
  if(!font||!['GET','HEAD'].includes(method))return new Response(null,{status:404,headers})
  const bytes=Uint8Array.from(atob(font.data),c=>c.charCodeAt(0))
- return new Response(method==='HEAD'?null:bytes,{headers:{...headers,'content-type':'font/'+font.format,'content-length':String(bytes.length)}})
+ // The HTTP transport suppresses HEAD bytes while retaining representation length.
+ return new Response(bytes,{headers:{...headers,'content-type':'font/'+font.format,'content-length':String(bytes.length)}})
 }

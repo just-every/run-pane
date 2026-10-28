@@ -8,10 +8,13 @@ export async function siteStylesJourney({page,context,origin,folder}){
  const state=async()=>(await context.request.get(origin+'/api/pane')).json()
  const saved=async()=>{await page.waitForFunction(()=>document.querySelector('[data-save-status]')?.textContent==='Draft saved. Not published.');await page.waitForTimeout(80)}
  const initial=JSON.parse(await readFile('fixtures/static-site.json','utf8'))
+ const services=initial.pages.find(page=>page.slug==='services'),override='Each commission has its own workshop plan.'
+ const section=(id,text,background)=>({id,kind:'text',ratio:'1:1',gap:24,paddingTop:32,paddingBottom:32,...(background?{background}:{}),blocks:[{id:id+'-text',kind:'text',format:'p',text,column:1,span:12,row:1,order:0,align:'left',vertical:'start'}]})
+ services.sections=[section('workshop-services',services.body),section('workshop-local',override,'#fff7ed')];services.body+='\n\n'+override
  initial.navigation={main:initial.pages.map(item=>({label:item.title,page:item.slug,cta:item.slug==='contact'}))}
  async function screen(name,width){
   await page.evaluate(()=>document.fonts.ready)
-  await page.addScriptTag({path:resolve('node_modules/axe-core/axe.min.js')})
+  await page.evaluate(await readFile('node_modules/axe-core/axe.min.js','utf8'))
   const violations=await page.evaluate(async()=>{const result=await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}});return result.violations.map(item=>({id:item.id,nodes:item.nodes.map(node=>node.target)}))})
   assert.deepEqual(violations,[],name+' accessibility')
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,name+' overflow')
@@ -31,12 +34,22 @@ export async function siteStylesJourney({page,context,origin,folder}){
   assert.equal(actual.primary,'rgb(7, 89, 133)');assert.equal(actual.radius,'999px');assert.equal(actual.spacing,'80px')
  }
  for(const width of [1440,390]){
+  console.log('Site styles: opening settings at '+width)
   await page.setViewportSize({width,height:1000})
   const first=await call('/api/pane/prepare',{site:initial});await call('/api/pane/publish',{revision:first.id})
   await page.goto(origin+'/site');const originalFont=await page.locator('.public-main h1').evaluate(el=>getComputedStyle(el).fontFamily)
   await page.goto(origin+'/app');await page.locator('[data-site-style-settings] > summary').click()
+  await page.getByLabel('Heading font',{exact:true}).selectOption('notoDisplay');await saved()
+  await page.waitForFunction(()=>{const doc=document.querySelector('[data-style-preview]').contentDocument;return doc&&[...doc.fonts].some(face=>face.family.replaceAll('\"','').replaceAll("'",'')==='Noto Serif Display'&&face.status==='loaded')})
   await page.getByLabel('Upload font',{exact:true}).setInputFiles('public/fonts/noto-serif/noto-serif-latin-wght-normal.woff2');await saved()
   const font=(await state()).draft.site.styles.fonts[0]
+  for(const format of ['woff','ttf','otf']){
+   await page.getByLabel('Upload font',{exact:true}).setInputFiles('tests/fonts/synthetic-pane.'+format);await saved()
+   const added=(await state()).draft.site.styles.fonts.at(-1)
+   await page.getByLabel('Body font',{exact:true}).selectOption(added.id);await saved()
+   await page.waitForFunction(id=>{const doc=document.querySelector('[data-style-preview]').contentDocument;return doc&&[...doc.fonts].some(face=>face.family.replaceAll('\"','')==='Pane-'+id&&face.status==='loaded')},added.id)
+  }
+  await page.getByLabel('Body font',{exact:true}).selectOption('figtree');await saved()
   await page.getByLabel('Heading font',{exact:true}).selectOption(font.id)
   await page.getByLabel('Primary color',{exact:true}).fill('#075985')
   await page.getByLabel('Button shape',{exact:true}).selectOption('pill')
@@ -44,8 +57,10 @@ export async function siteStylesJourney({page,context,origin,folder}){
   let draft=(await state()).draft
   const preview=page.frameLocator('[data-style-preview]');await preview.locator('.public-main h1').waitFor()
   await page.waitForFunction(id=>document.querySelector('[data-style-preview]').contentDocument?.querySelector('style[data-pane-layout]')?.textContent.includes(id),font.id)
+  console.log('Site styles: draft preview loaded at '+width)
   await screen('settings',width)
-  const avatar=page.locator('.avatar[data-tip]').first();await avatar.focus();assert.equal(await page.getByRole('tooltip').innerText(),'Account and team');await page.keyboard.press('Escape')
+  await page.locator('[data-style-preview]').scrollIntoViewIfNeeded();await screen('settings-preview',width)
+  const avatar=page.locator('.avatar[data-tip]').first();await page.keyboard.press('Tab');await avatar.focus();assert.equal(await page.getByRole('tooltip').innerText(),'Account and team');await page.keyboard.press('Escape')
   await page.getByRole('button',{name:'Undo',exact:true}).click();await saved();assert.equal(await page.getByLabel('Page spacing',{exact:true}).inputValue(),'32')
   await page.getByRole('button',{name:'Redo',exact:true}).click();await saved();assert.equal(await page.getByLabel('Page spacing',{exact:true}).inputValue(),'40')
   const stale=await context.newPage();await stale.goto(origin+'/app');await stale.locator('[data-site-style-settings] > summary').click()
@@ -57,7 +72,7 @@ export async function siteStylesJourney({page,context,origin,folder}){
   await page.screenshot({path:resolve(folder,`styles-saved-${width}.png`),fullPage:true})
   await stale.getByRole('button',{name:'Use latest draft'}).click();await stale.waitForLoadState('domcontentloaded');await stale.close()
   draft=(await state()).draft
-  for(const slug of ['home','services','contact']){await page.goto(origin+'/preview/'+draft.id+'/'+slug);await rendered(font.id);await screen('preview-'+slug,width)}
+  for(const slug of ['home','services','contact']){await page.goto(origin+'/preview/'+draft.id+'/'+slug);await rendered(font.id);if(slug==='services'){assert.equal(await page.locator('[data-section=workshop-services]').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(240, 249, 255)');assert.equal(await page.locator('[data-section=workshop-local]').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 247, 237)')}await screen('preview-'+slug,width)}
   await page.goto(origin+'/app');await Promise.all([page.waitForURL(url=>url.searchParams.has('notice')),page.getByRole('button',{name:'Approve & publish',exact:true}).click()])
   for(const slug of ['home','services','contact']){await page.goto(origin+(slug==='home'?'/site':'/site/'+slug));await rendered(font.id);await screen('live-'+slug,width)}
   const before=(await state()).revisions.filter(row=>[first.id,draft.id].includes(row.id))
