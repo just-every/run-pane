@@ -668,7 +668,7 @@
       "executable": false
     },
     "public/pane-editor.css": {
-      "sha256": "daa45704e6b077c7fd8187127f72abf13074f7eb1ff7f414b07b7a01c4e5ea4e",
+      "sha256": "f4f2e835b83f2ae806ca7a807e31724319bce0734e80a5fb5873c825178ceadd",
       "executable": false
     },
     "public/pane-embeds.js": {
@@ -1152,7 +1152,7 @@
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
-      "sha256": "b92c41b319a1e742d2d4728359bc679037f8765d39814292ae953131095ec307",
+      "sha256": "ccf4958ae2e0a28e9927a4a4865765d4fbc89549451dd44b754b29de3e9700a8",
       "executable": false
     },
     "scripts/contract-docs.mjs": {
