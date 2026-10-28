@@ -7,13 +7,14 @@ import {createPortability,readArchive} from '@runeditrun/rer/modules/portability
 import {productPolicy} from '../scripts/pane-policy.mjs'
 import {createOperatorAuth} from '../src/modules/operator-auth/index.mjs'
 let f,owner,member,verifiedCapture
+const notifications=[]
 const edge=crawlEdge()
 const source=await readFile('fixtures/imports/migration-report.json','utf8')
 const call=(action,body,cookie=owner)=>f.request('/api/pane/import/'+action,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',Cookie:cookie??''},body:JSON.stringify(body)})
 const ok=async response=>{assert.equal(response.status,200,await response.clone().text());return response.json()}
 const data=async()=>ok(await f.request('/api/pane',{headers:{Cookie:owner}}))
 before(async()=>{
- f=await runtime({outboundService:edge.fetch})
+ f=await runtime({observeOutbound:request=>{if(new URL(request.url).hostname==='api.sendgrid.com')notifications.push(request.url)},outboundService:edge.fetch,bindings:{MAIL_PROVIDER:'sendgrid',MAIL_API_KEY:'synthetic-pane-50'}})
  const boot=await f.request('/auth/bootstrap',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({token:settings.SETUP_TOKEN,displayName:'synthetic-pane-1'})})
  assert.equal(boot.status,303);owner=boot.headers.get('set-cookie').split(';')[0]
  await f.request('/setup',{method:'POST',headers:{Cookie:owner,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
@@ -262,4 +263,86 @@ test('imported page bodies preserve semantic headings, nested lists, anchors and
  assert.equal(edit.status,400)
  assert.equal((await data()).draft.id,job.report.revision)
  await ok(await call('undo',{job:job.id}))
+})
+
+
+const finishHistory=async job=>{
+ for(let n=0;job.state!=='completed'&&n<20;n++){
+  const previous=job.checkpoint;job=await ok(await call('apply',{job:job.id}));assert.ok(job.checkpoint>previous,'Continuation makes durable progress')
+ }
+ assert.equal(job.state,'completed');return job
+}
+const undoHistory=async id=>{
+ let job=await ok(await call('undo',{job:id}))
+ for(let n=0;job.state!=='undone'&&n<20;n++)job=await ok(await call('undo',{job:id}))
+ assert.equal(job.state,'undone')
+}
+
+test('reviewed Squarespace CSV retains all 200 dated enquiry forms and fields without notifications, reapply duplicates or lossy undo',async()=>{
+ const csv=(await readFile('fixtures/imports/squarespace-enquiries.csv','utf8')).replaceAll('{at}','@'),before=await data(),sent=notifications.length
+ const plan=await ok(await call('dry-run',{source:csv}));assert.equal(plan.report.counts.enquiry.planned,200);assert.deepEqual(await data(),before)
+ assert.equal((await call('apply',{source:csv,fingerprint:'wrong'})).status,400)
+ assert.equal((await call('apply',{source:csv,fingerprint:plan.fingerprint},member)).status,403)
+ const job=await finishHistory(await ok(await call('apply',{source:csv,fingerprint:plan.fingerprint})))
+ const imported=(await data()).messages.filter(message=>message.imported_from==='Squarespace')
+ assert.equal(imported.length,200);assert.equal(new Set(imported.map(row=>row.id)).size,200)
+ for(let n=1;n<=200;n++){
+  const row=imported.find(row=>row.name==='synthetic-pane-'+n);assert.ok(row,'Enquiry '+n+' remains browsable')
+  assert.equal(row.created_at,new Date(Date.UTC(2023,0,n)).toISOString());assert.equal(row.status,'closed');assert.equal(row.acknowledgment_status,'not_requested')
+  assert.equal(row.follow_up_at,null);assert.equal(row.reminded_at,null);assert.equal(row.escalated_at,null)
+  const submission=JSON.parse(row.submission);assert.equal(submission.formName,n%2?'Consultation':'Workshop');assert.equal(submission.formId,row.form_id)
+  assert.equal(submission.fields.find(field=>field.label==='Project').value,'Project '+n)
+  assert.equal(submission.fields.find(field=>field.label==='Notes').value,n===1?'Quoted "care", first\nsecond':'Notes '+n)
+ }
+ const html=await(await f.request('/app/inquiries',{headers:{Cookie:owner}})).text()
+ assert.match(html,/synthetic-pane-200/);assert.match(html,/synthetic-pane-1</);assert.match(html,/Original form fields/);assert.match(html,/Imported · Squarespace/)
+ const saved=await ok(await call('dry-run',{job:job.id}));assert.equal(saved.report.counts.enquiry.applied,200);assert.equal(saved.report.ok,true)
+ await finishHistory(await ok(await call('apply',{source:csv,fingerprint:plan.fingerprint})));assert.equal((await data()).messages.length,before.messages.length+200)
+ const tick=await(await f.mf.getWorker()).scheduled({scheduledTime:new Date('2030-06-20T12:00:00Z'),cron:'* * * * *'});assert.equal(tick.outcome,'ok')
+ assert.equal(notifications.length,sent,'Import and subsequent scheduler send zero notifications')
+ assert.ok((await data()).messages.filter(row=>row.imported_from).every(row=>row.reminded_at===null&&row.escalated_at===null))
+ await undoHistory(job.id);assert.deepEqual((await data()).messages,before.messages)
+ assert.equal((await ok(await call('dry-run',{job:job.id}))).report.counts.enquiry.applied,0)
+})
+
+test('monthly CSV baselines reconcile every page and month independently of native traffic and undo exactly',async()=>{
+ const source=await readFile('fixtures/imports/squarespace-analytics.csv','utf8'),before=await data(),plan=await ok(await call('dry-run',{source}))
+ assert.equal(plan.report.counts['visit-baseline'].planned,24);assert.deepEqual(await data(),before)
+ const job=await finishHistory(await ok(await call('apply',{source,fingerprint:plan.fingerprint}))),applied=await data()
+ assert.equal(applied.traffic.imported.total,858);assert.equal(applied.traffic.imported.month.length,12);assert.equal(applied.traffic.imported.page.length,24)
+ for(let month=1;month<=12;month++){
+  const label='2024-'+String(month).padStart(2,'0')
+  assert.deepEqual(applied.traffic.imported.month.find(row=>row.label===label),{label,count:month*11})
+  assert.deepEqual(applied.traffic.imported.page.filter(row=>row.month===label),[{month:label,path:'/',count:month*10,source:'Squarespace'},{month:label,path:'/contact',count:month,source:'Squarespace'}])
+ }
+ assert.deepEqual(applied.visits,before.visits)
+ for(const dimension of ['day','source','device','location','campaign','referrer','medium','campaignSource'])assert.deepEqual(applied.traffic[dimension],before.traffic[dimension])
+ const saved=await ok(await call('dry-run',{job:job.id}));assert.equal(saved.report.counts['visit-baseline'].applied,24);assert.equal(saved.report.ok,true)
+ await finishHistory(await ok(await call('apply',{source,fingerprint:plan.fingerprint})));assert.equal((await data()).traffic.imported.total,858)
+ await undoHistory(job.id);assert.deepEqual((await data()).traffic,before.traffic)
+ for(const invalid of ['Month,Page,Visits\n2024-13,/,1','Month,Page,Visits\n2024-01,/,1.5','Submitted On,Form,Name,Email\nyesterday,Form,Person,invalid'])assert.equal((await call('dry-run',{source:invalid})).status,400)
+})
+
+test('import history protects native edits, erases retained personal custody and fences changed capture replay and old archives',async()=>{
+ const email='synthetic-pane-501'+'@'+'example.test',csv='Submitted On,Form,Name,Email,Message\n2023-01-01T00:00:00Z,Consultation,synthetic-pane-501,'+email+',Private source answer\n2023-01-02T00:00:00Z,Workshop,synthetic-pane-502,synthetic-pane-502'+'@'+'example.test,Keep this answer'
+ const plan=await ok(await call('dry-run',{source:csv})),job=await finishHistory(await ok(await call('apply',{source:csv,fingerprint:plan.fingerprint})))
+ const request=async(action,input,cookie=owner)=>f.request('/api/pane/'+action,{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify(input)})
+ const person=async()=>ok(await request('privacy/export',{email}))
+ const row=(await data()).messages.find(row=>row.email===email)
+ await ok(await request('messages/update',{id:row.id,status:'replied'}));assert.equal((await call('undo',{job:job.id})).status,400,'Undo refuses to discard native handling')
+ assert.equal((await data()).messages.find(message=>message.id===row.id).status,'replied')
+ const found=await person();assert.equal(found.messages.length,1);assert.equal(JSON.parse(found.messages[0].submission).fields.find(field=>field.label==='Message').value,'Private source answer')
+ const service=await createPortability({db:f.db,policy:productPolicy}),archive=await service.exports.create()
+ while((await service.exports.advance(archive,{maxParts:100})).phase==='building'){}
+ const records=[];for await(const record of readArchive(await service.exports.download(archive)))records.push(record)
+ assert.equal((await request('privacy/erase',{email,confirm:'erase-person-data'},member)).status,403)
+ await ok(await request('privacy/erase',{email,confirm:'erase-person-data'}));assert.equal((await person()).messages.length,0)
+ assert.ok((await data()).messages.some(message=>message.name==='synthetic-pane-502'),'Unrelated imported enquiry remains')
+ assert.equal((await call('dry-run',{job:job.id})).status,400,'Erasure withdraws the retained source CSV')
+ for(const source of [csv,csv.replace('Private source answer','Changed source answer')])assert.equal((await call('dry-run',{source})).status,400,'An erased person cannot return through a changed capture')
+ const fresh=await service.exports.create();while((await service.exports.advance(fresh,{maxParts:100})).phase==='building'){}
+ const after=[];for await(const record of readArchive(await service.exports.download(fresh)))after.push(record)
+ assert.doesNotMatch(JSON.stringify(after),/Private source answer|synthetic-pane-501/)
+ const restore=await service.imports.create(records[0]);for(const part of records.filter(record=>record.kind==='part'))await service.imports.uploadPart(restore,part.index,part)
+ await assert.rejects(()=>service.imports.finalize(restore,{contentHash:records.at(-1).contentHash,archiveHash:records.at(-1).archiveHash}),/erasure_epoch|erased_row/)
 })

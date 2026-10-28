@@ -970,7 +970,7 @@ test('composable Pane roles are invited natively and enforced across workspace, 
    assert.equal(status.activity,undefined);assert.equal(status.imports.length,0)
    assert.equal(status.messages.length,row.inbox?1:0);assert.equal(status.replies.length,row.inbox?(await ownerData()).replies.length:0)
    assert.equal(status.revisions.length>0,!!row.pages)
-   if(!row.reports){assert.deepEqual(status.visits,[]);assert.deepEqual(status.goals,[]);assert.ok(Object.values(status.traffic).every(rows=>rows.length===0))}
+   if(!row.reports){assert.deepEqual(status.visits,[]);assert.deepEqual(status.goals,[]);assert.ok(Object.entries(status.traffic).filter(([dimension])=>dimension!=='imported').every(([,rows])=>rows.length===0));assert.deepEqual(status.traffic.imported,{total:0,month:[],page:[]})}
    const body={site:fixture,base:(await ownerData()).draft.id,revision:prepared.id,page:'home',id,source:JSON.stringify(fixture),fingerprint:'synthetic-pane-21',job:'synthetic-pane-22',operatorId:person.operatorId,roles:['editor'],scopes:['pages:read'],name:'synthetic-pane-23',idempotency:crypto.randomUUID(),confirm:'send-reply',subject:'Synthetic reply',body:'synthetic-pane-24'}
    const allowed=new Set([...(row.edit?['prepare','autosave','review']:[]),...(row.inbox?['messages/update','messages/reply']:[])])
    const actions=['prepare','autosave','publish','rollback','review','import/dry-run','import/apply','import/undo','messages/update','messages/reply','messages/erase','people/erase','roles/set','roles/invite','tokens/create','tokens/revoke']
