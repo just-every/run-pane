@@ -232,7 +232,7 @@ Core · target · **done**
 1. Create 40 pages in three folders through the editor, rename two slugs, delete one, publish, and open every URL; renamed and deleted pages answer 301 to the chosen targets, and the revision snapshot holds all 40.
 2. Edit the not-found page, publish, request an unknown URL and see the edited page with status 404.
 
-**Evidence.** `scripts/pages-journey.mjs` — “Forty-page editor journey”
+**Evidence.** `scripts/pages-journey.mjs` — “Forty-page editor journey”; `tests/pane.test.mjs` — “page organization keeps stable identities, complete revisions, safe edits and chosen public home and not-found content”; `tests/search.test.mjs` — “published URL changes offer explicit redirects and each revision owns its exact status and target map”
 **Gap.** None.
 
 #### PAGE-002 — Visual section and block editor with layout controls
@@ -270,7 +270,7 @@ Core · target · **done**
 **Acceptance.**
 1. Place one component on five pages, edit it once, preview all five changed, and detach one copy that then stays unchanged.
 
-**Evidence.** `scripts/components-code-journey.mjs` — “Reusable components and isolated custom code journey”
+**Evidence.** `scripts/components-code-journey.mjs` — “Reusable components and isolated custom code journey”; `tests/pane.test.mjs` — “reusable section references propagate across five immutable pages and detached copies remain independent”
 **Gap.** None.
 
 #### PAGE-005 — Device previews and a separate mobile layout
@@ -535,7 +535,7 @@ Core · target · **done** · Cites BASE-INPUT-003
 **Acceptance.**
 1. Upload a 6000-pixel photo and see the live page serve a phone-sized WebP or AVIF at 390 wide, a larger one at 1440, with width and height attributes and lazy loading below the fold.
 
-**Evidence.** `scripts/components-code-journey.mjs` — “Native canvas and reversible image journey”
+**Evidence.** `scripts/components-code-journey.mjs` — “Native canvas and reversible image journey”; `tests/pane.test.mjs` — “image drafts preserve explicit descriptions and publication refuses missing alt while warning about headings and contrast”
 **Gap.** None.
 
 #### MEDIA-003 — Basic image editing
@@ -547,7 +547,7 @@ Core · target · **done** · Cites BASE-INPUT-003
 **Acceptance.**
 1. Crop and set a focal point, see the hero keep the subject at 390 and 1440 wide, then revert to the original.
 
-**Evidence.** `scripts/components-code-journey.mjs` — “Native canvas and reversible image journey”
+**Evidence.** `scripts/components-code-journey.mjs` — “Native canvas and reversible image journey”; `tests/pane.test.mjs` — “image drafts preserve explicit descriptions and publication refuses missing alt while warning about headings and contrast”
 **Gap.** None.
 
 #### MEDIA-004 — Video, map, social embeds and Instagram feed
@@ -871,7 +871,7 @@ Core · target · **done**
 **Acceptance.**
 1. Rename a published slug and accept the offered redirect, import 200 redirects by CSV, and request each old URL to get the right status and target.
 
-**Evidence.** `scripts/redirects-journey.mjs` — “Redirect manager journey”
+**Evidence.** `scripts/redirects-journey.mjs` — “Redirect manager journey”; `tests/search.test.mjs` — “published URL changes offer explicit redirects and each revision owns its exact status and target map”
 **Gap.** None.
 
 #### SEO-003 — Automatic sitemap and robots.txt
@@ -982,7 +982,7 @@ Core · target · **done** · Cites BASE-INPUT-001, BASE-INPUT-003, BASE-ACCESSI
 1. Build a quote form with a file upload and a US phone field, place it on two pages, submit it with a 5 MB PDF, and see the submission and file in the inbox; an oversized or wrong-type file is refused.
 2. Mark the phone field required with help text, then submit with it empty and with an invalid email, in the browser and by a direct POST: both are refused, the page shows each field's message linked by `aria-describedby`, the other answers stay filled, and the help text is the field's accessible description.
 
-**Evidence.** `scripts/forms-journey.mjs` — “Typed form browser journey”
+**Evidence.** `scripts/forms-journey.mjs` — “Typed form browser journey”; `tests/pane.test.mjs` — “reusable typed forms preserve invalid answers, enforce every field type, accept a private five MB PDF and refuse unsafe files through public doors”
 **Gap.** None.
 
 #### FORM-002 — Spam protection
@@ -1159,7 +1159,7 @@ Core · target · **done**
 **Acceptance.**
 1. Visit pages from a phone and a desktop with UTM tags and a referrer, then read the dashboard by page, source, device and campaign; a GPC visit is not counted.
 
-**Evidence.** `scripts/traffic-journey.mjs` — “Traffic browser journey”
+**Evidence.** `scripts/traffic-journey.mjs` — “Traffic browser journey”; `tests/pane.test.mjs` — “traffic groups real public visit events without retaining raw referrers or unapproved identifiers and excludes privacy opt-outs”
 **Gap.** None.
 
 #### STATS-002 — Conversion goals and click insights
@@ -1249,7 +1249,7 @@ Core · target · **done** · Cites BASE-ROLE-001
 **Acceptance.**
 1. Build a site as a designer, transfer ownership to a new owner, see the designer drop to editor, and revoke them.
 
-**Evidence.** `scripts/custody-journey.mjs` — “Custody browser journey”
+**Evidence.** `scripts/custody-journey.mjs` — “Custody browser journey”; `tests/pane.test.mjs` — “ownership handover atomically grants the business owner, demotes the designer and permits immediate revocation”
 **Gap.** None.
 
 #### ROLE-004 — Two-step sign-in and passkeys for workspace users
