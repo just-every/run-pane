@@ -17,3 +17,10 @@ const close = except => { for (const item of popovers) if (item !== except) item
 for (const item of popovers) item.addEventListener('toggle', () => { if (item.open) close(item) })
 document.addEventListener('click', event => { if (!event.target.closest('details.switcher, details.account')) close() })
 document.addEventListener('keydown', event => { if (event.key === 'Escape') { const open = popovers.find(item => item.open); if (open) { open.open = false; open.querySelector('summary').focus() } } })
+
+for(const actions of document.querySelectorAll('.comment-actions')){
+ const form=actions.closest('form')
+ const update=()=>{actions.hidden=!form.querySelector('input[name="ids"]:checked')}
+ form.addEventListener('change',update)
+ update()
+}

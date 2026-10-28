@@ -1,7 +1,11 @@
+import {createHash} from 'node:crypto'
+import {createPortability,readArchive} from '@runeditrun/rer/modules/portability'
+import {productPolicy} from '../scripts/pane-policy.mjs'
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
 import {readFile} from 'node:fs/promises'
 import {runtime,settings} from './runtime.mjs'
+import {createOperatorAuth} from '../src/modules/operator-auth/index.mjs'
 import {postBody} from './post-fixture.mjs'
 
 test('authors submit two isolated blogs for exact owner approval and public semantic delivery',async()=>{
@@ -54,7 +58,7 @@ test('authors submit two isolated blogs for exact owner approval and public sema
   await write('news',0,{id:bodyPost.id,content:missingAlt});const invalidReview=await ok(await call('/api/pane/posts/submit',{base:(await own()).base,id:bodyPost.id},author)),invalidPost=invalidReview.posts.find(post=>post.id===bodyPost.id),beforeRefusal=await state(),refused=await call('/api/pane/posts/publish',{base:invalidReview.base,id:bodyPost.id,review:invalidPost.review});assert.equal(refused.status,400,'Reviewed posts without image alt text are refused');assert.match(await refused.text(),/Accessibility warning:/,'The refusal includes an accessibility warning');assert.deepEqual(await state(),beforeRefusal,'An inaccessible reviewed post cannot change any revision or approval');await write('news',0,{id:bodyPost.id,content:completePost.content})
    }
    const submitted=await ok(await call('/api/pane/posts/submit',{base:(await own()).base,id},author)),post=submitted.posts.find(post=>post.id===id)
-   assert.ok(post.review);assert.equal((await call('/api/pane/posts/publish',{base:submitted.base,id,review:post.review},admin)).status,403);assert.equal((await call('/api/pane/posts/publish',{base:'synthetic-pane-stale',id,review:post.review})).status,409);assert.equal((await call('/api/pane/posts/publish',{base:submitted.base,id,review:'synthetic-pane-wrong'},owner)).status,400)
+   assert.ok(post.review);assert.equal((await call('/api/pane/posts/schedule',{approve:'yes',review:post.review,base:submitted.base,id,occurrence:'2026-10-15T09:00',timeZone:'America/Chicago'},admin)).status,403);assert.equal((await call('/api/pane/posts/publish',{base:submitted.base,id,review:post.review},admin)).status,403);assert.equal((await call('/api/pane/posts/publish',{base:'synthetic-pane-stale',id,review:post.review})).status,409);assert.equal((await call('/api/pane/posts/publish',{base:submitted.base,id,review:'synthetic-pane-wrong'},owner)).status,400)
    const prior=(await state()).live,source=structuredClone((await state()).draft),published=await ok(await call('/api/pane/posts/publish',{base:submitted.base,id,review:post.review}));publications.push(published.id);assert.equal(published.actor,ownerId,'A reviewed post records the exact approving native owner');assert.equal((await state()).approvals.find(approval=>approval.revision===published.id).actor,ownerId,'The persisted approval belongs to that same owner')
    assert.deepEqual(published.site.pages,initial.site.pages,'A post approval never publishes unrelated owner page work');for(const previous of prior.site.blogPosts??[])if(previous.id!==id)assert.deepEqual(published.site.blogPosts.find(item=>item.id===previous.id),previous,'Other approved posts stay exact')
    assert.equal(published.site.blogPosts.at(-1).id,id);assert.equal(published.site.blogPosts.at(-1).author,undefined)
@@ -301,6 +305,311 @@ test('designed collection templates publish every item with exact metadata and p
   const approval=rollbackState.approvals.find(row=>row.action==='rollback'&&row.revision===published.id);assert.ok(approval,'Rollback retains its owner approval');assert.equal(approval.actor,published.actor)
   assert.deepEqual(rollbackState.draft,beforeRollback.draft,'Whole-site rollback retains unrelated current drafts');for(const expected of [designed,published,changed])assert.deepEqual(rollbackState.revisions.find(row=>row.id===expected.id),expected,'Rollback never rewrites source snapshots or hashes')
   for(let index=1;index<=30;index++){const response=await get('/site/service-directory/service-'+index);assert.equal(response.status,200);const html=await response.text();assert.ok(html.includes('<title>Repair &lt;/script&gt; &amp; care '+index+'</title>'),'Rollback restores each original item title');assert.ok(html.includes('name="description" content="Service details &amp; care '+index+'"'));const data=JSON.parse(html.match(/<script type="application\/ld\+json">([^<]+)<\/script>/)[1]);assert.equal(data.name,'Repair </script> & care '+index);assert.equal(data.offers[0].price,125.5)}
+ }finally{await f.mf.dispose()}
+})
 
+test('reviewed posts and pages publish at Chicago nine with immutable approval, complete execution history and overdue unapproved refusal',async()=>{
+ const origin='http://127.0.0.1:8787',f=await runtime({isolatedLive:true,now:Date.parse('2026-10-01T12:00:00Z')})
+ let cookie=''
+ const call=(path,data,extra={})=>f.request(origin+path,{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/json',...extra},body:JSON.stringify(data)})
+ const ok=async response=>{assert.equal(response.status,200,await response.clone().text());return response.json()}
+ const state=async()=>ok(await f.request(origin+'/api/pane',{headers:{Cookie:cookie}}))
+ const publicPost=()=>f.request(origin+'/site/news/morning')
+ const tick=async iso=>assert.equal((await(await f.mf.getWorker()).scheduled({scheduledTime:new Date(iso),cron:'* * * * *'})).outcome,'ok')
+ try{
+  const boot=await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Schedule owner'});cookie=boot.headers.get('set-cookie').split(';')[0]
+  await f.request(origin+'/setup',{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
+  const site=JSON.parse(await readFile('fixtures/static-site.json','utf8'));site.automations={timeZone:'America/Chicago',banners:[{id:'opening',text:'Morning promotion',start:'2026-10-15T09:00',end:'2026-11-01T09:00'}]}
+  const initial=await ok(await call('/api/pane/prepare',{site}));await ok(await call('/api/pane/publish',{revision:initial.id}))
+  const create=async slug=>{let row=await ok(await call('/api/pane/posts/save',{base:(await state()).draft.id,blog:'news',byline:'Studio team',authorSlug:'studio',content:{slug,title:slug,body:'Approved morning story'}}));const id=row.posts.at(-1).id;row=await ok(await call('/api/pane/posts/submit',{base:row.base,id}));return {id,base:row.base,review:row.posts.find(p=>p.id===id).review}}
+  const approved=await create('morning'),waiting=await create('waiting')
+  const request={base:(await state()).draft.id,id:approved.id,occurrence:'2026-10-15T09:00',end:'2026-11-01T09:00',timeZone:'America/Chicago'}
+  assert.equal((await call('/api/pane/posts/schedule',{...request,review:approved.review,approve:'yes'},{Cookie:''})).status,401)
+  assert.equal((await call('/api/pane/posts/schedule',{...request,review:approved.review,approve:'yes'},{Origin:'https://elsewhere.invalid'})).status,403)
+  assert.equal((await call('/api/pane/posts/schedule',{...request,review:approved.review,approve:'yes',end:'2026-10-14T09:00'})).status,400)
+  for(const start of ['2026-03-08T02:30','2026-11-01T01:30'])assert.equal((await call('/api/pane/posts/schedule',{...request,review:approved.review,approve:'yes',occurrence:start})).status,400,'Ambiguous and missing local times are refused')
+  const receipt=await ok(await call('/api/pane/posts/schedule',{...request,review:approved.review,approve:'yes'})),source=structuredClone((await state()).draft)
+  assert.equal(receipt.sourceRevision,source.id);assert.equal((await publicPost()).status,404)
+  await ok(await call('/api/pane/posts/schedule',{...request,id:waiting.id}))
+  const post=source.site.posts.find(p=>p.id===approved.id)
+  await ok(await call('/api/pane/posts/save',{base:source.id,id:post.id,content:{...post.content,body:'Newer private work'}}))
+  await tick('2026-10-15T13:59:00Z');assert.equal((await publicPost()).status,404);assert.equal((await state()).schedules.history.filter(e=>e.kind==='post-published').length,0)
+  await tick('2026-10-15T14:00:00Z')
+  const response=await publicPost();assert.equal(response.status,200);const html=await response.text();assert.ok(html.includes('Approved morning story'));assert.ok(!html.includes('Newer private work'))
+  const after=await state(),history=after.schedules.history.filter(e=>e.kind==='post-published');assert.deepEqual(after.schedules.activeBanners,[{id:'opening',text:'Morning promotion'}],'A selected scheduled post retains active banners during the same clock tick')
+  assert.equal(history.length,1);assert.equal(history[0].revision,source.id);assert.equal(history[0].occurrence,'2026-10-15T09:00');assert.equal(history[0].executedAt,Date.parse('2026-10-15T14:00:00Z'));assert.equal(history[0].timeZone,'America/Chicago');assert.equal(history[0].rule,'post:'+approved.id)
+  assert.equal(after.draft.site.posts.find(p=>p.id===post.id).content.body,'Newer private work');assert.deepEqual(after.revisions.find(r=>r.id===source.id),source);assert.deepEqual(after.live.site.pages,initial.site.pages)
+  assert.equal((await f.request(origin+'/site/news/waiting')).status,404);assert.deepEqual(after.schedules.draftDue,['Post: waiting'])
+  const events=after.schedules.history,live=after.live.id
+  await tick('2026-10-15T14:00:00Z');await tick('2026-10-15T13:00:00Z');assert.equal((await state()).live.id,live);assert.deepEqual((await state()).schedules.history,events,'Replay and late cron do not duplicate publication')
+  await tick('2026-11-01T14:59:00Z');assert.equal((await publicPost()).status,200)
+  await tick('2026-11-01T15:00:00Z');assert.equal((await publicPost()).status,404)
+  const expired=await state(),expiry=expired.schedules.history.filter(event=>event.kind==='post-unpublished');assert.equal(expiry.length,1);assert.equal(expiry[0].occurrence,'2026-11-01T09:00');assert.equal(expiry[0].executedAt,Date.parse('2026-11-01T15:00:00Z'));assert.equal(expired.draft.site.posts.find(p=>p.id===post.id).content.body,'Newer private work')
+  const waitingPost=(await state()).draft.site.posts.find(p=>p.id===waiting.id)
+  await ok(await call('/api/pane/posts/schedule',{base:(await state()).draft.id,id:waiting.id,review:waitingPost.review,approve:'yes',occurrence:'2026-11-02T09:00',end:'2026-11-03T09:00',timeZone:'America/Chicago'}))
+  await tick('2026-11-02T15:00:00Z')
+  let revised=await ok(await call('/api/pane/posts/save',{base:(await state()).draft.id,id:waiting.id,content:{...waitingPost.content,body:'A separately approved newer version'}}))
+  revised=await ok(await call('/api/pane/posts/submit',{base:revised.base,id:waiting.id}))
+  await ok(await call('/api/pane/posts/publish',{base:revised.base,id:waiting.id,review:revised.posts.find(p=>p.id===waiting.id).review}))
+  const newerPostLive=(await state()).live.id
+  await tick('2026-11-03T15:00:00Z');assert.equal((await state()).live.id,newerPostLive,'A preserved newer post causes no extra publication')
+  assert.ok((await(await f.request(origin+'/site/news/waiting')).text()).includes('A separately approved newer version'),'An old expiry never withdraws a separately approved newer post')
+  assert.equal((await state()).schedules.posts.filter(entry=>entry.postId===waiting.id).length,0,'Separate publication cancels the old expiry')
+  const planned=structuredClone((await state()).draft.site);planned.pages.find(page=>page.slug==='about').body='Approved scheduled page';planned.pages.find(page=>page.slug==='hours').body='Unapproved scheduled page'
+  const pageSource=await ok(await call('/api/pane/prepare',{base:(await state()).draft.id,site:planned}))
+  const review=await ok(await call('/api/pane/page-request-review',{base:pageSource.id,page:'about'})),hoursReview=await ok(await call('/api/pane/page-request-review',{base:pageSource.id,page:'hours'}))
+  const pageSchedule={base:pageSource.id,page:'about',request:review.id,start:'2026-11-04T09:00',end:'2026-11-05T09:00',timeZone:'America/Chicago'}
+  assert.equal((await call('/api/pane/page-schedule-approve',{...pageSchedule,request:'synthetic-pane-missing'})).status,400)
+  assert.equal((await call('/api/pane/page-schedule-approve',pageSchedule,{Origin:'https://elsewhere.invalid'})).status,403)
+  assert.equal((await call('/api/pane/page-schedule-approve',pageSchedule,{Cookie:''})).status,401)
+  await ok(await call('/api/pane/page-schedule-approve',pageSchedule));await ok(await call('/api/pane/page-schedule',{...pageSchedule,page:'hours',request:hoursReview.id}))
+  const privatePages=structuredClone(planned);privatePages.pages.find(page=>page.slug==='about').body='Newer private page work';privatePages.pages[0].body='Unrelated unpublished homepage'
+  await ok(await call('/api/pane/prepare',{base:pageSource.id,site:privatePages}))
+  await tick('2026-11-04T14:59:00Z');assert.ok(!(await(await f.request(origin+'/site/about')).text()).includes('Approved scheduled page'))
+  await tick('2026-11-04T15:00:00Z');assert.ok((await(await f.request(origin+'/site/about')).text()).includes('Approved scheduled page'));assert.ok(!(await(await f.request(origin+'/site/hours')).text()).includes('Unapproved scheduled page'))
+  const pageState=await state();assert.equal(pageState.draft.site.pages.find(page=>page.slug==='about').body,'Newer private page work');assert.deepEqual(pageState.revisions.find(row=>row.id===pageSource.id),pageSource);assert.deepEqual(pageState.live.site.pages[0],initial.site.pages[0]);assert.deepEqual(pageState.schedules.draftDue,['Page awaiting approval: Visit the workshop'])
+  const pageHistory=pageState.schedules.history.filter(event=>event.kind==='page-publish');assert.equal(pageHistory.length,1);assert.equal(pageHistory[0].revision,pageSource.id);assert.equal(pageHistory[0].occurrence,'2026-11-04T09:00');assert.equal(pageHistory[0].executedAt,Date.parse('2026-11-04T15:00:00Z'))
+  await tick('2026-11-05T14:59:00Z');assert.equal((await f.request(origin+'/site/about')).status,200)
+  await tick('2026-11-05T15:00:00Z');assert.equal((await f.request(origin+'/site/about')).status,404);assert.equal((await f.request(origin+'/site/hours')).status,200);assert.equal((await state()).schedules.history.filter(event=>event.kind==='page-expire').length,1)
+  const nextDraft=(await state()).draft,hoursRequest=await ok(await call('/api/pane/page-request-review',{base:nextDraft.id,page:'hours'}))
+  await ok(await call('/api/pane/page-schedule-approve',{base:nextDraft.id,page:'hours',request:hoursRequest.id,start:'2026-11-06T09:00',end:'2026-11-07T09:00',timeZone:'America/Chicago'}))
+  await tick('2026-11-06T15:00:00Z')
+  const later=structuredClone((await state()).draft.site);later.pages.find(page=>page.slug==='hours').body='Separately approved newer hours'
+  const replacement=await ok(await call('/api/pane/prepare',{base:(await state()).draft.id,site:later}));await ok(await call('/api/pane/publish',{revision:replacement.id}))
+  const newerPageLive=(await state()).live.id
+  await tick('2026-11-07T15:00:00Z');assert.equal((await state()).live.id,newerPageLive,'A preserved newer page causes no extra publication');assert.ok((await(await f.request(origin+'/site/hours')).text()).includes('Separately approved newer hours'));assert.equal((await state()).schedules.history.filter(event=>event.kind==='page-expiry-preserved-newer').length,1)
+
+
+
+ }finally{await f.mf.dispose()}
+})
+
+test('native comment moderation protects notifications, threaded replies, closure and person erasure',async()=>{
+ let clock=Date.parse('2026-10-15T16:00:00Z'),mailFails=false
+ const origin='https://pane.example.test',mail=[],f=await runtime({now:()=>clock,bindings:{AUTH_ORIGIN:origin,AUTH_LOCAL:'false',MAIL_PROVIDER:'sendgrid',MAIL_API_KEY:'synthetic-pane-7'},outboundService:async request=>{assert.equal(new URL(request.url).origin,'https://api.sendgrid.com');mail.push(await request.json());return new Response(null,{status:mailFails?500:202})}})
+ let owner,author,moderator,other,admin,moderatorId,commentId=crypto.randomUUID()
+ const call=(path,input,cookie=owner,headers={})=>f.request(origin+path,{method:'POST',headers:{Origin:origin,Cookie:cookie??'','Content-Type':'application/json',...headers},body:JSON.stringify(input)})
+ const get=(path,cookie=owner)=>f.request(origin+path,{headers:{Cookie:cookie??''}})
+ const ok=async response=>{assert.equal(response.status,200,await response.clone().text());return response.json()}
+ const state=async()=>ok(await get('/api/pane'))
+ const visitor=async(message,extra={})=>{const fields=new FormData();for(const [key,value] of Object.entries({idempotency:crypto.randomUUID(),name:'Visitor <script>',email:'synthetic-pane-commenter@example.test',message,website:'','cf-turnstile-response':'synthetic-pane-3:'+createHash('sha256').update('comment:'+post.id).digest('hex'),...extra}))fields.set(key,value);return f.request(origin+'/site/news/story',{method:'POST',headers:{Origin:origin},body:fields})}
+ let post
+ try{
+  const first=await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Comment owner'},'');assert.equal(first.status,303);owner=first.headers.get('set-cookie').split(';')[0]
+  assert.equal((await f.request(origin+'/setup',{method:'POST',headers:{Origin:origin,Cookie:owner,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})).status,303)
+  const site=JSON.parse(await readFile('fixtures/static-site.json','utf8'));site.blogs=[{id:'news',prefix:'news',title:'News',comments:false,pageSize:10}]
+  const initial=await ok(await call('/api/pane/prepare',{site}));await ok(await call('/api/pane/publish',{revision:initial.id}))
+  for(const [role,email,name] of [['author','synthetic-pane-author@example.test','Post author'],['comment-moderator','synthetic-pane-moderator@example.test','Comment moderator'],['inbox','synthetic-pane-inbox@example.test','Inbox colleague']]){
+   const invited=await ok(await call('/api/pane/roles/invite',{email,displayName:name,roles:[role]})),text=mail.at(-1).content.find(part=>part.type==='text/plain').value
+   const confirmed=await call('/auth/confirm',{token:new URL(text.match(/https:\/\/[^\s]+/)[0]).searchParams.get('token')},'');assert.equal(confirmed.status,303);const cookie=confirmed.headers.get('set-cookie').split(';')[0]
+   if(role==='author')author=cookie;else if(role==='comment-moderator'){moderator=cookie;moderatorId=invited.operatorId}else other=cookie
+  }
+  assert.equal((await call('/auth/invite',{email:'synthetic-pane-admin@example.test',displayName:'Comment administrator',role:'admin'})).status,202)
+  const adminText=mail.at(-1).content.find(part=>part.type==='text/plain').value,adminConfirmed=await call('/auth/confirm',{token:new URL(adminText.match(/https:\/\/[^\s]+/)[0]).searchParams.get('token')},'');assert.equal(adminConfirmed.status,303);admin=adminConfirmed.headers.get('set-cookie').split(';')[0]
+  let saved=await ok(await call('/api/pane/posts/save',{base:(await state()).draft.id,blog:'news',content:{slug:'story',title:'Our workshop',body:'Our first story.'},byline:'Workshop writer',authorSlug:'workshop'},author));post=saved.posts[0]
+  saved=await ok(await call('/api/pane/posts/submit',{base:saved.base,id:post.id},author));await ok(await call('/api/pane/posts/publish',{base:saved.base,id:post.id,review:saved.posts[0].review}))
+  assert.equal((await visitor('Closed by default')).status,403)
+  await ok(await call('/api/pane/comments/settings',{blog:'news',enabled:'on',approval:'on',closeDays:0,likes:'on'}))
+  assert.equal((await call('/api/pane/comments/settings',{blog:'news',enabled:'on'},moderator)).status,403)
+  assert.equal((await get('/api/pane/comments','')).status,401)
+  for(const cookie of [author,other]){assert.equal((await get('/api/pane/comments',cookie)).status,403);assert.equal((await call('/api/pane/comments/approve',{ids:[commentId]},cookie)).status,403)}
+  assert.match(await (await get('/site/news/story','')).text(),/data-like-count>0<\/span>/)
+  const liked=await f.request(origin+'/site/news/story?like=1',{method:'POST',headers:{Origin:origin}});assert.equal(liked.status,303);assert.equal(liked.headers.get('set-cookie'),null)
+  await f.request(origin+'/site/news/story?like=1',{method:'POST',headers:{Origin:origin}});assert.match(await (await get('/site/news/story','')).text(),/data-like-count>1<\/span>/,'Repeat likes from the same request network are bounded without cookies')
+  await ok(await call('/api/pane/spam/settings',{enabled:'on',confirm:'change-retention'}))
+  const rejectedId=crypto.randomUUID();assert.equal((await visitor('Honeypot comment',{website:'bot',idempotency:rejectedId})).status,403)
+  const invalidProofId=crypto.randomUUID();assert.equal((await visitor('Bad verification',{'cf-turnstile-response':'synthetic-pane-invalid',idempotency:invalidProofId})).status,403)
+  assert.equal((await visitor('A visitor <img src=x onerror=alert(1)> comment',{idempotency:commentId})).status,303)
+  const spamId=crypto.randomUUID();assert.equal((await visitor('https://a.test https://b.test https://c.test https://d.test https://e.test https://f.test',{idempotency:spamId})).status,303)
+  const queue=await ok(await get('/api/pane/comments',moderator));assert.deepEqual(queue.map(row=>[row.id,row.state]).sort(),[[commentId,'pending'],[spamId,'spam']].sort())
+  assert.ok(!(await (await get('/site/news/story','')).text()).includes('A visitor &lt;img'))
+  const notifications=mail.slice(4);assert.equal(notifications.length,6);assert.deepEqual([...new Set(notifications.flatMap(message=>message.personalizations.flatMap(item=>item.to.map(to=>to.email))))].sort(),['owner@example.test','synthetic-pane-admin@example.test','synthetic-pane-moderator@example.test'])
+  for(const message of notifications){
+   assert.ok(!JSON.stringify(message).includes('synthetic-pane-commenter@example.test'),'Notifications omit commenter addresses')
+   const text=message.content.find(part=>part.type==='text/plain').value,html=message.content.find(part=>part.type==='text/html').value
+   const link=text.match(/https:\/\/[^\s]+/)[0]
+   assert.ok(html.includes('href="'+link+'"'),'HTML notifications carry the same private review link as plain text')
+  }
+  const text=notifications.find(message=>message.content.find(part=>part.type==='text/plain').value.includes(commentId)).content.find(part=>part.type==='text/plain').value,notification=new URL(text.match(/https:\/\/[^\s]+/)[0]);assert.equal(notification.pathname,'/app/comments');assert.equal(notification.searchParams.get('comment'),commentId)
+  assert.equal((await get(notification.pathname+notification.search,moderator)).status,200)
+  assert.equal((await get('/api/pane/comments',admin)).status,200)
+  assert.equal((await call('/api/pane/comments/approve',{ids:[commentId]},moderator,{Origin:'https://foreign.invalid'})).status,403)
+  await ok(await call('/api/pane/comments/approve',{ids:[commentId]},moderator))
+  let html=await (await get('/site/news/story','')).text();assert.match(html,/A visitor &lt;img/);assert.ok(!html.includes('synthetic-pane-commenter@example.test'));assert.ok(!html.includes('<img src=x'));assert.ok(!html.includes('https://a.test'))
+  assert.equal((await call('/api/pane/comments/reply',{id:commentId,body:'Impersonation'},other)).status,403)
+  await ok(await call('/api/pane/comments/reply',{id:commentId,body:'Thank you from the workshop.'},author))
+  const approved=await ok(await get('/api/pane/comments',moderator)),reply=approved.find(row=>row.parent===commentId);assert.ok(reply);assert.equal(reply.name,'Workshop writer');assert.equal(reply.state,'approved')
+  assert.equal((await call('/api/pane/comments/author-reply',{id:commentId,body:'Unauthorized moderation reply'},other)).status,403)
+  await ok(await call('/api/pane/comments/author-reply',{id:commentId,body:'Reviewed reply on behalf of the workshop.'},moderator));assert.ok((await ok(await get('/api/pane/comments',moderator))).some(row=>row.parent===commentId&&row.name==='Workshop writer'&&row.body==='Reviewed reply on behalf of the workshop.'))
+  html=await (await get('/site/news/story','')).text();assert.match(html,/comment-replies/);assert.match(html,/Thank you from the workshop\./)
+  const notificationsAfter=mail.length;await ok(await call('/api/pane/comments/close',{post:post.id,closed:'on'}));html=await (await get('/site/news/story','')).text();assert.ok(!html.includes('Submit comment'));assert.match(html,/Comments are closed/);assert.equal((await visitor('After closing')).status,403);assert.equal(mail.length,notificationsAfter)
+  assert.equal((await call('/api/pane/privacy/export',{email:'synthetic-pane-commenter@example.test'})).status,400,'Bootstrap does not bypass fresh native sign-in')
+  let signIn
+  const native=createOperatorAuth({clock:()=>Date.parse('2026-10-15T16:00:00Z'),db:f.db,config:{...settings,origin,local:false},clientIp:()=> '127.0.0.1',mailSender:{send:async message=>{signIn=message;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+  await native.requestMagicLink(new Request(origin+'/auth/magic-link',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin}}),{email:settings.OWNER_EMAIL})
+  const signed=await call('/auth/confirm',{token:new URL(signIn.text.match(/https:\/\/[^\s]+/)[0]).searchParams.get('token')},'');assert.equal(signed.status,303);owner=signed.headers.get('set-cookie').split(';')[0]
+  const exported=await ok(await call('/api/pane/privacy/export',{email:'synthetic-pane-commenter@example.test'}));assert.deepEqual(exported.comments.map(row=>row.id).sort(),[commentId,spamId].sort());assert.deepEqual(exported.rejected.map(row=>row.id).sort(),[rejectedId,invalidProofId].sort(),'Person export includes each retained rejected comment before erasure');assert.equal(exported.comments.find(row=>row.id===commentId).body,'A visitor <img src=x onerror=alert(1)> comment')
+  const portability=await createPortability({db:f.db,policy:productPolicy}),archiveId=await portability.exports.create();while((await portability.exports.advance(archiveId,{maxParts:100})).phase==='building'){}const older=[];for await(const record of readArchive(await portability.exports.download(archiveId)))older.push(record)
+  const populated=await runtime();try{const target=await createPortability({db:populated.db,policy:productPolicy}),id=await target.imports.create(older[0]);for(const part of older.filter(record=>record.kind==='part'))await target.imports.uploadPart(id,part.index,part);assert.equal((await target.imports.finalize(id,{contentHash:older.at(-1).contentHash,archiveHash:older.at(-1).archiveHash})).phase,'complete');const restoredHtml=await (await populated.request('/site/news/story')).text();assert.match(restoredHtml,/A visitor &lt;img/);assert.match(restoredHtml,/Thank you from the workshop\./);assert.ok(!restoredHtml.includes('synthetic-pane-commenter@example.test'))}finally{await populated.mf.dispose()}
+  const erased=await ok(await call('/api/pane/privacy/erase',{email:'synthetic-pane-commenter@example.test',confirm:'erase-person-data'}));assert.equal(erased.erasedComments,2);assert.equal(erased.backupFence,true)
+  const laterId=await portability.exports.create();while((await portability.exports.advance(laterId,{maxParts:100})).phase==='building'){}const later=[];for await(const record of readArchive(await portability.exports.download(laterId)))later.push(record)
+  const restored=await runtime();try{const target=await createPortability({db:restored.db,policy:productPolicy}),id=await target.imports.create(older[0]);for(const part of older.filter(record=>record.kind==='part'))await target.imports.uploadPart(id,part.index,part);await assert.rejects(target.imports.finalize(id,{contentHash:older.at(-1).contentHash,archiveHash:older.at(-1).archiveHash,laterJournal:later[0]}),/erased_row|erasure_epoch/)}finally{await restored.mf.dispose()}
+  assert.deepEqual((await ok(await call('/api/pane/privacy/find',{email:'synthetic-pane-commenter@example.test'}))).comments,[])
+  assert.ok(!(await (await get('/site/news/story','')).text()).includes('A visitor &lt;img'))
+  await ok(await call('/api/pane/comments/close',{post:post.id,closed:'off'}))
+  await visitor('Replay accepted content as rejected',{idempotency:commentId,website:'bot'})
+  await visitor('Replay rejected content as accepted',{idempotency:rejectedId})
+  const replayed=await ok(await call('/api/pane/privacy/find',{email:'synthetic-pane-commenter@example.test'}))
+  assert.deepEqual([replayed.rejected.filter(row=>row.id===commentId).length,replayed.comments.filter(row=>row.id===rejectedId).length],[0,0],'Erased accepted and rejected comments cannot return through the opposite store')
+  await visitor('Replay erased content',{idempotency:commentId});assert.ok(!(await ok(await get('/api/pane/comments',moderator))).some(row=>row.id===commentId))
+  for(let attempt=0;attempt<20;attempt++)await visitor('Burst',{'cf-turnstile-response':'synthetic-pane-invalid'})
+  assert.equal((await visitor('Over the rate limit')).status,429)
+  const activity=await ok(await get('/api/pane/activity'));assert.ok(activity.some(event=>event.subject==='comment:'+commentId&&event.action==='comment.approved'&&event.actor==='Comment moderator'));for(const value of ['synthetic-pane-commenter@example.test','A visitor <img'])assert.ok(!JSON.stringify(activity).includes(value),'Comment audit is metadata only')
+  await ok(await call('/api/pane/roles/set',{operatorId:moderatorId,roles:['inbox']}));assert.equal((await get('/api/pane/comments',moderator)).status,403)
+  clock+=120000
+  await ok(await call('/api/pane/comments/settings',{blog:'news',enabled:'on',approval:'on',notificationMode:'daily',closeDays:1}))
+  const beforeDigest=mail.length,digestId=crypto.randomUUID();assert.equal((await visitor('A comment for the daily review',{idempotency:digestId})).status,303);assert.equal(mail.length,beforeDigest,'Daily notifications wait for the scheduled sweep')
+  const early=await (await f.mf.getWorker()).scheduled({scheduledTime:clock+23*3600000,cron:'* * * * *'});assert.equal(early.outcome,'ok');assert.equal(mail.length,beforeDigest)
+  clock+=86400000
+  const tick=async()=>assert.equal((await (await f.mf.getWorker()).scheduled({scheduledTime:clock,cron:'* * * * *'})).outcome,'ok');await tick();assert.equal(mail.length,beforeDigest+2,'Only the active owner and admin receive the daily digest after moderator revocation');for(const message of mail.slice(beforeDigest)){
+   assert.ok(message.content.find(part=>part.type==='text/plain').value.includes(digestId))
+   assert.ok(message.content.find(part=>part.type==='text/html').value.includes('href="'+origin+'/app/comments?comment='+digestId+'"'),'HTML digests link each comment to review')
+  }await tick();assert.equal(mail.length,beforeDigest+2,'A repeated sweep cannot send the digest twice')
+  assert.ok(!(await (await get('/site/news/story','')).text()).includes('Submit comment'));assert.equal((await visitor('After automatic expiry')).status,403)
+  await ok(await call('/api/pane/comments/settings',{blog:'news',enabled:'on',approval:'off',notificationMode:'daily',blockedWords:'forbidden'}))
+  const known=crypto.randomUUID(),unknown=crypto.randomUUID(),blocked=crypto.randomUUID();assert.equal((await visitor('A returning approved writer',{idempotency:known,email:'synthetic-pane-author@example.test'})).status,303);assert.equal((await visitor('A new unapproved writer',{idempotency:unknown})).status,303);assert.equal((await visitor('A forbidden phrase',{idempotency:blocked,email:'synthetic-pane-author@example.test'})).status,303)
+  const cases=await ok(await get('/api/pane/comments',admin));assert.deepEqual([known,unknown,blocked].map(id=>cases.find(row=>row.id===id).state),['approved','pending','spam'])
+  await ok(await call('/api/pane/comments/edit',{id:unknown,body:'Edited <b>comment</b>'},admin));await ok(await call('/api/pane/comments/approve',{ids:[unknown,blocked]},admin));assert.match(await (await get('/site/news/story','')).text(),/Edited &lt;b&gt;comment&lt;\/b&gt;/);await ok(await call('/api/pane/comments/spam',{ids:[unknown,blocked]},admin));assert.ok(!(await (await get('/site/news/story','')).text()).includes('Edited &lt;b&gt;'));await ok(await call('/api/pane/comments/delete',{ids:[unknown,blocked]},admin));assert.ok(!(await ok(await get('/api/pane/comments',admin))).some(row=>[unknown,blocked].includes(row.id)))
+  await ok(await call('/api/pane/comments/settings',{blog:'news',enabled:'on',approval:'on'}));mailFails=true;const failedId=crypto.randomUUID();assert.equal((await visitor('A retained comment despite email failure',{idempotency:failedId})).status,303);mailFails=false;assert.ok((await ok(await get('/api/pane/comments',admin))).some(row=>row.id===failedId));assert.match(await (await get('/app/comments?comment='+failedId,admin)).text(),/uncertain/)
+ }finally{await f.mf.dispose()}
+})
+
+test('approved immutable posts publish at Chicago nine while unapproved times are flagged and retries stay fenced',async()=>{
+ for(const isolatedLive of [false,true]){
+  let now=Date.parse('2026-10-01T12:00:00Z')
+  const f=await runtime({isolatedLive,now:Date.parse('2026-10-01T12:00:00Z')}),origin=settings.AUTH_ORIGIN
+  let cookie
+  const call=(path,input,session=cookie,source=origin)=>f.request(path,{method:'POST',headers:{Origin:source,Cookie:session??'','Content-Type':'application/json'},body:JSON.stringify(input)})
+  const get=path=>f.request(path,{headers:{Cookie:cookie??''}})
+  const ok=async response=>{assert.equal(response.status,200,await response.clone().text());return response.json()}
+  const state=async()=>ok(await get('/api/pane'))
+  const tick=async iso=>{now=Date.parse(iso);assert.equal((await (await f.mf.getWorker()).scheduled({scheduledTime:new Date(now),cron:'* * * * *'})).outcome,'ok')}
+  try{
+   cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Scheduling owner'},'')).headers.get('set-cookie').split(';')[0]
+   await f.request('/setup',{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
+   const initial=await ok(await call('/api/pane/prepare',{site:JSON.parse(await readFile('fixtures/static-site.json','utf8'))}));await ok(await call('/api/pane/publish',{revision:initial.id}))
+   const write=async(slug,id,body='Approved workshop story.')=>ok(await call('/api/pane/posts/save',{base:(await state()).draft.id,...(id?{id}:{}),blog:'news',byline:'Workshop team',authorSlug:'team',content:{slug,title:slug,body}}))
+   let saved=await write('morning'),post=saved.posts.at(-1)
+   const pending=await write('unapproved'),unapproved=pending.posts.at(-1)
+   const unapprovedInput={base:pending.base,id:unapproved.id,timeZone:'America/Chicago',occurrence:'2026-11-02T09:00'}
+   let invitation
+   const auth=createOperatorAuth({clock:()=>Date.parse('2026-10-01T12:00:00Z'),db:f.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async message=>{invitation=message;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+   for(const role of ['admin','member']){
+    await auth.invite(new Request(origin+'/auth/invite',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin,Cookie:cookie}}),{email:'synthetic-pane-'+role+'@example.test',displayName:'Schedule '+role,role})
+    const token=new URL(invitation.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token'),response=await call('/auth/confirm',{token},'')
+    assert.equal(response.status,303);const deniedCookie=response.headers.get('set-cookie').split(';')[0]
+    assert.equal((await call('/api/pane/posts/schedule',unapprovedInput,deniedCookie)).status,403,'Only the native owner may schedule')
+   }
+
+   assert.equal((await call('/api/pane/posts/schedule',unapprovedInput,'')).status,401)
+   assert.equal((await call('/api/pane/posts/schedule',unapprovedInput,cookie,'https://elsewhere.invalid')).status,403)
+   await ok(await call('/api/pane/posts/schedule',unapprovedInput))
+   assert.equal((await call('/api/pane/posts/schedule',{...unapprovedInput,approve:'yes'})).status,400,'Unsubmitted content cannot be approved')
+   saved=await ok(await call('/api/pane/posts/submit',{base:(await state()).draft.id,id:post.id}));post=saved.posts.find(item=>item.id===post.id)
+   const source=structuredClone((await state()).draft),input={base:saved.base,id:post.id,review:post.review,timeZone:'America/Chicago',occurrence:'2026-11-02T09:00',end:'2026-11-03T09:00',approve:'yes'}
+   for(const occurrence of ['2027-03-14T02:30','2026-11-01T01:30'])assert.equal((await call('/api/pane/posts/schedule',{...input,occurrence})).status,400)
+   assert.equal((await call('/api/pane/posts/schedule',{...input,base:initial.id})).status,409)
+   assert.equal((await call('/api/pane/posts/schedule',{...input,review:'synthetic-pane-wrong'})).status,400)
+   const approved=await ok(await call('/api/pane/posts/schedule',input))
+   assert.equal(approved.sourceRevision,source.id)
+   await write('morning',post.id,'Later private author work.')
+   let current=await state();const privateSite=structuredClone(current.draft.site);privateSite.pages[0].body='Later private owner work.'
+   await ok(await call('/api/pane/prepare',{base:current.draft.id,site:privateSite}))
+   await tick('2026-11-02T14:59:00Z');assert.equal((await get('/site/news/morning')).status,404,'No early publication at 08:59 Central')
+   await tick('2026-11-02T15:00:00Z')
+   current=await state();assert.equal((await get('/site/news/morning')).status,200);assert.match(await (await get('/site/news/morning')).text(),/Approved workshop story/)
+   assert.doesNotMatch(await (await get('/site/news/morning')).text(),/Later private/)
+   assert.deepEqual(current.live.site.pages,initial.site.pages)
+   assert.equal(current.draft.site.posts.find(item=>item.id===post.id).content.body,'Later private author work.')
+   assert.equal(current.draft.site.pages[0].body,'Later private owner work.')
+   assert.deepEqual(current.revisions.find(row=>row.id===source.id),source,'The approved source remains immutable')
+   const events=current.schedules.history.filter(event=>event.kind==='post-published')
+   assert.equal(events.length,1);assert.equal(events[0].revision,source.id);assert.equal(events[0].occurrence,'2026-11-02T09:00');assert.equal(events[0].timeZone,'America/Chicago');assert.equal(events[0].executedAt,now);assert.ok(events[0].detail.includes(current.live.id))
+   assert.deepEqual(current.schedules.draftDue,['Post: unapproved']);assert.equal((await get('/site/news/unapproved')).status,404)
+   assert.match(await (await get('/app/sites')).text(),/Unapproved schedules are due/)
+   const live=current.live.id;await tick('2026-11-02T15:00:00Z');await tick('2026-11-02T14:00:00Z');assert.equal((await state()).live.id,live);assert.equal((await state()).schedules.history.filter(event=>event.kind==='post-published').length,1)
+   const future=await write('cancelled'),cancelled=future.posts.at(-1)
+   const submittedCancel=await ok(await call('/api/pane/posts/submit',{base:future.base,id:cancelled.id}))
+   await ok(await call('/api/pane/posts/schedule',{base:submittedCancel.base,id:cancelled.id,review:submittedCancel.posts.find(item=>item.id===cancelled.id).review,approve:'yes',timeZone:'America/Chicago',occurrence:'2026-11-03T09:00'}))
+   await ok(await call('/api/pane/posts/schedule',{base:submittedCancel.base,id:cancelled.id,cancel:'yes'}))
+   await tick('2026-11-03T14:59:00Z');assert.equal((await get('/site/news/morning')).status,200)
+   await tick('2026-11-03T15:00:00Z');assert.equal((await get('/site/news/morning')).status,404,'The explicitly approved expiry unpublishes at nine Central');assert.equal((await state()).schedules.history.filter(event=>event.kind==='post-unpublished').length,1);assert.equal((await state()).draft.site.posts.find(item=>item.id===post.id).content.body,'Later private author work.')
+   assert.equal((await state()).schedules.posts.some(entry=>entry.postId===cancelled.id),false);assert.equal((await get('/site/news/cancelled')).status,404)
+   let replacement=await write('updated'),updated=replacement.posts.at(-1)
+   replacement=await ok(await call('/api/pane/posts/submit',{base:replacement.base,id:updated.id}))
+   await ok(await call('/api/pane/posts/schedule',{base:replacement.base,id:updated.id,review:replacement.posts.find(item=>item.id===updated.id).review,approve:'yes',timeZone:'America/Chicago',occurrence:'2026-11-04T09:00',end:'2026-11-05T09:00'}))
+   await tick('2026-11-04T15:00:00Z');assert.equal((await get('/site/news/updated')).status,200)
+   replacement=await write('updated',updated.id,'Newer explicitly published story.')
+   replacement=await ok(await call('/api/pane/posts/submit',{base:replacement.base,id:updated.id}))
+   await ok(await call('/api/pane/posts/publish',{base:replacement.base,id:updated.id,review:replacement.posts.find(item=>item.id===updated.id).review}))
+   await tick('2026-11-05T15:00:00Z');assert.equal((await get('/site/news/updated')).status,200);assert.match(await (await get('/site/news/updated')).text(),/Newer explicitly published story/,'An old expiry never removes a newer explicit publication')
+   let missed=await write('missed-window'),missedPost=missed.posts.at(-1)
+   missed=await ok(await call('/api/pane/posts/submit',{base:missed.base,id:missedPost.id}))
+   await ok(await call('/api/pane/posts/schedule',{base:missed.base,id:missedPost.id,review:missed.posts.find(item=>item.id===missedPost.id).review,approve:'yes',timeZone:'America/Chicago',occurrence:'2026-11-06T09:00',end:'2026-11-06T10:00'}))
+   await tick('2026-11-06T16:00:00Z');assert.equal((await get('/site/news/missed-window')).status,404,'A missed publication window never exposes an expired post')
+   assert.equal((await state()).schedules.history.filter(event=>event.kind==='post-window-missed').length,1)
+   const audit=await ok(await get('/api/pane/activity'))
+   for(const action of ['schedule.save','schedule.approve','schedule.cancel'])assert.ok(audit.some(event=>event.action===action),'Transactional metadata audit: '+action)
+   assert.ok(!JSON.stringify(audit).includes('Later private author work.'))
+
+  }finally{await f.mf.dispose()}
+ }
+})
+
+test('an invalidated blog schedule cannot starve other publications or leave an expired post public',async()=>{
+ const {invalidatedSchedules}=await import('./post-schedule-proof.mjs')
+ for(const expiry of [false,true]){
+  const f=await runtime({isolatedLive:true,now:Date.parse('2026-10-01T12:00:00Z')}),origin=settings.AUTH_ORIGIN
+  let cookie=''
+  const post=(path,input)=>f.request(path,{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify(input)})
+  const get=path=>f.request(path,{headers:{Cookie:cookie}})
+  const tick=async iso=>assert.equal((await (await f.mf.getWorker()).scheduled({scheduledTime:new Date(iso),cron:'* * * * *'})).outcome,'ok')
+  try{
+   cookie=(await post('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Scheduling owner'})).headers.get('set-cookie').split(';')[0]
+   await f.request('/setup',{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
+   await invalidatedSchedules({post,get,tick,expiry})
+  }finally{await f.mf.dispose()}
+ }
+})
+
+test('committed publications and expiries reconcile durable reads even when failure recording is unavailable',async()=>{
+ const {invalidatedSchedules}=await import('./post-schedule-proof.mjs')
+ const f=await runtime({isolatedLive:true,now:Date.parse('2026-10-01T12:00:00Z')}),origin=settings.AUTH_ORIGIN
+ let cookie='',injected=false
+ const post=(path,input)=>f.request(path,{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify(input)})
+ const get=path=>f.request(path,{headers:{Cookie:cookie}})
+ const dispatch=iso=>(f.mf.getWorker()).then(worker=>worker.scheduled({scheduledTime:new Date(iso),cron:'* * * * *'}))
+ const tick=async iso=>{
+  if(!injected&&iso==='2026-11-02T15:02:00Z'){
+   injected=true
+   // Storage-edge failure only: production has no fault injection door.
+   await f.db.prepare("CREATE TRIGGER synthetic_schedule_record_unavailable BEFORE UPDATE OF failure_at ON pane_post_schedules BEGIN SELECT RAISE(FAIL,'synthetic-pane-1'); END").run()
+   try{
+    assert.equal((await dispatch(iso)).outcome,'exception','The platform receives the persistence failure')
+    const current=await (await get('/api/pane')).json()
+    assert.deepEqual(current.live.site.blogPosts.map(row=>row.content.slug),['later-safe'])
+    assert.equal(current.schedules.history.filter(event=>event.kind==='post-unpublished').length,1)
+    assert.equal((await get('/site/recipes/first-safe')).status,404,'A committed expiry reaches durable reads even on a failed sweep')
+    assert.equal((await get('/site/recipes/later-safe')).status,200,'A committed later publication reaches durable reads even on a failed sweep')
+    assert.doesNotMatch(await (await get('/site')).text(),/Scheduled workshop promotion/,'Other completed sweeps reconcile durable banners before surfacing the error')
+   }finally{await f.db.prepare('DROP TRIGGER synthetic_schedule_record_unavailable').run()}
+  }
+  assert.equal((await dispatch(iso)).outcome,'ok')
+ }
+ try{
+  cookie=(await post('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Scheduling owner'})).headers.get('set-cookie').split(';')[0]
+  await f.request('/setup',{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})
+  await invalidatedSchedules({post,get,tick,expiry:true})
+  assert.equal(injected,true,'The failing sweep was exercised')
  }finally{await f.mf.dispose()}
 })

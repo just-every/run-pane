@@ -1,3 +1,6 @@
+import {sendCommentDigests} from './pane/comments'
+import {runPageSchedules} from './pane/page-schedules'
+import {runPostSchedules} from './pane/post-schedules'
 export { PaneLive } from './pane/outage'
 import { expireRejected } from './pane/rejected-content'
 import { liveCall } from './pane/outage'
@@ -41,10 +44,13 @@ async function linkCallbackBody(request: Request) {
 export default withDemo<Bindings, ExportedHandler<Bindings>>({
   async scheduled(controller, env) {
     const bindings={...runtimeBindings(env),DB:auditedDatabase(env.DB,null,'schedule.change')}
+    const postSweep=await Promise.allSettled([env.PANE_LIVE?liveCall(bindings,'/post-schedules',{now:controller.scheduledTime}):runPostSchedules(bindings.DB,controller.scheduledTime)])
+    const pageSweep=await Promise.allSettled([env.PANE_LIVE?liveCall(bindings,'/page-schedules',{now:controller.scheduledTime}):runPageSchedules(bindings.DB,controller.scheduledTime,'page:'+controller.scheduledTime)])
     // One failing sweep must not stop the other.
-    const sweeps=await Promise.allSettled([expireRejected(bindings.DB,controller.scheduledTime),runSchedules(bindings.DB,controller.scheduledTime),runFollowUps(bindings,controller.scheduledTime),...(env.PANE_LIVE?[liveCall(bindings,'/drain',{})]:[])])
-    for(const sweep of sweeps) if(sweep.status==='rejected') throw sweep.reason
-    if(env.PANE_LIVE){const row=await env.DB.prepare('SELECT live FROM pane_state WHERE id=1').first<{live:string}>();if(row)await liveCall(bindings,'/banners',{banners:await activeBanners(env.DB,row.live)})}
+    const sweeps=await Promise.allSettled([sendCommentDigests(bindings,controller.scheduledTime),expireRejected(bindings.DB,controller.scheduledTime),runSchedules(bindings.DB,controller.scheduledTime),runFollowUps(bindings,controller.scheduledTime),...(env.PANE_LIVE?[liveCall(bindings,'/drain',{})]:[])])
+    // Reconcile banners before surfacing failures from any independent sweep.
+    const bannerSweep=await Promise.allSettled([...(env.PANE_LIVE?[(async()=>{const row=await env.DB.prepare('SELECT live FROM pane_state WHERE id=1').first<{live:string}>();await liveCall(bindings,'/banners',{banners:row?await activeBanners(env.DB,row.live):[]})})()]:[])])
+    for(const sweep of [...postSweep,...pageSweep,...sweeps,...bannerSweep]) if(sweep.status==='rejected') throw sweep.reason
   },
   async fetch(request, env, execution) {
     const asset = await staticAssetResponse(request, env)

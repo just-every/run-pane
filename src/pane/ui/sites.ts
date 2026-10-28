@@ -24,7 +24,7 @@ function tile(data: Dashboard, owner: boolean, canPreview: boolean): string {
     data.live ? '<a class="button secondary" href="/site">Open live site</a>' : '',
     pending && canPreview ? `<a class="button secondary" href="/preview/${encodeURIComponent(pending.id)}/${homeSlug(pending.site)}">Preview draft</a>` : '',
     pending && owner ? form('/app/publish', hidden('revision', pending.id), 'Approve & publish', 'primary') : '',
-    site && canPreview ? '<a class="button secondary" href="/app/search">Search settings</a>' : site ? '' : '<a class="button primary" href="/app">Start your site</a>',
+    site && canPreview ? '<a class="button secondary" href="/app/search">Search settings</a>' : site ? '' : '<a class="button primary" href="/app/templates">Choose a template</a>',
   ].join('')
   const nav = site ? `<ul class="tile-pages">${activePages(site).map(page => `<li class="tile-${pageBrick[page.slug] ?? 'blog'}">${escape(page.title)}</li>`).join('')}</ul>` : ''
   return `<section class="site-tile" aria-labelledby="site-name"><div class="site-tile-top"><span class="site-dot" aria-hidden="true"></span><h1 id="site-name">${escape(site?.name ?? 'Your site')}</h1></div><p class="site-tile-desc">${escape(site?.description || 'Prepare your five pages to start the site.')}</p>${nav}<p class="site-tile-status">${data.live ? icon('check') : ''}${escape(siteStatus(data))}</p><div class="actions">${actions}</div></section>`

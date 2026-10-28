@@ -5,7 +5,7 @@ import {chromium} from '@playwright/test'
 // Approval timestamps predate the first review cutoff, independent of the host clock.
 process.env.PANE_BROWSER_NOW='2026-10-01T12:00:00Z'
 const fixture=await import('../tests/browser-runtime.mjs')
-const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
+const browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH}:{}),args:['--no-sandbox','--use-mock-keychain','--password-store=basic']})
 const context=await browser.newContext(),page=await context.newPage(),origin=fixture.origin
 page.setDefaultTimeout(20000)
 const folder=resolve(process.env.PANE_SCREENSHOTS??'test-results/schedules');await mkdir(folder,{recursive:true})
@@ -14,11 +14,71 @@ const dashboard=async()=>(await context.request.get(origin+'/api/pane')).json()
 const saved=()=>page.waitForFunction(()=>document.querySelector('[data-save-status]').textContent==='Draft saved. Not published.',undefined,{timeout:20000})
 const siteText=async()=>(await context.request.get(origin+'/site')).text()
 async function capture(name,width){await page.screenshot({path:resolve(folder,`${name}-${width}.png`),fullPage:true});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,`${name} overflow at ${width}`)}
+async function tooltip(){await page.evaluate(()=>{document.activeElement?.blur();window.scrollTo({top:0,behavior:'instant'})});await page.mouse.move(0,500);const account=page.locator('[data-tip="Account and team"]');await account.hover();await page.getByRole('tooltip').getByText('Account and team',{exact:true}).waitFor();await page.mouse.move(0,500);await page.keyboard.press('Escape');await account.focus();await page.keyboard.press('Tab');await page.keyboard.press('Shift+Tab');await page.getByRole('tooltip').getByText('Account and team',{exact:true}).waitFor();await page.keyboard.press('Escape')}
+async function accessible(){await page.evaluate(await readFile('node_modules/axe-core/axe.min.js','utf8'));assert.deepEqual(await page.evaluate(async()=> (await axe.run(document)).violations),[],'Scheduled publication controls pass axe')}
 async function tick(iso){await fixture.advance(iso)}
 try {
  await fixture.bootstrap(context);await page.goto(origin+'/setup');await page.getByRole('checkbox').check()
  await Promise.all([page.waitForURL('**/app'),page.getByRole('button',{name:'Finish setup'}).click()])
  const source=JSON.parse(await readFile('fixtures/static-site.json','utf8'))
+ // The post acceptance runs once at desktop width; both widths record the changed screens.
+ await page.setViewportSize({width:1440,height:1000})
+ const initial=await (await post('/api/pane/prepare',{site:source})).json()
+ assert.equal((await post('/api/pane/publish',{revision:initial.id})).status(),200)
+ const write=async slug=>{
+  const state=await dashboard()
+  const response=await post('/api/pane/posts/save',{base:state.draft.id,blog:'news',byline:'Workshop team',authorSlug:'team',content:{slug,title:slug,body:'Approved morning workshop news.'}})
+  assert.equal(response.status(),200);return (await response.json()).posts.at(-1)
+ }
+ const morning=await write('morning-news'),pending=await write('unapproved-news')
+ let state=await dashboard()
+ assert.equal((await post('/api/pane/posts/submit',{base:state.draft.id,id:morning.id})).status(),200)
+ await page.goto(origin+'/app/posts?id='+morning.id);await page.getByText('Publication schedule',{exact:true}).click()
+ await page.getByLabel('Publish at',{exact:true}).fill('2026-10-02T09:00')
+ await page.getByLabel('Unpublish at (optional)',{exact:true}).fill('2026-10-03T09:00')
+ await page.getByLabel('Publication time zone',{exact:true}).selectOption('America/Chicago')
+ await Promise.all([page.waitForURL(url=>url.searchParams.has('notice')),page.getByRole('button',{name:'Approve scheduled post',exact:true}).click()])
+ for(const width of [1440,390]){
+  await page.setViewportSize({width,height:1000});await page.getByText('Publication schedule',{exact:true}).click()
+  await page.getByText('Approved for',{exact:false}).waitFor()
+  const account=page.locator('[data-tip="Account and team"]')
+  await account.hover();await page.getByRole('tooltip').getByText('Account and team',{exact:true}).waitFor()
+  await page.mouse.move(0,500);await page.keyboard.press('Escape');await account.focus();await page.keyboard.press('Tab');await page.keyboard.press('Shift+Tab');await page.getByRole('tooltip').getByText('Account and team',{exact:true}).waitFor()
+  await capture('approved-post-schedule',width);await page.keyboard.press('Escape')
+  await page.reload()
+ }
+ state=await dashboard()
+ assert.equal((await post('/api/pane/posts/schedule',{base:state.draft.id,id:pending.id,timeZone:'America/Chicago',occurrence:'2026-10-02T09:00'})).status(),200)
+ await tick('2026-10-02T13:59:00Z');assert.equal((await context.request.get(origin+'/site/news/morning-news')).status(),404)
+ await tick('2026-10-02T14:00:00Z');assert.equal((await context.request.get(origin+'/site/news/morning-news')).status(),200)
+ state=await dashboard();const executed=state.schedules.history.filter(event=>event.kind==='post-published')
+ assert.equal(executed.length,1);assert.equal(executed[0].occurrence,'2026-10-02T09:00');assert.equal(executed[0].executedAt,Date.parse('2026-10-02T14:00:00Z'));assert.equal(executed[0].timeZone,'America/Chicago')
+ assert.deepEqual(state.schedules.draftDue,['Post: unapproved-news']);assert.equal((await context.request.get(origin+'/site/news/unapproved-news')).status(),404)
+ for(const width of [1440,390]){
+  await page.setViewportSize({width,height:1000});await page.goto(origin+'/app/sites')
+  const region=page.getByRole('region',{name:'Schedules and reviews'});await region.getByText('Schedule event history',{exact:true}).click()
+  await region.getByText('post published',{exact:true}).waitFor();await region.scrollIntoViewIfNeeded();await capture('post-execution-and-unapproved',width)
+  await page.goto(origin+'/site/news/morning-news');await capture('scheduled-live-post',width)
+ }
+
+ await tick('2026-10-03T13:59:00Z');assert.equal((await context.request.get(origin+'/site/news/morning-news')).status(),200)
+ await tick('2026-10-03T14:00:00Z');assert.equal((await context.request.get(origin+'/site/news/morning-news')).status(),404)
+ assert.equal((await dashboard()).schedules.history.filter(event=>event.kind==='post-unpublished').length,1)
+ const pageDraft=structuredClone((await dashboard()).draft.site);pageDraft.pages.find(page=>page.slug==='about').body='Scheduled studio page';pageDraft.pages.find(page=>page.slug==='hours').body='Unapproved hours draft'
+ const pageSource=await(await post('/api/pane/prepare',{base:(await dashboard()).draft.id,site:pageDraft})).json()
+ const aboutReview=await(await post('/api/pane/page-request-review',{base:pageSource.id,page:'about'})).json(),hoursReview=await(await post('/api/pane/page-request-review',{base:pageSource.id,page:'hours'})).json()
+ await page.setViewportSize({width:1440,height:1000});await page.goto(origin+'/app?page=about');await page.getByText('Page publication schedule',{exact:true}).click()
+ await page.getByLabel('Page publication time zone',{exact:true}).selectOption('America/Chicago');await page.getByLabel('Publish page at',{exact:true}).fill('2026-10-17T09:00');await page.getByLabel('Unpublish page at (optional)',{exact:true}).fill('2026-10-18T09:00')
+ for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await tooltip();if(width===1440)await accessible();await capture('page-schedule-approval',width)}
+ await page.setViewportSize({width:1440,height:1000})
+ await Promise.all([page.waitForURL(url=>url.searchParams.has('notice')),page.getByRole('button',{name:'Approve page schedule',exact:true}).click()])
+ assert.equal((await post('/api/pane/page-schedule',{base:pageSource.id,page:'hours',request:hoursReview.id,start:'2026-10-17T09:00',timeZone:'America/Chicago'})).status(),200)
+ await tick('2026-10-17T13:59:00Z');assert.ok(!(await(await context.request.get(origin+'/site/about')).text()).includes('Scheduled studio page'))
+ await tick('2026-10-17T14:00:00Z');assert.ok((await(await context.request.get(origin+'/site/about')).text()).includes('Scheduled studio page'));assert.ok(!(await(await context.request.get(origin+'/site/hours')).text()).includes('Unapproved hours draft'))
+ const pageHistory=(await dashboard()).schedules.history.filter(event=>event.kind==='page-publish');assert.equal(pageHistory.length,1);assert.equal(pageHistory[0].revision,pageSource.id);assert.equal(pageHistory[0].executedAt,Date.parse('2026-10-17T14:00:00Z'))
+ for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await page.goto(origin+'/site/about');await page.getByText('Scheduled studio page',{exact:true}).waitFor();await capture('scheduled-page-live',width);await page.goto(origin+'/app/sites');const status=page.getByRole('region',{name:'Schedules and reviews'});if(width===1440)assert.ok((await status.innerText()).includes('Page awaiting approval: Visit the workshop'));await status.getByText('Schedule event history',{exact:true}).click();await status.scrollIntoViewIfNeeded();await capture('page-schedule-history-and-refusal',width)}
+ await tick('2026-10-18T13:59:00Z');assert.equal((await context.request.get(origin+'/site/about')).status(),200)
+ await tick('2026-10-18T14:00:00Z');assert.equal((await context.request.get(origin+'/site/about')).status(),404);assert.equal((await dashboard()).schedules.history.filter(event=>event.kind==='page-expire').length,1)
  for(const [width,year,thanksgiving] of [[1440,2026,26],[390,2028,23]]){
   await page.setViewportSize({width,height:1000})
   const clean=await (await post('/api/pane/prepare',{site:source})).json()
@@ -112,6 +172,6 @@ try {
   for(const text of ['£125.50','+1 303 555 0123','80202 Denver'])assert.ok((await page.locator('.public-content').innerText()).includes(text),text)
   assert.equal(await page.locator('table thead th').first().innerText(),'Mo');await capture('changed-business-formats',width)
  }
- console.log('Business-local scheduling journey passed at 1440/390: approved Thanksgiving banner, quarterly stale-page reminders, promotion expiry and recurring DST times, replay fence, owner review and unapproved draft isolation.')
+ console.log('Business-local scheduling journey passed: reviewed posts and selected pages publish at Chicago 9 AM, expire locally, retain private work, flag unapproved schedules and record execution; promotion DST, reminders, axe and tooltips; screens at 1440 and 390.')
 } catch(error){await page.screenshot({path:resolve(folder,'failure.png'),fullPage:true});throw error}
 finally {await browser.close();await fixture.stop()}

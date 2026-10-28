@@ -1,6 +1,6 @@
 # Pane clause claims
 
-Generated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses, subject to exact-commit verification and guarded landing. Provider and field-proof boundaries remain in the source contract. 127 clauses: 51 done, 28 partial, 48 missing.
+Generated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses, subject to exact-commit verification and guarded landing. Provider and field-proof boundaries remain in the source contract. 127 clauses: 51 done, 30 partial, 46 missing.
 
 | Clause | Status | Title |
 | --- | --- | --- |
@@ -54,7 +54,7 @@ Generated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses,
 | CMS-007 | missing | Collection CSV import and export |
 | CMS-008 | partial | Site search |
 | CMS-009 | missing | Events calendar with list and month views |
-| CMS-010 | missing | Blog comments and moderation |
+| CMS-010 | partial | Blog comments and moderation |
 | CMS-011 | partial | Post and collection item bodies in the block editor |
 | DOMAIN-001 | missing | Connect a custom domain with apex and www |
 | DOMAIN-002 | missing | Managed HTTPS and certificate status |
@@ -82,7 +82,7 @@ Generated from [CONTRACT.md](../CONTRACT.md). These are implementation statuses,
 | FORM-004 | done | Automatic acknowledgment to the sender |
 | FORM-005 | missing | Lead routing to Orbit, HubSpot and signed webhooks |
 | FORM-006 | done | Enquiry ownership, status and follow-up |
-| FORM-007 | missing | Submission export and Google Sheets |
+| FORM-007 | partial | Submission export and Google Sheets |
 | FORM-008 | missing | Consent capture for email and SMS |
 | LINK-001 | missing | Booking through Dial, Calendly or Acuity |
 | LINK-002 | missing | Checkout through Stall, Stripe Payment Links or PayPal |

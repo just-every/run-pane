@@ -297,3 +297,12 @@
 .pane .canvas-tools{min-width:0;grid-template-columns:minmax(0,1fr)}
 .pane .canvas-tools :is(fieldset,details,label,.canvas-devices){min-width:0;max-width:100%;box-sizing:border-box}
 .pane .canvas-tools :is(input,select,textarea){min-width:0;max-width:100%;box-sizing:border-box}
+
+/* Preserve the workspace palette with enough contrast for small action text. */
+.rer-themed .pane .screen-pages .primary,
+.rer-themed .pane .screen-pages .device-toggle label:has(input:checked) {
+ background: color-mix(in srgb, var(--pn-action) 95%, var(--pn-ink));
+}
+
+.pane .content-schedule, .pane .content-schedule label { min-width: 0; max-width: 100%; }
+.pane .content-schedule select { width: 100%; min-width: 0; max-width: 100%; }

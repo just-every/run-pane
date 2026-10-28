@@ -1,3 +1,5 @@
+import {pageScheduleRows} from './page-schedules'
+import {postSchedules} from './post-schedules'
 import type { Page, Revision, Site } from './model'
 import { activePages, pageId } from './pages'
 import { addMonths, localAt, localInstant, normalizeTimeZone } from './schedule-time'
@@ -7,7 +9,7 @@ type ReminderPage = {id:string;title:string;slug:string}
 type ReminderRow = {id:string;revision:string;occurrence:string;occurrence_at:number;time_zone:string;data:string}
 type History = {id:string;revision:string;rule:string;occurrence:string;kind:string;timeZone:string;executedAt:number;detail?:string}
 export type ScheduleOverview = {
- lastTick:number|null;timeZone:string|null;activeBanners:{id:string;text:string}[];draftDue:string[];
+ posts:{failedAt:number|null;failureAction:'publication'|'expiry'|null;id:string;postId:string;sourceRevision:string;occurrence:string;timeZone:string;approved:boolean;executedAt:number|null;end:string|null;expiredAt:number|null}[];lastTick:number|null;timeZone:string|null;activeBanners:{id:string;text:string}[];draftDue:string[];
  reminders:{id:string;revision:string;occurrence:string;timeZone:string;pages:ReminderPage[]}[];history:History[]
 }
 export function normalizeAutomations(value: unknown): Automations | undefined {
@@ -67,7 +69,7 @@ function reviewOccurrences(config:Automations, now:number):Occurrence[] {
  }
 }
 /** Only this trusted-clock path executes schedules; drafts never enter it. */
-export async function runSchedules(db:D1Database, scheduledTime:number) {
+export async function runSchedules(db:D1Database, scheduledTime:number):Promise<{lastTick:number|null;revision:string|null;executed:number}> {
  const now = trustedTime(scheduledTime), lastTick = await clock(db)
  if (lastTick !== null && now < lastTick) return {lastTick,revision:null,executed:0}
  const live = await liveRevision(db), config = settings(live?.site), revision = live?.id ?? ''
@@ -131,9 +133,12 @@ export async function scheduleOverview(db:D1Database, draft?:Revision|null, supp
  ])
  const config = settings(live?.site), draftConfig = settings(draft?.site), draftDue:string[] = []
  if (draft && draft.id !== live?.id && draftConfig && lastTick !== null) {
-  for (const banner of draftConfig.banners) if (localInstant(banner.start,draftConfig.timeZone) <= lastTick) draftDue.push(`${banner.id}: ${banner.text}`)
-  if (draftConfig.review && localInstant(draftConfig.review.start,draftConfig.timeZone) <= lastTick) draftDue.push('Page review reminder')
+  for (const banner of draftConfig.banners) if ((!config || config.timeZone!==draftConfig.timeZone || !config.banners.some(approved=>JSON.stringify(approved)===JSON.stringify(banner))) && localInstant(banner.start,draftConfig.timeZone) <= lastTick) draftDue.push(`${banner.id}: ${banner.text}`)
+  if (draftConfig.review && (config?.timeZone!==draftConfig.timeZone || JSON.stringify(config?.review)!==JSON.stringify(draftConfig.review)) && localInstant(draftConfig.review.start,draftConfig.timeZone) <= lastTick) draftDue.push('Page review reminder')
  }
+ const posts=await postSchedules(db)
+ for(const entry of posts)if(entry.cancelled_at===null&&!entry.approved_by&&entry.executed_at===null&&lastTick!==null&&entry.occurrence_at<=lastTick)draftDue.push('Post: '+(draft?.site.posts?.find(post=>post.id===entry.post_id)?.content.title??entry.post_id))
+ for(const row of await pageScheduleRows(db))if(!row.actor&&lastTick!==null&&row.starts_at<=lastTick)draftDue.push('Page awaiting approval: '+(draft?.site.pages.find(page=>pageId(page)===row.page)?.title??row.page))
  const currentPages = new Map(pages.map(page => [page.id,page]))
  const reminders = reminderRows.results.map(row => ({id:row.id,revision:row.revision,occurrence:row.occurrence,timeZone:row.time_zone,
   pages:(JSON.parse(row.data).pages as ReminderPage[]).filter(page => {
@@ -141,6 +146,6 @@ export async function scheduleOverview(db:D1Database, draft?:Revision|null, supp
    return current && current.changedAt <= row.occurrence_at && (reviewed.get(page.id) ?? -1) < row.occurrence_at
   }).map(page => { const current = currentPages.get(page.id)!; return {id:current.id,title:current.title,slug:current.slug} }),
  })).filter(reminder => reminder.pages.length)
- return {lastTick,timeZone:config?.timeZone ?? draftConfig?.timeZone ?? null,activeBanners:banners,draftDue,reminders,
-  history:historyRows.results.map(row => ({id:row.id,revision:row.revision,rule:row.rule,occurrence:row.occurrence,kind:row.kind,timeZone:row.time_zone,executedAt:row.executed_at,...(row.kind === 'review-blocked' ? {detail:JSON.parse(row.data).error} : {})}))}
+ return {posts:posts.filter(entry=>entry.cancelled_at===null).map(entry=>({failedAt:entry.failure_at,failureAction:entry.failure_action,id:entry.id,postId:entry.post_id,sourceRevision:entry.source_revision,occurrence:entry.occurrence,timeZone:entry.time_zone,approved:!!entry.approved_by,executedAt:entry.executed_at,end:entry.end_occurrence,expiredAt:entry.expired_at})),lastTick,timeZone:config?.timeZone ?? draftConfig?.timeZone ?? null,activeBanners:banners,draftDue,reminders,
+  history:[...posts.filter(entry=>entry.failure_at!==null).map(entry=>({id:entry.id+':failure',revision:entry.source_revision,rule:'post:'+entry.post_id,occurrence:entry.failure_action==='expiry'?entry.end_occurrence!:entry.occurrence,kind:'post-'+entry.failure_action+'-failed',timeZone:entry.time_zone,executedAt:entry.failure_at!,detail:'The scheduled '+entry.failure_action+' was refused. Review the post and blog settings, then cancel or approve a new schedule. Unrelated schedules continue.'})),...posts.filter(entry=>entry.expired_at!==null).map(entry=>({id:entry.id+':expiry',revision:entry.source_revision,rule:'post:'+entry.post_id,occurrence:entry.end_occurrence!,kind:entry.expiry_revision?'post-unpublished':entry.executed_at===null?'post-window-missed':'post-expiry-preserved-newer-version',timeZone:entry.time_zone,executedAt:entry.expired_at!,detail:entry.expiry_revision?'Published revision '+entry.expiry_revision:entry.executed_at===null?'The publication window elapsed without execution.':'A newer post version was retained.'})),...posts.filter(entry=>entry.executed_at!==null).map(entry=>({id:entry.id,revision:entry.source_revision,rule:'post:'+entry.post_id,occurrence:entry.occurrence,kind:'post-published',timeZone:entry.time_zone,executedAt:entry.executed_at!,detail:'Published revision '+entry.result_revision})),...historyRows.results.map(row => ({id:row.id,revision:row.revision,rule:row.rule,occurrence:row.occurrence,kind:row.kind,timeZone:row.time_zone,executedAt:row.executed_at,...(row.kind === 'review-blocked' ? {detail:JSON.parse(row.data).error} : {})}))]}
 }

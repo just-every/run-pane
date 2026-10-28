@@ -3,9 +3,9 @@ import { operatorMail } from '../mail.server.mjs'
 import type { Dashboard,Revision } from './model'
 export const paneRoles=['editor','author','comment-moderator','inbox','reporting'] as const
 export type PaneRole=typeof paneRoles[number]
-export type Capability='collections:write'|'ai:write'|'posts:write'|'settings:write'|'pages:read'|'pages:write'|'inbox:read'|'inbox:write'|'reports:read'|'imports:read'|'imports:write'|'publish'|'erase'|'audit'|'team'|'tokens'
-export const ownerCapabilities:Capability[]=['collections:write','ai:write','posts:write','settings:write','pages:read','pages:write','inbox:read','inbox:write','reports:read','imports:read','imports:write','publish','erase','audit','team','tokens']
-const grants:Record<PaneRole,Capability[]>={editor:['collections:write','pages:read','pages:write','ai:write'],author:['posts:write','ai:write'],'comment-moderator':[],inbox:['inbox:read','inbox:write'],reporting:['reports:read']}
+export type Capability='comments:moderate'|'collections:write'|'ai:write'|'posts:write'|'settings:write'|'pages:read'|'pages:write'|'inbox:read'|'inbox:write'|'reports:read'|'imports:read'|'imports:write'|'publish'|'erase'|'audit'|'team'|'tokens'
+export const ownerCapabilities:Capability[]=['comments:moderate','collections:write','ai:write','posts:write','settings:write','pages:read','pages:write','inbox:read','inbox:write','reports:read','imports:read','imports:write','publish','erase','audit','team','tokens']
+const grants:Record<PaneRole,Capability[]>={editor:['collections:write','pages:read','pages:write','ai:write'],author:['posts:write','ai:write'],'comment-moderator':['comments:moderate'],inbox:['inbox:read','inbox:write'],reporting:['reports:read']}
 export async function capabilities(db:D1Database,operator:{id:string;role:string}):Promise<Capability[]>{
  if(operator.role==='owner')return [...ownerCapabilities]
  if(operator.role==='admin')return ownerCapabilities.filter(c=>!['publish','erase','audit','team','tokens'].includes(c))
@@ -44,15 +44,18 @@ export function permittedDashboard(data:Dashboard,caps:Capability[],actor:{id:st
 }
 export function routeCapability(path:string,method:string):Capability|undefined{
  if(path==='/app/collections'||path.startsWith('/app/collections/')||path==='/api/pane/collections'||path.startsWith('/api/pane/collections/'))return 'collections:write'
+ if(method==='GET'&&['/app/submissions/export','/api/pane/submissions/export'].includes(path))return 'inbox:read'
+ if(['/app/comments','/api/pane/comments'].includes(path)&&method==='GET')return 'comments:moderate'
+ if(path.startsWith('/app/comments/')||path.startsWith('/api/pane/comments/'))return path.endsWith('/reply')?'posts:write':path.endsWith('/settings')||path.endsWith('/close')?'settings:write':'comments:moderate'
  if(method==='GET'&&(path.startsWith('/app/files/')||path.startsWith('/api/pane/files/')))return 'inbox:read'
- if(method==='GET')return ({'/api/pane/ai/history':'ai:write','/api/pane/posts':'posts:write','/app/posts':'posts:write','/app/posts/canvas':'posts:write','/api/pane/pages':'pages:read','/api/pane/collections':'pages:read','/api/pane/activity':'audit','/api/pane/activity/export':'audit','/api/pane/roles':'team','/api/pane/tokens':'tokens','/app':'pages:read','/app/canvas':'pages:write','/app/inquiries':'inbox:read','/app/moves':'imports:read','/app/search':'pages:write'} as Record<string,Capability>)[path]
+ if(method==='GET')return ({'/api/pane/ai/history':'ai:write','/api/pane/posts':'posts:write','/app/posts':'posts:write','/app/posts/canvas':'posts:write','/api/pane/pages':'pages:read','/api/pane/collections':'pages:read','/api/pane/activity':'audit','/api/pane/activity/export':'audit','/api/pane/roles':'team','/api/pane/tokens':'tokens','/app':'pages:read','/app/templates':'settings:write','/app/canvas':'pages:write','/app/inquiries':'inbox:read','/app/moves':'imports:read','/app/search':'pages:write'} as Record<string,Capability>)[path]
  const action=path.replace(/^\/(api\/pane|app)\//,'')
  if((path.startsWith('/app/spam/')||path.startsWith('/api/pane/spam/'))&&['settings','rescue','purge','hold','release'].includes(action.slice(5)))return 'erase'
  if(path.startsWith('/api/pane/ai/')&&['propose','decide','undo'].includes(path.split('/').at(-1)!))return 'ai:write'
  if(['/api/pane/posts/save','/api/pane/posts/submit','/app/posts/save','/app/posts/submit'].includes(path))return 'posts:write'
- if(['/api/pane/posts/publish','/app/posts/publish'].includes(path))return 'publish'
+ if(['/api/pane/posts/publish','/app/posts/publish','/api/pane/posts/schedule','/app/posts/schedule'].includes(path))return 'publish'
  if(['/api/pane/blogs/save','/app/blogs/save','/api/pane/library/upload','/app/library/upload'].includes(path))return 'settings:write'
- return ({'component-create':'pages:write',forms:'settings:write',access:'settings:write','privacy/find':'erase','privacy/export':'erase','privacy/erase':'erase','policies/generate':'settings:write','ownership/transfer':'team','team/revoke':'team',prepare:'pages:write',autosave:'pages:write',publish:'publish','publication-revoke':'publish','page-request-review':'pages:write','page-publish':'publish',rollback:'publish',review:'pages:write','import/dry-run':'imports:write','import/apply':'imports:write','import/undo':'imports:write','import/crawl-challenge':'imports:write','import/crawl':'imports:write','messages/update':'inbox:write','messages/reply':'inbox:write','messages/erase':'erase','people/erase':'erase','tokens/create':'tokens','tokens/revoke':'tokens','roles/set':'team','roles/invite':'team'} as Record<string,Capability>)[action]
+ return ({'templates/start':'settings:write','component-create':'pages:write',forms:'settings:write',access:'settings:write','privacy/find':'erase','privacy/export':'erase','privacy/erase':'erase','policies/generate':'settings:write','ownership/transfer':'team','team/revoke':'team',prepare:'pages:write',autosave:'pages:write',publish:'publish','publication-revoke':'publish','page-request-review':'pages:write','page-schedule':'publish','page-schedule-approve':'publish','page-publish':'publish',rollback:'publish',review:'pages:write','import/dry-run':'imports:write','import/apply':'imports:write','import/undo':'imports:write','import/crawl-challenge':'imports:write','import/crawl':'imports:write','messages/update':'inbox:write','messages/reply':'inbox:write','messages/erase':'erase','people/erase':'erase','tokens/create':'tokens','tokens/revoke':'tokens','roles/set':'team','roles/invite':'team'} as Record<string,Capability>)[action]
 }
 
 /** Hold native invitation delivery until its Pane grants are saved. No alternate
@@ -71,7 +74,7 @@ export async function inviteRoles(env:Bindings,request:Request,actorId:string,in
   // Returning the real result preserves native failed-send link revocation.
   return sender.send(message)
  }})
- const returnTo=input.roles.includes('editor')?'/app':input.roles.includes('inbox')?'/app/inquiries':input.roles.includes('reporting')?'/app/sites':input.roles.includes('author')?'/app/posts':'/app'
+ const returnTo=input.roles.includes('comment-moderator')?'/app/comments':input.roles.includes('editor')?'/app':input.roles.includes('inbox')?'/app/inquiries':input.roles.includes('reporting')?'/app/sites':input.roles.includes('author')?'/app/posts':'/app'
  await native.invite(request,{email,displayName:input.displayName,role:'member',returnTo})
  if(!result)throw Error('Invitation was not prepared.')
  return {...result,invited:true}

@@ -54,6 +54,10 @@
 .pane .visit-total { margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--pn-line); font-weight: 700; }
 
 /* Inquiries: one stream of messages beside a small summary */
+.pane .submission-export { grid-column: 1 / -1; }
+.pane .submission-export :is(form, label, select, input) { min-width: 0; max-width: 100%; box-sizing: border-box; }
+.pane .submission-export form { grid-template-columns: minmax(0, 1fr); }
+.pane .submission-export select { width: 100%; }
 .pane .inquiries-body { display: grid; grid-template-columns: minmax(0, 760px) 260px; gap: 28px; align-items: start; }
 .pane .stream { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
 .pane .message { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; padding: 16px 18px; }
@@ -131,3 +135,18 @@
 .pane [aria-label="Site ownership"] button { max-width: 100%; white-space: normal; }
 .pane [data-collections-editor] input[type=date]:focus-within { outline: 2px solid var(--pn-action); outline-offset: 2px; }
 .pane [data-collections-editor] [hidden], .pane form[data-collection-editor] [hidden] { display: none !important; }
+
+/* Comment forms share the current editor fields and fit narrow viewports. */
+.pane .screen-posts :is(details, form, label), .pane .screen-comments :is(form, label), .pane #comments :is(form, label) { min-width: 0; }
+.pane [data-comment-settings] :is(input, select), .pane .screen-comments :is(input, textarea), .pane #comments :is(input, select, textarea) { min-width: 0; max-width: 100%; box-sizing: border-box; }
+.pane [data-comment-settings] select, .pane #comments select { width: 100%; }
+.rer-themed .pane .screen-comments { max-width: 1100px; margin: 0 auto; padding: 24px; overflow-wrap: anywhere; }
+.pane .screen-comments .card { margin-block: 12px; }
+.pane .comment-replies { margin-inline-start: 24px; border-inline-start: 2px solid var(--pn-line); padding-inline-start: 16px; }
+.pane #comments { overflow-wrap: anywhere; }
+@media (max-width: 700px) { .rer-themed .pane .screen-comments { padding: 16px; } }
+
+.pane .comment-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 16px; }
+
+.pane .comment-actions[hidden] { display: none; }
+.pane .schedule-status code { font-size: 1em; }
