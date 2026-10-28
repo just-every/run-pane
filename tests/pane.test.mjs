@@ -1257,13 +1257,14 @@ test('policy starters name actual services, remain editable drafts and require o
   const boot=await app.request('/auth/bootstrap',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})})
   const cookie=boot.headers.get('set-cookie').split(';')[0]
   const post=(path,body,who=cookie)=>app.request(path,{method:'POST',headers:{Origin:origin,Cookie:who,'Content-Type':'application/json'},body:JSON.stringify(body)})
-  const site={...fixture,analytics:{ga4:'G-SYNTH12345',vane:{origin:'https://vane.example.test',site:'synthetic-pane-1'}}}
+  const site={...fixture,styles:{body:'adobe:synthetic-pane-body',adobe:{project:'syn0001',families:['synthetic-pane-body'],authorized:true}},analytics:{ga4:'G-SYNTH12345',vane:{origin:'https://vane.example.test',site:'synthetic-pane-1'}}}
   const draft=await(await post('/api/pane/prepare',{site})).json();await post('/api/pane/publish',{revision:draft.id})
   assert.equal((await post('/api/pane/policies/generate',{base:draft.id},'')).status,401)
   const generated=await(await post('/api/pane/policies/generate',{base:draft.id})).json()
   assert.equal(generated.site.pages.length,site.pages.length+3)
   const privacy=generated.site.pages.find(p=>p.slug==='privacy-policy')
   for(const name of ['Google Analytics 4 (GA4)','Vane','Cloudflare Turnstile','name, email address and message','not legal advice','Rejected form content retention is off by default','30 days','legal hold','excluded from installation archives'])assert.ok(privacy.body.includes(name),name)
+  assert.ok(privacy.body.includes(site.styles.adobe.project),'The policy draft identifies the owner-connected Adobe project')
   assert.doesNotMatch(privacy.body,/HubSpot|Orbit|Meta Pixel|Mailchimp/,'Unconnected services are never invented')
   assert.equal((await app.request('/site/privacy-policy')).status,404)
   const edited=await(await post('/api/pane/prepare',{base:generated.id,site:{...generated.site,pages:generated.site.pages.map(p=>p.slug==='privacy-policy'?{...p,body:p.body+'\n\nContact our business at the studio.'}:p)}})).json()
