@@ -147,8 +147,7 @@ export async function mediaLibraryJourney({page,context,origin,state,call,folder
     assert.match(html,/A lemon celebration cake topped with flowers/);assert.ok(!html.includes(image.image.original),'Public pages never disclose retained original upload bytes')
    }
    await page.goto(origin+'/app/library');await selected(page,image.id)
-   await page.getByLabel('Caption',{exact:true}).fill('Draft caption awaiting owner approval')
-   await mutate(page,'update',()=>page.getByRole('button',{name:'Save details',exact:true}).click())
+   await mutate(page,'update',()=>page.getByLabel('Caption',{exact:true}).fill('Draft caption awaiting owner approval'))
    assert.deepEqual((await state()).live,approved,'Metadata saves cannot change the approved snapshot')
    assert.ok(!(await (await visitor.request.get(origin+'/site')).text()).includes('Draft caption awaiting owner approval'))
    // Live-only dependencies remain visible after placements are removed in a draft.
