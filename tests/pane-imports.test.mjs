@@ -23,6 +23,10 @@ before(async()=>{
  await auth.invite(new Request(origin+'/auth/invite',{method:'POST',headers:{Origin:origin,Host:new URL(origin).host,Cookie:owner}}),{email:'synthetic-pane-2@example.test',displayName:'synthetic-pane-2',role:'member'})
  const token=new URL(mail.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token')
  const session=await f.request('/auth/confirm',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({token})});assert.equal(session.status,303);member=session.headers.get('set-cookie').split(';')[0]
+ await auth.requestMagicLink(new Request(origin+'/auth/magic-link',{method:'POST',headers:{Origin:origin,Host:new URL(origin).host}}),{email:settings.OWNER_EMAIL,returnTo:'/app'})
+ const ownerToken=new URL(mail.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token')
+ const signed=await f.request('/auth/confirm',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({token:ownerToken})});assert.equal(signed.status,303);owner=signed.headers.get('set-cookie').split(';')[0]
+
 })
 after(async()=>{await f?.mf.dispose()})
 
@@ -288,7 +292,7 @@ test('reviewed Squarespace CSV retains all 200 dated enquiry forms and fields wi
  assert.equal(imported.length,200);assert.equal(new Set(imported.map(row=>row.id)).size,200)
  for(let n=1;n<=200;n++){
   const row=imported.find(row=>row.name==='synthetic-pane-'+n);assert.ok(row,'Enquiry '+n+' remains browsable')
-  assert.equal(row.created_at,new Date(Date.UTC(2023,0,n)).toISOString());assert.equal(row.status,'closed');assert.equal(row.acknowledgment_status,'not_requested')
+  assert.equal(row.message,'Historical enquiry '+n);assert.equal(row.email,'synthetic-pane-'+n+'@'+'example.test');assert.equal(row.created_at,new Date(Date.UTC(2023,0,n)).toISOString());assert.equal(row.status,'closed');assert.equal(row.acknowledgment_status,'not_requested')
   assert.equal(row.follow_up_at,null);assert.equal(row.reminded_at,null);assert.equal(row.escalated_at,null)
   const submission=JSON.parse(row.submission);assert.equal(submission.formName,n%2?'Consultation':'Workshop');assert.equal(submission.formId,row.form_id)
   assert.equal(submission.fields.find(field=>field.label==='Project').value,'Project '+n)
@@ -329,20 +333,44 @@ test('import history protects native edits, erases retained personal custody and
  const request=async(action,input,cookie=owner)=>f.request('/api/pane/'+action,{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify(input)})
  const person=async()=>ok(await request('privacy/export',{email}))
  const row=(await data()).messages.find(row=>row.email===email)
+ const credential=await ok(await request('tokens/create',{name:'synthetic-pane-503',scopes:['imports:write']}))
+ const delegated=()=>f.request('/api/pane/import/dry-run',{method:'POST',headers:{Origin:origin,Authorization:'Bearer '+credential.token,'Content-Type':'application/json'},body:JSON.stringify({source:csv})})
+ assert.equal((await delegated()).status,200)
+ await ok(await request('tokens/revoke',{id:credential.id}));assert.equal((await delegated()).status,401,'A revoked credential cannot read or replay imported personal data')
+
  await ok(await request('messages/update',{id:row.id,status:'replied'}));assert.equal((await call('undo',{job:job.id})).status,400,'Undo refuses to discard native handling')
  assert.equal((await data()).messages.find(message=>message.id===row.id).status,'replied')
  const found=await person();assert.equal(found.messages.length,1);assert.equal(JSON.parse(found.messages[0].submission).fields.find(field=>field.label==='Message').value,'Private source answer')
  const service=await createPortability({db:f.db,policy:productPolicy}),archive=await service.exports.create()
  while((await service.exports.advance(archive,{maxParts:100})).phase==='building'){}
  const records=[];for await(const record of readArchive(await service.exports.download(archive)))records.push(record)
+ const positive=await runtime()
+ try{
+  const restored=await createPortability({db:positive.db,policy:productPolicy}),restore=await restored.imports.create(records[0])
+  for(const part of records.filter(record=>record.kind==='part'))await restored.imports.uploadPart(restore,part.index,part)
+  assert.equal((await restored.imports.finalize(restore,{contentHash:records.at(-1).contentHash,archiveHash:records.at(-1).archiveHash})).phase,'complete')
+  let delivered
+  const auth=createOperatorAuth({db:positive.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async message=>{delivered=message;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+  await auth.requestMagicLink(new Request(origin+'/auth/magic-link',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin}}),{email:settings.OWNER_EMAIL})
+  const token=new URL(delivered.text.match(/http:\/\/[^\s]+/)[0]).searchParams.get('token')
+  const signed=await positive.request('/auth/confirm',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({token})});assert.equal(signed.status,303)
+  const dashboard=await ok(await positive.request('/api/pane',{headers:{Cookie:signed.headers.get('set-cookie').split(';')[0]}}))
+  const restoredPerson=dashboard.messages.find(message=>message.email===email)
+  assert.equal(restoredPerson.imported_from,'Squarespace');assert.equal(restoredPerson.created_at,'2023-01-01T00:00:00.000Z');assert.equal(JSON.parse(restoredPerson.submission).formName,'Consultation')
+ }finally{await positive.mf.dispose()}
  assert.equal((await request('privacy/erase',{email,confirm:'erase-person-data'},member)).status,403)
  await ok(await request('privacy/erase',{email,confirm:'erase-person-data'}));assert.equal((await person()).messages.length,0)
  assert.ok((await data()).messages.some(message=>message.name==='synthetic-pane-502'),'Unrelated imported enquiry remains')
  assert.equal((await call('dry-run',{job:job.id})).status,400,'Erasure withdraws the retained source CSV')
- for(const source of [csv,csv.replace('Private source answer','Changed source answer')])assert.equal((await call('dry-run',{source})).status,400,'An erased person cannot return through a changed capture')
+ for(const source of [csv,csv.replace('Private source answer','Changed source answer')]){assert.equal((await call('dry-run',{source})).status,400,'An erased person cannot return through a changed capture');assert.equal((await call('apply',{source,fingerprint:plan.fingerprint})).status,400)}
  const fresh=await service.exports.create();while((await service.exports.advance(fresh,{maxParts:100})).phase==='building'){}
  const after=[];for await(const record of readArchive(await service.exports.download(fresh)))after.push(record)
  assert.doesNotMatch(JSON.stringify(after),/Private source answer|synthetic-pane-501/)
- const restore=await service.imports.create(records[0]);for(const part of records.filter(record=>record.kind==='part'))await service.imports.uploadPart(restore,part.index,part)
- await assert.rejects(()=>service.imports.finalize(restore,{contentHash:records.at(-1).contentHash,archiveHash:records.at(-1).archiveHash}),/erasure_epoch|erased_row/)
+ await undoHistory(job.id);assert.equal((await data()).messages.some(row=>row.email===email||row.name==='synthetic-pane-502'),false,'Undo after erasure removes only the remaining record and never resurrects the person')
+ const destination=await runtime()
+ try{
+  const restored=await createPortability({db:destination.db,policy:productPolicy}),restore=await restored.imports.create(records[0])
+  for(const part of records.filter(record=>record.kind==='part'))await restored.imports.uploadPart(restore,part.index,part)
+  await assert.rejects(()=>restored.imports.finalize(restore,{contentHash:records.at(-1).contentHash,archiveHash:records.at(-1).archiveHash,laterJournal:after[0]}),/erasure_epoch|erased_row/)
+ }finally{await destination.mf.dispose()}
 })
