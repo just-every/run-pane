@@ -5,6 +5,7 @@ import {tmpdir} from 'node:os'
 import {execFile} from 'node:child_process'
 import {promisify} from 'node:util'
 import {chromium} from '@playwright/test'
+const axeSource=await readFile('node_modules/axe-core/axe.min.js','utf8')
 const fixture=await import('../tests/import-browser-runtime.mjs')
 const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
 const context=await browser.newContext(),page=await context.newPage(),origin=fixture.origin
@@ -129,5 +130,65 @@ try{
   }
   await post('import/undo',{job:applied.id})
  }
- console.log('Import journey passed at 1440/390: preflight, typed exceptions, fingerprinted unpublished apply, stored fidelity recheck, retained report/undo and hover/keyboard tooltips. Exact-candidate WXR inventory: 100 posts, 50 comments; two native pages applied. Offline provider captures and CSV exception fields reconciled separately; explicit DNS-verified Wix/Webflow/Framer/Durable captures, retained proof, preserved semantic page DOM, inert third-party content, readonly structured editor and tooltips pass at both widths.')
+
+ const historyCsv=(await readFile('fixtures/imports/squarespace-enquiries.csv','utf8')).replaceAll('{at}','@')
+ for(const width of [1440,390]){
+  await page.setViewportSize({width,height:1000});await page.goto(origin+'/app/moves')
+  const before=await data(),source=historyCsv+(width===390?'\n':'')
+  await page.getByLabel('Source JSON',{exact:true}).fill(source)
+  await Promise.all([page.waitForURL('**/app/import/dry-run'),page.getByRole('button',{name:'Check import',exact:true}).click()])
+  assert.equal((await data()).messages.length,before.messages.length,'History preflight writes no enquiries')
+  assert.match(await page.locator('#migration-report').locator('..').textContent(),/200 source · 200 planned/)
+  await tooltip(width,'history-preflight')
+  await Promise.all([page.waitForURL(url=>url.pathname==='/app/moves'),page.getByRole('button',{name:'Approve import',exact:true}).click()])
+  let current=await data(),job=current.imports.find(job=>!before.imports.some(previous=>previous.id===job.id))
+  assert.ok(job)
+  for(let step=0;job.state!=='completed'&&step<20;step++){
+   const continuation=page.locator('form[action="/app/import/apply"]').filter({has:page.locator(`input[name="job"][value="${job.id}"]`)})
+   await Promise.all([page.waitForURL(url=>url.pathname==='/app/moves'&&url.searchParams.has('notice')),continuation.getByRole('button',{name:'Continue import',exact:true}).click()])
+   current=await data();job=current.imports.find(row=>row.id===job.id)
+  }
+  assert.equal(job.state,'completed')
+  const imported=current.messages.filter(row=>row.imported_from==='Squarespace')
+  assert.equal(imported.length,200)
+  for(let n=1;n<=200;n++){
+   const row=imported.find(row=>row.name==='synthetic-pane-'+n);assert.ok(row)
+   assert.equal(row.created_at,new Date(Date.UTC(2023,0,n)).toISOString());assert.equal(row.acknowledgment_status,'not_requested');assert.equal(row.reminded_at,null)
+   const fields=JSON.parse(row.submission);assert.equal(fields.formName,n%2?'Consultation':'Workshop');assert.equal(fields.fields.find(field=>field.label==='Project').value,'Project '+n)
+  }
+  await page.goto(origin+'/app/inquiries')
+  assert.equal(await page.locator('.message').count(),before.messages.length+200)
+  const first=page.locator('.message').filter({has:page.getByRole('heading',{name:'synthetic-pane-1',exact:true})})
+  await first.scrollIntoViewIfNeeded();assert.match(await first.innerText(),/Imported · Squarespace/);assert.match(await first.innerText(),/2023-01-01T00:00:00.000Z/)
+  await first.getByText('Original form fields',{exact:true}).click()
+  assert.match(await first.innerText(),/Quoted "care", first\nsecond/);assert.match(await first.innerText(),/Consultation/)
+  await page.evaluate(axeSource)
+  assert.deepEqual(await first.evaluate(async node=>(await axe.run(node)).violations.map(issue=>({id:issue.id,nodes:issue.nodes.map(node=>node.target)}))),[],'Imported enquiry axe at '+width)
+  await page.screenshot({path:resolve(folder,`history-oldest-${width}.png`)})
+  const last=page.locator('.message').filter({has:page.getByRole('heading',{name:'synthetic-pane-200',exact:true})})
+  await last.scrollIntoViewIfNeeded();assert.match(await last.innerText(),/Workshop/);await page.screenshot({path:resolve(folder,`history-newest-${width}.png`)})
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,'Historical inbox overflow at '+width)
+  await page.goto(origin+'/app/moves')
+  let saved=await post('import/dry-run',{job:job.id});assert.equal(saved.report.counts.enquiry.applied,200);assert.equal(saved.report.ok,true)
+  const retainedForm=page.locator('form[action="/app/import/dry-run"]').filter({has:page.locator(`input[name="job"][value="${job.id}"]`)})
+  await Promise.all([page.waitForURL('**/app/import/dry-run'),retainedForm.getByRole('button',{name:'View report',exact:true}).click()])
+  assert.match(await page.locator('#migration-report').locator('..').innerText(),/200 applied/)
+  await page.screenshot({path:resolve(folder,`history-applied-${width}.png`)})
+  await page.getByRole('link',{name:'Back to Moves',exact:true}).click()
+
+  await page.getByLabel('Source JSON',{exact:true}).fill(source)
+  await Promise.all([page.waitForURL('**/app/import/dry-run'),page.getByRole('button',{name:'Check import',exact:true}).click()])
+  await Promise.all([page.waitForURL(url=>url.pathname==='/app/moves'),page.getByRole('button',{name:'Approve import',exact:true}).click()])
+  assert.equal((await data()).messages.length,before.messages.length+200,'Reapply does not duplicate enquiries')
+  const form=()=>page.locator('form[action="/app/import/undo"]').filter({has:page.locator(`input[name="job"][value="${job.id}"]`)})
+  for(let step=0;job.state!=='undone'&&step<20;step++){
+   await Promise.all([page.waitForURL(url=>url.pathname==='/app/moves'&&url.searchParams.has('notice')),form().getByRole('button',{name:'Undo import',exact:true}).click()])
+   job=(await data()).imports.find(row=>row.id===job.id)
+  }
+  assert.equal(job.state,'undone');assert.deepEqual((await data()).messages,before.messages)
+  saved=await post('import/dry-run',{job:job.id});assert.equal(saved.report.counts.enquiry.applied,0)
+  await page.goto(origin+'/app/inquiries');assert.equal(await page.locator('.message').count(),before.messages.length)
+  await capture('history-undone',width)
+ }
+ console.log('Import journey passed at 1440/390: 200 dated Squarespace enquiries, two original forms and every field, no import delivery, all rows browsable, duplicate apply, reconciliation and undo; preflight, typed exceptions, fingerprinted unpublished apply, stored fidelity recheck, retained report/undo and hover/keyboard tooltips. Exact-candidate WXR inventory: 100 posts, 50 comments; two native pages applied. Offline provider captures and CSV exception fields reconciled separately; explicit DNS-verified Wix/Webflow/Framer/Durable captures, retained proof, preserved semantic page DOM, inert third-party content, readonly structured editor and tooltips pass at both widths.')
 }finally{await context.close();await browser.close();await fixture.stop();await rm(scratch,{recursive:true,force:true})}
