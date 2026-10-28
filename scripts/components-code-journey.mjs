@@ -1,4 +1,5 @@
 import {galleryBrandJourney} from './gallery-brand-journey.mjs'
+import {mediaLibraryJourney} from './media-library-journey.mjs'
 import assert from 'node:assert/strict'
 import {readFile,mkdir,writeFile} from 'node:fs/promises'
 import {resolve,dirname,join} from 'node:path'
@@ -19,6 +20,7 @@ const initial=JSON.parse(await readFile('fixtures/static-site.json','utf8'))
 try{
  await fixture.bootstrap(context);await page.goto(origin+'/setup');await page.getByRole('checkbox').check();await Promise.all([page.waitForURL('**/app'),page.getByRole('button',{name:'Finish setup'}).click()])
  await page.addInitScript(()=>{addEventListener('message',event=>{if(event.data?.syntheticCode)window.syntheticCode={...event.data,origin:event.origin};if(event.data?.syntheticGoal){sessionStorage.setItem('syntheticGoal',JSON.stringify(event.data.syntheticGoal));sessionStorage.setItem('syntheticGoals',JSON.stringify([...(JSON.parse(sessionStorage.getItem('syntheticGoals')??'[]')),event.data.syntheticGoal]))}})})
+ await mediaLibraryJourney({page,context,origin,state,call,saved,folder})
  if(!process.env.PANE_CANVAS_ONLY)await galleryBrandJourney({page,context,origin,state,call,saved,folder})
  for(const width of process.env.PANE_GALLERY_ONLY?[]:[1440,390]){
   await page.setViewportSize({width,height:1000})

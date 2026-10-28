@@ -3,17 +3,20 @@ import {prepare,DraftConflict} from './content'
 import {isProtected} from './access'
 import {latestContent} from './posts'
 import type {Page,Site} from './model'
-export type LibraryFile={id:string;name:string;type:'application/pdf';size:number;data:string}
+import {mediaMetadata,type MediaMetadata} from './media-metadata'
+export type LibraryFile=MediaMetadata&{id:string;name:string;type:'application/pdf';size:number;data:string}
 export function normalizeLibraryFiles(value:unknown):LibraryFile[]|undefined {
  if(value===undefined)return undefined
  if(!Array.isArray(value)||value.length>20)throw Error('Provide at most twenty library files.')
  const ids=new Set<string>();let total=0
  return value.map(input=>{
-  if(!input||typeof input!=='object'||Object.keys(input).some(key=>!['id','name','type','size','data'].includes(key))||typeof input.id!=='string'||!/^[a-f0-9-]{36}$/.test(input.id)||ids.has(input.id)||typeof input.name!=='string'||!input.name.trim()||input.name.length>120||input.type!=='application/pdf'||typeof input.data!=='string'||input.data.length>700000||!/^[A-Za-z0-9+/]+={0,2}$/.test(input.data))throw Error('Choose a bounded PDF library file.')
+  if(!input||typeof input!=='object'||Object.keys(input).some(key=>!['id','name','type','size','data','folder','caption'].includes(key))||typeof input.id!=='string'||!/^[a-f0-9-]{36}$/.test(input.id)||ids.has(input.id)||typeof input.name!=='string'||!input.name.trim()||input.name.length>120||input.type!=='application/pdf'||typeof input.data!=='string'||input.data.length>700000||!/^[A-Za-z0-9+/]+={0,2}$/.test(input.data))throw Error('Choose a bounded PDF library file.')
   let bytes:Uint8Array;try{bytes=Uint8Array.from(atob(input.data),c=>c.charCodeAt(0))}catch{throw Error('Invalid PDF encoding.')}
   total+=bytes.length
   if(bytes.length>512*1024||total>1024*1024||input.size!==bytes.length||new TextDecoder().decode(bytes.slice(0,5))!=='%PDF-')throw Error('Library PDFs must have a PDF signature and fit the library storage limit.')
-  ids.add(input.id);return {id:input.id,name:input.name.normalize('NFC').trim(),type:'application/pdf',size:bytes.length,data:input.data}
+  let binary='';for(const byte of bytes)binary+=String.fromCharCode(byte)
+  if(btoa(binary)!==input.data)throw Error('Use canonical PDF encoding.')
+  ids.add(input.id);return {id:input.id,name:input.name.normalize('NFC').trim(),...mediaMetadata(input),type:'application/pdf',size:bytes.length,data:input.data}
  })
 }
 export function postFiles(site:Site,page:Page):LibraryFile[]{
