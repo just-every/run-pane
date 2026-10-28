@@ -121,3 +121,9 @@
 
 
 .rer-themed .pane .public-site .public-menu-cta{background:var(--pn-fuchsia-deep)}
+.rer-themed .pane .public-site .button[data-button-style="secondary"]{background:transparent;color:var(--pn-fuchsia-deep);border:2px solid var(--pn-fuchsia-deep)}
+.rer-themed .pane .public-site .button[data-button-style="tertiary"]{background:transparent;color:var(--pn-fuchsia-deep);border-color:transparent;text-decoration:underline}
+
+.pane [data-block-type="audio"] audio:focus-visible{outline:3px solid var(--pn-fuchsia-deep);outline-offset:3px}
+.rer-themed .pane .public-site .public-content .contact-form :is(input:not([type=hidden]),select,textarea):focus-visible{outline:3px solid var(--pn-fuchsia-deep);outline-offset:3px}
+.rer-themed .pane .public-site [data-block] :is([data-scroll-toggle],[data-code-allow]){background:var(--pn-fuchsia-deep);border-color:var(--pn-fuchsia-deep)}

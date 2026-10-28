@@ -1,3 +1,4 @@
+import {catalogProjects,catalogEvents,catalogHandoffs} from './catalog-fixture.mjs'
 import {createHash,createHmac} from 'node:crypto'
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
@@ -2270,4 +2271,85 @@ test('owner style drafts retain self-hosted fonts through preview, conflict, pub
  for(const expected of [initial,draft])assert.deepEqual((await data()).revisions.find(row=>row.id===expected.id),expected,'Style edits and approvals leave complete prior snapshots immutable')
  const activityRows=await(await f.request('/api/pane/activity',{headers:{Cookie:owner}})).json();assert.ok(activityRows.some(row=>row.subject==='revision:'+draft.id&&row.action==='edit'),'The style draft has transactional activity')
  }finally{await f.mf.dispose()}
+})
+
+test('native canvas publishes typed destinations and stable section anchors while listing deleted targets',async()=>{
+ const app=await runtime();let cookie=''
+ const call=(path,body)=>app.request(path,{method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)})
+ const ok=async response=>{assert.equal(response.status,200,await response.clone().text());return response.json()}
+ try{
+  cookie=(await call('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic owner'})).headers.get('set-cookie').split(';')[0]
+  assert.equal((await app.request('/setup',{method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:'confirm=yes'})).status,303)
+  const site=structuredClone(fixture),home=site.pages.find(page=>page.slug==='home'),target=site.pages.find(page=>page.slug==='about'),fileId='00000000-0000-4000-8000-000000000014',pdf=Buffer.from('%PDF-1.4\nsynthetic-pane-14\n%%EOF')
+  site.libraryFiles=[{id:fileId,name:'guide.pdf',type:'application/pdf',size:pdf.length,data:pdf.toString('base64')}]
+  target.id='synthetic-pane-target';target.sections=[{id:'synthetic-pane-section',anchor:'visit-us',blocks:[{id:'target-text',kind:'text',text:target.body}]}]
+  const destinations=[['page','page:synthetic-pane-target','/site/about'],['anchor','anchor:synthetic-pane-target:synthetic-pane-section','/site/about#visit-us'],['external','https://example.test/visit','https://example.test/visit'],['file','file:'+fileId,'/site/files/'+fileId],['email','mailto:hello@example.test?subject=Visit%20the%20studio','mailto:hello@example.test?subject=Visit%20the%20studio'],['telephone','tel:+13125550123','tel:+13125550123'],['message','sms:+13125550123?body=Hello%20there','sms:+13125550123?body=Hello%20there']]
+  home.body='page anchor external file email telephone message\n\npage button\n\nanchor button\n\nexternal button\n\nfile button\n\nemail button\n\ntelephone button\n\nmessage button\n\nVisiting\nOpen weekdays.'
+  home.sections=[{id:'catalog-section',blocks:[{id:'inline-destinations',kind:'text',text:'page anchor external file email telephone message',content:destinations.flatMap(([label,href],index)=>[...(index?[{tag:'text',text:' '}]:[]),{tag:'a',href,newTab:label==='external',children:[{tag:'text',text:label}]}])},...destinations.map(([label,href],index)=>({id:label+'-button',kind:'button',text:label+' button',link:{href,newTab:label==='external'},row:index+2})),{id:'divider',kind:'line',text:'',row:9},{id:'space',kind:'spacer',text:'',size:48,row:10},{id:'accordion',kind:'accordion',summary:'Visiting',text:'Open weekdays.',row:11}]}]
+  let draft=await ok(await call('/api/pane/prepare',{site,base:''}));await ok(await call('/api/pane/publish',{revision:draft.id}))
+  const read=async()=> (await app.request('/site')).text()
+  let html=await read()
+  for(const [label,,href] of destinations){assert.ok(html.includes(' href="'+href.replaceAll('&','&amp;')+'"'),label+' resolves its exact destination');assert.match(html,new RegExp('>'+label+' button</a>'))}
+  assert.equal((html.match(/target="_blank" rel="noopener noreferrer"/g)??[]).length,2,'Only the requested external link and button open a new tab')
+  for(const kind of ['text','button','line','spacer','accordion'])assert.ok(html.includes('data-block-type="'+kind+'"'),kind+' has a discoverable block type')
+  assert.match(html,/<summary>Visiting<\/summary><p>Open weekdays\.<\/p>/)
+  const download=await app.request('/site/files/'+fileId);assert.equal(download.status,200);assert.deepEqual(Buffer.from(await download.arrayBuffer()),pdf)
+  assert.match(await (await app.request('/site/about')).text(),/id="visit-us"/)
+  const renamed=structuredClone(draft.site),renamedTarget=renamed.pages.find(page=>page.id==='synthetic-pane-target');renamedTarget.slug='our-studio';renamedTarget.sections[0].anchor='find-us'
+  draft=await ok(await call('/api/pane/prepare',{site:renamed,base:draft.id}));await ok(await call('/api/pane/publish',{revision:draft.id}));html=await read()
+  assert.equal((html.match(/href="\/site\/our-studio#find-us"/g)??[]).length,2,'Both anchor references follow page and anchor renames')
+  assert.equal((html.match(/href="\/site\/our-studio"/g)??[]).length>=2,true,'Page links follow the stable page identity')
+  assert.match(await (await app.request('/site/our-studio')).text(),/id="find-us"/)
+  for(const mutate of [value=>value.pages.find(page=>page.id==='synthetic-pane-target').sections[0].anchor='bad anchor',value=>value.pages[0].sections[0].blocks[0].content[0].href='javascript:alert(1)',value=>value.pages[0].sections[0].blocks.find(block=>block.kind==='spacer').size=-1]){const invalid=structuredClone(draft.site);mutate(invalid);assert.equal((await call('/api/pane/prepare',{site:invalid,base:draft.id})).status,400,'Unsafe catalog or destination data is refused')}
+  const catalog=structuredClone(draft.site),catalogHome=catalog.pages.find(page=>page.slug==='home')
+  catalogHome.sections[0].blocks.push({id:'visits-chart',kind:'chart',text:'Weekly visits',chart:{type:'bar',rows:[['Monday',12],['Tuesday',-7]]},row:12},{id:'marker',kind:'shape',text:'Workshop marker',shape:{form:'triangle',color:'#123456',outlined:true},link:{href:'page:synthetic-pane-target',newTab:false},row:13},{id:'scrolling',kind:'scrolling-text',text:'Visit the workshop',row:14},{id:'profiles',kind:'social-links',text:'Social links',row:15})
+  catalogHome.body+='\n\nWeekly visits\nMonday 12\nTuesday -7\n\nWorkshop marker\n\nVisit the workshop\n\nSocial links';catalog.socials={facebook:'https://www.facebook.com/syntheticpaneworkshop'}
+  draft=await ok(await call('/api/pane/prepare',{site:catalog,base:draft.id}));await ok(await call('/api/pane/publish',{revision:draft.id}));html=await read()
+  assert.match(html,/<th scope="row">Monday<\/th><td>12<\/td>/);assert.match(html,/<th scope="row">Tuesday<\/th><td>-7<\/td>/);assert.match(html,/fill="none" stroke="#123456"/);assert.match(html,/Pause scrolling/);assert.match(html,/aria-label="Facebook"/)
+  for(const mutate of [value=>value.pages[0].sections[0].blocks.find(block=>block.chart).chart.rows[0][1]=null,value=>value.pages[0].sections[0].blocks.find(block=>block.chart).chart.type='unknown',value=>value.pages[0].sections[0].blocks.find(block=>block.shape).shape.color='url(bad)']){const invalid=structuredClone(draft.site);mutate(invalid);assert.equal((await call('/api/pane/prepare',{site:invalid,base:draft.id})).status,400)}
+  // Audio is revision-owned library content; upload and delivery use native doors.
+  const audioFiles=[]
+  for(const [name,type] of [['mp3','audio/mpeg'],['m4a','audio/mp4']]){
+   const bytes=await readFile('./fixtures/media/synthetic-pane-14.'+name),body=new FormData();body.set('base',draft.id);body.set('file',new File([bytes],'synthetic-pane-14.'+name,{type}))
+   draft=await ok(await app.request('/api/pane/library/upload',{method:'POST',headers:{Cookie:cookie,Origin:origin},body}));audioFiles.push(draft.site.libraryFiles.at(-1))
+   assert.equal((await app.request('/site/files/'+audioFiles.at(-1).id)).status,404,'Unpublished audio bytes stay private')
+  }
+  const audioSite=structuredClone(draft.site);audioSite.collections=[structuredClone(catalogProjects),structuredClone(catalogEvents)];const blocks=audioSite.pages[0].sections[0].blocks
+  for(const [index,file] of audioFiles.entries())blocks.push({id:'audio-'+index,kind:'audio',text:'Workshop audio '+index,audio:{file:file.id,download:index===0},row:16+index})
+  for(const [index,url] of ['https://open.spotify.com/embed/track/syntheticpane14','https://w.soundcloud.com/player/?url=https%3A%2F%2Fapi.soundcloud.com%2Ftracks%2F14'].entries())blocks.push({id:'provider-audio-'+index,kind:'audio',text:'Provider audio '+index,audio:{download:false},embed:{title:'Provider audio '+index,url},row:18+index})
+  for(const [index,[kind,title,url]] of [['map','Workshop map','https://www.google.com/maps/embed?pb=synthetic-pane-14'],['social-post','Workshop social post','https://www.instagram.com/p/syntheticpane14/embed/']].entries())blocks.push({id:'provider-block-'+index,kind,text:title,embed:{title,url},row:23+index})
+  for(const [index,kind] of ['summary','collection-list'].entries())blocks.push({id:'projects-'+kind,kind,text:'Featured projects '+index,listing:{collection:'synthetic-pane-projects',layout:index?'list':'grid',limit:index?10:2,sort:index?'title':'rank',descending:index===1,...(index?{}:{filter:{field:'featured',value:'yes'}})},row:26+index})
+  blocks.push({id:'site-search',kind:'search',text:'Search this site',row:25})
+  for(const [index,[kind,provider,url,label]] of catalogHandoffs.entries())blocks.push({id:'handoff-'+index,kind,text:label,connection:{provider,url,label,description:kind==='product'?'A hardwood repair kit.':'',...(kind==='product'?{cents:4500}:{})},row:30+index})
+  blocks.push({id:'workshop-calendar',kind:'calendar',text:'Workshop dates',calendar:{collection:'synthetic-pane-events',start:'start',end:'end',month:'2026-11',view:'month'},row:36})
+  for(const [index,buttonStyle] of ['primary','secondary','tertiary'].entries())blocks.push({id:'variant-'+index,kind:'button',buttonStyle,text:buttonStyle+' action',link:{href:'page:synthetic-pane-target',newTab:false},row:20+index})
+  audioSite.pages[0].body+='\n\nWorkshop audio 0\n\nWorkshop audio 1\n\nProvider audio 0\n\nProvider audio 1\n\nprimary action\n\nsecondary action\n\ntertiary action'
+  audioSite.forms=[{id:'synthetic-pane-form',name:'Workshop enquiry',submit:'Send enquiry',confirmation:'Thank you.',fields:[{key:'name',type:'text',label:'Your name',required:true,help:'',placeholder:''},{key:'email',type:'email',label:'Email',required:true,help:'',placeholder:''},{key:'message',type:'text',label:'Message',required:true,help:'',placeholder:''}]}];audioSite.pages[0].formId='synthetic-pane-form'
+  blocks.push({id:'placed-form',kind:'form',text:'Contact the workshop',row:28},{id:'copied-form',kind:'form',text:'Contact the workshop',row:29})
+  audioSite.pages[0].body=audioSite.pages[0].sections[0].blocks.map(block=>[block.summary,block.text,block.chart?.rows.map(([label,value])=>label+' '+value).join('\n'),block.caption,block.attribution].filter(Boolean).join('\n')).filter(Boolean).join('\n\n')
+  draft=await ok(await call('/api/pane/prepare',{site:audioSite,base:draft.id}))
+  await ok(await call('/api/pane/publish',{revision:draft.id}));html=await read()
+  for(const [index,file] of audioFiles.entries()){
+   const response=await app.request('/site/files/'+file.id);assert.equal(response.headers.get('content-type'),file.type);assert.deepEqual(Buffer.from(await response.arrayBuffer()),Buffer.from(file.data,'base64'))
+   assert.ok(html.includes('src="/site/files/'+file.id+'"'),'Native player resolves its exact library bytes')
+   assert.equal(html.includes('href="/site/files/'+file.id+'" download'),index===0,'Download follows the explicit setting')
+  }
+  assert.deepEqual([...html.match(/<section data-block="projects-summary"[\s\S]*?<\/section>/)[0].matchAll(/<a href="([^"]+)">([^<]+)<\/a>/g)].map(match=>[match[1],match[2]]),[['/site/projects/shelves','Library shelves'],['/site/projects/porch','Porch repairs']],'The grid summary applies its filter, numeric order and exact limit')
+  assert.deepEqual([...html.match(/<section data-block="projects-collection-list"[\s\S]*?<\/section>/)[0].matchAll(/<a href="([^"]+)">([^<]+)<\/a>/g)].map(match=>match[2]),['Workshop table','Porch repairs','Library shelves','Back room cabinet'],'The full list retains the explicit descending item set')
+  assert.match(html,/id="placed-form-field-name"/);assert.match(html,/for="copied-form-field-name"/);assert.equal((html.match(/data-typed-form/g)??[]).length,2,'Each duplicated native form receives independent control identities')
+  const invalidAnswer=new FormData();invalidAnswer.set('idempotency',crypto.randomUUID());invalidAnswer.set('name','field-Visitor');invalidAnswer.set('email','invalid');invalidAnswer.set('message','Please repair a field-table.')
+  const invalidResponse=await app.request('/site',{method:'POST',headers:{Origin:origin},body:invalidAnswer});assert.equal(invalidResponse.status,400);const invalidHtml=await invalidResponse.text();assert.ok(invalidHtml.includes('value="field-Visitor"'),'Placed form errors retain the submitted value without rewriting content')
+  for(const [kind,provider,url,label] of catalogHandoffs){assert.ok(html.includes('data-block-type="'+kind+'"'));assert.ok(html.includes('href="'+url.replaceAll('&','&amp;')+'" data-provider="'+provider+'">'+label+'</a>'),'The exact chosen provider owns the handoff')}
+  assert.ok(html.includes('$45.00'));assert.ok(html.includes('A hardwood repair kit.'));assert.ok(html.includes('data-block-type="calendar"'));assert.ok(html.includes('<time datetime="2026-11-08">8</time><ul><li><a href="/site/workshops/woodworking">Woodworking weekend</a>'),'A multi-day collection item occupies the second day');assert.equal((await app.request('/site/workshops/open-studio')).status,200)
+  for(const mutate of [value=>value.pages[0].sections[0].blocks.find(block=>block.connection?.provider==='stripe').connection.url='https://example.test/payment',value=>value.pages[0].sections[0].blocks.find(block=>block.kind==='product').connection.cents=-1,value=>value.pages[0].sections[0].blocks.find(block=>block.calendar).calendar.start='rank',value=>value.collections.find(item=>item.id==='synthetic-pane-events').items[0].values.end='2026-10-31']){const invalid=structuredClone(draft.site);mutate(invalid);assert.equal((await call('/api/pane/prepare',{site:invalid,base:draft.id})).status,400,'Invalid provider and calendar data never replaces the draft')}
+  for(const kind of ['map','social-post','search'])assert.ok(html.includes('data-block-type="'+kind+'"'),kind+' renders on the published page')
+  assert.equal((html.match(/<audio controls preload="none"/g)??[]).length,2,'Both uploaded formats have native players without automatic download')
+  for(const variant of ['primary','secondary','tertiary'])assert.ok(html.includes('data-button-style="'+variant+'"'),variant+' is retained in published output')
+  assert.match(html,/data-url="https:\/\/open.spotify.com\/embed\/track\/syntheticpane14"/);assert.match(html,/data-url="https:\/\/w.soundcloud.com/);assert.ok(!html.includes('<iframe'),'Provider audio stays off until consent')
+  for(const mutate of [value=>value.pages[0].sections[0].blocks.find(block=>block.audio?.file).audio.file=fileId,value=>value.pages[0].sections[0].blocks.find(block=>block.audio?.file).audio.file='00000000-0000-4000-8000-000000000099',value=>value.libraryFiles.find(file=>file.type==='audio/mpeg').data=pdf.toString('base64'),value=>value.pages[0].sections[0].blocks.find(block=>block.buttonStyle).buttonStyle='arbitrary']){const invalid=structuredClone(draft.site);mutate(invalid);assert.equal((await call('/api/pane/prepare',{site:invalid,base:draft.id})).status,400,'Invalid audio and button settings are refused')}
+  const deleted=structuredClone(draft.site);deleted.pages.find(page=>page.id==='synthetic-pane-target').deleted=true
+  draft=await ok(await call('/api/pane/prepare',{site:deleted,base:draft.id}))
+  for(const path of ['/app?page=home','/app/canvas?page=home']){const response=await app.request(path,{headers:{Cookie:cookie}}),screen=await response.text();assert.equal(response.status,200);assert.ok(screen.includes('Broken links:'));assert.ok(screen.includes('anchor:synthetic-pane-target:synthetic-pane-section'));assert.ok(screen.includes('page:synthetic-pane-target'))}
+  assert.match(await read(),/href="\/site\/our-studio#find-us"/,'Unpublished target deletion does not change the live revision')
+ }finally{await app.mf.dispose()}
 })

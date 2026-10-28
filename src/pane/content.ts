@@ -1,3 +1,4 @@
+import {calendarIntegrity} from './block-calendar'
 import {normalizeStyles,stylesFromForm} from './site-styles'
 import {templateById} from './templates'
 import {collectionStarters} from './collection-starters'
@@ -49,6 +50,7 @@ export function normalizeSite(value: unknown): Site {
   const sections = normalizeSections(page.sections)
   if (sections && (page.importedHtml !== undefined || page.layout !== undefined)) throw Error('Sections cannot be combined with an imported body or starter layout.')
   if (sections && sectionText(sections) !== page.body.normalize('NFC').trim()) throw Error('Section text must match the page body in reading order.')
+  if(sections?.some(section=>section.blocks.some(block=>block.kind==='form'))&&!page.formId)throw Error('Choose this page’s native form in Pages settings before placing it on the grid.')
   const slug = cleanSlug(page.slug)
   if (page.layout !== undefined) starterPage(page.layout)
   const importedHtml=page.importedHtml===undefined?undefined:importedBody(page.importedHtml,{retainMedia:true})
@@ -63,9 +65,11 @@ export function normalizeSite(value: unknown): Site {
  const site: Site = {...(input.styles?{styles:normalizeStyles(input.styles)}:{}),...(input.template?{template:templateById(input.template).id}:{}),...(input.brand?{brand:normalizeBrand(input.brand)}:{}),...(input.media?{media:normalizeMedia(input.media)}:{}),...(normalizeCode(input.customCode)?{customCode:normalizeCode(input.customCode)}:{}),...(components ? {components} : {}),...(input.forms ? {forms:normalizeForms(input.forms)} : {}),...(input.access ? {access:normalizeAccess(input.access)} : {}),...(input.promotion !== undefined ? {promotion:normalizePromotion(input.promotion,pages,input.automations?.timeZone??'America/Chicago')} : {}), ...(input.locale ? {locale:normalizeLocale(input.locale)} : {}), ...normalizePageOrganization(input,pages), ...(input.automations !== undefined ? {automations: normalizeAutomations(input.automations)} : {}), ...(input.navigation ? {navigation: normalizeNavigation(input.navigation,pages)} : {}), ...(input.socials ? {socials: normalizeSocials(input.socials)} : {}), ...(analyticsCampaigns.length ? {analyticsCampaigns} : {}), ...(analytics ? {analytics} : {}), ...(goals.length ? {goals} : {}), ...(responseDays ? {responseDays} : {}), name: input.name.normalize('NFC').trim(), description: input.description.normalize('NFC').trim(), pages, ...(input.robots !== undefined ? {robots: normalizeRobots(input.robots)} : {}), ...(input.redirects !== undefined ? {redirects: normalizeRedirects(input.redirects)} : {})}
  Object.assign(site,normalizeLifecycle(input))
  if(input.libraryFiles!==undefined)site.libraryFiles=normalizeLibraryFiles(input.libraryFiles)
- Object.assign(site,normalizePostCollections(input,(page,media=site.media)=>normalizeSite({name:site.name,description:site.description,media,pages:[page]}).pages[0]))
+ Object.assign(site,normalizePostCollections(input,(page,media=site.media)=>normalizeSite({name:site.name,description:site.description,libraryFiles:site.libraryFiles,media,pages:[page]}).pages[0]))
  if(input.collections!==undefined)site.collections=normalizeCollections(input.collections)
  else if(input.template||pages.some(page=>page.layout))site.collections=normalizeCollections(collectionStarters(undefined,(site.blogs??[]).map(blog=>blog.prefix)))
+ for(const page of site.pages)for(const section of page.sections??[])for(const block of section.blocks)if(block.audio?.file&&!site.libraryFiles?.some(file=>file.id===block.audio?.file&&file.type.startsWith('audio/')))throw Error('Choose an existing MP3 or M4A library file.')
+ calendarIntegrity(site)
  collectionIntegrity(site)
  const routes = new Set(activePages(site).map(page => pagePath(site,page.slug)))
  for (const redirect of site.redirects ?? []) if (routes.has(redirect.from) || ['/site/search','/site/visit'].includes(redirect.from)) throw Error(`Redirect ${redirect.from} would replace an existing page or service.`)

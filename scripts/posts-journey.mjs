@@ -4,7 +4,7 @@ import {resolve} from 'node:path'
 import {chromium} from '@playwright/test'
 process.env.PANE_BROWSER_NOW='2026-10-15T16:00:00Z'
 const fixture=await import('../tests/browser-runtime.mjs'),{origin}=fixture
-const browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH}:{}),args:['--no-sandbox','--use-mock-keychain','--password-store=basic']})
+const browser=await chromium.launch({headless:true,executablePath:process.env.PANE_CHROMIUM_PATH??process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,args:['--no-sandbox','--use-mock-keychain','--password-store=basic']})
 const context=await browser.newContext({acceptDownloads:true}),authorContext=await browser.newContext({acceptDownloads:true}),visitor=await browser.newContext()
 const page=await context.newPage(),author=await authorContext.newPage(),live=await visitor.newPage(),folder=resolve(process.env.PANE_SCREENSHOTS??'./test-results/posts')
 await mkdir(folder,{recursive:true});await visitor.route('**/*',route=>new URL(route.request().url()).origin===origin?route.continue():route.abort());for(const tab of [page,author,live])tab.setDefaultTimeout(20000)
@@ -35,7 +35,7 @@ async function editBody(post,linked,file,width){
  await author.getByRole('button',{name:'Add quote',exact:true}).click()
  await author.locator('[data-quote-block] [contenteditable=true]').fill('A celebration starts with something made with care.')
  await author.getByLabel('Attribution',{exact:true}).fill('Riverbend baking team');await saved()
- await author.getByLabel('Video title',{exact:true}).fill('How to decorate a cake');await author.getByLabel('YouTube embed URL',{exact:true}).fill('https://www.youtube-nocookie.com/embed/syntheticPane1');await author.getByRole('button',{name:'Add video',exact:true}).click();await saved()
+ await author.getByLabel('Embed title',{exact:true}).fill('How to decorate a cake');await author.getByLabel('Provider embed URL',{exact:true}).fill('https://www.youtube-nocookie.com/embed/syntheticPane1');await author.getByRole('button',{name:'Add embed',exact:true}).click();await saved()
  await author.getByLabel('Button label',{exact:true}).fill('Meet the bakers');await author.getByLabel('Page, post or file',{exact:true}).selectOption('page:about');await author.getByRole('button',{name:'Add button',exact:true}).click();await saved()
  // Five durable saves through the shared section editor support undo, redo and reopen.
  const title=author.getByLabel('Post title',{exact:true})

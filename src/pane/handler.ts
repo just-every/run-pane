@@ -153,7 +153,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    if(url.searchParams.has('pane-font'))return fontResponse(site.styles?.fonts,url.searchParams.get('pane-font'),request.method)
    if(url.searchParams.has('pane-style-css')){
     const page=site.pages.find(page=>page.slug===slug)
-    return new Response(siteStyleCss(site.styles,url.pathname)+(page?.sections?layoutCss(page.sections):''),{headers:{'content-type':'text/css; charset=utf-8','cache-control':'private, no-store','x-content-type-options':'nosniff'}})
+    return new Response(siteStyleCss(site.styles,url.pathname)+(page?.sections?layoutCss(page.sections,site.styles):''),{headers:{'content-type':'text/css; charset=utf-8','cache-control':'private, no-store','x-content-type-options':'nosniff'}})
    }
    return document('Preview',publicPage(site,slug,'preview',false,false,undefined,undefined,url.pathname),'site')
   }
@@ -324,7 +324,7 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
     const latest=await env.DB.prepare('SELECT * FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1').first()
     const current=latest?revision(latest).site:null
     if(latest&&input.base!==latest.id)throw new DraftConflict(latest?revision(latest):null)
-    for(const key of ['posts','blogs','libraryFiles','brand','promotion','locale','automations','goals','analyticsCampaigns','analytics','responseDays','robots'] as const)if(JSON.stringify(proposed[key]??null)!==JSON.stringify(current?.[key]??null))return json({error:'Only owners and admins can change business settings.'},403)
+    for(const key of ['styles','posts','blogs','libraryFiles','brand','promotion','locale','automations','goals','analyticsCampaigns','analytics','responseDays','robots'] as const)if(JSON.stringify(proposed[key]??null)!==JSON.stringify(current?.[key]??null))return json({error:'Only owners and admins can change business settings.'},403)
    }
    result=await prepare(env.DB,actor.id,proposed, action==='autosave' ? String(input.base??'') : typeof input.base==='string' ? input.base : undefined)
    if(action==='autosave')return json(visibleRevision(result as import('./model').Revision,caps,actor))

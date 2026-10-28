@@ -14,7 +14,7 @@ function assetKind(value:unknown):MediaKind {
 
 export function libraryAssets(site:Site,query:URLSearchParams,live?:Site){
  const q=(query.get('q')??'').normalize('NFC').toLocaleLowerCase(),kind=query.get('type'),folder=query.get('folder')
- return [...(site.media??[]).map(item=>({...item,kind:'image' as const})),...(site.libraryFiles??[]).map(item=>({...item,kind:'pdf' as const}))].filter(item=>(!kind||kind===item.kind)&&(!folder||(folder==='__unfiled'?!item.folder:folder===item.folder))&&(!q||[item.name,item.folder,item.caption,'image' in item?item.image.alt:''].some(value=>value?.toLocaleLowerCase().includes(q)))).map(item=>({...item,uses:distinctUses([...mediaUses(site,item.kind,item.id),...(live?mediaUses(live,item.kind,item.id):[])])}))
+ return [...(site.media??[]).map(item=>({...item,kind:'image' as const})),...(site.libraryFiles??[]).filter(item=>item.type==='application/pdf').map(item=>({...item,kind:'pdf' as const}))].filter(item=>(!kind||kind===item.kind)&&(!folder||(folder==='__unfiled'?!item.folder:folder===item.folder))&&(!q||[item.name,item.folder,item.caption,'image' in item?item.image.alt:''].some(value=>value?.toLocaleLowerCase().includes(q)))).map(item=>({...item,uses:distinctUses([...mediaUses(site,item.kind,item.id),...(live?mediaUses(live,item.kind,item.id):[])])}))
 }
 
 /** Owner-only callers prepare a revision; approval and public delivery stay separate. */

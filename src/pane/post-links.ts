@@ -6,8 +6,12 @@ export function blogPostPath(site:Site,post:{blog:string;content:{slug:string}})
  if(!blog)throw Error('A published post needs its configured blog.')
  return '/site/'+blog.prefix+'/'+post.content.slug
 }
-export function bodyLinkResolver(site:Site,mode:'live'|'preview'|'frame',currentSlug:string,pages:Pick<import('./model').Page,'id'|'slug'|'deleted'>[]=site.pages){
+export function bodyLinkResolver(site:Site,mode:'live'|'preview'|'frame',currentSlug:string,pages:Pick<import('./model').Page,'id'|'slug'|'deleted'|'sections'>[]=site.pages){
  return (href:string):string|undefined=>{
+  if(href.startsWith('anchor:')){
+   const [,pageId,sectionId]=href.split(':'),page=pages.find(page=>!page.deleted&&(page.id??page.slug)===pageId),section=page?.sections?.find(section=>section.id===sectionId)
+   return page&&section?(mode==='live'?pagePath(site,page.slug):mode==='frame'?'/app?page='+encodeURIComponent(page.slug):'./'+page.slug)+'#'+(section.anchor??'section-'+section.id):undefined
+  }
   if(href.startsWith('page:')){
    const id=decodeURIComponent(href.slice(5)),page=pages.find(page=>!page.deleted&&(page.id??page.slug)===id)
    return page?(mode==='live'?pagePath(site,page.slug):mode==='frame'?'/app?page='+encodeURIComponent(page.slug):'./'+page.slug):undefined
@@ -26,7 +30,7 @@ export function bodyLinkResolver(site:Site,mode:'live'|'preview'|'frame',current
   return undefined
  }
 }
-export function missingBodyLinks(site:Site,page:import('./model').Page,pages?:Pick<import('./model').Page,'id'|'slug'|'deleted'>[]):string[]{
+export function missingBodyLinks(site:Site,page:import('./model').Page,pages?:Pick<import('./model').Page,'id'|'slug'|'deleted'|'sections'>[]):string[]{
  const links:string[]=[]
  function walk(nodes:import('./sections').RichNode[]){for(const node of nodes){if(node.tag==='a')links.push(node.href);if('children' in node)walk(node.children)}}
  for(const section of page.sections??[])for(const block of section.blocks){if(block.link)links.push(block.link.href);if(block.content)walk(block.content)}
