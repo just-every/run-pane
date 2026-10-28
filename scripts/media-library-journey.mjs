@@ -150,14 +150,14 @@ export async function mediaLibraryJourney({page,context,origin,state,call,folder
    await selected(page,unusedImage.id);await page.getByRole('button',{name:'Delete file',exact:true}).click()
    await mutate(page,'delete',()=>page.getByRole('button',{name:'Delete permanently',exact:true}).click());await rows(52)
    await mutate(page,'restore',()=>page.getByRole('button',{name:'Undo',exact:true}).click());await rows(53)
+   assert.deepEqual((await state()).draft.site.media.find(item=>item.id===unusedImage.id),unusedImage,'Undo restores all original bytes and metadata')
+   await mutate(page,'restore',()=>page.getByRole('button',{name:'Redo',exact:true}).click());await rows(52)
+   await mutate(page,'restore',()=>page.getByRole('button',{name:'Undo',exact:true}).click());await rows(53)
    await selected(page,image.id)
    const previousCaption=await page.getByLabel('Caption',{exact:true}).inputValue(),captions=Array.from({length:5},(_,index)=>`Library caption revision ${index+1}`)
    for(const caption of captions){await page.getByLabel('Caption',{exact:true}).fill(caption);await mutate(page,'update',()=>page.getByRole('button',{name:'Save details',exact:true}).click())}
    for(let index=4;index>=0;index--){await mutate(page,'restore',()=>page.getByRole('button',{name:'Undo',exact:true}).click());assert.equal(await page.getByLabel('Caption',{exact:true}).inputValue(),index?captions[index-1]:previousCaption,'Five successive native edits can be undone independently')}
    for(const caption of captions){await mutate(page,'restore',()=>page.getByRole('button',{name:'Redo',exact:true}).click());assert.equal(await page.getByLabel('Caption',{exact:true}).inputValue(),caption,'Five successive native edits can be redone independently')}
-   assert.deepEqual((await state()).draft.site.media.find(item=>item.id===unusedImage.id),unusedImage,'Undo restores all original bytes and metadata')
-   await mutate(page,'restore',()=>page.getByRole('button',{name:'Redo',exact:true}).click());await rows(52)
-   await mutate(page,'restore',()=>page.getByRole('button',{name:'Undo',exact:true}).click());await rows(53)
    // Two real library tabs submit against the revision each actually opened.
    const second=await context.newPage()
    try{
