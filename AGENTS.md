@@ -137,4 +137,9 @@ Native-session/runtime evidence: https://github.com/runeditrun/base/tree/a06bd06
 
 ## Contract documents
 
-Lander-Regenerate: `node scripts/contract-docs.mjs write`. Validate with `node scripts/contract-docs.mjs check`. CONTRACT.md owns acceptance text and status; the command generates ACCEPTANCE.md, docs/CLAIMS.md and summary counts using the pinned contract parser. Run the edition source lock command last.
+CONTRACT.md owns acceptance text and status. Generate acceptance, claims and counts before the edition source lock, and validate both generated documents and source integrity. On a merge, resolve CONTRACT.md first, preserve main's newer judgments, regenerate the views and lock last.
+
+Lander-Regenerate: node src/base/contract-docs.mjs write
+Lander-Regenerate: node scripts/edition-authoring/cli.mjs lock
+
+Check with `node src/base/contract-docs.mjs check` and `node scripts/edition-authoring/cli.mjs check`.

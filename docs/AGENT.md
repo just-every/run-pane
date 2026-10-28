@@ -232,7 +232,7 @@ Share links contact a network only after the visitor selects one. The published
 post body supports semantic headings and nested lists, formatting, captioned
 images, attributed quotes, consent-gated YouTube video, page buttons and links
 to posts, published PDFs and telephone numbers. Collection-item bodies and the
-remaining general block catalog still belong to CMS-001 and CMS-011 and PAGE-014.
+remaining general block catalog still belong to CMS-001, CMS-011 and PAGE-014; PAGE-018 owns rich text, PAGE-019 owns stable destinations, and CMS-012 owns feed, search and export distribution. Input-custody and history riders are AI-005 and AI-006.
 
 For assistance, native page writers use the existing Pages AI panel or
 `ai-propose`. Authors can use `ai-propose` for their own post, including its

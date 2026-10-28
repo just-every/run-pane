@@ -1,22 +1,91 @@
 {
   "sections": [
-    { "title": "Start here", "pages": [
-      { "slug": "", "source": "README.md", "label": "Pane overview", "summary": "What Pane is, how to try the demo and how to run it on your computer." },
-      { "slug": "getting-started", "source": "docs/GETTING-STARTED.md", "label": "Getting started", "summary": "Launch Pane on your computer and prepare your first pages." }
-    ] },
-    { "title": "Your website", "pages": [
-      { "slug": "publishing", "source": "docs/PUBLISHING.md", "label": "Preview, publish and restore", "summary": "Change your website with a preview first, then publish or restore a version." },
-      { "slug": "inbox-and-visits", "source": "docs/INBOX-AND-VISITS.md", "label": "Inbox and visits", "summary": "Read contact messages and understand the cookie-free page counts." },
-      { "slug": "move-in", "source": "docs/MOVE-IN.md", "label": "Move in a site", "summary": "Review a site export and import it as an unpublished draft you can undo." },
-      { "slug": "agent", "source": "docs/AGENT.md", "label": "Work with your agent", "summary": "Let an agent prepare drafts through the authenticated helper while a person approves." }
-    ] },
-    { "title": "Keep it safe", "pages": [
-      { "slug": "backup-restore", "source": "docs/BACKUP-RESTORE.md", "label": "Back up and restore", "summary": "Keep a private copy of your site and inbox, and restore it into an empty installation." }
-    ] }
+    {
+      "title": "Start here",
+      "pages": [
+        {
+          "slug": "",
+          "source": "README.md",
+          "label": "Pane overview",
+          "summary": "What Pane is, how to try the demo and how to run it on your computer."
+        },
+        {
+          "slug": "getting-started",
+          "source": "docs/GETTING-STARTED.md",
+          "label": "Getting started",
+          "summary": "Launch Pane on your computer and prepare your first pages."
+        }
+      ]
+    },
+    {
+      "title": "Your website",
+      "pages": [
+        {
+          "slug": "publishing",
+          "source": "docs/PUBLISHING.md",
+          "label": "Preview, publish and restore",
+          "summary": "Change your website with a preview first, then publish or restore a version."
+        },
+        {
+          "slug": "inbox-and-visits",
+          "source": "docs/INBOX-AND-VISITS.md",
+          "label": "Inbox and visits",
+          "summary": "Read contact messages and understand the cookie-free page counts."
+        },
+        {
+          "slug": "move-in",
+          "source": "docs/MOVE-IN.md",
+          "label": "Move in a site",
+          "summary": "Review a site export and import it as an unpublished draft you can undo."
+        },
+        {
+          "slug": "agent",
+          "source": "docs/AGENT.md",
+          "label": "Work with your agent",
+          "summary": "Let an agent prepare drafts through the authenticated helper while a person approves."
+        }
+      ]
+    },
+    {
+      "title": "Keep it safe",
+      "pages": [
+        {
+          "slug": "backup-restore",
+          "source": "docs/BACKUP-RESTORE.md",
+          "label": "Back up and restore",
+          "summary": "Keep a private copy of your site and inbox, and restore it into an empty installation."
+        }
+      ]
+    }
   ],
   "githubOnly": [
-    { "source": "docs/PROVENANCE.md", "reason": "Maintainer record of shared-source origins." },
-    { "source": "RUN-LOCALLY.md", "reason": "Full command and operations reference for maintainers." },
-    { "source": "ACCEPTANCE.md", "reason": "Release acceptance evidence for maintainers." }
+    {
+      "source": "docs/PROVENANCE.md",
+      "reason": "Maintainer record of shared-source origins."
+    },
+    {
+      "source": "RUN-LOCALLY.md",
+      "reason": "Full command and operations reference for maintainers."
+    },
+    {
+      "source": "ACCEPTANCE.md",
+      "reason": "Release acceptance evidence for maintainers."
+    },
+    {
+      "source": "RULINGS.md",
+      "reason": "Dated product rulings and their original source records."
+    },
+    {
+      "source": "docs/contract/DONE-AUDIT.md",
+      "reason": "Clause-by-clause journey audit for carried judgments."
+    },
+    {
+      "source": "docs/contract/MECHANISM.md",
+      "reason": "Technical reference for presentation, public goals and custody."
+    },
+    {
+      "source": "docs/verify.md",
+      "reason": "Historical acceptance snapshot before the one-source conversion."
+    }
   ]
 }

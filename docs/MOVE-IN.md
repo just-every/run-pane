@@ -271,7 +271,7 @@ the report names the missing native media copy.
 An imported structured body is shown read-only in the existing page editor so
 an ordinary text save cannot silently discard its headings and links. Title,
 visibility and other page settings keep their existing draft/approval behavior.
-To update the structured body, edit and re-import the source. PAGE-014 and
+To update the structured body, edit and re-import the source. PAGE-018, PAGE-019 and
 CMS-011 inherit safe rich-body editing with PAGE-006 autosave/undo/conflict
 protection; this reader does not claim those editors or native post/item/comment
 targets are complete. Standard native JSON plain-text pages remain editable.

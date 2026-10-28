@@ -1,4 +1,4 @@
-# CONTRACT.md — Pane target product contract
+# Pane target product contract
 
 Target edition: 16 October 2026. Pane is the owned website builder and CMS a US small business uses instead of Squarespace, Wix or WordPress.com: a visual editor with unlimited pages, responsive templates and brand styles, a media library, CMS collections and a blog, custom domains on fast hosting, a full search toolkit, forms that route leads to a person and a CRM, and booking, checkout and newsletter blocks handed to the products that own those jobs. Agents build the site from verified business facts and keep it current, discoverable and converting.
 
@@ -49,62 +49,114 @@ Observability stays with [Porthole](https://github.com/just-every/run-porthole);
 
 A business phone system has no sibling; Pane links phone numbers for click-to-call and counts the clicks (`STATS-002`) and does not route calls.
 
-### How to read this contract
+#
 
-- **Published clauses** are the `- **ID — Title.**` bullets in [Released guarantees](#released-guarantees). The previous contract and ACCEPTANCE.md already promised them; this edition gives them IDs and keeps every guarantee, widening only where a target clause names the change.
-- **Target clauses** are the `#### ID — Title.` headings in [Target clauses](#target-clauses), and **push-further clauses** are those in [Push further](#push-further). They are binding product requirements; each carries its status beside it.
-- **Status** is judged from the code and tests at commit `3b35726211c3a5ac20eeba8b0f8b82b37d2995d4` (27 October 2026). `done` means the behavior ships and a cited test or journey exercises it; `partial` means some of it ships, or it ships without a test; `missing` means there is no implementation. Status is a build-planning judgment, not acceptance.
-
-The primary journey: Exercise the capabilities and acceptance journeys below.
+The primary journey: Move the existing business site in, inspect its content and old URLs, keep its email, edit and preview, publish on its domain, route enquiries to a person and measure the resulting leads, with export and recovery throughout.
 
 ## How to read this contract
 
 - This follows the RER contract standard.
-- Core, Agent surface and Later are reported separately.
-- Done means every acceptance point has recorded proof.
-- Field proof is kept in its register.
-- ACCEPTANCE.md and the homepage claims document are generated from this file.
+- Core includes first-week switching depth and push-further jobs; Agent surface is reported separately and Later retains premium or rare scope.
+- Done means every acceptance point has a named sanity journey on the exact candidate.
+- The Field proof register keeps dated real-world proof separate from seed acceptance.
+- ACCEPTANCE.md, docs/CLAIMS.md and summary counts are generated from this source.
+
+## Door rules
+
+- **D-1.** A native person's publication, import or assistance decision binds the exact reviewed revision. An agent's equivalent draft change carries standard; publication carries external and live, adding commitment for binding offers, and the company's policy decides each class. Native person steps in the acceptance journeys use the held company policy; they prescribe no agent disposition. Captures retain the native-only authority required by RL-101.
+
+- **D-2.** Private changes and public form and visit submissions require the installation's canonical origin; a foreign origin changes nothing.
+
+- **D-3.** Import fidelity. every source page, post, collection item, event and gallery image is present on the new site or listed in the `IMPORT-005` report with a reason; each page's, post's and item's visible text matches the source's after whitespace normalization; every source image is fetched and served through `MEDIA-002` or listed as unfetchable; every old URL from the source sitemap and crawl answers 301 to a new URL that answers 200; on each imported page, blog post, collection item and event (its body and every rich-text field, held in the `CMS-011` editor) every source link and button is present with the same destination (internal targets resolved through the URL map to the new URL, anchors to the matching section anchor, files to their `MEDIA-001` copy, and external, `mailto:`, `tel:` and `sms:` targets unchanged), each source heading has the same level, each source list is a list of the same type with the same items, and each inline image is in the same place in the body with its caption and alt text; and the applied counts per content type equal the report's counts.
+
+- **D-4.** Public counting excludes DNT and GPC and keeps no visitor identity. Third-party content uses the visitor's category or provider choice; GPC overrides advertising and analytics grants, and withdrawal stops active execution. Public code stays isolated from workspace data and sessions.
+
+- **D-5.** Controlled capture (RL-101). Every fresh Wix, Webflow, Framer or Durable crawl requires current native owner/admin authority, per-crawl explicit purpose and consent, and an expiring operator-bound DNS proof for the exact controlled public HTTPS origin. Screen all addresses; follow no redirects, send no source credentials and execute no scripts or forms. Bound capture and retain exact capture, mapping and exception receipts in ordinary import custody; apply only the reviewed unpublished draft. Show every unfetched item and redirect explicitly. DNS control proves origin control, not ownership or licensing of every asset. Offline uploads convey no network authority, and scoped tokens have none.
 
 ## Shared duties (Base)
 
 | Base duty | Duty | Delta clauses | Base journey |
 | --- | --- | --- | --- |
+| BASE-ACCESS-001 | Sign-in | ACCESS-001, HOST-005, ROLE-004 | not run |
+| BASE-ACCESS-002 | Sessions | ACCESS-001, PUBLISH-002 | not run |
+| BASE-ACCESS-003 | Public endpoints | none | not run |
+| BASE-ACCESS-004 | Server-side authorisation | ACCESS-001, ACCESS-002 | not run |
+| BASE-INPUT-001 | Validation | MOVEIN-001, CMS-001, CMS-002, FORM-001, IMPORT-005, IMPORT-006, IMPORT-007 | not run |
+| BASE-INPUT-002 | HTML | INBOX-001 | not run |
+| BASE-INPUT-003 | Uploads | STYLE-004, MEDIA-001, MEDIA-002, MEDIA-003, FORM-001 | not run |
+| BASE-SECRET-001 | No leakage | PAGE-008, PAGE-017, MEDIA-004, STATS-003, PRIV-004 | not run |
+| BASE-SECRET-002 | Startup | none | not run |
+| BASE-DATA-001 | Export and import | BACKUP-001, FORM-007, EXPORT-001 | not run |
+| BASE-DATA-002 | Retention | none | not run |
+| BASE-DATA-003 | Erasure | INBOX-001, ERASE-001, PRIV-002 | not run |
+| BASE-DATA-004 | Outbound flows | none | not run |
+| BASE-DATA-005 | Independence | none | not run |
+| BASE-PUBLIC-001 | Privacy | VISIT-001, RUNSITE-001, PAGE-008, PAGE-017, MEDIA-004, STATS-003, PRIV-001, PRIV-004 | not run |
+| BASE-PUBLIC-002 | Origins | none | not run |
+| BASE-PUBLIC-003 | Accessibility | PAGE-009 | not run |
+| BASE-OPS-001 | Health | HEALTH-001 | not run |
+| BASE-OPS-002 | Migrations | DEPLOY-001, HOST-003 | not run |
+| BASE-OPS-003 | Idempotency | INBOX-001, FORM-004, AUTO-001, AUTO-002, AUTO-003, AUTO-004 | not run |
+| BASE-OPS-004 | Failure is visible | AUTO-001, AUTO-002, AUTO-003, AUTO-004 | not run |
+| BASE-OPS-005 | Audit | AUDIT-001 | not run |
+| BASE-ROLE-001 | Roles through every door | ACCESS-001, PUBLISH-002, PUBLISH-003, MOVEIN-001, PAGE-011, PAGE-016, CMS-001, CMS-002, ROLE-001, ROLE-003 | not run |
+| BASE-AUDIT-001 | Searchable, durable audit | PUBLISH-004, ROLE-004, AUDIT-001 | not run |
+| BASE-BACKUP-001 | Independent backup, restore and rollback | BACKUP-001, HOST-003 | not run |
+| BASE-DATA-006 | Erasure respects retention and legal hold | ERASE-001, PRIV-002 | not run |
+| BASE-SIGNIN-001 | Standards-based SSO and lifecycle | ROLE-004 | not run |
+| BASE-SIGNIN-002 | Native multi-factor authentication | ROLE-004 | not run |
+| BASE-INSTALL-001 | Free self-host and removal | DEPLOY-001, HOST-005 | not run |
+| BASE-MAIL-001 | Truthful mail outcomes | DOMAIN-005, FORM-003, FORM-004, LINK-003 | not run |
+| BASE-ACCESSIBILITY-001 | One accessibility bar | LOBBY-001, PAGE-009, CMS-001, CMS-002, FORM-001 | not run |
+| BASE-DOCS-001 | On-site docs from one contract | RUNSITE-001 | not run |
+| BASE-AGENT-001 | One MCP door per seed | SURFACE-001 | not run |
+| BASE-AGENT-002 | The seed's jobs are tools, through the UI's own actions | AGENT-001, AGENT-002, AGENT-003, AGENT-004, AGENT-005, AGENT-006, AGENT-007, AGENT-008, SURFACE-001 | not run |
+| BASE-AGENT-003 | Records are resources | SURFACE-001 | not run |
+| BASE-AGENT-004 | Business identity and short-lived, audience-bound tokens | API-001, SURFACE-004 | not run |
+| BASE-AGENT-005 | An agent acts as a person in a role, never more | API-001, SURFACE-003 | not run |
+| BASE-AGENT-006 | Every action declares its risk class | PUBLISH-003, SEO-008, SEO-010, API-001, AI-001, AI-002, AI-003, AI-005, AI-006, AI-004, AGENT-001, AGENT-002, AGENT-003, AGENT-004, AGENT-005, AGENT-006, AGENT-007, AGENT-008, SURFACE-002, SURFACE-003 | not run |
+| BASE-AGENT-007 | The company's policy decides, at one chokepoint | PUBLISH-003, SEO-008, SEO-010, API-001, AI-001, AI-002, AI-003, AI-005, AI-006, AI-004, AGENT-001, AGENT-002, AGENT-003, AGENT-004, AGENT-005, AGENT-006, AGENT-007, AGENT-008, SURFACE-002, SURFACE-003, SURFACE-004 | not run |
+| BASE-AGENT-008 | Truthful attribution | SURFACE-003 | not run |
+| BASE-AGENT-009 | Every agent action is audited with its class and decision | API-001, AGENT-001, AGENT-002, AGENT-003, AGENT-004, AGENT-005, AGENT-006, AGENT-007, AGENT-008, SURFACE-004 | not run |
+| BASE-AGENT-010 | Agents can follow changes | SURFACE-001 | not run |
+| BASE-AGENT-011 | Limits are policy, and Pause stops everything | AGENT-001, AGENT-002, AGENT-003, AGENT-004, AGENT-005, AGENT-006, AGENT-007, AGENT-008, SURFACE-004 | not run |
+| BASE-AGENT-012 | Writes are idempotent and conflict-safe | SURFACE-004 | not run |
+| BASE-AGENT-013 | Manifest, docs and the conformance journey | SURFACE-001, SURFACE-004 | not run |
 
 ## Published clauses
 
-- `ACCESS-001`: *Tier:* Core
-- `ACCESS-002`: *Tier:* Core
+- `ACCESS-001`: *Tier:* Core · *Cites:* BASE-ACCESS-001, BASE-ACCESS-002, BASE-ACCESS-004, BASE-ROLE-001
+- `ACCESS-002`: *Tier:* Core · *Cites:* BASE-ACCESS-004 · *Rules:* D-2
 - `PUBLISH-001`: *Tier:* Core
-- `PUBLISH-002`: *Tier:* Core
-- `PUBLISH-003`: *Tier:* Core
-- `PUBLISH-004`: *Tier:* Core
-- `INBOX-001`: *Tier:* Core
-- `VISIT-001`: *Tier:* Core
-- `MOVEIN-001`: *Tier:* Core
-- `BACKUP-001`: *Tier:* Core
-- `ERASE-001`: *Tier:* Core
-- `HEALTH-001`: *Tier:* Core
-- `DEPLOY-001`: *Tier:* Core
-- `RUNSITE-001`: *Tier:* Core
-- `LOBBY-001`: *Tier:* Core
+- `PUBLISH-002`: *Tier:* Core · *Cites:* BASE-ACCESS-002, BASE-ROLE-001
+- `PUBLISH-003`: *Tier:* Core · *Cites:* BASE-ROLE-001, BASE-AGENT-006, BASE-AGENT-007 · *Rules:* D-1
+- `PUBLISH-004`: *Tier:* Core · *Cites:* BASE-AUDIT-001 · *Rules:* D-1
+- `INBOX-001`: *Tier:* Core · *Cites:* BASE-INPUT-002, BASE-OPS-003, BASE-DATA-003
+- `VISIT-001`: *Tier:* Core · *Cites:* BASE-PUBLIC-001 · *Rules:* D-4
+- `MOVEIN-001`: *Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001 · *Rules:* D-1, D-2
+- `BACKUP-001`: *Tier:* Core · *Cites:* BASE-DATA-001, BASE-BACKUP-001
+- `ERASE-001`: *Tier:* Core · *Cites:* BASE-DATA-003, BASE-DATA-006
+- `HEALTH-001`: *Tier:* Core · *Cites:* BASE-OPS-001 · *Register:* R-1
+- `DEPLOY-001`: *Tier:* Core · *Cites:* BASE-INSTALL-001, BASE-OPS-002 · *Register:* R-1
+- `RUNSITE-001`: *Tier:* Core · *Cites:* BASE-DOCS-001, BASE-PUBLIC-001
+- `LOBBY-001`: *Tier:* Core · *Cites:* BASE-ACCESSIBILITY-001
 - `PRESENT-001`: *Tier:* Core
 
 ### Sign-in, roles and authority
 
 #### ACCESS-001 — Server-side role authorization
 
-**Requirement.** Native operator sessions authorize every private handler, including direct API and command-helper calls, never only a route guard. Owners publish, roll back and erase messages; owners and admins prepare, preview and import; members read the workspace. A deactivated operator loses access at the next request. Target roles (`ROLE-001`) extend this table; none of them bypasses the server check.
+**Requirement.** Pane's role matrix gives owners publication, rollback and message erasure; owners and admins prepare, preview and import; members read the workspace. ROLE-001 extends this matrix.
 
 **Acceptance.**
-1. Sign in as owner, invite and confirm an admin and a member, then call `/api/pane` routes signed out, as each role and after deactivating the admin.
-2. Signed-out calls get 401, a member is refused prepare, an admin is refused publish, and the deactivated admin gets 401 with no write.
+1. Sign in as owner, invite and confirm an admin and member, then exercise Pane's permitted and forbidden prepare, publish and workspace actions; deactivate the admin and repeat its prepare request without a write.
 
 #### ACCESS-002 — Canonical-origin mutations
 
-**Requirement.** Every private mutation and every public form or visit post requires the installation's canonical origin; a cross-origin request is refused before any write.
+**Requirement.** Pane's canonical-origin rule includes public contact and visit submissions as well as private mutations.
 
 **Acceptance.**
-1. Post a prepare request and a contact message with a foreign `Origin` header and see 403 with no new revision or message.
+1. A foreign-origin prepare request and contact submission leave both the revision inventory and inbox unchanged; equivalent canonical-origin actions complete.
 
 ### Revisions and publication
 
@@ -113,14 +165,14 @@ The primary journey: Exercise the capabilities and acceptance journeys below.
 **Requirement.** A revision holds the complete site snapshot and its SHA-256. It is never edited after it is created. As the target editor, collections, navigation, styles and media arrive (`PAGE-*`, `CMS-*`, `STYLE-*`, `MEDIA-*`), the snapshot grows to hold all of them, so a revision always reproduces the whole public site.
 
 **Acceptance.**
-1. Prepare two revisions, read them back through `/api/pane` and compare their snapshots and hashes; neither changes after a later prepare, publish or rollback.
+1. Prepare two revisions, read them back through the private product API and compare their snapshots and hashes; neither changes after a later prepare, publish or rollback.
 
 #### PUBLISH-002 — Private draft preview
 
-**Requirement.** An owner or admin previews any revision before it is live, at its own private URL, with an explicit draft banner and contact sending disabled. Signed-out visitors are sent to sign in and members are refused.
+**Requirement.** An owner or admin previews a selected revision privately with a draft banner and contact sending disabled.
 
 **Acceptance.**
-1. Open a revision's preview signed out (redirect to sign-in), as a member (403) and as an admin (the draft's pages with the banner).
+1. Open the selected revision signed out, as a member and as an admin: the first two gain no draft access and the admin sees its pages and banner with contact sending disabled.
 
 #### PUBLISH-003 — Owner-approved atomic publication
 
@@ -141,10 +193,10 @@ The primary journey: Exercise the capabilities and acceptance journeys below.
 
 #### INBOX-001 — Durable, escaped and idempotent contact submissions
 
-**Requirement.** A visitor's contact message is stored once per submission key, so a retried post never creates a duplicate, and it is shown escaped in the workspace. An erased submission key cannot be replayed into the inbox.
+**Requirement.** Pane's public contact door keeps one durable enquiry for a retried submission key; an erased key cannot recreate its enquiry.
 
 **Acceptance.**
-1. Submit the same contact form twice with one key and see one inbox message; submit a name containing markup and see it escaped in `/app`.
+1. Submit a contact twice with one key and a name containing markup: read one escaped enquiry in the workspace; erase it and retry the key without recreating it.
 
 #### VISIT-001 — Cookie-free aggregate visit counts
 
@@ -164,14 +216,14 @@ The primary journey: Exercise the capabilities and acceptance journeys below.
 
 #### BACKUP-001 — Export and restore into an empty installation
 
-**Requirement.** The owner exports installation data and restores it into an empty installation; the live revision, history and import journals come back.
+**Requirement.** Pane's installation archive carries the live site revision, immutable history and import journals.
 
 **Acceptance.**
-1. Export a populated installation, restore it into a fresh empty D1 and read the live revision and import jobs.
+1. Export a populated Pane installation, restore into an empty installation through the archive transport, and reconcile the live revision, history and import journals; an occupied destination is refused without changing it.
 
 #### ERASE-001 — Message erasure fenced against old backups
 
-**Requirement.** The owner erases a contact message. The erasure commits with the portability fence in one batch, so a backup taken before the erasure cannot restore the message and the same submission cannot be replayed.
+**Requirement.** Message erasure fences Pane's earlier archives and remembers the erased submission key so neither restoration nor a visitor retry resurrects it.
 
 **Acceptance.**
 1. Erase a message as admin (refused) and as owner, replay its submission (not stored), then restore an older archive with the later journal and see it refused.
@@ -180,31 +232,31 @@ The primary journey: Exercise the capabilities and acceptance journeys below.
 
 #### HEALTH-001 — Deployment health and unknown paths
 
-**Requirement.** `/health` identifies the Worker deployment (source, fingerprint, version) and unknown paths return 404.
+**Requirement.** Pane exposes the deployment's source, fingerprint and version in its health response; unknown workspace and business-site pages are missing pages.
 
 **Acceptance.**
-1. Read `/health` on a local and a deployed Worker and compare its deployment fields with the deploy record; request an unknown app path and an unknown site page and see 404.
+1. Compare local deployment identity with its deployment record, and request unknown workspace and site pages to see missing-page responses.
 
 #### DEPLOY-001 — Install on the owner's Cloudflare account
 
-**Requirement.** `rer deploy` installs the Worker, D1 database and migrations on the owner's own Cloudflare account and checks health; the owner pays Cloudflare directly in USD.
+**Requirement.** Pane's command-line installation supplies its site-revision D1 schema and migration history alongside its Worker. The supported provider account is Cloudflare and the cost display is USD.
 
 **Acceptance.**
-1. Run `rer deploy` against a test Cloudflare account, see migrations applied and `/health` match, then remove the deployment.
+1. Through the supported deployment command and a Cloudflare-compatible provider edge, apply Pane's migrations, read matching deployment identity and remove the isolated installation.
 
 #### RUNSITE-001 — Public run site and documentation
 
-**Requirement.** The public run site is a static build of the picked Pane homepage, `/run` and the Markdown guides, with no installation sign-in links.
+**Requirement.** Pane's run site presents its picked homepage and run instructions without installation sign-in links.
 
 **Acceptance.**
-1. Build with `rer build --site`, open `/`, `/run` and every linked `/docs` page (200) and an unknown path (404).
+1. Build the public run site and open the homepage, run instructions and every linked guide through its HTTP router; an unknown page is missing and no installation sign-in link is offered.
 
 #### LOBBY-001 — Shared Lobby, workspace and theme
 
-**Requirement.** The installed `/` is the shared Lobby; `/app` keeps its anchored workspace sections; the fuchsia (`--pn-fuchsia: #f5026f`, with `--pn-action: #e8176e` actions) and self-hosted Figtree theme is shared across `/`, `/signin`, `/setup` and `/app`.
+**Requirement.** Pane's shared Lobby, sign-in, setup and anchored workspace use its fuchsia and self-hosted Figtree theme; [presentation details](docs/contract/MECHANISM.md) define the theme.
 
 **Acceptance.**
-1. Open `/`, `/signin`, `/setup` and `/app` at 1440 and 390 wide and see the shared theme, the workspace anchors and no horizontal overflow.
+1. Open the Lobby, sign-in, setup and workspace at 1440 and 390: read the shared theme, activate a workspace anchor and see no horizontal overflow.
 
 #### PRESENT-001 — Labeled previews and unbranded live pages
 
@@ -286,21 +338,21 @@ The primary journey: Exercise the capabilities and acceptance journeys below.
 
 #### PAGE-008 — Custom code, embeds and CSS
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-PUBLIC-001, BASE-SECRET-001
 
-**Requirement.** An owner adds custom CSS, an HTML embed block, site-wide header and footer code (for example a verification tag) and per-page header code on any page, including a form's or booking's thank-you page (for example a Google Ads conversion snippet). Custom code can subscribe to Pane's goal events (`STATS-002`) through a documented `pane:goal` browser event carrying the goal name and value, so a hand-written tag fires on a lead rather than a page view. Custom header code is marked third-party and waits for consent under `PRIV-001`. Embeds run sandboxed under a per-site content security policy the owner sees, and nothing they add can reach the workspace or a session.
+**Requirement.** An owner adds custom CSS, an HTML embed block, site-wide header and footer code (for example a verification tag) and per-page header code on any page, including a form's or booking's thank-you page (for example a Google Ads conversion snippet). Custom code can subscribe to Pane's goal events (`STATS-002`) through a documented the documented goal event browser event carrying the goal name and value, so a hand-written tag fires on a lead rather than a page view. Custom header code is marked third-party and waits for consent under `PRIV-001`. Embeds run sandboxed under a per-site content security policy the owner sees, and nothing they add can reach the workspace or a session.
 
 **Acceptance.**
-1. Add a custom CSS rule, an embed block, a site-wide header verification tag and per-page header code on a quote form's thank-you page; see the per-page code only on that page, see a listener on `pane:goal` receive the quote-form goal when the form is submitted, and see custom code not run before consent or under GPC; see them live, see the policy list the embed's host, and see the embed unable to read workspace cookies or call `/api/pane`.
+1. Add a custom CSS rule, an embed block, a site-wide header verification tag and per-page header code on a quote form's thank-you page; see the per-page code only on that page, see a listener on the documented goal event receive the quote-form goal when the form is submitted, and see custom code not run before consent or under GPC; see them live, see the policy list the embed's host, and see the embed unable to read workspace cookies or call the private product API.
 
 #### PAGE-009 — Accessible output by default
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-ACCESSIBILITY-001, BASE-PUBLIC-003 · *Register:* R-2, R-3
 
-**Requirement.** Published pages meet WCAG 2.2 AA by default: images need alt text (or an explicit decorative mark) before publishing, headings are in order, colors in styles meet contrast, forms are labeled, everything works by keyboard, and a skip link is present. The editor warns before publishing a page that fails.
+**Requirement.** Before publication Pane warns about missing image descriptions, out-of-order headings and contrast in the selected site's styles; images require alt text or an explicit decorative choice and pages include a skip link.
 
 **Acceptance.**
-1. Run axe and a keyboard pass over every template and a populated site at 1440 and 390 wide with zero serious violations; try to publish an image without alt text and see the warning.
+1. Across every template and a populated site, exercise the Base accessibility bar and the skip link; attempt publication without an image description and see the warning, then use a description or explicit decorative choice.
 
 #### PAGE-010 — Duplicate pages and starter layouts
 
@@ -313,9 +365,9 @@ The primary journey: Exercise the capabilities and acceptance journeys below.
 
 #### PAGE-011 — Password-protected and member-only pages and site
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-ROLE-001
 
-**Requirement.** The owner protects a page or folder with a password, or limits it to signed-in site members. Pane checks native member access on every request and never serves protected content in the public cache. Paid membership connection to Stall or Nectar remains a separate obligation (`PAGE-016`, `LINK-002`). Before launch, or during a rebuild, the owner can put the whole site behind a site-wide password or an editable coming-soon page (with an optional signup block, `LINK-003`); the gate answers `noindex`, and the workspace and preview links keep working.
+**Requirement.** The owner protects a page or folder with a password, or limits it to signed-in site members. Paid membership connection to Stall or Nectar remains a separate obligation (`PAGE-016`, `LINK-002`). Before launch, or during a rebuild, the owner can put the whole site behind a site-wide password or an editable coming-soon page (with an optional signup block, `LINK-003`); the gate answers `noindex`, and the workspace and preview links keep working.
 
 **Acceptance.**
 1. Protect a folder with a password and another with member sign-in; signed-out requests see the gate, the right password or member sees the page, and no cached response leaks it.
@@ -334,23 +386,40 @@ The primary journey: Exercise the capabilities and acceptance journeys below.
 
 *Tier:* Core
 
-**Requirement.** The owner shows a promotional pop-up (newsletter signup, offer or announcement) and an announcement bar. The pop-up opens after a delay, a scroll depth or exit intent on desktop, on chosen pages only, at most once per visitor per chosen number of days (remembered without cookies, in the visitor's browser storage), and never on the first screen of a phone visit in a way that hides content. It is an accessible dialog (focus trapped, Escape and a visible close button), and it can be scheduled (`CMS-005`).
+**Requirement.** The owner shows a promotional pop-up (newsletter signup, offer or announcement) and an announcement bar. The pop-up opens after a delay, a scroll depth or exit intent on desktop, on chosen pages only, at most once per visitor per chosen number of days (remembered without cookies, in the visitor's browser storage), and never on the first screen of a phone visit in a way that hides content. It is an accessible dialog (focus trapped, Escape and a visible close button), and it can be scheduled (`CMS-005`). Its newsletter action uses LINK-003's destination guard (RL-102).
 
 **Acceptance.**
 1. Configure a newsletter pop-up after 10 seconds on two pages with a seven-day frequency cap and exit intent on desktop; see it appear on those pages only, not again within seven days, and close by keyboard; on a 390-wide phone see no full-screen interstitial on arrival; schedule an announcement bar and see it appear and expire on time.
 
 #### PAGE-014 — Block catalog, text formatting and links
 
-*Tier:* Core
+*Tier:* Core · *From:* PAGE-014
 
-**Requirement.** The editor's block catalog is: text, heading, image, button, quote (with attribution), line (divider), spacer, list, accordion, social links (`STYLE-004`), audio (an uploaded MP3 or M4A from the library with a native player and download option, or a SoundCloud or Spotify embed), code (preformatted text), chart (bar, line or pie from an entered table, with the table available to screen readers), scrolling text (marquee, paused under `prefers-reduced-motion`), shape (a filled or outlined shape from a set, with a color and optional link), and the blocks other clauses define: HTML embed (`PAGE-008`), video, map and social-post embeds (`MEDIA-004`), form (`FORM-001`), newsletter signup (`LINK-003`), booking (`LINK-001`), product and buy button (`LINK-002`), summary and collection list (`CMS-003`), events calendar (`CMS-009`), site search (`CMS-008`) and gallery (`PAGE-012`). Every block in the catalog can be added to any section, placed on the grid of `PAGE-002`, duplicated and deleted. A text block offers the paragraph styles Heading 1 to Heading 4, paragraph, large paragraph, small paragraph, quote and preformatted, each rendered as its semantic element (`h1` to `h4`, `p`, `blockquote`, `pre`) and styled by `STYLE-002`; bold, italic, underline and strikethrough; bulleted and numbered lists with one level of nesting; and left, center, right or justified alignment per paragraph. Any selected text and any button links to: a page on the site (chosen from the page list, so it follows a slug change), a section anchor on the same or another page (each section has an editable anchor ID), an external URL with an optional open-in-new-tab setting, a media-library file (`MEDIA-001`, for example a PDF price list), a `mailto:` address with optional subject, a `tel:` number and an `sms:` number with optional message body. A button block has the same destinations plus a label and a primary, secondary or tertiary style from `STYLE-002`. Links to internal pages and anchors are stored by reference, so renaming a page or anchor updates every link, and a link whose target is deleted is listed in the editor before publishing. Markdown shortcuts (`#`, `**`, `-`, `1.`) and pasted HTML from Word or Google Docs map to the same styles, with unsupported markup stripped.
+**Requirement.** The editor's block catalog is: text, heading, image, button, quote (with attribution), line (divider), spacer, list, accordion, social links (`STYLE-004`), audio (an uploaded MP3 or M4A from the library with a native player and download option, or a SoundCloud or Spotify embed), code (preformatted text), chart (bar, line or pie from an entered table, with the table available to screen readers), scrolling text (marquee, paused under `prefers-reduced-motion`), shape (a filled or outlined shape from a set, with a color and optional link), and the blocks other clauses define: HTML embed (`PAGE-008`), video, map and social-post embeds (`MEDIA-004`), form (`FORM-001`), newsletter signup (`LINK-003`), booking (`LINK-001`), product and buy button (`LINK-002`), summary and collection list (`CMS-003`), events calendar (`CMS-009`), site search (`CMS-008`) and gallery (`PAGE-012`). Every block in the catalog can be added to any section, placed on the grid of `PAGE-002`, duplicated and deleted. Text styles are PAGE-018; destinations and stable references are PAGE-019.
 
 **Acceptance.**
-1. Build one page holding every block in the catalog and one text block using every paragraph style, every inline format, both list types with a nested item, all four alignments and one link of each destination type (a page, an anchor on another page, an external URL with new tab on, a library PDF, `mailto:` with subject, `tel:` and `sms:`), plus a button of each destination type; publish it.
-2. A browser test on the live page finds every catalog block by its block type attribute; finds each heading as the `h1` to `h4` element chosen and each list as a `ul` or `ol` with its nested list; finds `strong`, `em`, `u` and `s` around the formatted words; checks each link's and button's `href` against its destination type (the page's live URL, `/<page>#<anchor>` that scrolls to the section, the external `https://` URL with `target="_blank"` and `rel="noopener"` only where new tab is on, the file's served URL, `mailto:` with the encoded subject, `tel:` and `sms:`); tabs through the page and reaches every link and button in reading order with a visible focus ring; and passes an axe accessibility run.
-3. Rename the linked page and the anchor, republish, and see both links follow.
-4. Delete the linked page and see the editor list the broken link before publishing.
-5. Paste a Google Docs fragment with headings, a list and a link and see them kept as styles.
+1. Build a page holding every catalog block, add each to a section, place it on the page grid, duplicate and delete a copy, and publish; find every remaining block by its type and use it through the live page.
+
+#### PAGE-018 — Rich text styles and pasted content
+
+*Tier:* Core · *From:* PAGE-014
+
+**Requirement.** A text block offers the paragraph styles Heading 1 to Heading 4, paragraph, large paragraph, small paragraph, quote and preformatted, each rendered as its semantic element (`h1` to `h4`, `p`, `blockquote`, `pre`) and styled by `STYLE-002`; bold, italic, underline and strikethrough; bulleted and numbered lists with one level of nesting; and left, center, right or justified alignment per paragraph. Markdown shortcuts (`#`, `**`, `-`, `1.`) and pasted HTML from Word or Google Docs map to the same styles, with unsupported markup stripped.
+
+**Acceptance.**
+1. Use Heading 1 to Heading 4, paragraph, large and small paragraph, quote and preformatted styles; bold, italic, underline and strikethrough; both list types with a nested item; and all four alignments. Publish and read the matching semantic headings, paragraphs, quote, preformatted text, lists and inline elements.
+2. Paste Word and Google Docs fragments with headings, a list and link; use the Markdown shortcuts and see the same styles with unsupported markup stripped.
+
+#### PAGE-019 — Links and buttons that follow their destinations
+
+*Tier:* Core · *From:* PAGE-014
+
+**Requirement.** Selected text and buttons link to: a page on the site (chosen from the page list, so it follows a slug change), a section anchor on the same or another page (each section has an editable anchor ID), an external URL with an optional open-in-new-tab setting, a media-library file (`MEDIA-001`, for example a PDF price list), a `mailto:` address with optional subject, a `tel:` number and an `sms:` number with optional message body. A button block has the same destinations plus a label and a primary, secondary or tertiary style from `STYLE-002`. Links to internal pages and anchors are stored by reference, so renaming a page or anchor updates every link, and a link whose target is deleted is listed in the editor before publishing.
+
+**Acceptance.**
+1. Publish a text link and a primary, secondary or tertiary button for every destination: a native page, another page's anchor, an external URL with optional new tab, a library PDF, email with subject, telephone and SMS with message. Read each resolved destination; a new tab uses safe opener isolation and the anchor scrolls to its section.
+2. Rename the referenced page and anchor and republish: both links follow; delete the destination and read the broken-link finding before publication.
+3. Tab through the published links and buttons in reading order with visible focus and the Base accessibility bar.
 
 #### PAGE-015 — Trash and single page or post restore
 
@@ -365,7 +434,7 @@ The primary journey: Exercise the capabilities and acceptance journeys below.
 
 #### PAGE-016 — Paid membership access connection
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-ROLE-001
 
 **Requirement.** Paid membership is sold through Stall or Nectar (`LINK-002`). Pane connects that paid-access source, checks its entitlement on every protected request and never serves protected content in the public cache. Native account admission alone supplies no paid entitlement, and billing stays with the provider.
 
@@ -376,7 +445,7 @@ The primary journey: Exercise the capabilities and acceptance journeys below.
 
 #### PAGE-017 — Third-party tag and pixel marketplace with per-tag consent categories
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-PUBLIC-001, BASE-SECRET-001
 
 **Requirement.** An owner selects third-party tags and pixels from a marketplace and assigns each its consent category. Each tag loads only after the visitor grants its category, honors GPC and immediate withdrawal, and stays outside the workspace. PAGE-008 custom code and its shared analytics choice do not supply this marketplace.
 
@@ -394,7 +463,7 @@ The primary journey: Exercise the capabilities and acceptance journeys below.
 
 #### STYLE-002 — Site-wide brand styles
 
-*Tier:* Core
+*Tier:* Core · *Register:* R-11
 
 **Requirement.** The owner sets fonts, colors, button shapes, spacing and section backgrounds once for the whole site, with live preview. Fonts come from a built-in catalog, from font files the owner uploads (WOFF2, WOFF, TTF or OTF, self-hosted on the site's origin with `font-display: swap`) or from an Adobe Fonts web project the owner connects by project ID. A change applies everywhere in the next revision.
 
@@ -413,7 +482,7 @@ The primary journey: Exercise the capabilities and acceptance journeys below.
 
 #### STYLE-004 — Logo, favicon and brand kit
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-INPUT-003
 
 **Requirement.** The owner uploads a logo, favicon and social image once and enters the business's social profile links once; Pane sizes the images for the header, browser tab, home-screen icon and social cards (`SEO-006`), and uses the profile links for social icons (`PAGE-003`) and structured data `sameAs` (`SEO-005`).
 
@@ -424,7 +493,7 @@ The primary journey: Exercise the capabilities and acceptance journeys below.
 
 #### MEDIA-001 — Media library with alt text and usage
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-INPUT-003 · *Register:* R-11
 
 **Requirement.** Images, video files (MP4 and MOV, transcoded for the web with a poster frame), PDFs (menus, price lists) and other files upload once into a searchable library with folders, alt text, captions and a list of where each is used. Deleting a file in use is refused with its uses listed. The image picker also searches free stock photos from Unsplash through its official API; a chosen photo is copied into the library with its photographer credit and Unsplash link kept as attribution, and Unsplash's download event is triggered as its API terms require.
 
@@ -434,7 +503,7 @@ The primary journey: Exercise the capabilities and acceptance journeys below.
 
 #### MEDIA-002 — Responsive image optimization
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-INPUT-003
 
 **Requirement.** Pane serves every image in modern formats (AVIF or WebP with a fallback), at sizes matched to the screen (`srcset`), lazily below the fold and with dimensions set so the layout does not shift.
 
@@ -443,7 +512,7 @@ The primary journey: Exercise the capabilities and acceptance journeys below.
 
 #### MEDIA-003 — Basic image editing
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-INPUT-003
 
 **Requirement.** An editor crops, rotates and sets a focal point on an image in the browser; the original is kept and edits are reversible.
 
@@ -452,9 +521,9 @@ The primary journey: Exercise the capabilities and acceptance journeys below.
 
 #### MEDIA-004 — Video, map, social embeds and Instagram feed
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-PUBLIC-001, BASE-SECRET-001
 
-**Requirement.** A video block plays an uploaded library video (`MEDIA-001`) in an accessible player with controls, captions from an uploaded WebVTT file, a poster frame, and optional autoplay-muted and loop, streamed at sizes matched to the screen; or it embeds YouTube and Vimeo videos. Blocks also embed a Google Maps location for each business address, and Instagram or Facebook posts. An Instagram feed block connects the business's Instagram professional account through Instagram's official API and shows its most recent posts (count and grid or carousel layout chosen by the editor) on the live site, refreshed automatically at least hourly, with images re-served through `MEDIA-002` and each tile linking to its post; the access token is an installation secret refreshed before it expires, and a broken connection shows in `LINK-005` while the block keeps the last posts it fetched. Third-party embeds load only after consent where `PRIV-001` requires it.
+**Requirement.** A video block plays an uploaded library video (`MEDIA-001`) in an accessible player with controls, captions from an uploaded WebVTT file, a poster frame, and optional autoplay-muted and loop, streamed at sizes matched to the screen; or it embeds YouTube and Vimeo videos. Blocks also embed a Google Maps location for each business address, and Instagram or Facebook posts. An Instagram feed block connects the business's Instagram professional account through Instagram's official API and shows its most recent posts (count and grid or carousel layout chosen by the editor) on the live site, refreshed automatically at least hourly, with images re-served through `MEDIA-002` and each tile linking to its post; the connection refreshes its token before it expires, and a broken connection shows in `LINK-005` while the block keeps the last posts it fetched. Third-party embeds load only after consent where `PRIV-001` requires it.
 
 **Acceptance.**
 1. Upload a 200 MB MOV and place it in a video block with a WebVTT caption file; see it play with controls and captions by keyboard on the live site at 1440 and 390 wide, start from its poster frame and stream a phone-sized rendition at 390.
@@ -465,23 +534,19 @@ The primary journey: Exercise the capabilities and acceptance journeys below.
 
 #### CMS-001 — Structured collections with typed fields
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001, BASE-ACCESSIBILITY-001 · *Rules:* D-1, D-2
 
-**Requirement.** *Cites:* ACCESS-001, ACCESS-002, PUBLISH-001, PUBLISH-002, PUBLISH-003, PUBLISH-004, PAGE-006, PAGE-009 and CMS-011.
-
-The owner keeps structured collections such as services, team members, projects, testimonials, locations, FAQs and menu items, with typed fields (text, rich text, image, number, USD price, date, link, reference to another collection, option), each of which can be marked required with help text. A rich-text field is edited and rendered with the body editor of `CMS-011`: the `PAGE-014` paragraph styles, inline formats, lists, links and buttons, and inline blocks, never plain text or bold and italic alone. Starter collections come with each template.
+**Requirement.** The owner keeps structured collections such as services, team members, projects, testimonials, locations, FAQs and menu items, with typed fields (text, rich text, image, number, USD price, date, link, reference to another collection, option), each of which can be marked required with help text. A rich-text field is edited and rendered with the body editor of `CMS-011`: the `PAGE-018` paragraph styles, inline formats, lists, links and buttons, and inline blocks, never plain text or bold and italic alone. Starter collections come with each template.
 
 **Acceptance.**
 1. Create a services collection with ten fields including a USD price, a reference to team members and a required rich-text description, add 30 items, and edit an item; validation refuses wrong types and an empty required field.
-2. Give one item's description an H2, a bulleted list, bold text, an inline image and links to a page, a library PDF and a `tel:` number, publish, and see the item page render them as `PAGE-014` requires (`CMS-011`).
+2. Give one item's description an H2, a bulleted list, bold text, an inline image and links to a page, a library PDF and a `tel:` number, publish, and see the item page render them as PAGE-018 and PAGE-019 require (`CMS-011`).
 
 #### CMS-002 — Collection template pages with item URLs
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-ROLE-001, BASE-ACCESSIBILITY-001 · *Rules:* D-1, D-2
 
-**Requirement.** *Cites:* ACCESS-001, ACCESS-002, PUBLISH-001, PUBLISH-002, PUBLISH-003, PUBLISH-004, PAGE-006, PAGE-009 and CMS-011.
-
-Each collection can have a template page that renders every item at its own clean URL, with item-level title, description and social image for search (`SEO-001`).
+**Requirement.** Each collection can have a template page that renders every item at its own clean URL, with item-level title, description and social image for search (`SEO-001`).
 
 **Acceptance.**
 1. Design a service template page, publish, and open every service item's URL with its own title, description and structured data.
@@ -567,15 +632,24 @@ Each collection can have a template page that renders every item at its own clea
 
 #### CMS-011 — Post and collection item bodies in the block editor
 
-*Tier:* Core
+*Tier:* Core · *From:* CMS-011
 
-**Requirement.** A blog post's body, and every rich-text field of a collection item (`CMS-001`) or event (`CMS-009`), is written in the same editor as a page (`PAGE-014`), shown as the post or item will look on the live site. It offers every `PAGE-014` paragraph style (Heading 1 to Heading 4 rendered as `h1` to `h4`, paragraph, large and small paragraph, quote and preformatted), every inline format (bold, italic, underline, strikethrough), bulleted and numbered lists with one level of nesting, alignment, and every link and button destination (a page, a post, a collection item, a section anchor, an external URL with an optional new tab, a media-library file, `mailto:`, `tel:` and `sms:`). Between paragraphs the author inserts at least the image (with caption, alt text and link), gallery (`PAGE-012`), video and social-post embed (`MEDIA-004`), quote, button, line, spacer, HTML embed (`PAGE-008`), audio, code, accordion, form (`FORM-001`), newsletter signup (`LINK-003`), booking (`LINK-001`), product (`LINK-002`) and summary (`CMS-003`) blocks; a post or item body can also hold a section with the `PAGE-002` grid when the author chooses a wide layout. Links to pages, posts, items and anchors are stored by reference, as in `PAGE-014`, so renaming or moving any of them updates every link in every post and item, and a link whose target is deleted is listed before publishing. Markdown shortcuts and pasted Word or Google Docs content map to the same styles. The body is stored as structured blocks, rendered to semantic HTML on the live post, included in the post's RSS item (`CMS-006`) with absolute URLs, indexed by site search (`CMS-008`) and exported with the post (`EXPORT-001`).
+**Requirement.** A blog post's body, and every rich-text field of a collection item (`CMS-001`) or event (`CMS-009`), is written in the same editor as a page (PAGE-014 catalog, PAGE-018 text and PAGE-019 destinations), shown as the post or item will look on the live site. It offers every `PAGE-018` paragraph style (Heading 1 to Heading 4 rendered as `h1` to `h4`, paragraph, large and small paragraph, quote and preformatted), every inline format (bold, italic, underline, strikethrough), bulleted and numbered lists with one level of nesting, alignment, and every link and button destination (a page, a post, a collection item, a section anchor, an external URL with an optional new tab, a media-library file, `mailto:`, `tel:` and `sms:`). Between paragraphs the author inserts at least the image (with caption, alt text and link), gallery (`PAGE-012`), video and social-post embed (`MEDIA-004`), quote, button, line, spacer, HTML embed (`PAGE-008`), audio, code, accordion, form (`FORM-001`), newsletter signup (`LINK-003`), booking (`LINK-001`), product (`LINK-002`) and summary (`CMS-003`) blocks; a post or item body can also hold a section with the `PAGE-002` grid when the author chooses a wide layout. Links to pages, posts, items and anchors are stored by reference, as in `PAGE-019`, so renaming or moving any of them updates every link in every post and item, and a link whose target is deleted is listed before publishing. Markdown shortcuts and pasted Word or Google Docs content map to the same styles. Distribution of those structured bodies is CMS-012.
 
 **Acceptance.**
-1. As an author, write a post containing an H2 and an H3, a bulleted list with a nested item, bold and italic text, two inline images with captions, a quote with attribution, a YouTube embed, a button to a page, and links to another post, a library PDF and a `tel:` number; submit it, have the owner publish it, and read the live post DOM with the same checks as `PAGE-014`: each heading is the chosen `h2` or `h3`, the list is a `ul` holding a nested `ul`, `strong` and `em` wrap the formatted words, each image is a `figure` with its `figcaption` and alt text, the quote is a `blockquote` with its attribution, the video is the `MEDIA-004` embed, the button's `href` is the page's live URL, and each link's `href` is the other post's live URL, the PDF's served URL and the `tel:` number; tab through the post and reach every link and button in reading order; and pass an axe run.
+1. As an author, write a post containing an H2 and an H3, a bulleted list with a nested item, bold and italic text, two inline images with captions, a quote with attribution, a YouTube embed, a button to a page, and links to another post, a library PDF and a `tel:` number; submit it, have the owner publish it, and read the live post DOM with the same checks as PAGE-018 and PAGE-019: each heading is the chosen `h2` or `h3`, the list is a `ul` holding a nested `ul`, `strong` and `em` wrap the formatted words, each image is a `figure` with its `figcaption` and alt text, the quote is a `blockquote` with its attribution, the video is the `MEDIA-004` embed, the button's `href` is the page's live URL, and each link's `href` is the other post's live URL, the PDF's served URL and the `tel:` number; tab through the post and reach every link and button in reading order; and pass an axe run.
 2. Rename the linked post's slug, republish, and see the link follow to the new URL with no redirect hop.
 3. Do the same in a services item's rich-text description and check its item page the same way.
-4. Read the blog's RSS feed and see the post's item carry the same headings, list, images and links with absolute URLs.
+
+#### CMS-012 — Structured bodies in feeds, search and exports
+
+*Tier:* Core · *From:* CMS-011
+
+**Requirement.** Structured post, collection and event bodies are rendered to semantic HTML on the live post, included in the post's RSS item (`CMS-006`) with absolute URLs, indexed by site search (`CMS-008`) and exported with the post (`EXPORT-001`).
+
+**Acceptance.**
+1. Read the blog's RSS feed and see the post's item carry the same headings, list, images and links with absolute URLs.
+2. Search the populated post's text and find it, then open its exported body with the same content and structure.
 
 ### Domains and hosting
 
@@ -619,7 +693,7 @@ Each collection can have a template page that renders every item at its own clea
 
 #### DOMAIN-005 — Registrar email forwarding carried over
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-MAIL-001 · *Register:* R-5
 
 **Requirement.** Squarespace Domains, Wix, WordPress.com and GoDaddy include free email forwarding (aliases such as `info@` and a catch-all) that stops when the domain's nameservers move or it transfers. Before cutover Pane detects that forwarding from the domain's MX records and the registrar, asks the owner for the alias list and destinations (which the existing records do not reveal), and recreates every alias and the catch-all in Cloudflare Email Routing in the owner's Cloudflare account, including the destination-address verification Cloudflare requires. Pane then sends a test message to each alias and records it as arrived only when its unique token is confirmed at the destination (by the owner's confirmation link or a connected mailbox), and keeps the cutover (`IMPORT-006`) blocked until every alias has passed. After cutover it repeats the test and alerts (`AUTO-004`) if any alias stops delivering.
 
@@ -628,14 +702,13 @@ Each collection can have a template page that renders every item at its own clea
 
 #### HOST-001 — The business site at the domain root, fast
 
-*Tier:* Core
+*Tier:* Core · *Register:* R-7
 
-**Requirement.** The live site is served at the root of its domain (not under `/site`), cached at Cloudflare's edge and purged on publication. Each template meets Core Web Vitals at the 75th percentile on a mid-range phone over 4G: Largest Contentful Paint 2.5 s or less, Interaction to Next Paint 200 ms or less, Cumulative Layout Shift 0.1 or less. Before a site has field data, the same budgets are checked in the lab: Lighthouse's default mobile profile (emulated Moto G Power, simulated throttling at 150 ms round trip, 1.6 Mbps down and 4x CPU slowdown) with Largest Contentful Paint 2.5 s or less, Total Blocking Time 200 ms or less and Cumulative Layout Shift 0.1 or less, median of five runs. A publication reaches the edge everywhere within 30 seconds.
+**Requirement.** The live site is served at the root of its domain (not under the business-site path), cached at Cloudflare's edge and purged on publication. Field Core Web Vitals are published in R-7. The gating lab budgets are: Lighthouse's default mobile profile (emulated Moto G Power, simulated throttling at 150 ms round trip, 1.6 Mbps down and 4x CPU slowdown) with Largest Contentful Paint 2.5 s or less, Total Blocking Time 200 ms or less and Cumulative Layout Shift 0.1 or less, median of five runs. A publication reaches the edge everywhere within 30 seconds.
 
 **Acceptance.**
 1. Publish a populated site on a connected domain and run Lighthouse with the stated mobile profile five times on every template's home, collection and blog pages; the medians meet the lab budgets.
-2. Where Vane (`STATS-003`) has 28 days of field data, its 75th percentiles meet the field budgets.
-3. Publish a change and request the changed page from probes in Virginia, California, Frankfurt, Singapore and Sydney every two seconds: every probe serves the new revision within 30 seconds of the publication.
+2. Publish a change and request the changed page from probes in Virginia, California, Frankfurt, Singapore and Sydney every two seconds: every probe serves the new revision within 30 seconds of the publication.
 
 #### HOST-002 — The live site survives an admin outage
 
@@ -648,7 +721,7 @@ Each collection can have a template page that renders every item at its own clea
 
 #### HOST-003 — Updates without plugin maintenance
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-OPS-002, BASE-BACKUP-001
 
 **Requirement.** Pane ships platform, security and template updates as signed releases, whose signature the installation verifies against the published release key before applying (an unsigned or tampered release is refused), that the owner applies in one action (or automatically, if they choose), with a preview of what changes and a rollback. There are no third-party plugins to keep updated.
 
@@ -658,7 +731,7 @@ Each collection can have a template page that renders every item at its own clea
 
 #### HOST-004 — Transparent running cost in USD
 
-*Tier:* Core
+*Tier:* Core · *Register:* R-1
 
 **Requirement.** The workspace shows the site's Cloudflare usage this month and the estimated cost in USD against the owner's plan, with no feature that is locked behind an upsell. This answers incumbent complaints about add-on pricing.
 
@@ -667,7 +740,7 @@ Each collection can have a template page that renders every item at its own clea
 
 #### HOST-005 — Install from the browser with no terminal
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-INSTALL-001, BASE-ACCESS-001 · *Register:* R-1
 
 **Requirement.** An owner who has never opened a terminal installs Pane from its run site in a browser: they sign up for or sign in to Cloudflare through Cloudflare's own authorization screen, grant a token limited to the account resources Pane needs, and Pane deploys the Worker, database and storage into that account, creates the first owner sign-in and opens the workspace, showing each step's progress and a plain-language error with a retry when a step fails. The same path upgrades an installation (`HOST-003`). `rer deploy` (`DEPLOY-001`) stays for technical owners and both produce the same installation.
 
@@ -742,9 +815,9 @@ Each collection can have a template page that renders every item at its own clea
 
 #### SEO-008 — Google Business Profile consistency
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-AGENT-006, BASE-AGENT-007 · *Rules:* D-1
 
-**Requirement.** The owner connects their Google Business Profile. Pane compares its name, address, phone, hours and holiday hours with the site and shows differences; the owner chooses which is right and Pane updates the other with their approval.
+**Requirement.** The owner connects their Google Business Profile. Pane compares its name, address, phone, hours and holiday hours with the site and shows differences; the owner chooses which is right; a native decision updates the other, and an agent update carries external and live, decided by company policy.
 
 **Acceptance.**
 1. Connect a test profile whose holiday hours differ from the site, see the difference listed, approve the site's version and see the profile updated.
@@ -753,16 +826,16 @@ Each collection can have a template page that renders every item at its own clea
 
 *Tier:* Core
 
-**Requirement.** Before publication the editor lists search problems per page: missing or duplicate titles and descriptions, missing alt text, broken internal links, noindex mistakes and very large images. Title and description checks compare the effective metadata, including the site defaults, after Unicode NFKC normalization, whitespace folding and en-US lowercasing. A noindex setting is flagged for owner review, since excluding a page may be intentional; the check never changes that setting. Each future block, media and content capability inherits the corresponding checks before it ships (`PAGE-014`, `MEDIA-001`, `MEDIA-002`, `CMS-001` to `CMS-004`).
+**Requirement.** Before publication the editor lists search problems per page: missing or duplicate titles and descriptions, missing alt text, broken internal links, noindex mistakes and very large images. Title and description checks compare effective metadata using the [documented normalization](docs/contract/MECHANISM.md#search-normalization). A noindex setting is flagged for owner review, since excluding a page may be intentional; the check never changes that setting. Each future block, media and content capability inherits the corresponding checks before it ships (PAGE-014, PAGE-018, PAGE-019, `MEDIA-001`, `MEDIA-002`, `CMS-001` to `CMS-004`).
 
 **Acceptance.**
 1. Publish a draft with a duplicate title, a broken internal link and a missing alt text, and see each listed with a link to fix it.
 
 #### SEO-010 — Multilingual sites with per-language URLs
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-AGENT-006, BASE-AGENT-007 · *Rules:* D-1
 
-**Requirement.** The owner adds languages to the site (Spanish first for US businesses). Each page, post, collection item, menu, form label and search title has a version per language, drafted by `AI-002` or written by hand and published only when approved; a missing translation is listed rather than falling back silently. Each language has its own URL prefix (for example `/es/servicios`), pages carry `hreflang` alternates and `x-default`, the sitemap lists every language version, and a language switcher in the header goes to the same page in the other language.
+**Requirement.** The owner adds languages to the site (Spanish first for US businesses). Each page, post, collection item, menu, form label and search title has a version per language, drafted by `AI-002` or written by hand, with native publication decided by its publisher and an agent publication decided by company policy for external and live; a missing translation is listed rather than falling back silently. Each language has its own URL prefix (for example `/es/servicios`), pages carry `hreflang` alternates and `x-default`, the sitemap lists every language version, and a language switcher in the header goes to the same page in the other language.
 
 **Acceptance.**
 1. Add Spanish to a five-page site, translate three pages and leave two untranslated; see the untranslated pages listed, publish, and open `/es/` pages through the switcher; read reciprocal `hreflang` and `x-default` tags on each translated page, see them in the sitemap, and see a crawl of the live site report no `hreflang` errors (missing return links, invalid language codes or alternates that do not answer 200).
@@ -771,7 +844,7 @@ Each collection can have a template page that renders every item at its own clea
 
 #### FORM-001 — Form builder with multiple forms
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-INPUT-001, BASE-INPUT-003, BASE-ACCESSIBILITY-001
 
 **Requirement.** The owner builds any number of forms (contact, quote request, job application, event registration) with text, email, US phone, address, choice, date, file upload and consent fields, places them on any page, and sets each form's confirmation message or redirect. Each field has a label, optional help text shown under it, an optional placeholder and a required setting; required fields are marked visibly and with `required`/`aria-required`, and a submission with an empty required field or a badly formed email, phone or date is refused both in the browser and by the server, with a validation message beside each failing field, announced to screen readers and tied to it by `aria-describedby`, and the visitor's other answers kept. Uploaded files go to private storage with size and type limits.
 
@@ -790,7 +863,7 @@ Each collection can have a template page that renders every item at its own clea
 
 #### FORM-003 — Enquiry email to named recipients and reply
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-MAIL-001 · *Register:* R-4
 
 **Requirement.** Each form notifies named recipients by email (sent through the installation's mail relay or the business's Google Workspace or Microsoft 365 account) with the sender as Reply-To, so the owner replies from Gmail or Outlook. The workspace shows each notification's provider acceptance separately from the stored enquiry, and an owner can also reply from the inbox.
 
@@ -799,14 +872,12 @@ Each collection can have a template page that renders every item at its own clea
 
 #### FORM-004 — Automatic acknowledgment to the sender
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-MAIL-001, BASE-OPS-003 · *Rules:* D-1
 
-**Requirement.** Each form can send the visitor an acknowledgment email with the owner's wording and expected response time.
-
-The current Contact form defaults off. Its subject, wording and response time live in the immutable site revision and take effect only when the owner publishes it. The enquiry and its acknowledgment outcome are stored independently; one atomic send claim prevents replay, and uncertain provider outcomes are never automatically resent. Development and demo mail stays suppressed. FORM-001 inherits these optional per-form settings and durable provider outcomes for every form it adds.
+**Requirement.** Each form has optional acknowledgment wording and an expected response time in its immutable publication. Its enquiry and acknowledgment outcomes remain independent; the Contact acknowledgment starts off. The published settings apply to each form under FORM-001.
 
 **Acceptance.**
-1. Enable an acknowledgment, submit, and see the sender's message accepted by the provider edge with the configured wording.
+1. Enable acknowledgment wording, publish the revision, submit a contact and read the configured provider-edge outcome independently from its stored enquiry; replay the submission and see one send.
 
 #### FORM-005 — Lead routing to Orbit, HubSpot and signed webhooks
 
@@ -828,7 +899,7 @@ The current Contact form defaults off. Its subject, wording and response time li
 
 #### FORM-007 — Submission export and Google Sheets
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-DATA-001
 
 **Requirement.** Submissions export to CSV per form and date range, and a form can append each submission to a Google Sheet in the owner's Google Drive.
 
@@ -869,13 +940,14 @@ The current Contact form defaults off. Its subject, wording and response time li
 
 #### LINK-003 — Newsletter signup through Mango or Mailchimp
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-MAIL-001
 
-**Requirement.** A signup block (inline, in the footer, on the coming-soon page or in a pop-up, `PAGE-011`, `PAGE-013`) adds consenting visitors to an audience in Mango (first) or Mailchimp, with double opt-in when the owner chooses, the signup's consent text, time and page sent with the contact (`FORM-008`), optional tags or groups, and CAN-SPAM details (business postal address) checked. A failed handoff keeps the signup and retries, with its state shown in `LINK-005`.
+**Requirement.** A signup block (inline, in the footer, on the coming-soon page or in a pop-up, `PAGE-011`, `PAGE-013`) adds consenting visitors to an audience in Mango (first) or Mailchimp, with double opt-in when the owner chooses, the signup's consent text, time and page sent with the contact (`FORM-008`), optional tags or groups, and CAN-SPAM details (business postal address) checked. A failed handoff keeps the signup and retries, with its state shown in `LINK-005`. Under RL-102, collection starts only with a real authorized audience: disclose the destination, obtain explicit signup and applicable verification, report the actual provider outcome and honor suppression. Offers and announcements remain independent.
 
 **Acceptance.**
 1. With Mango connected, sign up through the block, confirm the double opt-in email and see the contact in the Mango audience with its consent record.
 2. With a Mailchimp test audience connected, sign up with double opt-in on: see the member created as pending, follow Mailchimp's confirmation email, and see the member subscribed with its tag and the consent text, time and page recorded; make the Mailchimp key invalid, sign up again and see the signup kept, retried and shown as failing in the health panel.
+3. Disconnect the audience and attempt a newsletter signup: no address is collected or subscribed; reconnect and complete the disclosed, verified signup while suppressed contacts remain suppressed.
 
 #### LINK-004 — Zapier, Crank and outgoing webhooks
 
@@ -897,12 +969,12 @@ The current Contact form defaults off. Its subject, wording and response time li
 
 #### API-001 — Agent command helper and API
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-004, BASE-AGENT-005, BASE-AGENT-009 · *Rules:* D-1
 
-**Requirement.** Agents and scripts act through an authenticated helper and API with the same server permissions as the workspace: read status, prepare drafts, run imports and, for the owner, publish and roll back. Target: scoped API tokens per agent or integration, a read API for pages and collections, and every call recorded in the activity log (`AUDIT-001`).
+**Requirement.** Pane's authenticated helper and API expose status, draft preparation, reviewed imports, publication and rollback, plus scoped per-agent credentials and read access to pages and collections. The native admin cannot publish; agent calls carry their computed classes and follow company policy.
 
 **Acceptance.**
-1. Run the helper's status, prepare and import commands as an admin with a private session file; see publish refused for the admin; create a scoped token and see a call outside its scope refused and logged.
+1. Through an admin's private session file run status, prepare and import, and see publication refused; create a scoped token, attempt an out-of-scope call and read its refusal and activity.
 
 ### Analytics and reporting
 
@@ -919,14 +991,14 @@ The current Contact form defaults off. Its subject, wording and response time li
 
 *Tier:* Core
 
-**Requirement.** The owner sets goals (form submissions, bookings, checkouts, signups, phone-number and email clicks, outbound clicks) and sees conversions and conversion rate by page, source and campaign, plus a simple funnel from landing page to goal. Each goal can be mapped to a Meta standard event and a Google Ads conversion action (`STATS-005`) and is raised in the browser as a `pane:goal` event for custom code (`PAGE-008`).
+**Requirement.** The owner sets goals (form submissions, bookings, checkouts, signups, phone-number and email clicks, outbound clicks) and sees conversions and conversion rate by page, source and campaign, plus a simple funnel from landing page to goal. Each goal can be mapped to a Meta standard event and a Google Ads conversion action (`STATS-005`) and is raised in the browser as a the documented goal event event for custom code (`PAGE-008`).
 
 **Acceptance.**
 1. Define a quote-form goal and a phone-click goal, complete each from a tagged campaign, and see them counted by page and campaign with a funnel.
 
 #### STATS-003 — Vane and Google Analytics 4 with consent
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-PUBLIC-001, BASE-SECRET-001
 
 **Requirement.** The owner connects Vane (first) or Google Analytics 4 by measurement ID through one Google tag that `STATS-005` reuses for Google Ads. Vane runs cookie-free; GA4 loads only after consent where `PRIV-001` requires it, and never under GPC.
 
@@ -958,17 +1030,13 @@ The current Contact form defaults off. Its subject, wording and response time li
 
 #### ROLE-001 — Roles for editors, authors, moderators and reporting
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-ROLE-001
 
-**Requirement.** Beyond owner, admin and member, the owner assigns editor (edits pages and collections, cannot publish), author (writes and submits own posts only), comment moderator (approves, marks spam, deletes and replies to blog comments and receives comment notifications, `CMS-010`), inbox (reads and replies to enquiries) and reporting (reads analytics) roles. A person can hold several roles. Every role is enforced on the server (`ACCESS-001`).
+**Requirement.** Beyond owner, admin and member, the owner assigns editor (edits pages and collections, cannot publish), author (writes and submits own posts only), comment moderator (approves, marks spam, deletes and replies to blog comments and receives comment notifications, `CMS-010`), inbox (reads and replies to enquiries) and reporting (reads analytics) roles. A person can hold several roles.
 
 **Acceptance.**
 1. Invite one person per role and exercise every route as each; each sees and does only what its role allows, and only the owner, admins and comment moderators can act on the comment queue or receive comment notifications.
-2. Assistance initiation: Native page writers and own-post authors explicitly initiate assistance within their current content authority.
-3. `tests/search.test.mjs` — “native page writers initiate private assistance within their current grant and retain actor-owned decisions” and “native authors write and submit only own posts and use assistance without exposing other content” prove direct server calls, own-post restrictions, refusal outside authority, combined grants, metadata audit, conflicts and next-request revocation.
-4. `scripts/ai-journey.mjs` — “editorInitiation” proves the existing editor at 1440 and 390.
-5. Assistance grants no publication rights.
-6. ROLE-002 retains review notifications and publishing delegation; ACCESS-001 retains server-side enforcement.
+2. Native page writers and own-post authors initiate assistance within their existing content authority; assistance adds no publication rights.
 
 #### ROLE-002 — Review requests and publish delegation
 
@@ -981,7 +1049,7 @@ The current Contact form defaults off. Its subject, wording and response time li
 
 #### ROLE-003 — Designer-to-client handover
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-ROLE-001
 
 **Requirement.** A designer or agency builds a site, transfers ownership to the business owner, and keeps a contributor role the owner can revoke at any time.
 
@@ -990,70 +1058,70 @@ The current Contact form defaults off. Its subject, wording and response time li
 
 #### ROLE-004 — Two-step sign-in and passkeys for workspace users
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-ACCESS-001, BASE-SIGNIN-001, BASE-SIGNIN-002, BASE-AUDIT-001 · *Register:* R-6
 
-**Requirement.** Every workspace person signs in through Base's native operator sign-in: an email sign-in link, or an identity provider (Auth, Google, Microsoft Entra ID or Okta) over OIDC. On top of that, each person can register passkeys (WebAuthn) and an authenticator-app one-time code (TOTP) with single-use recovery codes, and the owner can require two-step sign-in for every role or for owner and admin only; a person without it is sent to enroll before reaching the workspace. Signing in through an identity provider that reports multi-factor authentication satisfies the requirement. Losing a second factor is recovered by the owner, never by email alone, and every enrollment, removal and recovery is in the activity log (`AUDIT-001`).
+**Requirement.** Pane's two-step coverage can target its owner and admin roles or every workspace role, including its editors and own-post authors. Its provider choices are Auth, Google, Entra ID and Okta; account-specific enrollment, removal and recovery appear in Pane's activity view.
 
 **Acceptance.**
-1. Require two-step sign-in for all roles; sign in as an editor with an email link and see the enrollment step before `/app`; register a passkey and sign in with it; register TOTP and see a wrong or reused code refused; use a recovery code once and see it refused the second time; sign in through an OIDC provider that reports MFA and reach `/app` without a second prompt; and read each event in the activity log.
+1. Require two-step sign-in for all roles; sign in as an editor by email and see enrollment before the workspace; register and use a passkey and authenticator code, refusing wrong and reused codes; use a recovery code once and refuse it twice; complete OIDC provider MFA without a second prompt; recover through the owner and read each enrollment, removal and recovery event.
 
 #### AUDIT-001 — Activity log of every change
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-AUDIT-001, BASE-OPS-005
 
-**Requirement.** One log records every edit, publication, rollback, setting change, connection change, import, erasure, role change and agent action (`AGENT-008`) with actor, time and subject. It is readable by the owner, exportable and survives erasure of the subject with the actor anonymized where required.
+**Requirement.** Pane's metadata-only owner activity view includes every edit, publication, rollback, setting change, connection change, import, erasure, role change and agent action, identifying each subject (RL-3).
 
 **Acceptance.**
-1. Perform each kind of action, read the log in order, export it, erase a person and see their actor entries anonymized while the log remains.
+1. Perform each kind of Pane action, read its metadata trail in order, open the export and erase a person; the ordered trail remains with the actor anonymized.
 
 ### Moving in from incumbents
 
 #### IMPORT-001 — WXR publishing platform import
 
-*Tier:* Core
+*Tier:* Core · *Rules:* D-1, D-2, D-3 · *Register:* R-8
 
 **Requirement.** Pane imports a WXR publishing platform export (WXR XML) from hosted WXR publishing platform or self-hosted WXR publishing platform: pages, posts, categories, tags, authors, featured images and media files fetched from their references, menus where present, comments (approved, pending and spam, with author name, email, URL, date and reply threading) into `CMS-010`, and every old URL mapped for redirects. Shortcodes and plugin blocks it cannot render are listed, not dropped silently.
 
 **Acceptance.**
 1. Import a real hosted WXR publishing platform export with 100 posts, media and at least 50 comments including threaded replies and pending ones, review the plan and its exceptions (including the comment counts by state), apply as an unpublished draft, see every comment on its post with the same threading and state, and open every old URL on the new site through its redirect.
-2. The import passes only when: every source page, post, collection item, event and gallery image is present on the new site or listed in the `IMPORT-005` report with a reason; each page's, post's and item's visible text matches the source's after whitespace normalization; every source image is fetched and served through `MEDIA-002` or listed as unfetchable; every old URL from the source sitemap and crawl answers 301 to a new URL that answers 200; on each imported page, blog post, collection item and event (its body and every rich-text field, held in the `CMS-011` editor) every source link and button is present with the same destination (internal targets resolved through the URL map to the new URL, anchors to the matching section anchor, files to their `MEDIA-001` copy, and external, `mailto:`, `tel:` and `sms:` targets unchanged), each source heading has the same level, each source list is a list of the same type with the same items, and each inline image is in the same place in the body with its caption and alt text; and the applied counts per content type equal the report's counts.
+2. Apply the import and inspect every content type against D-3, including each retained exception, old URL and rendered rich body; its applied counts equal the report.
 
 #### IMPORT-002 — XML-export site builder import
 
-*Tier:* Core
+*Tier:* Core · *Rules:* D-1, D-2, D-3 · *Register:* R-8
 
 **Requirement.** Pane imports an XML-export site builder site from its WXR publishing platform-format export plus a crawl of the published site for what the export omits, keeping the URL map. Each XML-export site builder blog page becomes its own blog (`CMS-004`) with its posts, feed URL and comments (`CMS-010`). Restaurant menu blocks become items in a menu-items collection (`CMS-001`) with section, name, description and USD price, shown through a collection list (`CMS-003`). Calendar (events) pages are imported into the events collection (`CMS-009`) with each event's title, description, image, start and end time in the site's time zone, location and its register or buy link, read from the calendar page's published event data, and old event URLs redirect to the new event pages. Gallery pages and gallery sections are rebuilt as gallery blocks (`PAGE-012`) with their images and captions, and other page layouts are rebuilt as sections from the crawl, with XML-export site builder blocks mapped to the `PAGE-014` catalog (text with its heading levels, formatting, lists and links; button, quote, line, spacer, accordion, social links, audio, code, chart, scrolling text and shape blocks) and every link and button target kept. Blog post bodies are mapped the same way into the `CMS-011` editor, keeping inline images with their captions, quotes, video embeds, buttons and links. Each XML-export site builder form block becomes a working `FORM-001` form on the same page with the same fields in the same order, each field's type, label, description and required setting, the submit label, the confirmation message or redirect, and the notification recipients (`FORM-003`); a field type with no equivalent is listed in the report. Products are written to a Stall product import file (or listed with their Stripe or PayPal replacements) because checkout belongs to Stall (`LINK-002`), and scheduling blocks keep their Acuity link (`LINK-001`). Whatever still cannot map is listed in the report (`IMPORT-005`), never left as an unexplained to-do.
 
 **Acceptance.**
 1. Import a test XML-export site builder site with two blog pages with comments, a calendar page of 12 events (past and upcoming, one with a product block), a gallery page, a menu block of 20 items and a scheduling block; review the report and apply.
-2. The import passes only when: every source page, post, collection item, event and gallery image is present on the new site or listed in the `IMPORT-005` report with a reason; each page's, post's and item's visible text matches the source's after whitespace normalization; every source image is fetched and served through `MEDIA-002` or listed as unfetchable; every old URL from the source sitemap and crawl answers 301 to a new URL that answers 200; on each imported page, blog post, collection item and event (its body and every rich-text field, held in the `CMS-011` editor) every source link and button is present with the same destination (internal targets resolved through the URL map to the new URL, anchors to the matching section anchor, files to their `MEDIA-001` copy, and external, `mailto:`, `tel:` and `sms:` targets unchanged), each source heading has the same level, each source list is a list of the same type with the same items, and each inline image is in the same place in the body with its caption and alt text; and the applied counts per content type equal the report's counts.
+2. Apply the import and inspect every content type against D-3, including each retained exception, old URL and rendered rich body; its applied counts equal the report.
 3. In addition: each blog page is its own blog with its own feed and every comment on its post with threading and state; every event is in the events collection with correct local times, its old URL redirecting to it and the upcoming split right; the 20 menu items are in the menu-items collection with their prices; the scheduling block keeps its Acuity link; the product is in a Stall import file; a post holding headings, a list, two inline images with captions, a quote, a YouTube video, a button and links to a service page, another post and a PDF passes the link, heading, list and inline-image checks; and a contact form block with a required field and a field description becomes a `FORM-001` form that refuses the empty required field and delivers a test submission to the same recipient.
 
 #### IMPORT-003 — Crawl-only site builder import
 
-*Tier:* Core
+*Tier:* Core · *Rules:* D-1, D-2, D-3, D-5 · *Register:* R-8
 
-**Requirement.** Because crawl-only site builder offers no full site export, Pane imports a crawl-only site builder site by crawling its published pages and blog (and the blog's RSS) with the owner's proof of domain control, rebuilding pages from the content and keeping the URL map.
+**Requirement.** Because crawl-only site builder offers no full site export, Pane imports a crawl-only site builder site by crawling its published pages and blog (and the blog's RSS) with the owner's proof of domain control, rebuilding pages from the content and keeping the URL map. Controlled public captures obey D-5 (RL-101); DNS control does not license the assets.
 
 **Acceptance.**
 1. Import a published crawl-only site builder test site with a blog by crawl, review the mapping and apply.
-2. The import passes only when: every source page, post, collection item, event and gallery image is present on the new site or listed in the `IMPORT-005` report with a reason; each page's, post's and item's visible text matches the source's after whitespace normalization; every source image is fetched and served through `MEDIA-002` or listed as unfetchable; every old URL from the source sitemap and crawl answers 301 to a new URL that answers 200; on each imported page, blog post, collection item and event (its body and every rich-text field, held in the `CMS-011` editor) every source link and button is present with the same destination (internal targets resolved through the URL map to the new URL, anchors to the matching section anchor, files to their `MEDIA-001` copy, and external, `mailto:`, `tel:` and `sms:` targets unchanged), each source heading has the same level, each source list is a list of the same type with the same items, and each inline image is in the same place in the body with its caption and alt text; and the applied counts per content type equal the report's counts.
+2. Apply the import and inspect every content type against D-3, including each retained exception, old URL and rendered rich body; its applied counts equal the report.
 3. The source's page and post list is its published sitemap plus the crawl, and blog posts are checked against the blog's RSS.
 
 #### IMPORT-004 — Visual and generated site builder import
 
-*Tier:* Core
+*Tier:* Core · *Rules:* D-1, D-2, D-3, D-5 · *Register:* R-8
 
-**Requirement.** Pane imports collection-based visual site builder and design-first visual site builder CMS CSV exports (`CMS-007`) and their published pages by crawl, and AI-generated site builder sites by crawl, with the same review, exceptions and URL map.
+**Requirement.** Pane imports collection-based visual site builder and design-first visual site builder CMS CSV exports (`CMS-007`) and their published pages by crawl, and AI-generated site builder sites by crawl, with the same review, exceptions and URL map. Controlled public captures obey D-5 (RL-101); DNS control does not license the assets.
 
 **Acceptance.**
 1. Import a collection-based visual site builder site with two collections, a design-first visual site builder site with one collection and a published AI-generated site builder site by crawl, review exceptions for each and apply.
-2. The import passes only when: every source page, post, collection item, event and gallery image is present on the new site or listed in the `IMPORT-005` report with a reason; each page's, post's and item's visible text matches the source's after whitespace normalization; every source image is fetched and served through `MEDIA-002` or listed as unfetchable; every old URL from the source sitemap and crawl answers 301 to a new URL that answers 200; on each imported page, blog post, collection item and event (its body and every rich-text field, held in the `CMS-011` editor) every source link and button is present with the same destination (internal targets resolved through the URL map to the new URL, anchors to the matching section anchor, files to their `MEDIA-001` copy, and external, `mailto:`, `tel:` and `sms:` targets unchanged), each source heading has the same level, each source list is a list of the same type with the same items, and each inline image is in the same place in the body with its caption and alt text; and the applied counts per content type equal the report's counts.
+2. Apply the import and inspect every content type against D-3, including each retained exception, old URL and rendered rich body; its applied counts equal the report.
 3. The rule is applied to each of the three sites separately, and every CSV row of each collection-based visual site builder and design-first visual site builder collection is an item with each field's value equal to the CSV's.
 
 #### IMPORT-005 — Migration report and URL map
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-INPUT-001
 
 **Requirement.** Every import shows, before anything is written, a report of what will map where, what will not (with reasons), counts per content type (pages, posts, comments by state, collection items, events, galleries, media, products handed to Stall), every old URL and its new target, media that could not be fetched, and each form's old destination. Apply needs the report's fingerprint; undo works while the draft is unpublished (`MOVEIN-001`). After apply, the report is re-checked against the new site with the import pass rule every incumbent import (`IMPORT-001` to `IMPORT-004`) states, including its link, button, heading, list and inline-image checks on every page, post, collection item and event, and any item that fails it (for example a link whose internal target did not import) is added to the report with its reason. The report also states plainly what stays behind with the old platform, including its traffic and sales analytics history.
 
@@ -1062,7 +1130,7 @@ The current Contact form defaults off. Its subject, wording and response time li
 
 #### IMPORT-006 — Verified cutover with the old site kept
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-INPUT-001
 
 **Requirement.** Cutover is a checked step: Pane confirms the new site's pages, redirects, forms and lead routes work on a preview hostname, that mailbox records are kept (`DOMAIN-003`) and that every registrar email forwarding alias has been recreated and proven (`DOMAIN-005`), then switches the domain (`DOMAIN-001`) while the old site stays reachable until the owner closes it, and rolls the DNS back in one action if needed.
 
@@ -1071,7 +1139,7 @@ The current Contact form defaults off. Its subject, wording and response time li
 
 #### IMPORT-007 — Enquiry and subscriber history import
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-INPUT-001
 
 **Requirement.** An owner moving in brings their history: past form submissions exported from XML-export site builder (form storage and contacts), crawl-only site builder (form submissions CSV) or hosted WXR publishing platform (form responses CSV) import into the inbox with their original dates, form and fields, marked as imported and not re-notified; and the old platform's newsletter subscriber list imports into Mango or Mailchimp (`LINK-003`) with each subscriber's original consent date and source carried and unsubscribed or bounced contacts kept suppressed, never re-subscribed. Analytics history can come too: a monthly visits-by-page CSV exported from XML-export site builder Analytics (or crawl-only site builder or hosted WXR publishing platform stats) imports as a baseline that `STATS-001` charts before Pane's own counts begin, marked as imported; without one, the migration report (`IMPORT-005`) says that traffic and sales history stays with the old platform.
 
@@ -1083,7 +1151,7 @@ The current Contact form defaults off. Its subject, wording and response time li
 
 #### EXPORT-001 — Open-format site export
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-DATA-001
 
 **Requirement.** Besides the installation archive (`BACKUP-001`), the owner exports content in open formats: WordPress WXR for pages and posts, CSV for each collection and form, a ZIP of original media, and a static HTML copy of the live site that runs on any host.
 
@@ -1092,7 +1160,7 @@ The current Contact form defaults off. Its subject, wording and response time li
 
 #### PRIV-001 — Consent for analytics and third-party embeds
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-PUBLIC-001 · *Rules:* D-4
 
 **Requirement.** Pane's own counting needs no consent. When the owner adds GA4, the Meta Pixel, the Google tag for Google Ads (`STATS-005`), custom header code (`PAGE-008`) or a third-party embed, a consent banner appears with US-appropriate choices, Global Privacy Control is honored as an opt-out of sale and sharing, and nothing third-party loads before the choice. Under GPC no advertising pixel or tag loads at all and no server-side conversion (`STATS-005`) is sent for that visit.
 
@@ -1101,7 +1169,7 @@ The current Contact form defaults off. Its subject, wording and response time li
 
 #### PRIV-002 — Person-level privacy requests
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-DATA-003, BASE-DATA-006
 
 **Requirement.** For a CCPA or similar request, the owner finds everything stored about one email address (enquiries, consents, files, blog comments, subscriber records and the CRM deliveries Pane made), exports it for the person and erases it in one action, with the erasure fenced against old backups (`ERASE-001`) and the downstream services listed for follow-up.
 
@@ -1121,16 +1189,12 @@ When AI assistance is connected, the actual-service inventory and privacy starte
 
 #### PRIV-004 — Security headers on every page
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-SECRET-001, BASE-PUBLIC-001 · *Rules:* D-4
 
-**Requirement.** Workspace and live pages send a strict content security policy, frame protection, `nosniff`, a referrer policy and a permissions policy; the live site's policy widens only for embeds the owner added (`PAGE-008`).
-
-The installation's shared Lobby (`/`), sign-in (`/signin` and `/auth/*` pages) and setup (`/setup`) documents are workspace pages for this clause: each sends the same permissions policy, `camera=(), microphone=(), geolocation=()`, as workspace and live pages, without changing their sign-in behavior or content security policy. That policy also applies to every frame inside a page and an embed's `allow` attribute cannot override it; the live site delegates one of these features only to a named embed's own origin, on the page holding it, after consent (`PRIV-001`), and only where a target clause names that need.
-
-The current embed door stores a supported HTTPS provider URL in an immutable page revision. Only its published page lists that exact origin in frame-src; workspace and draft previews stay inert. Visitor consent is per provider origin and can be revoked; GPC keeps these embeds off even after saved consent. PAGE-008, MEDIA-004, PRIV-001, LINK-001, STATS-003 and STATS-005 inherit the same origin, consent and workspace boundaries when they add a door. No current embed delegates device permissions.
+**Requirement.** Pane's workspace, shared entry screens and live pages have a strict content security policy, frame protection, MIME sniffing protection, a referrer policy and a permissions policy. An approved embed widens only its own published page's host policy. Device permissions remain denied throughout nested frames unless a target clause explicitly needs a named embed's origin on its own page after consent.
 
 **Acceptance.**
-1. Read the headers on every page type and see the policy; add an embed and see only its host added.
+1. Read the headers on each page type, add and publish an embed, and see only that page allow its host; workspace and draft previews remain inert and nested frames cannot override denied device permissions.
 
 #### LOCALE-001 — US defaults
 
@@ -1154,7 +1218,7 @@ The current embed door stores a supported HTTPS provider URL in an immutable pag
 
 #### MOBILE-002 — Native iOS and Android owner app
 
-*Tier:* Core
+*Tier:* Core · *Register:* R-9
 
 **Requirement.** A native owner app sends push notifications for new enquiries, review requests and site problems, lets the owner reply, approve and publish, post to the blog with photos from the camera, and read stats. Its post editor writes `CMS-011` bodies with every paragraph style, inline format, list and link destination, and image (camera or library, with caption and alt text), gallery, quote, button, line and video embed blocks; any other block in a post is shown as a labeled placeholder and kept unchanged when the post is saved from the phone. It uses the installation's own sign-in and holds no content offline beyond what the owner opens.
 
@@ -1166,7 +1230,7 @@ The current embed door stores a supported HTTPS provider URL in an immutable pag
 
 #### AUTO-001 — Form-triggered automations
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-OPS-003, BASE-OPS-004
 
 **Requirement.** The owner sets rules on form submission: acknowledge the sender, notify people, create a follow-up task, post to Nook, Slack or Microsoft Teams, route to a CRM or tag the enquiry, with conditions on form and field values.
 
@@ -1175,7 +1239,7 @@ The current embed door stores a supported HTTPS provider URL in an immutable pag
 
 #### AUTO-002 — Scheduled automations
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-OPS-003, BASE-OPS-004
 
 **Requirement.** Time-based rules run on the owner's schedule in their US time zone: holiday-hour banners, recurring reminders to review stale pages, and expiring promotions.
 
@@ -1184,7 +1248,7 @@ The current embed door stores a supported HTTPS provider URL in an immutable pag
 
 #### AUTO-003 — Share new posts to social accounts
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-OPS-003, BASE-OPS-004
 
 **Requirement.** On publication a post can be shared to the business's connected Facebook Page, Instagram, LinkedIn Page or X account with owner-approved text.
 
@@ -1193,7 +1257,7 @@ The current embed door stores a supported HTTPS provider URL in an immutable pag
 
 #### AUTO-004 — Site problem alerts
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-OPS-003, BASE-OPS-004
 
 **Requirement.** Pane alerts the owner when a form delivery fails, a connection breaks, a certificate or domain is near expiry, a page returns errors or links break, and can hand external uptime checks to Uptime.
 
@@ -1204,9 +1268,9 @@ The current embed door stores a supported HTTPS provider URL in an immutable pag
 
 #### AI-001 — Draft a whole site from business facts
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-AGENT-006, BASE-AGENT-007 · *Rules:* D-1
 
-**Requirement.** From the owner's business facts (name, services, service area, hours, prices, team, tone, photos), Pane drafts a complete site: pages, sections, collections, copy, menus, search titles and structured data, using the owner's photos or clearly marked placeholders. The result is an unpublished draft the owner previews and edits; nothing is published without approval, and no reviews, credentials or prices are invented.
+**Requirement.** From the owner's business facts (name, services, service area, hours, prices, team, tone, photos), Pane drafts a complete site: pages, sections, collections, copy, menus, search titles and structured data, using the owner's photos or clearly marked placeholders. The result is an unpublished draft the owner previews and edits; an agent publication carries external and live, decided by company policy, and no reviews, credentials or prices are invented.
 
 **Acceptance.**
 1. Enter facts for a test plumbing business (six services with USD prices, two staff, weekly hours, two real reviews), receive a draft site within two minutes and preview every page.
@@ -1215,51 +1279,164 @@ The current embed door stores a supported HTTPS provider URL in an immutable pag
 
 #### AI-002 — Writing, alt text and translation assist
 
-*Tier:* Core
+*Tier:* Core · *From:* AI-002 · *Cites:* BASE-AGENT-006, BASE-AGENT-007 · *Rules:* D-1 · *Register:* R-10
 
-**Requirement.** In the editor, AI rewrites, shortens and adjusts the tone of selected text, drafts alt text for images, and translates pages into Spanish or other languages as separate draft pages; every suggestion is accepted or rejected by the editor.
-
-**Acceptance.**
-1. Rewrite a paragraph, draft alt text for five images and translate the home page to Spanish; accept some suggestions and reject others, and see only accepted text in the draft.
-2. Interim product default approved by CT with riders on 26 October 2026: only the authenticated native owner may explicitly request assistance.
-3. The server records the generation click with actor, time, operation, selected page, source revision, named image identifiers and request identifier.
-4. Before the request, consent copy names OpenAI as the AI processor accessed through Base AI and identifies the selected content and named images being sent.
-5. Only that selected page’s content and necessary page-local context and explicitly named image inputs may be sent.
-6. Other pages, unrelated unpublished material, revision history, visitor data, form submissions, enquiries, account records and secrets are excluded.
-7. Linked targets are not fetched.
-8. Every proposal remains pending until individually accepted or rejected; generation changes no draft. Acceptance creates only a new immutable unpublished draft, and translations create separate draft pages. Acceptance atomically checks the reviewed revision and inherits PAGE-006 durable reopen, five-step undo and redo, retained work and explicit conflict resolution without silent overwrite. Publication remains a separate explicit approval under the existing publication guarantees. No automatic publication or other outbound action follows generation or acceptance. The audit records only actor, action, time, operation, identifiers, revisions, provider, model, decision and sanitized outcome metadata; it contains no prompt or output bodies, content excerpts, image bytes, signed image links, credentials or raw provider errors. PRIV-003 policy starters name OpenAI when assistance is connected, remain labeled editable drafts and preserve existing pages. Evidence limits: approval of these defaults is not implementation acceptance. Provider-fake evidence and real-model evidence must be labeled separately. Provider-fake journeys do not establish OpenAI acceptance, provider data handling, model quality or cost. Privacy, legal compliance, accessibility, translation quality and search rankings are not certified by this ruling. The original target and acceptance journey remain binding, and this ruling changes no clause status. CMS-011 retains the remaining full catalog and destinations; PAGE-014 retains its remaining catalog and destinations. AI-004 retains bulk work, SEO-010 retains multilingual-site delivery and AGENT-008 retains USD budgets and agent controls. Scope clarification: A native owner using the editor can satisfy AI-002’s functional acceptance; that journey does not require a non-owner actor. ROLE-001 owns editor and author initiation of assistance within their existing content permissions, enforced server-side by ACCESS-001. The owner-only interim default grants no additional role authority. AI-002 remains partial while applicable ROLE-001 initiation is unproved, even if its owner functional journey passes. Retain selected-text rewriting, shortening and tone adjustment, alt text for five images, Spanish and other-language translation into separate draft pages, individual acceptance and rejection, accepted-only draft changes, and every standing payload, audit, five-step undo and redo, and conflict rider. This clarification approves no implementation, status promotion or completion.
-
-#### AI-003 — Search and content suggestions with approval
-
-*Tier:* Core
-
-**Requirement.** AI reviews pages for search and clarity (titles, descriptions, headings, internal links, structured data gaps) and proposes edits as a draft the owner approves.
+**Requirement.** In the editor, AI rewrites, shortens and adjusts the tone of selected text, drafts alt text for images, and translates into Spanish or other languages as separate draft pages. Input custody and decision history are AI-005 and AI-006 (RL-1, RL-2).
 
 **Acceptance.**
-1. Run the review on a weak page, see proposed titles, descriptions and links, accept two and publish.
-2. Interim product default approved by CT with riders on 26 October 2026: only the authenticated native owner may explicitly request assistance.
-3. The server records the generation click with actor, time, operation, selected page, source revision, named image identifiers and request identifier.
-4. Before the request, consent copy names OpenAI as the AI processor accessed through Base AI and identifies the selected content and named images being sent.
-5. Only that selected page’s content and necessary page-local context and explicitly named image inputs may be sent.
-6. Other pages, unrelated unpublished material, revision history, visitor data, form submissions, enquiries, account records and secrets are excluded.
-7. Linked targets are not fetched.
-8. Every proposal remains pending until individually accepted or rejected; generation changes no draft. Acceptance creates only a new immutable unpublished draft, and translations create separate draft pages. Acceptance atomically checks the reviewed revision and inherits PAGE-006 durable reopen, five-step undo and redo, retained work and explicit conflict resolution without silent overwrite. Publication remains a separate explicit approval under the existing publication guarantees. No automatic publication or other outbound action follows generation or acceptance. The audit records only actor, action, time, operation, identifiers, revisions, provider, model, decision and sanitized outcome metadata; it contains no prompt or output bodies, content excerpts, image bytes, signed image links, credentials or raw provider errors. PRIV-003 policy starters name OpenAI when assistance is connected, remain labeled editable drafts and preserve existing pages. Evidence limits: approval of these defaults is not implementation acceptance. Provider-fake evidence and real-model evidence must be labeled separately. Provider-fake journeys do not establish OpenAI acceptance, provider data handling, model quality or cost. Privacy, legal compliance, accessibility, translation quality and search rankings are not certified by this ruling. The original target and acceptance journey remain binding, and this ruling changes no clause status. SEO-005 retains structured-data implementation, AI-004 retains bulk work and AGENT-008 retains USD budgets and agent controls.
+1. Under the held company policy, rewrite, shorten and change a paragraph's tone, draft alt text for five images and translate the home page to Spanish and another language; accept some suggestions and reject others, and read only accepted text in the draft with its separate translated pages.
+
+#### AI-003 — Search and content suggestions
+
+*Tier:* Core · *From:* AI-003 · *Cites:* BASE-AGENT-006, BASE-AGENT-007 · *Rules:* D-1 · *Register:* R-10
+
+**Requirement.** AI examines a page's search and clarity: titles, descriptions, headings, internal links and structured-data gaps. Its proposed edits use AI-005 input custody and AI-006 decision history (RL-1).
+
+**Acceptance.**
+1. Under the held company policy, examine a weak page, read proposed titles, descriptions and links, accept two, reject the others and publish the accepted changes.
+
+#### AI-005 — Selected assistance inputs and disclosure
+
+*Tier:* Core · *From:* AI-002, AI-003 · *Cites:* BASE-AGENT-006, BASE-AGENT-007 · *Rules:* D-1 · *Register:* R-10
+
+**Requirement.** Assistance sends OpenAI through Base AI only the selected page's content, necessary page-local context and explicitly named image inputs. RL-1 and RL-2 retain each native writer's existing content authority. An agent's provider call carries external, adding sensitive for regulated input; the company's policy decides the call.
+
+**Acceptance.**
+1. Before a native request, read disclosure naming OpenAI through Base AI, the selected content and named images; initiating records actor, time, operation, selected page, source revision, named image identifiers and request identifier.
+2. Inspect the provider payload: other pages, unrelated unpublished material, history, visitors, submissions, enquiries, accounts and secrets are absent; linked targets are never fetched.
+3. A native page writer and an own-post author request only within their existing content permissions; an out-of-authority request sends nothing. No additional role or publication authority is conferred.
+4. Connected policy starters and pre-request copy disclose that processor and those inputs, remain editable drafts and preserve existing pages.
+
+#### AI-006 — Assistance decisions and durable history
+
+*Tier:* Core · *From:* AI-002, AI-003 · *Cites:* BASE-AGENT-006, BASE-AGENT-007 · *Rules:* D-1 · *Register:* R-10
+
+**Requirement.** Assistance generation alone does not edit a native draft. Native decisions individually accept or reject suggestions, bind their reviewed revision and retain PAGE-006 history and conflict recovery. An agent's draft application carries standard and its publication carries external and live, adding commitment for binding offers; the company's policy decides each call (RL-1, RL-2).
+
+**Acceptance.**
+1. Under the held company policy, inspect pending suggestions, accept some and reject others; only accepted changes enter a new immutable unpublished draft and translations become separate pages.
+2. Reopen, undo and redo five steps; change the source from another editor and see the reviewed decision refused without a silent overwrite, with the losing work retained for comparison, copy or explicit latest selection.
+3. Read metadata-only lifecycle activity: actor, action, time, operation, identifiers, revisions, provider, model, decision and sanitized outcome; no prompt or output body, excerpt, image bytes, signed image link, credential or raw provider error appears.
+4. Under that held policy, generation, acceptance, rejection and undo or redo send no publication, mail or linked fetch; publication is a separate action.
 
 #### AI-004 — AI collection and bulk content operations
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-AGENT-006, BASE-AGENT-007 · *Rules:* D-1
 
-**Requirement.** AI creates a collection schema from a description or a pasted list, fills items from source text the owner provides, and makes bulk edits (for example update every service's price range) as one reviewable draft.
+**Requirement.** Under the company's policy for external processor input and standard draft writes, AI creates a collection schema from a description or a pasted list, fills items from source text the owner provides, and makes bulk edits (for example update every service's price range) as one reviewable draft.
 
 **Acceptance.**
-1. Paste a price list, see a services collection proposed and filled, then ask for a bulk change and approve the diff.
+1. Under the held company policy, paste a price list, inspect the proposed services schema and items, then request a bulk change and decide its exact diff.
 
 ### Agent surface
 
-Inherits BASE-AGENT-001 to BASE-AGENT-013. The company's policy decides every call.
+**Specialist: website steward.** Keeps a small business's site accurate, moves it safely, publishes its changes and follows enquiries through to people.
 
-| Tool | Core clauses | Classes this call can carry |
-| --- | --- | --- |
+Inherits BASE-AGENT-001 to BASE-AGENT-013. The company's policy decides every call; Pane presets no disposition.
+
+**How Pane computes each class.**
+- standard: reversible private drafts and internal record work, measured in items.
+- external: a public revision, outside message, shared link or processor input, with recipients and known, new or public counterparty taken from the business's records and exposure.
+- live: changed published behavior, DNS, routing, scheduling or executing code, naming the affected site.
+- commitment: a binding offer, published price or sign-off others rely on, with value and counterparty.
+- access: membership, roles, ownership and grants, with people and widening or narrowing direction.
+- security: credentials, admission, protective settings and code permissions, naming the setting.
+- destructive: permanent enquiry/media erasure or archive replacement that cannot be undone, with item count.
+- sensitive: ID, health or bank information in a private record or attachment, with kind and record count; Pane never processes payment-card details.
+- accounts: an outside account or paid provider resource, naming the provider.
+- money: the actual change to provider charges, with amount, currency and counterparty.
+- gated: an outside provider's consent, verification or hosted payment step reserved to a person, naming provider and step.
+
+| Tool | Does | Core clauses | Risk class | Today |
+| --- | --- | --- | --- | --- |
+| `pane.pages.edit` | Organize pages and edit visual sections and rich bodies | PAGE-001, PAGE-002, PAGE-003, PAGE-004, PAGE-005, PAGE-006, PAGE-010, PAGE-015, PAGE-014, PAGE-018, PAGE-019, CMS-011 | standard | Native capability or target only; MCP mapping missing |
+| `pane.pages.review` | Request and manage page review | PAGE-007, ROLE-002 | standard or commitment | Native capability or target only; MCP mapping missing |
+| `pane.sites.publish` | Select a complete public revision | PUBLISH-001, PUBLISH-003, PUBLISH-004 | external · live (+ commitment) | Native capability or target only; MCP mapping missing |
+| `pane.sites.preview` | Read a private revision | PUBLISH-002 | standard | Native capability or target only; MCP mapping missing |
+| `pane.sites.gates` | Configure page, folder and site admission | PAGE-011, PAGE-016 | access · security (+ live) | Native capability or target only; MCP mapping missing |
+| `pane.promotions.update` | Prepare popups and bars | PAGE-013 | standard | Native capability or target only; MCP mapping missing |
+| `pane.code.update` | Configure custom code and marketplace tags | PAGE-008, PAGE-017, PRIV-004 | security (+ external · live) | Native capability or target only; MCP mapping missing |
+| `pane.styles.update` | Select templates, site styles and brand images | STYLE-001, STYLE-002, STYLE-003, STYLE-004 | standard | Native capability or target only; MCP mapping missing |
+| `pane.media.manage` | Upload, organize, transform and remove media | MEDIA-001, MEDIA-002, MEDIA-003, MEDIA-004, PAGE-012 | standard or destructive (+ external) | Native capability or target only; MCP mapping missing |
+| `pane.collections.manage` | Define collections, templates, lists, events and CSV transfers | CMS-001, CMS-002, CMS-003, CMS-007, CMS-009, CMS-012 | standard (+ external) | Native capability or target only; MCP mapping missing |
+| `pane.posts.manage` | Write blogs, schedules, feeds, comments and search settings | CMS-004, CMS-005, CMS-006, CMS-008, CMS-010 | standard or destructive (+ external · live) | Native capability or target only; MCP mapping missing |
+| `pane.domains.connect` | Connect domains, certificates, DNS and forwarding | DOMAIN-001, DOMAIN-002, DOMAIN-003, DOMAIN-005 | external · live (+ accounts · security · gated · money) | Native capability or target only; MCP mapping missing |
+| `pane.hosting.update` | Apply a signed installation update | HOST-003 | security · live (+ destructive) | Native capability or target only; MCP mapping missing |
+| `pane.hosting.cost` | Read running cost | HOST-004 | standard | Native capability or target only; MCP mapping missing |
+| `pane.search.update` | Manage search metadata, redirects, structured data and languages | SEO-001, SEO-002, SEO-003, SEO-004, SEO-005, SEO-006, SEO-007, SEO-008, SEO-009, SEO-010 | standard (+ external · live · gated) | Native capability or target only; MCP mapping missing |
+| `pane.forms.configure` | Configure typed forms, protection, destinations and consent | FORM-001, FORM-002, FORM-003, FORM-004, FORM-005, FORM-008 | standard (+ external · security) | Native capability or target only; MCP mapping missing |
+| `pane.enquiries.manage` | Read enquiries, reply, assign, export or erase | INBOX-001, FORM-006, FORM-007, ERASE-001, PRIV-002 | standard or destructive (+ external · sensitive) | Native capability or target only; MCP mapping missing |
+| `pane.connections.manage` | Connect booking, checkout, newsletters, triggers and health | LINK-001, LINK-002, LINK-003, LINK-004, LINK-005 | standard (+ external · accounts · gated · security · money) | Native capability or target only; MCP mapping missing |
+| `pane.analytics.read` | Read visits, goals, conversions and reports | VISIT-001, STATS-001, STATS-002, STATS-004 | standard | Native capability or target only; MCP mapping missing |
+| `pane.analytics.configure` | Configure analytics and advertising goal handoffs | STATS-003, STATS-005 | external · security (+ sensitive · live) | Native capability or target only; MCP mapping missing |
+| `pane.people.manage` | Assign roles, hand over ownership and configure sign-in | ACCESS-001, ROLE-001, ROLE-003, ROLE-004 | access (+ security · gated) | Native capability or target only; MCP mapping missing |
+| `pane.activity.read` | Read and export site activity | AUDIT-001 | standard (+ sensitive) | Native capability or target only; MCP mapping missing |
+| `pane.imports.run` | Review, apply, inspect and undo a move-in | MOVEIN-001, IMPORT-001, IMPORT-002, IMPORT-003, IMPORT-004, IMPORT-005, IMPORT-007 | standard (+ external · sensitive) | Native capability or target only; MCP mapping missing |
+| `pane.cutover.run` | Switch or roll back the public domain | IMPORT-006 | external · live · security | Native capability or target only; MCP mapping missing |
+| `pane.archives.manage` | Export and restore installation or open-format content | BACKUP-001, EXPORT-001 | standard or destructive (+ security · sensitive) | Native capability or target only; MCP mapping missing |
+| `pane.privacy.configure` | Set visitor choices and generate policy starters | PRIV-001, PRIV-003 | standard (+ security · live) | Native capability or target only; MCP mapping missing |
+| `pane.locale.update` | Set business formats | LOCALE-001 | standard | Native capability or target only; MCP mapping missing |
+| `pane.automations.manage` | Configure timed work, social sharing and problem alerts | AUTO-001, AUTO-002, AUTO-003, AUTO-004 | standard (+ external · live) | Native capability or target only; MCP mapping missing |
+| `pane.assistance.run` | Draft sites, text, image descriptions, search changes and bulk edits | AI-001, AI-002, AI-003, AI-004, AI-005, AI-006 | external (+ sensitive · standard · live · commitment) | Native capability or target only; MCP mapping missing |
+| `pane.specialist.run` | Interview, maintain facts, prove delivery, repair search, experiment, migrate and follow up | AGENT-001, AGENT-002, AGENT-003, AGENT-004, AGENT-005, AGENT-006, AGENT-007, AGENT-008 | standard (+ external · live · commitment · sensitive · security · destructive) | Native capability or target only; MCP mapping missing |
+| `pane.credentials.manage` | Configure helper and integration grants | API-001 | access · security | Native capability or target only; MCP mapping missing |
+
+**Resources.** `pane://site/{id}`, `pane://revision/{id}`, `pane://page/{id}`, `pane://post/{id}`, `pane://collection/{id}`, `pane://enquiry/{id}`, `pane://import/{id}`, `pane://connection/{id}`. **Events.** `page.changed`, `revision.published`, `enquiry.received`, `enquiry.updated`, `import.completed`, `connection.failed`, and the inherited decision events. **Prompts.** Interview and build (AGENT-001); maintain facts (AGENT-002); prove enquiries (AGENT-003); recover search (AGENT-004); compare leads (AGENT-005); migrate (AGENT-006); follow up (AGENT-007).
+
+**Not tools, and why.** ACCESS-002: a condition of every request, rather than a separate user job; HEALTH-001: deployment identity is an installation fact; DEPLOY-001: initial provisioning is an installation fact before the installed agent door exists; RUNSITE-001: the static public run site is an installation artifact; LOBBY-001: the shared Lobby and theme are a person's interactive screens; PRESENT-001: preview labeling and unbranded presentation are output properties; PAGE-009: accessible output is a property of every generated page and editing screen; HOST-001: edge latency and caching are installation facts; HOST-002: outage continuity is an installation property; HOST-005: the initial account authorization is a person's hosted provider screen; DOMAIN-004: registrar choice, transfer guidance and outside account closure are a person's provider screens; MOBILE-001: responsive workspace use is a person's screen; MOBILE-002: camera, push and native app installation are device-only work.
+
+**Limits.** Pane's draft, media, body-size and request-rate capacity bounds are documented in its [mechanisms](docs/contract/MECHANISM.md); business thresholds and spend caps are the company's policy. **Handoffs.** Listens for Orbit fact changes, Dial bookings, Stall purchases and Mango subscription outcomes; emits enquiry, publication, connection and import events for those specialists and for Uptime. No event text selects authority.
+
+#### SURFACE-001 — The website specialist registry
+
+*Tier:* Agent surface · *From:* new · *Cites:* BASE-AGENT-001, BASE-AGENT-002, BASE-AGENT-003, BASE-AGENT-010, BASE-AGENT-013 · *Register:* R-12
+
+**Requirement.** Pane's website steward exposes the jobs, record resources, handoffs and prompts listed here through the shared agent door.
+
+**Acceptance.**
+1. Discover Pane's registry and reconcile each Core clause with the listed tool or its stated non-tool reason; invoke site status and draft preparation and compare their resulting Pane records with the same workspace actions.
+2. Open linked site, revision, page, post, collection, enquiry, import and connection resources after a tool changes them and read the matching Pane state.
+3. Follow page, publication, enquiry and import changes from the workspace through Pane's event feed and webhook handoffs; match their event and record identities.
+4. Discover and use the interview, maintain-site, prove-enquiries, recover-search, compare-leads, migrate and follow-up prompts against the clauses listed here.
+
+#### SURFACE-002 — Content exposure and live-site classes
+
+*Tier:* Agent surface · *From:* new · *Cites:* BASE-AGENT-006, BASE-AGENT-007 · *Register:* R-12
+
+**Requirement.** Pane computes standard, external, live and commitment from its revision's visibility, recipients and binding business claims.
+
+**Acceptance.**
+1. Edit and undo a private site draft: the call is standard and names the changed item count; publishing it adds external with public counterparty and live with the affected site.
+2. Send an enquiry reply to a recorded customer and to a new address: both are external with the correct known or new counterparty and recipient count; an open preview link is public.
+3. Apply a services price or binding offer to published content: commitment carries the affected offer value and counterparty alongside external and live; a wording-only private draft remains standard.
+4. Send selected assistance input to its declared processor: classify the outside recipient as external from the installation's connection, regardless of an agent or imported page claiming it is internal.
+
+#### SURFACE-003 — Authority, provider and data classes
+
+*Tier:* Agent surface · *From:* new · *Cites:* BASE-AGENT-005, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-008 · *Register:* R-12
+
+**Requirement.** Pane computes the remaining classes from the changed people and settings, permanence, provider resource and charges, hosted provider steps and regulated fields.
+
+**Acceptance.**
+1. Invite an editor and revoke a contributor: access names each person and widening or narrowing; sign-in, code policy and credential changes also carry security naming the setting.
+2. Permanently erase an enquiry and restore an archive: destructive names the irreversible record count, while reversible draft edits and trash remain standard; restoring protective settings also carries security.
+3. Read an enquiry attachment containing an ID or bank field: sensitive names its regulated kind and record count; a public brochure has no sensitive class.
+4. Create a paid provider resource for a domain connection: accounts names Cloudflare and money carries its exact charge, currency and counterparty; a cost read alone has neither class.
+5. Encounter Cloudflare authorization, destination verification or a provider's hosted payment step that requires a person: gated names that provider and exact step; use a company API credential where the provider accepts it and compute the remaining classes from that route.
+
+#### SURFACE-004 — A seeded week through the website door
+
+*Tier:* Agent surface · *From:* new · *Cites:* BASE-AGENT-004, BASE-AGENT-007, BASE-AGENT-009, BASE-AGENT-011, BASE-AGENT-012, BASE-AGENT-013 · *Register:* R-12
+
+**Requirement.** A stranger website steward given the installation URL completes a week of site work entirely through Pane's MCP tools under two named company policies.
+
+**Acceptance.**
+1. With the all-autonomous company policy covering every class, import a seeded small business, draft its service and blog content, correct sourced hours, publish a change, check its old redirects and process its enquiries without a policy hold or refusal.
+2. Repeat that week under the held company policy: standard calls enter review and every other declared class waits for that policy's named person to decide the exact saved revision; read the resulting site, enquiries, review feed and activity.
+3. Under a company policy that blocks outside replies, attempt the follow-up: see no message sent and retain the enquiry for handoff; permitted private site work still completes.
+4. Before the company answers setup, attempt a draft write and see no change; finish the company's answers and run it. Exhaust the company's chosen provider budget, read its spend and refused work without a partial change, then exercise its chosen no-cap policy.
+5. Retry a publication and a provider reply, and race a stale draft against a newer one: read one effect for each retry and retain both editors' work on conflict.
+6. Pause the steward as the sponsoring person and observe the next site call stopped; resume as that person, finish the week and reconcile the site's activity and record resources.
 
 ## Push further
 
@@ -1267,111 +1444,92 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company's policy decides every ca
 
 #### AGENT-001 — Interview the owner and build from verified facts
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-AGENT-002, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-009, BASE-AGENT-011 · *Rules:* D-1
 
-**Requirement.** *What the agent does:* Interviews the owner by chat or voice (on the web or the phone app) about the business, then checks each fact against sources the owner names: their Google Business Profile, existing website, Orbit services and Dial availability. It builds the draft site (`AI-001`) only from confirmed facts, marks each claim with its source, and asks about anything it could not confirm instead of guessing.
-
-*Data:* The interview, the owner's connected profiles and existing site, and the business's own records in Orbit and Dial when connected.
-
-*Human control:* The owner confirms every fact, offer, price and staff name, and approves the preview before publication. The agent cannot publish, invent reviews, credentials or prices, or contact anyone.
+**Requirement.** Interviews the owner by web or phone chat or voice, checks their named Google Business Profile, existing site, Orbit services and Dial availability, and drafts AI-001 from verified business facts. Each claim retains its source; conflicting facts are raised, and missing facts remain questions rather than invented reviews, credentials, prices, offers or staff.
 
 **Acceptance.**
-1. Run the interview for a test business with a connected Google Business Profile that disagrees with one answer; see the conflict raised, each published claim traced to a source, and nothing live before the owner approves.
+1. Under the held company policy, interview a test business whose Google profile conflicts with an answer, resolve the discrepancy with the owner, and trace each published claim to its source; the draft stays private until that policy's publication decision completes.
 
 #### AGENT-002 — Keep business facts current across the site
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-AGENT-002, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-009, BASE-AGENT-011 · *Rules:* D-1
 
-**Requirement.** *What the agent does:* Watches for facts going stale: hours and holiday hours that differ from Google Business Profile, services or prices changed in Orbit, staff who left, seasonal promotions past their date, and pages not reviewed in six months. It drafts only the affected pages, items and redirects as one revision.
-
-*Data:* Site revisions, collections, Google Business Profile (`SEO-008`), Orbit and Dial records, schedules (`CMS-005`).
-
-*Human control:* Each change arrives as a draft with its reason and source; the owner previews and approves. Price and offer changes always need the owner, even when publishing is delegated.
+**Requirement.** Compares revisions, collections, Google Business Profile, Orbit, Dial and schedules for stale hours and holiday hours, changed services and prices, departed staff, expired seasonal promotions and pages unreviewed for six months. One change set contains only affected pages, items, redirects and structured data, with reasons and sources. Price or offer changes carry commitment; publication carries external and live. The company's policy decides them even when publishing is delegated.
 
 **Acceptance.**
-1. Change a service price in Orbit and holiday hours in the profile; see one draft that changes only the affected page, item and structured data, with sources, waiting for approval.
+1. Under the held company policy, change an Orbit service price and profile holiday hours, inspect one sourced draft changing only the affected page, item and structured data, and complete its policy decision.
 
 #### AGENT-003 — Prove every enquiry reaches a person
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-AGENT-002, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-009, BASE-AGENT-011 · *Rules:* D-1
 
-**Requirement.** *What the agent does:* With the owner's permission, sends clearly labeled test submissions through each form on a schedule and checks the whole path: stored, notification accepted, CRM record created (`FORM-005`), booking handoff working. On a failure it identifies the broken step, files a repair task to the right person and re-checks after repair; it also flags real enquiries that have no owner or reply (`FORM-006`).
-
-*Data:* Forms, delivery states, CRM and booking connection states, enquiry status.
-
-*Human control:* The owner turns test submissions on, sets their schedule and label, and they are excluded from stats and CRM pipelines. The agent cannot pose as a customer to anyone outside the business or change a route without approval.
+**Requirement.** Runs clearly labeled scheduled test submissions across forms, storage, notification acceptance, CRM creation and booking handoff. It identifies failures, assigns repair tasks and rechecks repairs, and finds real enquiries without owners or replies. The owner chooses the schedule and label; synthetic enquiries stay out of business stats and CRM pipelines. Test contact carries external; routing changes add live, decided by company policy.
 
 **Acceptance.**
-1. Break the HubSpot connection; the next scheduled test finds it, names the failing step, notifies the owner, and passes after repair, with no test record left in reports.
+1. Break HubSpot, run the scheduled labeled enquiry, read the identified failure and owner notification, repair it and read a passing retry with no test enquiry in business reports.
 
 #### AGENT-004 — Recover lost search traffic and broken paths
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-AGENT-002, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-009, BASE-AGENT-011 · *Rules:* D-1
 
-**Requirement.** *What the agent does:* Watches Search Console clicks (`SEO-007`), 404s from old URLs, broken links and slow pages. When traffic to a page drops or an old URL starts failing, it explains the likely cause with evidence and drafts the fix: a redirect, a restored page, a better title or a smaller image.
-
-*Data:* Search Console data, server 404 counts, link checks, Core Web Vitals (`HOST-001`), revision history.
-
-*Human control:* Fixes are drafts the owner approves. The agent never promises rankings and reports uncertainty with each diagnosis.
+**Requirement.** Uses Search Console clicks, failed old URLs, link checks, Core Web Vitals and revision history to explain likely search losses with evidence and uncertainty. It prepares a redirect, restored page, improved title or smaller image. Publication carries external and live, decided by company policy; no ranking is guaranteed.
 
 **Acceptance.**
-1. Delete a page that receives search clicks without a redirect; the agent reports the 404s with the lost clicks and drafts the redirect; approve it and see the 404s stop.
+1. Delete a search-receiving page without a redirect; read the lost clicks and failed URLs, inspect the suggested redirect, and under the held policy complete its decision and see the failures stop.
 
 #### AGENT-005 — Measure changes against real leads and bookings
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-AGENT-002, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-009, BASE-AGENT-011 · *Rules:* D-1
 
-**Requirement.** *What the agent does:* Joins page revisions with conversions (`STATS-002`): enquiries, bookings and purchases confirmed by Orbit, Dial, Stall or Stripe. It proposes a limited change (headline, form length, call-to-action) with a stated hypothesis, runs it as a before-and-after comparison or an A/B split, and reports the result with its confidence.
-
-*Data:* Revisions, conversion goals, CRM and booking outcomes, traffic by source.
-
-*Human control:* The owner approves each experiment, its traffic split and duration, and every live claim. The agent reports uncertainty, never treats clicks as revenue and ends an experiment the owner stops.
+**Requirement.** Joins revisions to enquiry, booking and purchase outcomes from Orbit, Dial, Stall or Stripe; proposes a bounded headline, form or call-to-action experiment with hypothesis, traffic split and duration; and reports before-and-after or A/B results with confidence. It distinguishes clicks from revenue and ends experiments the owner stops. Live experiments and changed public claims carry live and external, adding commitment for binding offers; company policy decides them.
 
 **Acceptance.**
-1. Approve an A/B test of two contact-page headlines; see traffic split as approved, conversions counted from real form submissions, and a final report with confidence and a recommended winner the owner can publish.
+1. Under the held company policy, decide a two-headline contact-page experiment, read its chosen traffic split, conversions from actual seeded form submissions and final confidence report, then publish the selected winner through that policy.
 
 #### AGENT-006 — Move a business off its old platform
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-AGENT-002, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-009, BASE-AGENT-011 · *Rules:* D-1
 
-**Requirement.** *What the agent does:* Reads the old site (`IMPORT-001` to `IMPORT-004`), proposes the page and collection mapping, rebuilds layouts it cannot import directly, tests every old URL's redirect and every form's lead route on a preview hostname, and prepares the cutover plan (`IMPORT-006`).
-
-*Data:* The old site's export and published pages, its URL list, its form destinations and DNS records.
-
-*Human control:* The owner reviews the migration report and every listed loss, proves domain control and chooses when to cut over and roll back. The old site stays live until the owner closes it.
+**Requirement.** Uses source exports, published pages, old URLs, form destinations and DNS records to propose import mappings, rebuild unsupported layouts, inspect every redirect and lead route on a preview and prepare cutover and rollback. The migration report exposes every loss; origin proof and controlled captures follow D-5. Domain cutover carries live and external, adding security for credential handling, and company policy decides it. The old site stays reachable until its owner closes it.
 
 **Acceptance.**
-1. Migrate a test XML-export site builder site; see the mapping, the rebuilt pages, a redirect test with every old URL passing, form routes tested, and a cutover the owner approves and then rolls back once.
+1. Under the held company policy, migrate a test Squarespace site, read its mapping and rebuilt pages, inspect every old redirect and form route, then complete the cutover decision and roll back once.
 
-#### AGENT-007 — Follow up unanswered enquiries under an approved policy
+#### AGENT-007 — Follow up unanswered enquiries by company policy
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-AGENT-002, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-009, BASE-AGENT-011 · *Rules:* D-1
 
-**Requirement.** *What the agent does:* Drafts replies to new enquiries from the site's facts and the owner's past replies, and sends the owner's approved holding reply when an enquiry passes the response window (`FORM-006`). Full help-desk work stays in HappyToHelp.
-
-*Data:* Enquiries, the site's published facts, the owner's sent replies, booking availability from Dial.
-
-*Human control:* The owner approves a response policy (which enquiries, what wording, when). Anything outside it is a draft for the owner. The agent never quotes a price, promises availability or sends marketing.
+**Requirement.** Uses enquiries, published facts, sent replies and Dial availability to draft replies and deliver the owner's chosen holding wording after the response window. Full help-desk work stays in HappyToHelp. Outside replies carry external, and binding price or availability commitments add commitment; the company's policy decides each. Marketing remains with Mango rather than being inferred from an enquiry.
 
 **Acceptance.**
-1. Approve a holding-reply policy, leave a quote request unanswered past the window, and see the holding reply sent within policy while a draft full reply waits for the owner.
+1. With a held company policy that permits the chosen holding reply and holds full replies, leave a quote request past the response window; read the holding message sent to its real destination and the pending full reply, with the policy rule named.
 
-#### AGENT-008 — Agent controls, budgets and audit
+#### AGENT-008 — Agent controls, budgets and recovery
 
-*Tier:* Core
+*Tier:* Core · *Cites:* BASE-AGENT-002, BASE-AGENT-006, BASE-AGENT-007, BASE-AGENT-009, BASE-AGENT-011 · *Rules:* D-1
 
-**Requirement.** *What the agent does:* Governs every agent above: each proposal arrives as a draft revision or a queued action with its reason and evidence, every action is recorded in the activity log (`AUDIT-001`), and each agent runs within a monthly USD budget for model and provider costs.
-
-*Data:* The agents' proposals, actions and costs.
-
-*Human control:* The owner turns each agent on or off, sets its budget and its permissions, and can undo any agent change in one action. When the budget is reached the agent stops and says so.
+**Requirement.** Pane's site-building agents expose their proposed revisions or queued jobs with reasons, evidence, costs and reversible site changes. The owner chooses agent permissions and a monthly USD model and provider budget in company policy. Each agent can be enabled or disabled, and its reversible site change can be undone in one action.
 
 **Acceptance.**
-1. Turn on two agents with a $5 budget, let one reach the budget, and see it stop with a notice; undo an agent's approved change and see the log record both.
+1. Under a company policy with a $5 monthly budget for each of two enabled agents, exhaust one budget, read the stop notice and costs, then undo a permitted site change and read both activity outcomes.
 
 ## Field proof register
 
-No field proof is recorded yet.
+| ID | Proof | Clauses | State | Date | Receipt |
+| --- | --- | --- | --- | --- | --- |
+| R-1 | Live owner-account Cloudflare installation, migration, removal, browser provisioning and cost receipts | HEALTH-001, DEPLOY-001, HOST-004, HOST-005 | not run | | |
+| R-2 | Human screen-reader pass on realistic Pane journeys | PAGE-009 | not run | | |
+| R-3 | VPAT issued for the installation | PAGE-009 | not run | | |
+| R-4 | Google Workspace and Microsoft 365 real-tenant mail outcomes | FORM-003 | not run | | |
+| R-5 | Real registrar forwarding and mailbox continuity before and after DNS cutover | DOMAIN-005 | not run | | |
+| R-6 | Okta, Entra ID and Google vendor-tenant interoperability receipts | ROLE-004 | not run | | |
+| R-7 | 28-day Vane field data: p75 LCP ≤2.5 seconds, INP ≤200 milliseconds and CLS ≤0.1 | HOST-001 | not run | | |
+| R-8 | Live incumbent source captures with origin authority and provider-specific fidelity receipts | IMPORT-001, IMPORT-002, IMPORT-003, IMPORT-004 | not run | | |
+| R-9 | Apple App Store and Google Play approval/listings | MOBILE-002 | not run | | |
+| R-10 | Real-model quality, processor handling and measured assistance cost | AI-002, AI-003, AI-005, AI-006 | not run | | |
+| R-11 | Authorized live Unsplash app, Adobe Fonts project and external integration account receipts | MEDIA-001, STYLE-002 | not run | | |
+| R-12 | Claude, ChatGPT, Codex and Copilot client receipts | SURFACE-001, SURFACE-002, SURFACE-003, SURFACE-004 | not run | | |
 
 ## Boundaries
 
@@ -1381,69 +1539,96 @@ No field proof is recorded yet.
 - **Rebuilding neighboring products.** CRM, booking, store, memberships billing, email marketing, help desk, surveys, chat, uptime monitoring and observability stay with the sibling or incumbent named in [Neighboring products stay separate](#neighboring-products-stay-separate), each with its connection status visible.
 - **WordPress plugins and lossless import of every site.** Pane does not run WordPress plugins or themes. Imports bring content, media and URLs with every exception listed (`IMPORT-005`); a site that depends on a specialist plugin keeps that service through an embed, a connection or WordPress hosting.
 - **Rankings, legal compliance and invented claims.** Pane provides search controls and agents that report evidence, not guaranteed rankings. Policy starters and accessibility checks support, but do not replace, the owner's own legal review. Pane never publishes invented reviews, credentials, staff or prices.
-- **US first.** Defaults are US English, US time zones, USD and US formats (`LOCALE-001`); other locales and currencies are settings, and translated pages are drafts the owner approves (`AI-002`). No HIPAA business associate agreement is offered; a clinic keeps patient intake in its practice system (for example Balm) and links to it.
+- **US first.** Defaults are US English, US time zones, USD and US formats (`LOCALE-001`); other locales and currencies are settings, and translated native pages follow AI-006; an agent publication takes company policy for external and live. No HIPAA business associate agreement is offered; a clinic keeps patient intake in its practice system (for example Balm) and links to it.
 
 ## Homepage claims
 
-No homepage claims are mapped yet.
+| # | Claim | Clauses |
+| --- | --- | --- |
+| 1 | Your website, finally yours. A free open-source alternative to Squarespace, Wix and WordPress.com. | DEPLOY-001, EXPORT-001 |
+| 2 | Build visually, move old links and email, and check every inquiry reaches a person. | PAGE-002, IMPORT-005, DOMAIN-003, DOMAIN-005, AGENT-003 |
+| 3 | Squarespace import: 46 pages and 212 old links kept. | IMPORT-002, IMPORT-005, SEO-002 |
+| 4 | Bounced notice recovered, flagged to the owner and replied. | FORM-003, FORM-006, AGENT-003, AGENT-007 |
+| 5 | Page 87 published; Wix move-in keeps business email. | PAGE-001, PUBLISH-003, IMPORT-003, DOMAIN-003 |
+| 6 | A studio booking connects to the existing class schedule. | LINK-001, STATS-002 |
+| 7 | Five trades run their own sites. | STYLE-001, DEPLOY-001 |
+| 8 | Twelve interview answers produce a complete eight-page studio draft with verified Google and Strap facts. | AGENT-001, AI-001 |
+| 9 | Every fact is sourced and confirmed; placeholder photos are marked and replaceable. | AGENT-001, AI-001, MEDIA-001 |
+| 10 | Build a services page from hero, columns, gallery, booking, form and FAQ blocks. | PAGE-002, PAGE-012, PAGE-014, LINK-001, FORM-001 |
+| 11 | Arrange a separate phone layout, review from a phone and publish English and Spanish. | PAGE-005, PAGE-007, ROLE-002, SEO-010, MOBILE-001 |
+| 12 | Migration keeps pages, posts, comment state/threading, events, galleries, media and form fields/recipients. | IMPORT-002, IMPORT-005, CMS-010, CMS-009 |
+| 13 | Past submissions are imported without resending; subscribers move with suppression. | IMPORT-007 |
+| 14 | Shop products hand off to Stall; existing Acuity scheduling is kept. | IMPORT-002, LINK-001, LINK-002 |
+| 15 | Every old URL is tested on preview and every unsupported item is listed before apply. | IMPORT-005, IMPORT-006 |
+| 16 | Apply as a private draft and test lead routes before checked cutover. | MOVEIN-001, IMPORT-006, AGENT-003 |
+| 17 | Google Workspace DNS remains unchanged; Squarespace aliases and catch-all are recreated and proven. | DOMAIN-003, DOMAIN-005 |
+| 18 | Apex and www launch with HTTPS; bookings count by source. | DOMAIN-001, DOMAIN-002, LINK-001, STATS-002 |
+| 19 | Stored inquiry, notification, HubSpot and booking route reach a person despite a bounced notice. | FORM-003, FORM-005, FORM-006, AGENT-003 |
+| 20 | Find unseen old Wix links from 404s and Search Console history and prepare redirects. | AGENT-004, SEO-002, SEO-007 |
+| 21 | Monthly owner reports show visits, search clicks, inquiries, bookings by source and unanswered work. | STATS-004 |
+| 22 | Every published version remains; restore one page without losing other edits. | PUBLISH-001, PAGE-015 |
+| 23 | Leave with WXR, CSV, original-media ZIP and static HTML; close the old site on your chosen day. | EXPORT-001, IMPORT-006 |
+| 24 | Run it on your own computer and Cloudflare account. | DEPLOY-001, HOST-005 |
 
 ## Status
 
-Judged from the code and tests at commit `3b35726211c3a5ac20eeba8b0f8b82b37d2995d4` (27 October 2026). Continued on candidate branch `cloud/sx-pane-c-i983`. The final candidate additionally isolates the existing starter-template proof with its own native owner session. Exact-candidate Verify loads the route assertions and both collection browser journeys. CMS-001 and CMS-002 retain their acceptance sentences and explicit receiving-duty citations. Other clause statuses retain their earlier judgments; PAGE-015 and API-001 remain partial.
+Judged from the code and tests at commit `3b35726211c3a5ac20eeba8b0f8b82b37d2995d4` (27 October 2026).
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
-| Published | 16 | 0 | 0 | 16 |
-| Target and push further | 35 | 32 | 44 | 111 |
-| All | 51 | 32 | 44 | 127 |
+| Published | 10 | 6 | 0 | 16 |
+| Target and push further | 31 | 41 | 48 | 120 |
+| All | 41 | 47 | 48 | 136 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
-| `ACCESS-001` | Server-side role authorization | published | done | `src/pane/handler.ts`; `tests/pane.test.mjs` |  |
-| `ACCESS-002` | Canonical-origin mutations | published | done | `src/pane/handler.ts`; `src/pane/public.ts`; `tests/pane.test.mjs` |  |
-| `PUBLISH-001` | Immutable complete revisions | published | done | `src/pane/content.ts`; `tests/pane.test.mjs` |  |
-| `PUBLISH-002` | Private draft preview | published | done | `src/pane/handler.ts`; `src/pane/public-view.ts`; `tests/pane.test.mjs` |  |
-| `PUBLISH-003` | Owner-approved atomic publication | published | done | `src/pane/content.ts`; `tests/pane.test.mjs`; `scripts/browser-journey.mjs` |  |
-| `PUBLISH-004` | One-action rollback | published | done | `src/pane/content.ts`; `tests/pane.test.mjs`; `scripts/browser-journey.mjs` |  |
-| `INBOX-001` | Durable, escaped and idempotent contact submissions | published | done | `src/pane/public.ts`; `tests/pane.test.mjs` |  |
-| `VISIT-001` | Cookie-free aggregate visit counts | published | done | `src/pane/public.ts`; `tests/pane.test.mjs` |  |
-| `MOVEIN-001` | Reviewed static-site move-in with guarded undo | published | done | `src/pane/imports.ts`; `tests/pane.test.mjs`; `docs/MOVE-IN.md` |  |
-| `BACKUP-001` | Export and restore into an empty installation | published | done | `scripts/pane-policy.mjs`; `tests/pane.test.mjs`; `docs/BACKUP-RESTORE.md` |  |
-| `ERASE-001` | Message erasure fenced against old backups | published | done | `src/pane/handler.ts`; `tests/pane.test.mjs` |  |
-| `HEALTH-001` | Deployment health and unknown paths | published | done | `tests/search.test.mjs` — health identifies the local deployment and unknown installed paths return 404; `scripts/deployment-journey.mjs` — deployment identity, migrations and removal (local and hosted identity against the deploy record, RunEditRun sandbox 2026-10-21, source dfc3ce80c9d4806c8c0e13363d786dee4e12cbb9); `scripts/health-browser-journey.mjs` — health and unknown installed path at 1440 and 390 |  |
-| `DEPLOY-001` | Install on the owner's Cloudflare account | published | done | `scripts/deployment-journey.mjs` — “deployment identity, migrations and removal”: owner-account identity checked against the deployment receipt; applied migration names and SHA-256 values read from hosted D1; local and hosted “/health” deployment identity compared with that receipt; guarded removal and missing local record asserted. Runner: “rer deploy --environment test-pane --non-interactive”, then “node scripts/deployment-journey.mjs test-pane” (RunEditRun live sandbox receipt 2026-10-21, source dfc3ce80c9d4806c8c0e13363d786dee4e12cbb9, 16 migrations). `tests/search.test.mjs` — “health identifies the local deployment and unknown installed paths return 404”, loaded by “pnpm test” through “pnpm verify” in Verify's product journey job. `scripts/health-browser-journey.mjs` — “Health and unknown installed path browser journey”, run with “node scripts/health-browser-journey.mjs” at 1440 and 390. Provider acceptance is the live sandbox receipt, never the local fixture |  |
-| `RUNSITE-001` | Public run site and documentation | published | done | `tests/site.test.mjs`; `docs/site.json` |  |
-| `LOBBY-001` | Shared Lobby, workspace and theme | published | done | `scripts/browser-journey.mjs` — “Shared Lobby and workspace theme”: “capture” asserts self-hosted loaded Figtree, both fuchsia tokens and no overflow on “/”, “/signin”, “/setup” and “/app” at 1440 and 390; native owner bootstrap and setup reach “/app”; keyboard activation proves the workspace “#main” anchor; visible icon-only controls have tooltips, with delayed hover and immediate keyboard focus on the account control. Runner: Verify browser job builds with “pnpm exec vite build”, then “node scripts/browser-proof.mjs” imports the journey and its native fixture. Focused runner: “PANE_BROWSER_FIXTURE=1 node scripts/browser-journey.mjs --lobby-only” after that build |  |
-| `PRESENT-001` | Labeled previews and unbranded live pages | published | done | `src/pane/public-view.ts`; `src/pane/views.ts`; `tests/pane.test.mjs`; `scripts/browser-journey.mjs` |  |
-| `PAGE-001` | Unlimited pages, folders and clean URLs | target | done | `tests/pane.test.mjs` — “page organization keeps stable identities, complete revisions, safe edits and chosen public home and not-found content” (identities, folders, chosen home, nested preview, deleted retention, edited 404/search/links, conflict refusal, publication/rollback); `tests/search.test.mjs` — “published URL changes offer explicit redirects and each revision owns its exact status and target map” (rename/deletion offers, chosen 301 targets); `scripts/pages-journey.mjs` — “Forty-page editor journey” (40 pages created through editor in three folders, order/hide/home, two renamed slugs and one deletion, all current/old URLs, complete 40-entry snapshot, edited 404, tab reopen, five undo/redo steps and structural conflicts at 1440/390; exact candidate heavy-slot run cited in campaign plan) | None. |
+| `ACCESS-001` | Server-side role authorization | published | done | `tests/pane.test.mjs` — “native owner sign-in and role sessions protect direct handlers”; `tests/pane.test.mjs` — “deactivated credentials lose access to direct product commands” |  |
+| `ACCESS-002` | Canonical-origin mutations | published | done | `tests/pane.test.mjs` — “ACCESS-002: mutations require the canonical origin; accepted contact is durable and visits respect privacy” |  |
+| `PUBLISH-001` | Immutable complete revisions | published | done | `tests/pane.test.mjs` — “later change and rollback restore the exact immutable site with recorded decisions” |  |
+| `PUBLISH-002` | Private draft preview | published | partial | `src/pane/handler.ts`; `src/pane/public-view.ts`; `tests/pane.test.mjs` | Missing journey: a private preview opened as admin with contact sending disabled. The cited native preview journey checks banner and role refusals but does not try or inspect disabled sending. |
+| `PUBLISH-003` | Owner-approved atomic publication | published | done | `tests/pane.test.mjs` — “PRESENT-001: five pages preview with a draft banner and publish without product branding”; `tests/pane.test.mjs` — “native owner sign-in and role sessions protect direct handlers” |  |
+| `PUBLISH-004` | One-action rollback | published | done | `tests/pane.test.mjs` — “later change and rollback restore the exact immutable site with recorded decisions” |  |
+| `INBOX-001` | Durable, escaped and idempotent contact submissions | published | done | `tests/pane.test.mjs` — “ACCESS-002: mutations require the canonical origin; accepted contact is durable and visits respect privacy”; `tests/pane.test.mjs` — “owner erasure removes personal data and prevents submission replay” |  |
+| `VISIT-001` | Cookie-free aggregate visit counts | published | partial | `src/pane/public.ts`; `tests/pane.test.mjs` | Missing journey: nonempty public counters with preview and GPC exclusions and a storage inspection proving no visitor identity/address record. The cited contact/visit route journey shows DNT exclusion and one aggregate increment. |
+| `MOVEIN-001` | Reviewed static-site move-in with guarded undo | published | partial | `src/pane/imports.ts`; `tests/pane.test.mjs`; `docs/MOVE-IN.md` | Missing journey: undo after publication and after an intervening draft edit, each refused with unchanged state. The cited move-in journey checks fingerprints, inert apply, member refusal and successful unpublished undo. |
+| `BACKUP-001` | Export and restore into an empty installation | published | partial | `scripts/pane-policy.mjs`; `tests/pane.test.mjs`; `docs/BACKUP-RESTORE.md` | Missing journey: archive round trip opened through the documented archive door with complete immutable history reconciliation and occupied-destination refusal. The cited restore journey reads live site and import-job count using the portability helper. |
+| `ERASE-001` | Message erasure fenced against old backups | published | done | `tests/pane.test.mjs` — “owner erasure removes personal data and prevents submission replay”; `tests/pane.test.mjs` — “archive transport restores data into empty D1 and rejects an erased older backup” |  |
+| `HEALTH-001` | Deployment health and unknown paths | published | done | `tests/search.test.mjs` — “health identifies the local deployment and unknown installed paths return 404” |  |
+| `DEPLOY-001` | Install on the owner's Cloudflare account | published | partial | `scripts/deployment-journey.mjs` — “deployment identity, migrations and removal”: owner-account identity checked against the deployment receipt; applied migration names and SHA-256 values read from hosted D1; local and hosted “/health” deployment identity compared with that receipt; guarded removal and missing local record asserted. Runner: “rer deploy --environment test-pane --non-interactive”, then “node scripts/deployment-journey.mjs test-pane” (RunEditRun live sandbox receipt 2026-10-21, source dfc3ce80c9d4806c8c0e13363d786dee4e12cbb9, 16 migrations). `tests/search.test.mjs` — “health identifies the local deployment and unknown installed paths return 404”, loaded by “pnpm test” through “pnpm verify” in Verify's product journey job. `scripts/health-browser-journey.mjs` — “Health and unknown installed path browser journey”, run with “node scripts/health-browser-journey.mjs” at 1440 and 390. Provider acceptance is the live sandbox receipt, never the local fixture | Missing journey: provider-compatible deployment, migration and removal on this candidate. The cited deployment journey requires a live account receipt and is not part of candidate Verify; a dated earlier sandbox run is not exact-candidate proof. |
+| `RUNSITE-001` | Public run site and documentation | published | partial | `tests/site.test.mjs`; `docs/site.json` | Missing journey: built homepage/run/docs navigation with an explicit check that installation sign-in links are absent. The cited site journey opens all linked guides and unknown-path refusal but never inspects that absence. |
+| `LOBBY-001` | Shared Lobby, workspace and theme | published | done | `scripts/browser-journey.mjs` — “Shared Lobby and workspace theme” |  |
+| `PRESENT-001` | Labeled previews and unbranded live pages | published | done | `tests/pane.test.mjs` — “PRESENT-001: five pages preview with a draft banner and publish without product branding”; `scripts/browser-journey.mjs` — “five-page prepare/preview/publish” |  |
+| `PAGE-001` | Unlimited pages, folders and clean URLs | target | done | `scripts/pages-journey.mjs` — “Forty-page editor journey” |  |
 | `PAGE-002` | Visual section and block editor with layout controls | target | partial | `tests/pane.test.mjs` — “section drafts preserve validated layout and reading text through publication, conflict and rollback” (validated immutable geometry, semantic heading, shared CSS, search, conflict, publication and rollback); `scripts/components-code-journey.mjs` — “Reusable components and isolated custom code journey” (native canvas text, column placement, ratio, hex background and padding, reset, section drag and keyboard reorder, duplication and deletion, reopen, undo and redo, retained conflict copy and latest selection, native geometry and pixel parity, reversible raster image ratios and focal points, keyboard crop selection and retained original pixels at 1440 and 390) | A focused visual canvas extends the approved Pages editor without replacing its composition. Editors add, duplicate, delete and reorder text sections and text blocks, edit text in place, set twelve-column placement, row and overlap order, horizontal and vertical alignment, column ratios and gaps, hex backgrounds, minimum height and padding, and reset local layout overrides to the existing theme defaults. The canvas and live page import one section renderer. Immutable revisions retain stable identities and reading text; the existing autosave, undo, redo, retained conflict copy and explicit latest-version selection apply. Native text canvas and live block boxes match within two CSS pixels at 1440 and 390; the chrome-masked native content screenshots differ by no more than 0.5%. Native raster image blocks now support original, square, 4:3, 3:2, 16:9 and free aspect ratios, bounded focal points and reset without changing the retained pixels. Gap: media-library integration, image backgrounds and overlays, background video with loading, reduced-motion and data-saver stills need MEDIA-001 and MEDIA-003 or MEDIA-004. The native canvas now retains structured inline formats, nested lists, large and small paragraphs and justified text through the shared renderer. The full PAGE-014 catalog and destinations, all section presets, touch-gesture drag proof, STYLE-002 owner-configured site defaults and full media-page geometry and screenshot parity remain unproved. PAGE-002 stays partial. |
-| `PAGE-003` | Navigation menus, header and footer | target | done | `tests/pane.test.mjs` — “published navigation keeps ordered dropdowns, links, CTA, footer and shared accessible social profiles with hidden pages excluded” (order, both dropdowns, external and CTA destinations, hidden exclusion, footer details and links, all eight named social profiles, draft isolation and rollback); `scripts/navigation-journey.mjs` — “Navigation editor and published menus” (editor controls, mouse and keyboard, 1440/390 mobile disclosure and Instagram/Facebook/Yelp destinations in header and footer) | None. |
-| `PAGE-004` | Reusable sections and global components | target | done | `tests/pane.test.mjs` — “reusable section references propagate across five immutable pages and detached copies remain independent” (five linked placements, one edit, all five previews, detached isolation, old snapshots, conflict and approval fences); `scripts/components-code-journey.mjs` — “Reusable components and isolated custom code journey” (save, five placements, usage links, one edit, all five previews, detached isolation, autosave, undo and redo, tooltips and no overflow at 1440 and 390) | Editors save a validated section or the current page text as a reusable component with a stable identity. Linked placements resolve in each new immutable site revision, the editor lists every page using the component, and detachment retains an independent section snapshot. Component text uses the existing autosave, undo, redo and conflict boundary. Shared changes require whole-site approval; old revisions remain unchanged. PAGE-002 retains its separate visual-canvas and media obligations. |
-| `PAGE-005` | Device previews and a separate mobile layout | target | done | `scripts/device-journey.mjs` — “Device canvas journey” (real 1440, 768 and 390 previews at both screen widths; automatic reading-order stacking; independent phone move, reorder, resize, height, gap, padding, block and section visibility; override indicators and reset; reopening; unchanged desktop before and after phone edits; desktop edits preserve arranged phone geometry; editor and live block boxes within two CSS pixels at 1440 and 390); `tests/pane.test.mjs` — “section drafts preserve validated layout and reading text through publication, conflict and rollback” (validated phone geometry and visibility retained in immutable drafts, publication and rollback; invalid overrides refused) | None. |
-| `PAGE-006` | Autosave, undo and safe concurrent editing | target | done | `src/pane/content.ts`; `src/pane/handler.ts`; `src/pane/ui/editor.ts`; `public/pane-autosave.js`; `tests/pane.test.mjs`; `scripts/editing-journey.mjs` |  |
+| `PAGE-003` | Navigation menus, header and footer | target | done | `scripts/navigation-journey.mjs` — “Navigation editor and published menus” |  |
+| `PAGE-004` | Reusable sections and global components | target | done | `scripts/components-code-journey.mjs` — “Reusable components and isolated custom code journey” |  |
+| `PAGE-005` | Device previews and a separate mobile layout | target | done | `scripts/device-journey.mjs` — “Device canvas journey” |  |
+| `PAGE-006` | Autosave, undo and safe concurrent editing | target | done | `scripts/editing-journey.mjs` — “PAGE-006 browser journey” |  |
 | `PAGE-007` | Page status and review requests | target | partial | `tests/pane.test.mjs` — “page review binds the exact content and selective owner approval keeps other drafts and records an immutable revision” (two edited pages, review request, owner approval, unrelated draft retention, immutable history and stale and concurrent refusals); `scripts/pages-journey.mjs` — “Forty-page editor journey” (review, selected publication, retained other draft and revision history at 1440 and 390). | scheduled page publication, post states and review, delegated publishing and notification approval through ROLE-002 remain unimplemented. URL and shared organization changes still use explicit whole-site approval with reviewed redirects. |
-| `PAGE-008` | Custom code, embeds and CSS | target | done | `tests/pane.test.mjs` — “custom code requires owner authoring and approved immutable live revisions while previews and privacy refusals stay inert” (owner authority including import refusal, unchanged published source, every edit requiring new approval, audited revocation and next-request takedown in both live stores, preview isolation, page scope, resource-loading CSS refusal, GPC and DNT); `scripts/components-code-journey.mjs` — “Reusable components and isolated custom code journey” (custom HTML, effective live CSS, site verification and footer, separate quote thank-you header and goal name and value, no-choice and refusal gating, opaque cookie, storage, other-frame and identity isolation and API refusal including blocked navigation and provider-consent bypass, immediate withdrawal, owner revocation and unavailable live page, saved-grant GPC and DNT, tooltips and no overflow at 1440 and 390); `tests/search.test.mjs` — “only an approved page embed widens its frame policy and workspace previews stay inert”; `scripts/privacy-journey.mjs` — “Privacy browser journey” (existing URL-embed host policy and consent boundary) | Native owners author revisioned site CSS, HTML, header and footer code and page header or HTML code. Only an explicitly approved immutable live revision can execute it. Third-party HTML and scripts run in an opaque sandbox with outbound connections, forms and nested frames denied; the live CSP authorizes only the exact approved inline script and style hashes. Consent also applies resource-free CSS to the live document and copies inert verification metadata into its header. Workspace and preview documents stay inert. The shared pane:consent:analytics browser choice controls activation; no choice means off, GPC and DNT override saved grants, and withdrawal removes the active frame, CSS and metadata and clears analytics cookies in the open session. The sandbox receives pane:goal with the public goal name and numeric occurrence value 1; form events arrive on the accepted thank-you view, including a configured page redirect, without sending answers or identity. Permissions Policy remains camera=(), microphone=(), geolocation=() for every nested frame; no allow attribute delegates a feature. Approved by ct (25 October 20:55Z): native owner-only authoring, deny by default, audited immutable approval, live-only opaque execution, no automatic outbound action, no external custom scripts or resource-loading CSS. Published code is never edited in place: every change creates a new immutable draft and needs a new explicit approval. The opaque sandbox cannot read cookies, local or session storage, other frame documents or visitor identity. The owner can revoke an approval in Publication settings; the live page is unavailable on the next request, including isolated live storage, and a revoked revision cannot be restored or republished. Revocation remains in the activity log; restoring delivery requires a new draft and explicit approval. Third-party tag and pixel marketplace with per-tag consent categories is provided separately by PAGE-017. PRIV-001 and STATS-005 inherit this gate and immediate withdrawal duty. |
-| `PAGE-009` | Accessible output by default | target | done | `scripts/accessibility-journey.mjs` — “Accessible output journey” (all seven current starter layouts and populated native canvas output, axe with zero serious or critical violations and keyboard passes at 1440 and 390; skip links, menu and FAQ disclosures, labeled contact fields, keyboard submission and visible focus; real raster upload, missing-alt publication warning, descriptive and decorative images, heading and contrast owner warnings, tooltips); `tests/pane.test.mjs` — “image drafts preserve explicit descriptions and publication refuses missing alt while warning about headings and contrast” (missing-alt refusal in both live stores and selected page approval, explicit decorative choice, descriptive alt, imported missing-alt preservation, invalid raster and metadata refusal); `scripts/device-journey.mjs` — “Device canvas journey” (responsive DOM reading order follows the arranged phone grid) | None. |
-| `PAGE-010` | Duplicate pages and starter layouts | target | done | `tests/pane.test.mjs` — “starter layouts and duplicates retain editable content and shared published styles” (all seven starters, duplicate content, independent editing and published routes); `scripts/pages-journey.mjs` — “Forty-page editor journey” (each starter and duplicate created and published with matching computed site font and color, editable FAQ disclosure and editor tooltip at 1440 and 390). |  |
-| `PAGE-011` | Password-protected and member-only pages and site | target | done | `tests/pane.test.mjs` — “page and folder gates require passwords or explicitly admitted active native members without leaking through discovery” (page and folder passwords, signed-out gates, admitted and unadmitted native accounts, removal and deactivation on the next request, owner preview without admission or member-state change, no inferred paid access, non-owner setting refusal, password rotation, private delivery, separate-visitor refusal and discovery exclusions); “coming-soon and site password gates cover every live URL while previews and disabling restore the published site” (every live path, noindex, site password, preview bypass and disabling); `scripts/gates-journey.mjs` — “Gate browser journey” (owner settings, both admission modes, errors, coming soon, site password, owner preview without member admission, removal refusal, disabling and hover and keyboard tooltips at 1440 and 390) | Page and folder passwords, explicitly admitted native members, private no-store delivery, protected search and sitemap exclusions, editable coming-soon and site-password gates, preview bypass and disabling are proved. Approved ct semantics (25 Oct 18:50Z): only the native owner configures access; admission is an explicit allowlist of active invited native accounts checked on every request. Unadmitted and inactive accounts are refused beside an admitted active account; removal or deactivation takes effect on the next request. The owner is not admitted automatically; owner preview works without changing member state. No paid entitlement is inferred. Password proofs expire after one hour and rotation invalidates earlier proofs. Paid-access connection remains missing in PAGE-016; Pane never rebuilds billing. LINK-003 owns the optional coming-soon signup. |
-| `PAGE-012` | Gallery blocks with grid, slideshow and lightbox | target | done | `scripts/components-code-journey.mjs` — Gallery, brand and content checks (24 library images in grid, masonry, slideshow and carousel, columns and gaps, captions and links, autosave, undo, redo, reopen, keyboard, real touch swipe, focus, Escape, intrinsic geometry, zero gallery cumulative layout shift, axe and tooltips at 1440 and 390; outside Verify heavy-slot run sx-pane-c-i822 on the reported candidate SHA); `tests/pane.test.mjs` — gallery publications resolve immutable library images and enforce the page gate and revocation for every rendition | None. |
-| `PAGE-013` | Promotional pop-up and announcement bar | target | partial | `scripts/scheduling-journey.mjs` — “Business-local scheduling journey” (scheduled announcement bar appears and expires on time at 1440/390); `tests/pane.test.mjs` — “published promotions target selected pages while invalid settings and unauthorized changes stay fenced” (published targeting, draft and preview isolation, schedule validation and mutation refusals); `scripts/promotions-journey.mjs` — “Promotional popup journey” (owner settings and undo, ten-second delay on selected pages, scroll and desktop exit triggers, seven-day browser cap and repeat eligibility, focus containment, Escape and visible close, scheduled start and expiry, safe phone arrival and icon tooltips at 1440 and 390; exact-candidate timing receipt in the campaign report) | Newsletter signup awaits LINK-003 and an authorized Mango or Mailchimp audience. No address collection or automatic subscription action is added; this conservative default keeps PAGE-013 partial pending ct scope approval. |
+| `PAGE-008` | Custom code, embeds and CSS | target | done | `scripts/components-code-journey.mjs` — “Reusable components and isolated custom code journey” |  |
+| `PAGE-009` | Accessible output by default | target | partial | `scripts/accessibility-journey.mjs` — “Accessible output journey” (all seven current starter layouts and populated native canvas output, axe with zero serious or critical violations and keyboard passes at 1440 and 390; skip links, menu and FAQ disclosures, labeled contact fields, keyboard submission and visible focus; real raster upload, missing-alt publication warning, descriptive and decorative images, heading and contrast owner warnings, tooltips); `tests/pane.test.mjs` — “image drafts preserve explicit descriptions and publication refuses missing alt while warning about headings and contrast” (missing-alt refusal in both live stores and selected page approval, explicit decorative choice, descriptive alt, imported missing-alt preservation, invalid raster and metadata refusal); `scripts/device-journey.mjs` — “Device canvas journey” (responsive DOM reading order follows the arranged phone grid) | Missing journey: every target template and populated page with the shared accessibility-tree bar as well as the publication warnings. The cited accessibility journey exercises seven current starters, axe, keyboard and image warnings; the 40-template target and all required accessible states/live regions remain unproved. |
+| `PAGE-010` | Duplicate pages and starter layouts | target | done | `scripts/pages-journey.mjs` — “Forty-page editor journey” |  |
+| `PAGE-011` | Password-protected and member-only pages and site | target | done | `scripts/gates-journey.mjs` — “Gate browser journey”; `tests/pane.test.mjs` — “page and folder gates require passwords or explicitly admitted active native members without leaking through discovery”; `tests/pane.test.mjs` — “coming-soon and site password gates cover every live URL while previews and disabling restore the published site” |  |
+| `PAGE-012` | Gallery blocks with grid, slideshow and lightbox | target | done | `scripts/components-code-journey.mjs` — “Gallery, brand and content checks”; `tests/pane.test.mjs` — “gallery publications resolve immutable library images and enforce the page gate and revocation for every rendition” |  |
+| `PAGE-013` | Promotional pop-up and announcement bar | target | partial | `scripts/scheduling-journey.mjs` — “Business-local scheduling journey” (scheduled announcement bar appears and expires on time at 1440/390); `tests/pane.test.mjs` — “published promotions target selected pages while invalid settings and unauthorized changes stay fenced” (published targeting, draft and preview isolation, schedule validation and mutation refusals); `scripts/promotions-journey.mjs` — “Promotional popup journey” (owner settings and undo, ten-second delay on selected pages, scroll and desktop exit triggers, seven-day browser cap and repeat eligibility, focus containment, Escape and visible close, scheduled start and expiry, safe phone arrival and icon tooltips at 1440 and 390; exact-candidate timing receipt in the campaign report) | Offers and announcements have browser journeys; the disclosed newsletter signup, authorized Mango or Mailchimp audience, verification, outcome and suppression journey remains missing under LINK-003. RL-102 resolves the policy question without completing that integration. |
 | `PAGE-014` | Block catalog, text formatting and links | target | partial | `tests/pane.test.mjs` — “rich section text keeps semantic formatting and nested lists through immutable publication and rollback” (semantic inline formats, nested lists, matching search text, publication, rollback and invalid-tree refusals); `scripts/components-code-journey.mjs` — “Reusable components and isolated custom code journey” (all paragraph styles, pointer and keyboard inline format controls, independent paragraph and list-item alignments, nested list authoring and inert styled paste, autosave and reopen, rich canvas and live geometry and pixel parity at 1440 and 390) | The shared native canvas retains structured text with Heading 1 to Heading 4, paragraph, large and small paragraph, quote and preformatted styles, bold, italic, underline and strikethrough, bulleted and numbered lists with one nested level, and four block alignments including justified text. Paragraphs and list items inside a mixed document also retain independent left, center, right or justified alignment. Semantic trees are validated at the immutable revision boundary and use the same canvas and live renderer; search reads their matching text. Literal Word and Google Docs text formatting and list markup can be pasted without executing scripts, loading media or retaining arbitrary attributes. Safe HTML paste now keeps supported links, headings, formatting and lists without loading remote media. CMS-004 proves captioned images, an attributed quote, a consented YouTube embed, a page button and stable post and PDF and telephone links in the native post body. Gap: the remaining block catalog, every remaining link and button destination, cross-page anchors, Markdown, complete Word and Google Docs paste fidelity and the full catalog keyboard and axe journey remain unproved. |
+| `PAGE-018` | Rich text styles and pasted content | target | partial | `tests/pane.test.mjs` — “rich section text keeps semantic formatting and nested lists through immutable publication and rollback” (semantic inline formats, nested lists, matching search text, publication, rollback and invalid-tree refusals); `scripts/components-code-journey.mjs` — “Reusable components and isolated custom code journey” (all paragraph styles, pointer and keyboard inline format controls, independent paragraph and list-item alignments, nested list authoring and inert styled paste, autosave and reopen, rich canvas and live geometry and pixel parity at 1440 and 390) | The shared native canvas retains structured text with Heading 1 to Heading 4, paragraph, large and small paragraph, quote and preformatted styles, bold, italic, underline and strikethrough, bulleted and numbered lists with one nested level, and four block alignments including justified text. Paragraphs and list items inside a mixed document also retain independent left, center, right or justified alignment. Semantic trees are validated at the immutable revision boundary and use the same canvas and live renderer; search reads their matching text. Literal Word and Google Docs text formatting and list markup can be pasted without executing scripts, loading media or retaining arbitrary attributes. Safe HTML paste now keeps supported links, headings, formatting and lists without loading remote media. CMS-004 proves captioned images, an attributed quote, a consented YouTube embed, a page button and stable post and PDF and telephone links in the native post body. Gap: the remaining block catalog, every remaining link and button destination, cross-page anchors, Markdown, complete Word and Google Docs paste fidelity and the full catalog keyboard and axe journey remain unproved. |
+| `PAGE-019` | Links and buttons that follow their destinations | target | partial | `tests/pane.test.mjs` — “rich section text keeps semantic formatting and nested lists through immutable publication and rollback” (semantic inline formats, nested lists, matching search text, publication, rollback and invalid-tree refusals); `scripts/components-code-journey.mjs` — “Reusable components and isolated custom code journey” (all paragraph styles, pointer and keyboard inline format controls, independent paragraph and list-item alignments, nested list authoring and inert styled paste, autosave and reopen, rich canvas and live geometry and pixel parity at 1440 and 390) | The shared native canvas retains structured text with Heading 1 to Heading 4, paragraph, large and small paragraph, quote and preformatted styles, bold, italic, underline and strikethrough, bulleted and numbered lists with one nested level, and four block alignments including justified text. Paragraphs and list items inside a mixed document also retain independent left, center, right or justified alignment. Semantic trees are validated at the immutable revision boundary and use the same canvas and live renderer; search reads their matching text. Literal Word and Google Docs text formatting and list markup can be pasted without executing scripts, loading media or retaining arbitrary attributes. Safe HTML paste now keeps supported links, headings, formatting and lists without loading remote media. CMS-004 proves captioned images, an attributed quote, a consented YouTube embed, a page button and stable post and PDF and telephone links in the native post body. Gap: the remaining block catalog, every remaining link and button destination, cross-page anchors, Markdown, complete Word and Google Docs paste fidelity and the full catalog keyboard and axe journey remain unproved. |
 | `PAGE-015` | Trash and single page or post restore | target | partial | `src/pane/content.ts`; `tests/pane.test.mjs` | Native page, post and collection-item trash and selective history are implemented. Exact-candidate lifecycle clock proof and fresh completion judgment remain required. |
 | `PAGE-016` | Paid membership access connection | target | missing | — | No paid-access connection to Stall or Nectar exists. PAGE-011 proves explicit native admission only; LINK-002 must supply the provider connection and every-request entitlement proof. Billing is never rebuilt in Pane. |
-| `PAGE-017` | Third-party tag and pixel marketplace with per-tag consent categories | target | done | `tests/pane.test.mjs` — “custom code requires owner authoring and approved immutable live revisions while previews and privacy refusals stay inert” (owner-only marketplace configuration, invalid category refusal, inert previews, immutable approval, GPC and DNT, audited revocation in both live stores); `scripts/privacy-journey.mjs` — “Privacy browser journey” (marketplace settings, two categories, only the granted provider script loading, opaque cookie and storage and frame and identity isolation, current-session execution stopping on withdrawal, saved advertising grant refused under header GPC and browser GPC, workspace refusal, tooltips and no overflow at 1440 and 390; provider scripts are network-edge fakes) | Native owners select Plausible Analytics and Meta Pixel from site settings and assign each a consent category; Meta requires advertising. Every configuration change is a new immutable draft requiring explicit publication approval. Live tags remain off until their separate category is granted, with GPC and DNT overriding saved grants. Withdrawal destroys the executing frame in the current session. Each provider executes in an opaque sandbox without cookies, storage, other frame documents or visitor identity, with only its named script and connection origins permitted; forms and nested frames remain denied. Workspace and preview pages stay inert. Existing owner-only audited approval revocation takes down the live page and tag delivery on the next request in both live stores. PAGE-008 owner-authored code retains its separate resource-free sandbox and shared analytics choice. PRIV-001 and STATS-005 inherit this category gate and withdrawal boundary; actual goal mapping and provider conversion receipts remain STATS-005 work. |
+| `PAGE-017` | Third-party tag and pixel marketplace with per-tag consent categories | target | done | `scripts/privacy-journey.mjs` — “Privacy browser journey” |  |
 | `STYLE-001` | Responsive templates for US local businesses | target | partial | `public/pane.css`; `src/pane/public-view.ts` | One fixed responsive layout; no template catalog. Every future template must provide the native CMS-001 starter collection pack. |
 | `STYLE-002` | Site-wide brand styles | target | partial | `tests/pane.test.mjs` — “owner style drafts retain self-hosted fonts through preview, conflict, publication and rollback”; `scripts/browser-journey.mjs` — “siteStylesJourney”, implemented in `scripts/styles-journey.mjs` (native settings, built-in face loading, real WOFF2 and WOFF and TTF and OTF decoding, separate fonts, same-origin WOFF2, inherited and local section backgrounds, three-page preview and publication, canvas font loading, shared draft status, rollback, autosave, undo and redo, retained conflict copy, axe and no overflow at 1440 and 390). The route proof includes native owner and scoped credential refusal, exact font bytes, immutable snapshots, transactional activity and portable archive restoration. | Adobe Fonts project connection and the uploaded and Adobe heading and body pairing with live rendering require an owner-authorized Adobe Fonts test web project ID or grant, not held by this run. |
 | `STYLE-003` | Switch templates without rebuilding content | target | missing |  | No templates to switch between. |
-| `STYLE-004` | Logo, favicon and brand kit | target | done | `scripts/components-code-journey.mjs` — Gallery, brand and content checks (logo, favicon, social image upload and preview, public header and icon bytes, social card metadata, two profile icons, LocalBusiness sameAs and tooltips at 1440 and 390); `tests/pane.test.mjs` — brand uploads stay draft until approval and publish served icons, social images and profile structured data | None. |
+| `STYLE-004` | Logo, favicon and brand kit | target | done | `scripts/components-code-journey.mjs` — “Gallery, brand and content checks” |  |
 | `MEDIA-001` | Media library with alt text and usage | target | partial | `tests/pane.test.mjs` — "native media library uploads, organizes and reuses private assets while refusing used deletion and stale edits" and "gallery publications resolve immutable library images and enforce the page gate and revocation for every rendition"; `scripts/media-library-journey.mjs` — "mediaLibraryJourney", invoked by `scripts/components-code-journey.mjs`: native 50-image and three-PDF upload, search and type and folder filters, metadata and alternative text, three-page reuse and exact usage refusal, missing-alt publication refusal, private originals and immutable approval, reopen and conflict resolution, automatic metadata saves, five-step undo and redo, protected PDF delivery, keyboard and axe at 1440 and 390 | Official Unsplash search and import, photographer attribution and download-event proof require an owner-authorized Unsplash developer app and key not held. Live provider-storage qualification remains held with the shared Cloudflare family; MP4 and MOV transcoding and poster frames and other-file support remain unimplemented. Native owner-only image and PDF library uses existing whole-draft storage bounds. PAGE-002 and collection holds remain unchanged. |
-| `MEDIA-002` | Responsive image optimization | target | done | `scripts/components-code-journey.mjs` — “Native canvas and reversible image journey” (real photo uploaded at 6000 pixels, distinct phone and desktop WebP network responses with one selected payload at 390 and 1440, intrinsic width and height, below-fold lazy loading, private original retention, rotation and reset of matching renditions, shared canvas and live pixels, tooltips and no overflow); `tests/pane.test.mjs` — “image drafts preserve explicit descriptions and publication refuses missing alt while warning about headings and contrast” (public PNG fallback bytes, HEAD, unknown width refusal, invalid rendition rejection, private original custody, membership-gated delivery and immediate revocation in both live stores) | Native image uploads retain their original privately and prepare bounded 480, 960 and 1600-pixel WebP renditions, without upscaling smaller images, plus a PNG fallback. The shared renderer supplies srcset, screen-matched sizes, intrinsic dimensions and stable aspect ratios, and loads below-fold live images lazily. Public image requests read only the current approved page, enforce its access gate on every request, never serve the original and use private no-store delivery so revocation and protection cannot leak through public caches. Rotation and reset regenerate the matching rendition set. Native PNG, JPEG and WebP uploads allow up to 768 KiB, with a bounded whole-draft budget; a 6000-pixel photographic upload is proved at both widths. MEDIA-001, MEDIA-004 and CMS-011 inherit this rendition and custody pipeline when their image doors ship. |
-| `MEDIA-003` | Basic image editing | target | done | `tests/pane.test.mjs` — “image drafts preserve explicit descriptions and publication refuses missing alt while warning about headings and contrast” (exact original bytes through immutable save and authenticated reopen, original omitted from public delivery, native refusal, invalid original and rotation rejection, and stale-base conflict); `scripts/components-code-journey.mjs` — “Native canvas and reversible image journey” with PANE_CANVAS_ONLY=1 (6000-pixel original retained before downsampling, pixel-exact quarter turns, crop ratios and focal point, undo and redo, reopen, hero subject bounds, published crop and reset at 1440 and 390, shared-renderer geometry and pixel parity, and icon-control tooltip audit) | None. Native uploads are bounded to 768 KiB and kept privately; public documents use only the prepared display image. |
+| `MEDIA-002` | Responsive image optimization | target | done | `scripts/components-code-journey.mjs` — “Native canvas and reversible image journey” |  |
+| `MEDIA-003` | Basic image editing | target | done | `scripts/components-code-journey.mjs` — “Native canvas and reversible image journey” |  |
 | `MEDIA-004` | Video, map, social embeds and Instagram feed | target | partial | `scripts/privacy-journey.mjs` — owner-added YouTube URL embed waits for consent, keeps only its host in CSP and is suppressed under GPC | YouTube URL embed isolation is proved at both widths. Uploaded video, captions/renditions, actual playback, other named provider embeds and the official Instagram feed/refresh/revocation remain unproved. |
-| `CMS-001` | Structured collections with typed fields | target | done | `tests/posts.test.mjs` — “typed service collections validate thirty items and publish rich descriptions with selective item restoration” (ten typed fields, thirty retained items, native editor writes with private-post exclusion, required and wrong-type and reference and calendar refusal without mutation, starter collections, semantic heading and nested list and bold and inline raster and stable page and PDF and telephone destinations, USD value and team reference, native admin and editor publication refusal, exact selected native-owner publication, original URL and menu placement, unchanged unrelated live and draft work and immutable source hashes, metadata-only restore actor and server time, zero outbound action, 31-day exclusion and guessed expired restore refusal); `scripts/collections-journey.mjs` — “Collections browser journey” (native ten-field schema creation, thirty items, typed item editing, the shared visual rich description editor, five durable undo and redo steps, two-tab conflict comparison and retained copy, exact owner approval and public live link, semantic public DOM, keyboard reading order and focus, axe, tooltip hover and keyboard focus, schema and details and rich body and published item and history and trash and expired end states at 1440 and 390). The canvas shard in `scripts/browser-proof.mjs` always runs the journey. Its exact-candidate outside-Verify clock run is identified in the lane handoff.  `tests/posts.test.mjs` also asserts every wrong field type and missing-alt item-publication refusal without any revision or approval change; `scripts/collections-journey.mjs` compares every downloaded personal conflict field with the retained losing-tab state.  `tests/posts.test.mjs` also proves native administrator item preview with a draft banner, signed-out refusal and unchanged anonymous delivery; `scripts/collections-journey.mjs` opens that private preview at both acceptance widths.  `tests/pane.test.mjs` — “starter layouts and duplicates retain editable content and shared published styles” independently initializes each current template with editable empty starter collections. `tests/posts.test.mjs` additionally asserts all six mutation actions through both native form and API doors with signed-out, wrong-role, revoked-grant and foreign or absent origin refusal; identical role-filtered conflict bodies; H3, nested lists, italic, both actual inline images with their own descriptions and captions, attributed quote, consent-gated video, every stated destination and direct renamed-post resolution; exact selected approval actor and revision; transactional metadata-only edit and publication activity. `tests/posts.test.mjs` — “designed collection templates publish every item with exact metadata and prepared social images” also proves populated whole-site rollback with original values, bindings, all thirty item URLs and unchanged source snapshots and hashes. The collection journey repeats the complete rich body and renamed destination at both acceptance widths. | |
-| `CMS-002` | Collection template pages with item URLs | target | done | `tests/posts.test.mjs` — “designed collection templates publish every item with exact metadata and prepared social images” (native owner design and whole-site approval, invalid binding refusal, all thirty item URLs, exact bound titles and descriptions, ordered visible fields, safe Service structured data and selected USD offers, canonical URLs, prepared social-image bytes and selective update isolation); `scripts/collection-template-journey.mjs` — “Collection template browser journey” (native template settings, ordered fields and search bindings, explicit whole-site owner approval, all thirty anonymous URLs and structured data, public social image, keyboard order, axe, tooltips and both settings and published item end states at 1440 and 390), always loaded by the canvas shard. The same typed-service route test covers collection-template authority and canonical-origin refusal. The template route test also asserts populated whole-site rollback, exact original metadata and item values at every URL, retained current draft and immutable source snapshots. | |
+| `CMS-001` | Structured collections with typed fields | target | done | `scripts/collections-journey.mjs` — “Collections browser journey”; `tests/posts.test.mjs` — “typed service collections validate thirty items and publish rich descriptions with selective item restoration” |  |
+| `CMS-002` | Collection template pages with item URLs | target | done | `scripts/collection-template-journey.mjs` — “Collection template browser journey”; `tests/posts.test.mjs` — “designed collection templates publish every item with exact metadata and prepared social images” |  |
 | `CMS-003` | Collection lists and filters on any page | target | missing |  | Collection-list authoring, filtering and date-relative evaluation remain unimplemented. |
-| `CMS-004` | Blog with categories, tags and authors | target | done | `tests/posts.test.mjs` — “authors submit two isolated blogs for exact owner approval and public semantic delivery” (six posts in two blogs, native author isolation, signed-out and foreign-origin refusal, native owner-only current-review approval, stale review and revision refusal, exact approving owner and transactional activity, immutable sources and unrelated live content, exact filtered post sets, isolated RSS, semantic body and stable destinations, approved PDF bytes and private-file refusal, click-only share URLs); `scripts/posts-journey.mjs` — “Posts browser journey” (native blog settings autosave with stale-save value retention and private PDF upload, author composition, both blog indices and isolated feeds, category and tag and author and month archive pages, excerpts and responsive featured images, pagination, full body composition and live semantic DOM, keyboard reading order and axe, two captioned raster images, attributed quote, consented YouTube, page button and post and PDF and telephone links, post rename without a redirect hop, semantic absolute-URL RSS, all five share actions with zero third-party requests before a click, five durable undo and redo steps, reopen and stale-tab retention, account and editor tooltips, native post-screen axe, 1440 and 390). The canvas shard in `scripts/browser-proof.mjs` always loads this journey.  `scripts/posts-journey.mjs` additionally proves each named share origin and endpoint, email’s mailto scheme, exact post URLs and complete retained conflict-download title and body; `tests/posts.test.mjs` — “authors submit two isolated blogs for exact owner approval and public semantic delivery” additionally refuses reviewed inline images lacking alt text or an explicit decorative choice, returns an accessibility warning and preserves every revision and approval.| CMS-006 retains feed validation, podcast support and subscriber delivery; CMS-010 retains comments; CMS-011 retains its remaining catalog, and PAGE-014 retains the remaining blocks and destinations. |
+| `CMS-004` | Blog with categories, tags and authors | target | done | `scripts/posts-journey.mjs` — “Posts browser journey”; `tests/posts.test.mjs` — “authors submit two isolated blogs for exact owner approval and public semantic delivery” |  |
 | `CMS-005` | Scheduled publishing and expiry | target | partial | `tests/posts.test.mjs` — “approved immutable posts publish at Chicago nine while unapproved times are flagged and retries stay fenced” (09:00 Chicago publication and optional expiry, approved immutable source, actual execution history, retained later drafts, unapproved post flag and refusal, native owner authority, invalid DST choices, cancellation and replay fences with ordinary and durable live storage); `tests/posts.test.mjs` — “an invalidated blog schedule cannot starve other publications or leave an expired post public” and “committed publications and expiries reconcile durable reads even when failure recording is unavailable” (independent due entries, visible sanitized failure history, public state matching committed publications and expiries through a later failure, banner reconciliation before surfacing a storage failure); `tests/pane.test.mjs` — “approved business-local schedules drive banners and reminders while drafts, roles and invalid DST dates stay fenced” (Denver promotion expiry across spring DST and unapproved schedule refusal); `scripts/scheduling-journey.mjs` — “Business-local scheduling journey” (native post scheduling controls, 09:00 Chicago execution history, optional post expiry, unapproved post flag, Chicago announcement activation and expiry across fall DST, changed screens at 1440 and 390); `scripts/post-schedules-journey.mjs` — “Invalidated post schedule journey” (native invalidated approval, unrelated publication, successful expiry, matching public durable state and visible failure screens at 1440 and 390) | Selective page and collection-item publication and expiry remain unimplemented. These future scheduling doors must retain the approved immutable-revision fence, actual execution history and due-unapproved refusal. Native post publication and expiry now isolate invalidated schedules, show their sanitized failures and reconcile committed changes to public durable state even when another entry fails. Announcement schedules retain their existing proof. This does not complete the remaining page and item target. |
 | `CMS-006` | RSS and podcast feeds and new-post notifications | target | partial | `tests/posts.test.mjs` — “authors submit two isolated blogs for exact owner approval and public semantic delivery” (six posts in two blogs, native author isolation, signed-out and foreign-origin refusal, native owner-only current-review approval, stale review and revision refusal, exact approving owner and transactional activity, immutable sources and unrelated live content, exact filtered post sets, isolated RSS, semantic body and stable destinations, approved PDF bytes and private-file refusal, click-only share URLs); `scripts/posts-journey.mjs` — “Posts browser journey” (native blog settings autosave with stale-save value retention and private PDF upload, author composition, both blog indices and isolated feeds, category and tag and author and month archive pages, excerpts and responsive featured images, pagination, full body composition and live semantic DOM, keyboard reading order and axe, two captioned raster images, attributed quote, consented YouTube, page button and post and PDF and telephone links, post rename without a redirect hop, semantic absolute-URL RSS, all five share actions with zero third-party requests before a click, five durable undo and redo steps, reopen and stale-tab retention, account and editor tooltips, native post-screen axe, 1440 and 390). The canvas shard in `scripts/browser-proof.mjs` always loads this journey. | Native blog RSS serves only the current approved posts of its own blog and carries the same semantic body with absolute destinations. Gap: W3C validator and Apple Podcasts validation, two audio episodes, collection feeds, Mango and Mailchimp consented campaign delivery and visible delivery state remain unproved. |
 | `CMS-007` | Collection CSV import and export | target | missing |  | Only the static-site JSON move-in exists (`MOVEIN-001`). |
@@ -1451,32 +1636,33 @@ Judged from the code and tests at commit `3b35726211c3a5ac20eeba8b0f8b82b37d2995
 | `CMS-009` | Events calendar with list and month views | target | missing |  | No events or calendar. PAGE-015 requires this future content door to retain deletion actor and time, at least 30-day trash availability, immutable source, original URL and menu place, draft-only single-item restoration and history without changing unrelated content, separate permission-checked publication that removes only its deletion redirect, and exact restore actor and time in activity. |
 | `CMS-010` | Blog comments and moderation | target | partial | `tests/posts.test.mjs` — “native comment moderation protects notifications, threaded replies, closure and person erasure” (approval by default, honeypot refusal, six-link and blocked-word spam, native role and notification boundaries, notification-linked approval, author and authorized moderator replies, one-level public threads, per-post and timed closure, cookie-free counts, daily digest, metadata-only audit, person export, guarded erasure with both cross-store replay fences and old-archive refusal; matching private review links in plain-text and HTML immediate mail and daily digests); `scripts/comments-journey.mjs` — “Comments browser journey” (native comment settings autosave and durable reopen, selection-only bulk actions, visitor form, moderator notification review, author reply, approved thread, closed form, person export and erasure, axe and tooltips, screens at 1440 and 390). | Native push notification proof requires MOBILE-002 device and signing authority. Live Turnstile acceptance is not proved by the existing provider fixture. WXR comment export and imported author, date, approval state and threading remain unproved under EXPORT-001, IMPORT-001 and IMPORT-002. A recorded exact-candidate Verify and guarded landing remain pending; no DONE claim is made. |
 | `CMS-011` | Post and collection item bodies in the block editor | target | partial | `tests/posts.test.mjs` — “authors submit two isolated blogs for exact owner approval and public semantic delivery” (six posts in two blogs, native author isolation, signed-out and foreign-origin refusal, native owner-only current-review approval, stale review and revision refusal, exact approving owner and transactional activity, immutable sources and unrelated live content, exact filtered post sets, isolated RSS, semantic body and stable destinations, approved PDF bytes and private-file refusal, click-only share URLs); `scripts/posts-journey.mjs` — “Posts browser journey” (native blog settings autosave with stale-save value retention and private PDF upload, author composition, both blog indices and isolated feeds, category and tag and author and month archive pages, excerpts and responsive featured images, pagination, full body composition and live semantic DOM, keyboard reading order and axe, two captioned raster images, attributed quote, consented YouTube, page button and post and PDF and telephone links, post rename without a redirect hop, semantic absolute-URL RSS, all five share actions with zero third-party requests before a click, five durable undo and redo steps, reopen and stale-tab retention, account and editor tooltips, native post-screen axe, 1440 and 390). The canvas shard in `scripts/browser-proof.mjs` always loads this journey.  `tests/posts.test.mjs` — “typed service collections validate thirty items and publish rich descriptions with selective item restoration” (ten typed fields, thirty retained items, native editor writes with private-post exclusion, required and wrong-type and reference and calendar refusal without mutation, starter collections, semantic heading and nested list and bold and inline raster and stable page and PDF and telephone destinations, USD value and team reference, native admin and editor publication refusal, exact selected native-owner publication, original URL and menu placement, unchanged unrelated live and draft work and immutable source hashes, metadata-only restore actor and server time, zero outbound action, 31-day exclusion and guessed expired restore refusal); `scripts/collections-journey.mjs` — “Collections browser journey” (native ten-field schema creation, thirty items, typed item editing, the shared visual rich description editor, five durable undo and redo steps, two-tab conflict comparison and retained copy, exact owner approval and public live link, semantic public DOM, keyboard reading order and focus, axe, tooltip hover and keyboard focus, schema and details and rich body and published item and history and trash and expired end states at 1440 and 390). The canvas shard in `scripts/browser-proof.mjs` always runs the journey. Its exact-candidate outside-Verify clock run is identified in the lane handoff. | The native post limb is proved by the CMS-004 route test and native browser journey: the complete acceptance post body, semantic live DOM, keyboard reading order, axe, linked-post rename without a redirect hop and absolute-URL semantic RSS. Gap: the remaining PAGE-014 catalog, destinations and Markdown, search indexing under CMS-008 and open post export under EXPORT-001 remain unproved. Future collection and event editors inherit the same shared semantic body, safe references, image-description and rendition custody, autosave, five-step undo and redo, conflict retention and transactional activity obligations before shipping. |
+| `CMS-012` | Structured bodies in feeds, search and exports | target | partial | `tests/posts.test.mjs` — “authors submit two isolated blogs for exact owner approval and public semantic delivery” (six posts in two blogs, native author isolation, signed-out and foreign-origin refusal, native owner-only current-review approval, stale review and revision refusal, exact approving owner and transactional activity, immutable sources and unrelated live content, exact filtered post sets, isolated RSS, semantic body and stable destinations, approved PDF bytes and private-file refusal, click-only share URLs); `scripts/posts-journey.mjs` — “Posts browser journey” (native blog settings autosave with stale-save value retention and private PDF upload, author composition, both blog indices and isolated feeds, category and tag and author and month archive pages, excerpts and responsive featured images, pagination, full body composition and live semantic DOM, keyboard reading order and axe, two captioned raster images, attributed quote, consented YouTube, page button and post and PDF and telephone links, post rename without a redirect hop, semantic absolute-URL RSS, all five share actions with zero third-party requests before a click, five durable undo and redo steps, reopen and stale-tab retention, account and editor tooltips, native post-screen axe, 1440 and 390). The canvas shard in `scripts/browser-proof.mjs` always loads this journey.  `tests/posts.test.mjs` — “typed service collections validate thirty items and publish rich descriptions with selective item restoration” (ten typed fields, thirty retained items, native editor writes with private-post exclusion, required and wrong-type and reference and calendar refusal without mutation, starter collections, semantic heading and nested list and bold and inline raster and stable page and PDF and telephone destinations, USD value and team reference, native admin and editor publication refusal, exact selected native-owner publication, original URL and menu placement, unchanged unrelated live and draft work and immutable source hashes, metadata-only restore actor and server time, zero outbound action, 31-day exclusion and guessed expired restore refusal); `scripts/collections-journey.mjs` — “Collections browser journey” (native ten-field schema creation, thirty items, typed item editing, the shared visual rich description editor, five durable undo and redo steps, two-tab conflict comparison and retained copy, exact owner approval and public live link, semantic public DOM, keyboard reading order and focus, axe, tooltip hover and keyboard focus, schema and details and rich body and published item and history and trash and expired end states at 1440 and 390). The canvas shard in `scripts/browser-proof.mjs` always runs the journey. Its exact-candidate outside-Verify clock run is identified in the lane handoff. | The native post limb is proved by the CMS-004 route test and native browser journey: the complete acceptance post body, semantic live DOM, keyboard reading order, axe, linked-post rename without a redirect hop and absolute-URL semantic RSS. Gap: the remaining PAGE-014 catalog, destinations and Markdown, search indexing under CMS-008 and open post export under EXPORT-001 remain unproved. Future collection and event editors inherit the same shared semantic body, safe references, image-description and rendition custody, autosave, five-step undo and redo, conflict retention and transactional activity obligations before shipping. |
 | `DOMAIN-001` | Connect a custom domain with apex and www | target | missing |  | The business site is served only at `/site` on the Worker origin; no domain connection or alias domains. |
 | `DOMAIN-002` | Managed HTTPS and certificate status | target | missing |  | No domain or certificate handling beyond the Worker's default hostname. |
 | `DOMAIN-003` | DNS status that preserves business email | target | missing |  | No DNS reading or writing. |
 | `DOMAIN-004` | Domain registration and transfer guidance | target | missing |  | No domain guidance. |
 | `DOMAIN-005` | Registrar email forwarding carried over | target | missing |  | No DNS reading, forwarding detection or Email Routing setup. |
 | `HOST-001` | The business site at the domain root, fast | target | partial | `src/pane/public.ts` | Live pages are served at `/site` with `no-store`, reading D1 on every request; no edge cache or performance budget. |
-| `HOST-002` | The live site survives an admin outage | target | done | `tests/pane.test.mjs` — “published snapshot and queued forms survive missing workspace tables and drain once after recovery” (every live page, acceptance while D1 is unavailable and exactly-once recovery); `scripts/outage-journey.mjs` — “Outage browser journey” (live pages, contact and recovered inbox at 1440/390); `scripts/hosted-outage-journey.mjs` — “Hosted outage journey” (RunEditRun deployed D1 disconnection, two accepted/recovered enquiries and guarded cleanup; receipt sx-pane-c9-hosted-final) |  |
+| `HOST-002` | The live site survives an admin outage | target | done | `scripts/outage-journey.mjs` — “Outage browser journey” |  |
 | `HOST-003` | Updates without plugin maintenance | target | missing |  | No in-product update channel. |
 | `HOST-004` | Transparent running cost in USD | target | missing |  | No usage or cost view. |
 | `HOST-005` | Install from the browser with no terminal | target | missing |  | Installation runs through `rer deploy` or the `npx @runeditrun/rer` command line only; no browser install path. |
 | `SEO-001` | Page titles and meta descriptions | target | partial | `src/pane/search.ts`; `src/pane/search-settings.ts`; `src/pane/search-view.ts`; `tests/search.test.mjs`; `scripts/search-journey.mjs` | Current pages have editable search titles and descriptions, defaults and a saved search preview. Posts and collection items still depend on CMS-001, CMS-002 and CMS-004. |
-| `SEO-002` | Redirect manager and slug-change redirects | target | done | `tests/search.test.mjs` — “published URL changes offer explicit redirects and each revision owns its exact status and target map” (rename/deletion offers, chosen 301/302 GET/HEAD targets, draft isolation, invalid/cyclic targets, atomic malformed-CSV refusal and rollback); `scripts/redirects-journey.mjs` — “Redirect manager journey” (accepted published-slug offer, individual 301/302 addition/retargeting/deletion, quoted 200-row CSV import with every status/target requested, import undo/redo, publication and rollback at 1440/390; exact candidate heavy-slot run cited in campaign plan) | None. |
+| `SEO-002` | Redirect manager and slug-change redirects | target | done | `scripts/redirects-journey.mjs` — “Redirect manager journey” |  |
 | `SEO-003` | Automatic sitemap and robots.txt | target | partial | `src/pane/search.ts`; `src/pane/search-settings.ts`; `src/pane/search-view.ts`; `tests/search.test.mjs`; `scripts/search-journey.mjs` | Published revisions generate sitemap.xml with last-modified dates and noindex exclusions, and editable robots.txt; drafts never change either and rollback restores them. Hidden/protected pages and post/item URLs await PAGE-001, PAGE-011 and CMS-001 to CMS-004. |
 | `SEO-004` | Canonical URLs and indexing controls | target | partial | `src/pane/search.ts`; `src/pane/search-settings.ts`; `src/pane/search-view.ts`; `tests/search.test.mjs`; `scripts/search-journey.mjs` | Current pages have canonical URLs, custom canonical overrides and noindex controls; draft previews and development-origin pages send noindex. Primary custom-domain routing and www/apex acceptance await DOMAIN-001. |
 | `SEO-005` | Structured data for local businesses | target | missing |  | No structured data. |
 | `SEO-006` | Social preview cards | target | missing |  | No social metadata. |
 | `SEO-007` | Google Search Console and Bing Webmaster Tools | target | missing |  | No search console connection. |
 | `SEO-008` | Google Business Profile consistency | target | missing |  | No Google Business Profile connection. |
-| `SEO-009` | Per-page search checks | target | done | `scripts/search-journey.mjs` — Search journey (effective metadata normalization, missing and duplicate titles and descriptions, noindex and fix links at 1440 and 390); `scripts/components-code-journey.mjs` — Gallery, brand and content checks (combined duplicate title, deleted native reference, broken gallery URL, missing alt and large public image warnings with fix links at both widths); `tests/search.test.mjs` — native page references follow renamed URLs and report a deleted destination before publication | None. |
+| `SEO-009` | Per-page search checks | target | done | `scripts/search-journey.mjs` — “Search journey”; `scripts/components-code-journey.mjs` — “Gallery, brand and content checks” |  |
 | `SEO-010` | Multilingual sites with per-language URLs | target | missing |  | No languages or translated pages. |
-| `FORM-001` | Form builder with multiple forms | target | done | `tests/pane.test.mjs` — “reusable typed forms preserve invalid answers, enforce every field type, accept a private five MB PDF and refuse unsafe files through public doors” (two placements, typed validation, required fields, retained direct-POST answers, accessible errors and help, 5 MB PDF, inbox, private download, confirmation, size and type refusals, honeypot and verification refusal); “private uploads join native archive restore and person export and erasure without replaying old files” (private bytes in person export and current archive restore, fresh-proof erasure and old-backup refusal); “durable typed intake retains private upload chunks through workspace outage and drains once after recovery” (durable intake and one-time recovery); “rejected PDFs leave no stored bytes and only opted-in validated text and metadata can be rescued by the owner” (regular D1 and durable intake contain no rejected bytes, default-off retention, 30 days when enabled, reason reaches submitter, text and metadata only, confirmed owner rescue and no automatic reply); `scripts/forms-journey.mjs` — “Typed form browser journey” (real builder, configurable help and validation message, two placements, browser and direct-POST errors with retained answers, private 5 MB PDF, refusals, confirmation, inbox download, rejected-file reason, owner-visible 30-day review and explicit text-only rescue, and hover and keyboard tooltips at 1440 and 390) | Reusable revisioned forms support text, email, US phone, address, choice, date, PDF upload and consent fields with configurable labels, required settings, help, placeholders, validation messages, submit labels and confirmations or local redirects. Accepted PDFs are private, limited to 5 MB and checked by signature and type; person export, erasure, replay fencing, current archive restore, old-backup refusal and durable outage intake include their custody. Approved ct semantics (25 Oct 18:50Z): rejected upload bytes are discarded from every store; only validated text and file metadata can enter owner-opted-in spam review for the stated 30-day period, subject to explicit legal holds. Rejection reasons reach the submitter. Rescue creates a normal submission only on explicit confirmed owner action, carries no file bytes and sends no automatic reply. Visitors reselect a file after rejection. |
-| `FORM-002` | Spam protection | target | done | `tests/pane.test.mjs` — “form protection refuses and separately counts honeypot, per-form bursts and invalid provider proofs” (all current form doors, independent limits, fail-closed verification, normal delivery and separate counts); “rejected content is opt-in, owner-only and expires after thirty days unless explicitly held” (default off, explicit opt-in, owner boundary, escaping, exact retention duration and scheduled expiry); “owner rescues a rejection once without an automatic reply and confirmed purge fences replay” (concurrent rescue, no acknowledgment, confirmed purge and value-free audit); “rejected answers join person export and atomic erasure while legal holds refuse deletion and archives exclude content” (lookup, export, holds, whole-request erasure refusal, erasure and replay fencing, archive exclusion and restore default); `scripts/privacy-journey.mjs` — “Privacy browser journey” (retention settings, rejected answers, holds, rescue, purge confirmation, person export and erasure, no overflow and delayed hover and keyboard focus tooltips at 1440 and 390) | Every current contact-form door has a honeypot, independent 20-attempt minute bucket and fail-closed Turnstile hostname, action and form verification. Rejections are counted separately. Approved ct semantics (23 Oct 09:30Z and 11:28Z): rejected-content retention is off by default; explicit owner opt-in retains validated names, email addresses and answers for 30 days. Only the owner reviews retained content, marks it not spam for one-time inbox delivery without an automatic reply, confirms permanent purge, and explicitly places or releases legal holds. Holds prevent expiry, rescue, purge and person erasure until released; person export includes held records. Expiry runs on scheduled processing and before review. Person lookup, export and guarded atomic erasure include retained rejections and replay fences. Rejected content and its opt-in setting are excluded from installation archives, so restore starts with capture off. Metadata remains separate and contains no answers or addresses. FORM-001 and CMS-010 inherit all three protection checks, owner review, retention, hold and privacy boundaries before shipping. |
+| `FORM-001` | Form builder with multiple forms | target | done | `scripts/forms-journey.mjs` — “Typed form browser journey” |  |
+| `FORM-002` | Spam protection | target | done | `tests/pane.test.mjs` — “form protection refuses and separately counts honeypot, per-form bursts and invalid provider proofs” |  |
 | `FORM-003` | Enquiry email to named recipients and reply | target | partial | `src/pane/views.ts`; `src/pane/data.ts` | Enquiries appear in the workspace inbox only; no notification email or reply. |
-| `FORM-004` | Automatic acknowledgment to the sender | target | done | `tests/pane.test.mjs` — an approved form acknowledgment reaches the provider once with owner wording and durable independent status (SendGrid network edge acceptance, configured recipient/text/time, one send, failure/uncertainty retained, replay/erasure and development suppression); `scripts/acknowledgment-journey.mjs` — saved wording, explicit enable, owner publication, durable inquiry, suppression and disable at 1440 and 390 |  |
+| `FORM-004` | Automatic acknowledgment to the sender | target | done | `tests/pane.test.mjs` — “an approved form acknowledgment reaches the provider once with owner wording and durable independent status” |  |
 | `FORM-005` | Lead routing to Orbit, HubSpot and signed webhooks | target | missing |  | Submissions are stored locally only. |
-| `FORM-006` | Enquiry ownership, status and follow-up | target | done | `tests/pane.test.mjs` — enquiries carry an owner, status and follow-up time; unanswered ones are reminded then escalated by business day and replied ones leave the queue (SendGrid network edge: assignee reminder, owner fallback, one-time owner escalation, no enquiry text in mail; weekend and daylight-saving business days; role refusals; replied leaves the queue; reopen); `scripts/acknowledgment-journey.mjs` — assign an owner and mark an enquiry replied from the inbox into Handled at 1440 and 390 | |
+| `FORM-006` | Enquiry ownership, status and follow-up | target | done | `tests/pane.test.mjs` — “enquiries carry an owner, status and follow-up time; unanswered ones are reminded then escalated by business day and replied ones leave the queue” |  |
 | `FORM-007` | Submission export and Google Sheets | target | partial | `tests/pane.test.mjs` — native submission CSV filters stable forms and inclusive UTC dates beyond the inbox limit without exposing erased or unauthorized records; composable Pane roles; private uploads join native archive restore and person export and erasure; durable typed intake; rejected PDFs remain absent until explicit rescue. `scripts/forms-journey.mjs` — native CSV downloads through Inquiries at 1440 and 390. | Google Sheet connection, append on submission, connector lifecycle and real provider proof remain unimplemented. Held: an owner-authorized Google user and Sheet, test-user access, OAuth scopes and callback registration on the real origin. Earlier flattened enquiries remain archive-only because their original form identity and structured values were not captured. |
 | `FORM-008` | Consent capture for email and SMS | target | partial | `tests/pane.test.mjs` — marketing choices bind published wording to immutable enquiry receipts and travel through export, archives and erasure without subscription delivery; durable typed intake retains private upload chunks through workspace outage and drains once after recovery. `scripts/forms-journey.mjs` — native owner configuration, separate unchecked choices, keyboard and axe, inbox records and CSV at 1440 and 390. `scripts/custody-journey.mjs` — portable marketing records, person erasure and captured retry refusal at both widths. | Mango email-only propagation, Mailchimp subscription with marketing permission and member consent text, time and page while SMS consent remains absent, Orbit contact consent delivery and all real-provider proofs remain unimplemented. Held: authorized Mango and Orbit tenants and a Mailchimp test audience and key, none supplied for this run. |
 | `LINK-001` | Booking through Dial, Calendly or Acuity | target | missing |  | No booking embeds; the previous contract excluded bookings. |
@@ -1485,38 +1671,40 @@ Judged from the code and tests at commit `3b35726211c3a5ac20eeba8b0f8b82b37d2995
 | `LINK-004` | Zapier, Crank and outgoing webhooks | target | missing |  | No outgoing events. |
 | `LINK-005` | Connection health panel | target | missing |  | No connections to show. |
 | `API-001` | Agent command helper and API | target | partial | `tests/pane.test.mjs` — “the real helper uses an authorized admin private session file for status, prepare and import and refuses publication”; “scoped agent tokens intersect native authority and audit allowed, denied, expired and revoked calls without exposing credentials”; `scripts/pane.mjs`; `docs/AGENT.md` | Complete public-door proof of populated scoped collection reads through the helper remains required. AGENT-008 retains budgets and agent controls. |
-| `STATS-001` | Traffic by page, source, device and campaign | target | done | `tests/pane.test.mjs` — traffic groups real public visit events without retaining raw referrers or unapproved identifiers and excludes privacy opt-outs (page/day/device/trusted location; registrable domains and channel groups; fixed medium and approved/known source; canonical case-insensitive campaigns and separate unapproved counts; no discarded text in any table; GPC/DNT zero writes; every public visit response carries no Set-Cookie); `scripts/traffic-journey.mjs` — published label settings, actual tagged phone/desktop visits, Yelp/ChatGPT domain/channel dashboard output, IP refusal, safe source/medium and unapproved counts, GPC exclusion and an empty browser cookie jar at 1440 and 390 | |
-| `STATS-002` | Conversion goals and click insights | target | done | `tests/pane.test.mjs` — conversion goals count quote-form submissions and phone clicks by page, channel and campaign with a funnel, never for opt-outs or replays (goal definition validation; tagged form and phone completions; campaign, channel and page conversion rates; opt-out, replay, honeypot and unapproved-text refusals; no cookie); `scripts/traffic-journey.mjs` — goals defined in the editor and published, a tagged quote form and phone tap, the dashboard funnel and rates, an empty visitor cookie jar and no GPC goal request at 1440 and 390 | |
-| `STATS-003` | Vane and Google Analytics 4 with consent | target | done | `tests/pane.test.mjs` — connected Vane and Google Analytics 4 render only on live pages, widen the policy only for what is connected and stay absent for GPC and DNT visitors; `scripts/analytics-journey.mjs` — published connections, Vane page views and goals arriving, zero Google requests before consent or after refusal, consented page views and goals with advertising storage denied, withdrawal clearing cookies, thank-you-view form goal sent once, zero third-party requests under GPC even with an allow choice saved, and tooltips on icon-only controls at 1440 and 390 (network-edge Vane and Google script stand-ins); live receipt 2026-10-23 (real run-vane main 8549e6e129e1725d8e85d8d25ca3814831f204da and the real Google tag over the public network with a synthetic measurement ID: Vane stored 3 page views and both goals, Google received page views, phone and quote events with analytics-only consent, no policy violations; source c6e92e3cc67f19d98aeb16cf3661b987e01b8cd7) |  |
+| `STATS-001` | Traffic by page, source, device and campaign | target | done | `scripts/traffic-journey.mjs` — “Traffic browser journey” |  |
+| `STATS-002` | Conversion goals and click insights | target | done | `scripts/traffic-journey.mjs` — “Traffic browser journey” |  |
+| `STATS-003` | Vane and Google Analytics 4 with consent | target | done | `scripts/analytics-journey.mjs` — “Analytics browser journey” |  |
 | `STATS-004` | Monthly owner report | target | missing |  | No reports. |
 | `STATS-005` | Meta Pixel and Google Ads conversion tracking | target | missing |  | No Meta Pixel, Google Ads connection, goal-to-event mapping or server-side conversions. |
 | `ROLE-001` | Roles for editors, authors, moderators and reporting | target | partial | `tests/pane.test.mjs` — “composable Pane roles are invited natively and enforced across workspace, preview, search and every existing API action”; “explicit enquiry replies are retained, delivered once at the provider edge and erased with the parent enquiry”; `scripts/access-journey.mjs` — “Access browser journey” (owner, editor, inbox and reporting at 1440/390)  `tests/search.test.mjs` — “native page writers initiate private assistance within their current grant and retain actor-owned decisions”; “native authors write and submit only own posts and use assistance without exposing other content”; `scripts/ai-journey.mjs` — “editorInitiation”.  `tests/posts.test.mjs` — “authors submit two isolated blogs for exact owner approval and public semantic delivery”; `scripts/posts-journey.mjs` — “Posts browser journey” (native own-post visual authoring, review, owner approval and publication at 1440 and 390). | Pane-owned composable grants extend native member invitations without changing Base copies, sessions or last-owner protection. Editors edit and preview page and search drafts; inbox users read, explicitly reply and manage enquiries; reporting users read aggregate reports. Every current Pane route, preview and search handler enforces capabilities and omits inaccessible response data; grants revoke on the next request, including token calls. Approved by ct (22 Oct): only the owner assigns roles; grants compose by union and an explicit assignment replaces legacy member access; unassigned native members keep their ACCESS-001 read-only access until a grant replaces it; editors cannot change business and robots settings or publish; authors write and submit their own private posts through the native API; comment-moderator authority remains denied until its CMS doors exist. Inbox replies are explicit, idempotent sends that retain provider status and never retry automatically. Gap: the clause stays partial until every role is exercised: editor collection editing is now proved by CMS-001, and comment queue and notifications await CMS-010 (which must admit only owner, admin and comment moderators). |
 | `ROLE-002` | Review requests and publish delegation | target | missing |  | Only the owner can publish. |
-| `ROLE-003` | Designer-to-client handover | target | done | `tests/pane.test.mjs` — “ownership handover atomically grants the business owner, demotes the designer and permits immediate revocation” (native fresh-proof refusal, explicit target and email confirmation, racing transfers, promotion and demotion, session and token fences, editor-only authority, audit and revocation); `scripts/custody-journey.mjs` — “Custody browser journey” (unobstructed transfer controls, new owner, designer editor, revoked sign-in and icon tooltips at 1440 and 390) |  |
+| `ROLE-003` | Designer-to-client handover | target | done | `scripts/custody-journey.mjs` — “Custody browser journey” |  |
 | `ROLE-004` | Two-step sign-in and passkeys for workspace users | target | partial | `src/modules/operator-auth/identity/email-link/index.mjs`; `src/modules/operator-auth/identity/oidc/index.mjs` | Email-link and OIDC sign-in exist; no passkeys, TOTP, recovery codes or owner-required two-step sign-in. |
-| `AUDIT-001` | Activity log of every change | target | done | `tests/pane.test.mjs` — “activity records successful existing changes atomically and exports ordered owner-only metadata”; “explicit person erasure preserves anonymous ordered activity through archive restore and revokes access” (erasure, journal refusal, restored anonymous history, ordered export and denied account and credential access); “native connection approval, callback, settings and unlink produce owner-attributed secret-free activity”; `scripts/access-journey.mjs` — “Access browser journey” (owner ordered log and export before and after actor erasure, access refusal and icon tooltips at 1440 and 390) | Successful current revision, publication, rollback, import, enquiry, native person/role and connection writes are recorded atomically with request attribution. The owner reads and exports the ordered metadata log; explicit non-owner account erasure removes identifying account data and anonymizes its activity attribution. Approved by ct (22 Oct): an owner-only, append-only metadata log and export, and owner-only erasure; no bodies, addresses, request queries or credentials in events; no automatic purge; explicit non-owner account erasure permanently anonymizes that actor's entries while the log stays. Future content, connector, agent and role doors (CMS-001, CMS-004, CMS-010, LINK-005, AGENT-008, ROLE-002/003/004) inherit transactional audit before shipping. Native link approval/callback/unlink and settings are proved with a network-edge provider, using persisted owner approval attribution. The shared erasure checkpoint refuses a pre-erasure archive when supplied with the current erasure journal. A current archive restores the retained ordered metadata log with anonymous actor attribution; the erased address, prior session and API token cannot regain access. A fresh destination requires that current journal to know about later erasure. Recorded publication approvals are migrated; other events before this migration cannot be reconstructed. |
+| `AUDIT-001` | Activity log of every change | target | partial | `tests/pane.test.mjs` — “activity records successful existing changes atomically and exports ordered owner-only metadata”; “explicit person erasure preserves anonymous ordered activity through archive restore and revokes access” (erasure, journal refusal, restored anonymous history, ordered export and denied account and credential access); “native connection approval, callback, settings and unlink produce owner-attributed secret-free activity”; `scripts/access-journey.mjs` — “Access browser journey” (owner ordered log and export before and after actor erasure, access refusal and icon tooltips at 1440 and 390) | Missing journey: every promised content, connector, role and agent action read back through the metadata activity view and export. Cited journeys show current native writes, ordered export and actor anonymization; unbuilt agent and connector doors are not exercised. |
 | `IMPORT-001` | WXR publishing platform import | target | partial | `tests/pane-imports.test.mjs` — "documented WXR inventories 100 posts and 50 comments by state while applying only supported unpublished pages"; `fixtures/imports/README.md`; `tests/pane-imports.test.mjs` — "imported page bodies preserve semantic headings, nested lists, anchors and inline destinations while scripts, media and widgets stay inert"; `scripts/imports-journey.mjs` — exact-candidate WXR inventory and apply and undo and semantic page and readonly editor at 1440/390 | Documented synthetic WXR 1.0–1.2 reader imports supported pages as unpublished semantic snapshots with heading and list and inline-link and formatting and section-anchor fidelity and reports posts, comment state and parent and post metadata, authors, taxonomy, menus, shortcodes and media references as exceptions. The fixture inventories 100 posts and 50 threaded and approved and pending and spam comments; two supported pages are applied and reconciled, with no native post and comment success claimed. Gap: native posts and taxonomy and authors and menus and threaded comments, complete published-page capture and fidelity, original media delivery, editable rich bodies and every old-URL redirect await CMS-004, CMS-010 and CMS-011, PAGE-014, MEDIA-001 and MEDIA-002 and IMPORT-006. |
 | `IMPORT-002` | XML-export site builder import | target | missing |  | No XML-export site builder import. |
-| `IMPORT-003` | Crawl-only site builder import | target | partial | `tests/pane-imports.test.mjs` — "captured Wix sitemap and RSS preserve the source inventory and explicitly report unverified live crawl"; `scripts/imports-journey.mjs` — real helper DNS-controlled Wix capture, reviewed apply and undo and retained proof at 1440/390; `tests/pane-imports.test.mjs` — "a controlled published Wix crawl proves DNS ownership before capture and retains exact-source proof through reviewed apply and undo", "crawl consent and authority refuse unsafe origins, altered challenges, members and scoped tokens before outbound work", "controlled crawls refuse private DNS and source redirects without contacting another origin" | Native owners and admins explicitly capture a published crawl-only site builder sitemap, same-origin linked pages and blog RSS after an operator-bound expiring DNS TXT proof. The reviewed exact-byte capture maps supported semantic pages (headings and lists and inline destinations and section anchors) to an unpublished draft, retains an auditable proof receipt, reconciles counts and supports retained report and undo; missing captures and native post and media and form and fidelity exceptions remain explicit. Offline uploads grant no network authority. Gap: native blog bodies, rich editing, complete-page text and framing fidelity, original media delivery and every old-URL redirect await CMS-004 and CMS-011, PAGE-014, MEDIA-001 and MEDIA-002 and IMPORT-006. Conservative default ADOPTED pending ct approval: native owner and admin consent per crawl, exact DNS-controlled public HTTPS origin only, public-address screening, no source redirects and credentials and scripts and forms, bounded capture, receipt retained with import custody; scoped tokens cannot start outbound crawls. DNS and source edges are synthetic; no live incumbent receipt is claimed. |
-| `IMPORT-004` | Visual and generated site builder import | target | partial | `tests/pane-imports.test.mjs` — "Webflow, Framer and Durable captures are reconciled separately with every collection CSV field retained as an exception"; `fixtures/imports/README.md`; `scripts/imports-journey.mjs` — separate DNS-controlled Webflow and Framer and Durable captures, CSV exceptions, reviewed apply and undo and retained proof at 1440/390 | Separate DNS-controlled, explicitly authorized collection-based visual site builder, design-first visual site builder and AI-generated site builder crawls and offline captures map supported semantic pages to unpublished drafts, preserve their headings and lists and inline destinations and anchors and report capture and media and form and fidelity exceptions. Every row and exact field value in two collection-based visual site builder collections and one design-first visual site builder collection is retained as an unsupported collection item. Exact-byte proof receipts, reviewed apply, retained reports and undo use the same import doors. Gap: native CMS CSV item writes and bodies, rich editing, complete-page text and framing fidelity, original media delivery and every old-URL redirect await CMS-001, CMS-007 and CMS-011, PAGE-014, MEDIA-001 and MEDIA-002 and IMPORT-006. IMPORT-003 conservative crawl default ADOPTED pending ct approval applies to all three providers; synthetic DNS and source-network proof is not a live incumbent receipt. Offline capture envelopes are Pane interchange, not official provider export claims. |
-| `IMPORT-005` | Migration report and URL map | target | done | `tests/pane-imports.test.mjs` — "migration preflight reports complete typed inventory, exceptions, old URLs, form destinations and history without writes" (preflight map/counts/reasons/media/forms/history), "reviewed apply reconciles the stored draft, lists dangling post links and reopens the retained report" (fingerprint/applied counts/dangling link/reopen/undo), "captured Wix sitemap and RSS preserve the source inventory and explicitly report unverified live crawl" (production-rendered text/link/button/heading/list/image and redirect failures), "native JSON custom home and separately declared links keep their rendering semantics in the fidelity report" (positive rendered fidelity); `scripts/imports-journey.mjs` — 1440/390 review/apply/retained report/undo/tooltips | IMPORT-001/002/003/004 and CMS-007 inherit report/reconciliation/undo when additional targets ship. |
+| `IMPORT-003` | Crawl-only site builder import | target | partial | `tests/pane-imports.test.mjs` — "captured Wix sitemap and RSS preserve the source inventory and explicitly report unverified live crawl"; `scripts/imports-journey.mjs` — real helper DNS-controlled Wix capture, reviewed apply and undo and retained proof at 1440/390; `tests/pane-imports.test.mjs` — "a controlled published Wix crawl proves DNS ownership before capture and retains exact-source proof through reviewed apply and undo", "crawl consent and authority refuse unsafe origins, altered challenges, members and scoped tokens before outbound work", "controlled crawls refuse private DNS and source redirects without contacting another origin" | Controlled captures retain reviewed semantic page mappings and receipts. Missing journey: complete native blog and rich-body editing, full text and framing fidelity, original media delivery and every old-URL redirect across CMS-004, CMS-011, PAGE-014, PAGE-018, PAGE-019, MEDIA-001, MEDIA-002 and IMPORT-006. RL-101 resolves capture authority; synthetic DNS and source edges supply no live Wix receipt. |
+| `IMPORT-004` | Visual and generated site builder import | target | partial | `tests/pane-imports.test.mjs` — "Webflow, Framer and Durable captures are reconciled separately with every collection CSV field retained as an exception"; `fixtures/imports/README.md`; `scripts/imports-journey.mjs` — separate DNS-controlled Webflow and Framer and Durable captures, CSV exceptions, reviewed apply and undo and retained proof at 1440/390 | Separate controlled captures retain semantic pages and collection values as explicit exceptions. Missing journey: native CMS CSV writes and rich bodies, full text and framing fidelity, original media delivery and every old-URL redirect across CMS-001, CMS-007, CMS-011, PAGE-014, PAGE-018, PAGE-019, MEDIA-001, MEDIA-002 and IMPORT-006. RL-101 resolves capture authority; synthetic edges supply no live Webflow, Framer or Durable receipt. Offline envelopes remain Pane interchange. |
+| `IMPORT-005` | Migration report and URL map | target | done | `scripts/imports-journey.mjs` — “Import browser journey” |  |
 | `IMPORT-006` | Verified cutover with the old site kept | target | missing |  | No cutover. |
 | `IMPORT-007` | Enquiry and subscriber history import | target | missing |  | Only the static-site JSON move-in exists; no submission or subscriber import. |
 | `EXPORT-001` | Open-format site export | target | partial | `scripts/pane-policy.mjs` | Only Pane's own installation archive exports. |
 | `PRIV-001` | Consent for analytics and third-party embeds | target | partial | `tests/pane.test.mjs` — “connected Vane and Google Analytics 4 render only on live pages, widen the policy only for what is connected and stay absent for GPC and DNT visitors”; `scripts/analytics-journey.mjs` — “Analytics browser journey” (zero Google loads before consent, refusal, withdrawal and GPC); `scripts/privacy-journey.mjs` — “Privacy browser journey” (per-origin embeds, revocation and saved-consent GPC refusal at 1440/390) | Current GA4 and embed doors are consent-gated, revocable and suppressed under GPC, including saved grants. Gap: the explicit Meta and Google Ads and server-conversion journey requires STATS-005, while PAGE-008 now proves custom-code consent, privacy refusal and current-session withdrawal under its ct-approved default. The provider journey remains unproved. |
 | `PRIV-002` | Person-level privacy requests | target | partial | `tests/pane.test.mjs` — “person privacy finds three enquiries, exports portable records, atomically erases and fences old account backups” (email lookup, portable export, guarded all-record erasure, other-person isolation, account/session refusal and old-backup fence); “person erasure includes pending durable enquiries and prevents their recovery delivery” (queued intake and replay fence); `scripts/custody-journey.mjs` — “Custody browser journey” (lookup/export/confirmation/erased inbox at 1440/390) | Owner-only email lookup/export covers current enquiries, replies, queued intake, account/role/external-identity records, credential-free access metadata and activity. Explicit erasure requires native fresh proof and commits all matched D1 deletions, account/activity anonymization, replay tombstones, old-archive redaction checkpoint and transfer invalidation in one guarded transaction. A concurrent new record aborts rather than permitting partial erasure. Pending durable enquiries are included and fenced before deletion; an owner account requires handover first. Existing single-account erasure now carries the same old-archive checkpoint. Browser-local consent choices have no email identifier; recorded acknowledgment mail services are listed for owner follow-up without automatic outbound erasure. Gap: real CRM delivery inventory/receipt proof awaits FORM-005. FORM-001 files, FORM-008 consents, CMS-010 comments and LINK-003 subscribers inherit lookup, export, erasure and backup fencing before shipping. |
 | `PRIV-003` | Policy and accessibility statement starters | target | partial | `tests/pane.test.mjs` — “policy starters name actual services, remain editable drafts and require owner publication” (actual GA4/Vane/form/Turnstile inventory, all three labeled starters, editability, no overwrite and draft isolation); `scripts/custody-journey.mjs` — “Custody browser journey” (generate, edit and publish all three starter pages at 1440/390) | Privacy, terms and accessibility starters derive from the actual revision and are clearly labeled for owner review, not legal advice. GA4, Vane, connected embed origins, current form fields, Turnstile and applicable acknowledgment relay are named truthfully. Generation never overwrites an existing page and uses the normal immutable draft and owner publication path. Gap: the acceptance journey naming a real connected CRM still requires FORM-005 and an authorized CRM tenant. FORM-005, FORM-008, CMS-010, FORM-001 and LINK-003 must extend the real collection and connection inventory when they add a door. When AI assistance is connected, the actual-service inventory and privacy starter name OpenAI as the AI processor accessed through Base AI and describe the selected page and named image inputs sent only after the owner’s explicit request; pre-request consent copy makes the same disclosure. This addition does not certify provider terms, legal compliance or accessibility. |
-| `PRIV-004` | Security headers on every page | target | done | `tests/search.test.mjs` — PRIV-004: current Pane workspace, preview, live, search and not-found documents retain their security headers; shared entry documents deny device permissions while native authentication and origin refusals remain intact; only an approved page embed widens its frame policy and workspace previews stay inert; `scripts/privacy-journey.mjs` — owner approval, page-only CSP, consent, GPC, opaque sandbox and API refusal at 1440 and 390 |  |
-| `LOCALE-001` | US defaults | target | done | `tests/pane.test.mjs` — “US business defaults render Denver hours, currency, phone, address and Sunday calendars and owners can change the formats” (US defaults, Denver, changed formats and draft isolation); “approved business-local schedules drive banners and reminders while drafts, roles and invalid DST dates stay fenced” (DST and schedule execution); `scripts/scheduling-journey.mjs` — “Business-local scheduling journey” (Denver hours, USD, phone, address, Sunday calendar and changed formats at 1440 and 390); `scripts/access-journey.mjs` — “Access browser journey” (all current workspace dates remain in Denver in a Tokyo browser at 1440 and 390). |  |
+| `PRIV-004` | Security headers on every page | target | done | `scripts/privacy-journey.mjs` — “Privacy browser journey”; `tests/search.test.mjs` — “PRIV-004: current Pane workspace, preview, live, search and not-found documents retain their security headers”; `tests/search.test.mjs` — “shared entry documents deny device permissions while native authentication and origin refusals remain intact”; `tests/search.test.mjs` — “only an approved page embed widens its frame policy and workspace previews stay inert” |  |
+| `LOCALE-001` | US defaults | target | done | `scripts/scheduling-journey.mjs` — “Business-local scheduling journey” |  |
 | `MOBILE-001` | Responsive owner workspace on a phone | target | partial | `scripts/browser-journey.mjs` | The current workspace is checked for overflow at 390 wide; the target editor, inbox replies and approvals on a phone are not built. |
 | `MOBILE-002` | Native iOS and Android owner app | target | missing |  | No native app. |
 | `AUTO-001` | Form-triggered automations | target | missing |  | No automations. |
-| `AUTO-002` | Scheduled automations | target | done | `tests/pane.test.mjs` — “approved business-local schedules drive banners and reminders while drafts, roles and invalid DST dates stay fenced” (US business zone, spring DST expiry, duplicate/late cron, page review and approval fences); `scripts/scheduling-journey.mjs` — “Business-local scheduling journey” (Thanksgiving holiday banner and quarterly stale-page reminders at local time, fall DST promotion expiry and spring DST recurring reminders, unapproved schedules flagged without publication, durable editor reopen/undo and 1440/390 screens; exact-candidate timing run cited in campaign plan) | None. |
+| `AUTO-002` | Scheduled automations | target | done | `scripts/scheduling-journey.mjs` — “Business-local scheduling journey” |  |
 | `AUTO-003` | Share new posts to social accounts | target | missing |  | No social connections. |
 | `AUTO-004` | Site problem alerts | target | missing |  | No alerts. |
 | `AI-001` | Draft a whole site from business facts | target | missing |  | Whole-site generation from verified business facts is not implemented; current owner assistance is scoped by AI-002 and AI-003. |
-| `AI-002` | Writing, alt text and translation assist | target | done | Provider fake: `tests/search.test.mjs` — “Pane AI writing modes change selected text only and fence both saved and in-flight stale revisions” (rewrite, shorten, tone, accepted-only selected text, imported formatting, five durable undo and redo steps and saved or in-flight revision conflicts); “Pane AI reviews five real page images individually and creates a hidden translated draft without changing its source” (five named raster inputs, selective alt edits, unchanged sixth image, separate Spanish and French drafts and unchanged source). `scripts/ai-journey.mjs` — “AI-003 and AI-002 browser journey” (editor controls, five actual raster inputs, mixed decisions, separate Spanish draft, private previews, retained comparison, copy and guarded undo at 1440 and 390). Real model: `docs/evidence/ai-live.json` — OpenAI, gpt-4.1-mini, 2026-10-26, implementation 57911f06018582251d41429c9cec40750ae17734, 8 explicit requests, sanitized provider response identifiers and operation outcomes. Provider fake: `scripts/ai-riders.mjs` — “riderProof”, loaded by the existing AI journey in the canvas shard (pre-send disclosure and named inputs at both widths, scoped-token refusal, complete provider body exclusion of private sentinels, fixture credential and private signed image URL; full audit allowlists for request, proposal, mixed decision, rejection-only, undo, redo and failure with outcome-specific revision references; all private-data classes, pending decisions, source display, immutable source, sanitized provider failure and connected policy starter); `tests/browser-ai-riders.mjs` — “providerInput” and “auditMetadata”; `docs/evidence/ai-riders.md` — prior 17 source mutations and four fix-round counterexample mutations with before and after output.  Provider fake: `tests/search.test.mjs` — “native page writers initiate private assistance within their current grant and retain actor-owned decisions” (native grant checks, private decisions, refusal, revocation, stale conflicts and code-authoring boundary); “native authors write and submit only own posts and use assistance without exposing other content” (native own-post foundation, all five writing modes, five image inputs, separate Spanish draft, unchanged source and unrelated content, individual decisions, five durable undo and redo steps, conflicts and combined-grant privacy). `scripts/ai-journey.mjs` — “editorInitiation” (all writing modes, five named images, separate Spanish draft, private decisions, five durable undo and redo steps, audit, publication refusal, revocation, icon tooltips and no overflow at 1440 and 390). Provider fake: `tests/search.test.mjs` — “native authors write and submit only own posts and use assistance without exposing other content” now checks the entire provider body, including system instructions and exact output schema; author request, proposal, mixed acceptance, rejection-only, five undo and redo outcomes and sanitized failure through full audit allowlists; and every outbound request around generation and decisions. `tests/pane.test.mjs` — “PRESENT-001: five pages preview with a draft banner and publish without product branding” asserts the exact approving native owner; “later change and rollback restore the exact immutable site with recorded decisions” rereads both complete source snapshots and hashes after later prepare, publication and rollback. `docs/evidence/ai-riders.md` records all five CT counterexample mutations failing at the intended assertion and the restored normal route and browser proof. | CMS-011 retains the remaining catalog-wide rich body workflow. AI-004 retains bulk work, SEO-010 retains multilingual-site delivery and AGENT-008 retains USD budgets and agent controls. |
-| `AI-003` | Search and content suggestions with approval | target | done | Provider fake: `tests/search.test.mjs` — “Pane AI search decisions require the native owner, preserve rejected edits and publish approved native links” (titles, descriptions, accepted heading and native link destinations, read-only structured data findings, individual decisions, two accepted metadata edits, separate publication, unchanged reusable placements and pending redirects); “Pane AI writing modes change selected text only and fence both saved and in-flight stale revisions” (five durable undo and redo steps and saved or in-flight revision conflicts). `scripts/ai-journey.mjs` — “AI-003 and AI-002 browser journey” (review, two accepted search edits, rejected remainder, separate publication, retained comparison and download, explicit latest selection and undo or redo at 1440 and 390). Real model: `docs/evidence/ai-live.json` — OpenAI, gpt-4.1-mini, 2026-10-26, implementation 57911f06018582251d41429c9cec40750ae17734, 8 explicit requests, sanitized provider response identifiers and operation outcomes. Provider fake: `scripts/ai-riders.mjs` — “riderProof”, loaded by the existing AI journey in the canvas shard (pre-send disclosure and named inputs at both widths, scoped-token refusal, complete provider body exclusion of private sentinels, fixture credential and private signed image URL; full audit allowlists for request, proposal, mixed decision, rejection-only, undo, redo and failure with outcome-specific revision references; all private-data classes, pending decisions, source display, immutable source, sanitized provider failure and connected policy starter); `tests/browser-ai-riders.mjs` — “providerInput” and “auditMetadata”; `docs/evidence/ai-riders.md` — prior 17 source mutations and four fix-round counterexample mutations with before and after output. | SEO-005 retains structured-data implementation, AI-004 retains bulk work and AGENT-008 retains USD budgets and agent controls. |
+| `AI-002` | Writing, alt text and translation assist | target | partial | `scripts/ai-journey.mjs` — “AI-003 and AI-002 browser journey”; `scripts/ai-journey.mjs` — “editorInitiation” | The cited native editor and provider-fake journeys show the held functional workflow and retained input/history riders. Missing journey: the same AI-002 job through the shared agent registry under the all-autonomous and held company policies, without a hard-coded native-only decision gate. |
+| `AI-003` | Search and content suggestions | target | partial | `scripts/ai-journey.mjs` — “AI-003 and AI-002 browser journey” | The cited native editor and provider-fake journeys show the held functional workflow and retained input/history riders. Missing journey: the same AI-003 job through the shared agent registry under the all-autonomous and held company policies, without a hard-coded native-only decision gate. |
+| `AI-005` | Selected assistance inputs and disclosure | target | partial | `scripts/ai-riders.mjs` — “riderProof”; `tests/search.test.mjs` — “native page writers initiate private assistance within their current grant and retain actor-owned decisions”; `tests/search.test.mjs` — “native authors write and submit only own posts and use assistance without exposing other content” | The cited native editor and provider-fake journeys show the held functional workflow and retained input/history riders. Missing journey: the same AI-005 job through the shared agent registry under the all-autonomous and held company policies, without a hard-coded native-only decision gate. |
+| `AI-006` | Assistance decisions and durable history | target | partial | `scripts/ai-journey.mjs` — “AI-003 and AI-002 browser journey”; `scripts/ai-journey.mjs` — “editorInitiation”; `scripts/ai-riders.mjs` — “riderProof” | The cited native editor and provider-fake journeys show the held functional workflow and retained input/history riders. Missing journey: the same AI-006 job through the shared agent registry under the all-autonomous and held company policies, without a hard-coded native-only decision gate. |
 | `AI-004` | AI collection and bulk content operations | target | missing |  | No collection or bulk AI operations. |
 | `AGENT-001` | Interview the owner and build from verified facts | push-further | missing |  | No agent; the interview, fact store and sourcing do not exist. |
 | `AGENT-002` | Keep business facts current across the site | push-further | missing |  | No fact watching. |
@@ -1524,5 +1712,9 @@ Judged from the code and tests at commit `3b35726211c3a5ac20eeba8b0f8b82b37d2995
 | `AGENT-004` | Recover lost search traffic and broken paths | push-further | missing |  | No search data or link checks. |
 | `AGENT-005` | Measure changes against real leads and bookings | push-further | missing |  | Revisions and day counts exist but no conversion data or experiments. |
 | `AGENT-006` | Move a business off its old platform | push-further | missing |  | Only the reviewed static JSON move-in exists (`MOVEIN-001`). |
-| `AGENT-007` | Follow up unanswered enquiries under an approved policy | push-further | missing |  | No reply drafting or sending. |
-| `AGENT-008` | Agent controls, budgets and audit | push-further | missing |  | No agents run inside Pane; outside agents use the command helper (`API-001`). Every future agent door must enforce the existing API-001 native authority intersection, explicit scope, credential custody and transactional metadata audit. |
+| `AGENT-007` | Follow up unanswered enquiries by company policy | push-further | missing |  | No enquiry follow-up specialist journey under company policies is implemented; the holding wording and external replies still need their tool classes and policy decisions. |
+| `AGENT-008` | Agent controls, budgets and recovery | push-further | missing |  | No agents run inside Pane; outside agents use the command helper (`API-001`). Every future agent door must enforce the existing API-001 native authority intersection, explicit scope, credential custody and transactional metadata audit. |
+| `SURFACE-001` | The website specialist registry | target | missing |  | No MCP journey implements this Pane surface; the existing helper and scoped API do not prove this shared door or its company-policy matrix. |
+| `SURFACE-002` | Content exposure and live-site classes | target | missing |  | No MCP journey implements this Pane surface; the existing helper and scoped API do not prove this shared door or its company-policy matrix. |
+| `SURFACE-003` | Authority, provider and data classes | target | missing |  | No MCP journey implements this Pane surface; the existing helper and scoped API do not prove this shared door or its company-policy matrix. |
+| `SURFACE-004` | A seeded week through the website door | target | missing |  | No MCP journey implements this Pane surface; the existing helper and scoped API do not prove this shared door or its company-policy matrix. |
