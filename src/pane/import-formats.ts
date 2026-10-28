@@ -13,7 +13,7 @@ const reasons:Partial<Record<ImportKind,string>>={post:'Blog posts are not suppo
 function xml(source:string):any {
  if(/<!DOCTYPE|<!ENTITY/i.test(source))throw Error('XML declarations of document types or entities are not accepted.')
  if(XMLValidator.validate(source)!==true)throw Error('Invalid XML export.')
- const value=new XMLParser({ignoreAttributes:false,parseTagValue:false,trimValues:false,processEntities:true}).parse(source)
+ const value=new XMLParser({ignoreAttributes:false,parseTagValue:false,trimValues:false,processEntities:true,htmlEntities:true}).parse(source)
  assertNoCredentials(value);return value
 }
 function sourceUrl(value:unknown,origin?:string):string|undefined{
@@ -60,7 +60,7 @@ function wordpress(source:string):ImportDocument{
   for(const [n,action] of htmlForms(html,oldUrl??origin??'https://source.invalid').entries())items.push({id:item.id+'-form-'+n,kind:'form',title:'Form on '+item.title,...(oldUrl?{oldUrl}:{}),destination:action,reason:reasons.form})
   for(const [n,comment] of array(entry['wp:comment']).entries()){
    const state=({'1':'approved','0':'pending',spam:'spam'} as Record<string,string>)[text(comment['wp:comment_approved'])]??'other'
-   items.push({id:item.id+'-comment-'+(text(comment['wp:comment_id'])||n),kind:'comment',title:'Comment on '+item.title,state,reason:reasons.comment,fields:{parent:text(comment['wp:comment_parent']),post:item.id,date:text(comment['wp:comment_date_gmt'])}})
+   items.push({id:item.id+'-comment-'+(text(comment['wp:comment_id'])||n),kind:'comment',title:'Comment on '+item.title,state,reason:reasons.comment,fields:{id:text(comment['wp:comment_id']),key:text(comment['pane:comment_key']),parent:text(comment['wp:comment_parent'])||'0',post:item.id,date:text(comment['wp:comment_date_gmt']),name:text(comment['wp:comment_author']),email:text(comment['wp:comment_author_email']),website:text(comment['wp:comment_author_url']),body:text(comment['wp:comment_content'])}})
   }
   for(const [n,reason] of (fidelity.unresolved??[]).entries())items.push({id:item.id+'-reference-'+n,kind:reason.startsWith('Invalid image')||reason==='Image has no source URL.'?'media':'unsupported',title:'Unresolved reference on '+item.title,reason})
   for(const [n,url] of fidelity.images.entries())items.push({id:item.id+'-image-'+n,kind:'media',title:'Inline image',oldUrl:url,reason:reasons.media})
