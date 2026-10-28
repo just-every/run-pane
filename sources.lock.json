@@ -1132,7 +1132,7 @@
       "executable": false
     },
     "scripts/custody-journey.mjs": {
-      "sha256": "6766bc0ef5d0fc0be8899cc15fed1b1481eef896baa40a20c0a8c1efe415f12f",
+      "sha256": "7f465f9e437278fe7ca28c0711e1aa71398aa24728dacb60d5a726782c80bf51",
       "executable": false
     },
     "scripts/delivery/base/artifact.mjs": {
@@ -1308,7 +1308,7 @@
       "executable": false
     },
     "scripts/forms-journey.mjs": {
-      "sha256": "8c2ef1b2aec76744b129d94777c4923438f9ba6bd9526673f1a94c0d8686ba3d",
+      "sha256": "0c88df26510321221b74a51c8876b493e837d3d2d90dbfb3bdaf4aaae09767ab",
       "executable": false
     },
     "scripts/gallery-brand-journey.mjs": {

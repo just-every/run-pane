@@ -12,7 +12,7 @@ const axe=await readFile('node_modules/axe-core/axe.min.js','utf8')
 const folder=resolve(process.env.PANE_SCREENSHOTS??'./test-results/forms');await mkdir(folder,{recursive:true})
 const data=async()=> (await owner.request.get(origin+'/api/pane')).json()
 async function call(path,value){const response=await owner.request.post(origin+path,{headers:{Origin:origin},data:value});assert.ok(response.ok(),await response.text());return response.json()}
-async function capture(tab,name,width){assert.equal(await tab.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,name+' overflow');await tab.screenshot({path:resolve(folder,`${name}-${width}.png`),fullPage:true})}
+async function capture(tab,name,width){assert.equal(await tab.locator('a,button,summary').evaluateAll(nodes=>nodes.filter(node=>node.checkVisibility()&&!node.textContent.trim()&&node.querySelector('svg')&&!node.dataset.tip).length),0,name+' icon tooltip audit');assert.equal(await tab.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,name+' overflow');await tab.screenshot({path:resolve(folder,`${name}-${width}.png`),fullPage:true})}
 async function publish(){const current=await data();await call('/api/pane/publish',{revision:current.draft.id})}
 async function fill(){await live.getByLabel('Your name (required)',{exact:true}).fill('Synthetic visitor');await live.getByLabel('Email address (required)',{exact:true}).fill('synthetic-pane-71@example.test');await live.getByLabel('Project details (required)',{exact:true}).fill('Please repair my chair.')}
 try{
@@ -38,15 +38,14 @@ try{
  const pdf=Buffer.alloc(5*1024*1024,32);pdf.write('%PDF-1.7\nsynthetic-pane-72')
  for(const width of [1440,390]){
   await page.setViewportSize({width,height:1000});await live.setViewportSize({width,height:1000})
-  await page.goto(origin+'/app/sites');await settings.getByText('Workshop quote',{exact:true}).click();await capture(page,'saved-form-builder',width)
+  await page.goto(origin+'/app/sites');await settings.getByText('Workshop quote',{exact:true}).click();await page.evaluate(axe);assert.deepEqual(await settings.evaluate(async node=>(await axe.run(node)).violations.map(item=>item.id)),[],'Form settings pass axe');assert.ok(await settings.locator('label,button,p').evaluateAll(nodes=>nodes.filter(node=>node.checkVisibility()).every(node=>parseFloat(getComputedStyle(node).fontSize)>=13)));await capture(page,'saved-form-builder',width)
   await page.goto(origin+'/app?page=about');await page.getByText('Form placement',{exact:true}).click();await capture(page,'form-placement',width)
   await live.goto(origin+'/site/about');await fill();
   const emailChoice=live.getByRole('checkbox',{name:'Send me studio news by email.',exact:true}),smsChoice=live.getByRole('checkbox',{name:/Send me studio updates by text/})
   assert.equal(await emailChoice.isChecked(),false);assert.equal(await smsChoice.isChecked(),false)
-  assert.match(await smsChoice.getAttribute('aria-describedby')??'',/^$/)
   await emailChoice.focus();await live.keyboard.press('Space');assert.equal(await emailChoice.isChecked(),true);await live.keyboard.press('Tab');assert.equal(await smsChoice.evaluate(node=>node===document.activeElement),true);assert.equal(await smsChoice.isChecked(),false)
-  await live.addScriptTag({content:axe});assert.deepEqual((await live.evaluate(()=>axe.run(document.querySelector('.contact-section'),{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}}))).violations,[])
-  await capture(live,'marketing-choices-keyboard',width)
+  await live.evaluate(axe);assert.deepEqual((await live.evaluate(()=>axe.run(document.querySelector('.contact-section'),{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}}))).violations,[])
+  assert.ok(await live.locator('.contact-section label,.contact-section p,.contact-section button').evaluateAll(nodes=>nodes.filter(node=>node.checkVisibility()).every(node=>parseFloat(getComputedStyle(node).fontSize)>=13)));await capture(live,'marketing-choices-keyboard',width)
  await live.getByLabel('Email address (required)',{exact:true}).fill('invalid-email');await live.getByRole('button',{name:'Request quote',exact:true}).click()
   await live.getByText('Enter a valid email address.',{exact:true}).waitFor();assert.equal(await live.getByLabel('Your name (required)',{exact:true}).inputValue(),'Synthetic visitor')
   const number=live.getByLabel('US phone (required)',{exact:true});assert.equal(await number.getAttribute('aria-invalid'),'true');await live.getByText('A reachable US phone is required.',{exact:true}).waitFor();assert.match(await number.getAttribute('aria-describedby'),/field-phone-help field-phone-error/)

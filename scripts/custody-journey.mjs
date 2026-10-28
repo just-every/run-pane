@@ -3,6 +3,7 @@ import {readFile,mkdir} from 'node:fs/promises'
 import {resolve} from 'node:path'
 import {chromium} from '@playwright/test'
 process.env.PANE_BROWSER_NOW='2030-06-20T12:00:00.000Z'
+const axe=await readFile('node_modules/axe-core/axe.min.js','utf8')
 const fixture=await import('../tests/browser-runtime.mjs')
 const folder=resolve(process.env.PANE_SCREENSHOTS??'test-results/custody');await mkdir(folder,{recursive:true})
 const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
@@ -49,7 +50,7 @@ try{
   await page.setViewportSize({width,height:1000});await page.goto(origin+'/app/inquiries');await page.getByLabel('Person email',{exact:true}).fill(email)
   await Promise.all([page.waitForURL('**/app/privacy/find'),page.getByRole('button',{name:'Find person data',exact:true}).click()])
   const panel=page.getByRole('region',{name:'Person privacy request',exact:true});await panel.scrollIntoViewIfNeeded();assert.match(await panel.innerText(),/3 enquiries/)
-  await capture(page,'privacy-person-found-'+width)
+  await page.evaluate(axe);assert.deepEqual(await panel.evaluate(async node=>(await axe.run(node)).violations.map(item=>item.id)),[],'Person privacy controls pass axe');await capture(page,'privacy-person-found-'+width)
   const downloadEvent=page.waitForEvent('download');await page.getByRole('button',{name:'Export person data',exact:true}).focus();await page.keyboard.press('Enter');const download=await downloadEvent;assert.equal(download.suggestedFilename(),'pane-person.json');const path=resolve(folder,'person-'+width+'.json');await download.saveAs(path)
   const portable=JSON.parse(await readFile(path,'utf8'));assert.equal(portable.marketingConsents.length,3);assert.deepEqual(portable.marketingConsents.map(row=>row.inquiryId).sort(),[...ids].sort())
   for(const consent of portable.marketingConsents){assert.equal(consent.receivedAt,'2030-06-20T12:00:00.000Z');assert.equal(consent.page,'contact');assert.deepEqual(consent.choices.map(choice=>[choice.channel,choice.granted]),[['email',true],['sms',false]]);assert.equal(consent.choices[0].wording,'Email me studio news.\nYou can withdraw your choice.');assert.match(consent.choices[1].wording,/Cedar Street Studio\. Message frequency: Up to four messages per month/)}
