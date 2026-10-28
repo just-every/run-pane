@@ -136,7 +136,7 @@
       "executable": false
     },
     "ACCEPTANCE.md": {
-      "sha256": "dfd48a99f458d33d30895c4a96c626ebbd2a1221b4ea672bfd2ca111141b3a8d",
+      "sha256": "9179723c2f79e3299f19af186f658df19f3c3d0309a0a2eb3af10cade7d5099f",
       "executable": false
     },
     "AGENTS.md": {
@@ -160,7 +160,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "9e546e273c4404a42a8feb3dffd4db2b1f75b2aa5e403d7b95b01fef14396eab",
+      "sha256": "53ed73f5164a506073fa075cd3dd16018501d4dcf92a6a3c0a84b339ea094915",
       "executable": false
     },
     "deploy-demo.json": {
@@ -1152,7 +1152,7 @@
       "executable": false
     },
     "scripts/components-code-journey.mjs": {
-      "sha256": "756a161ff91a19e012069dd8e4751c244470f0a1a687c806add1b5cc8d8de22d",
+      "sha256": "c3a69d62f8c8f5276ef64a67567a6dca699879e7f2b30321ca61a2a5ad7b1fc3",
       "executable": false
     },
     "scripts/contract-docs.mjs": {
