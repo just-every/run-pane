@@ -30,7 +30,7 @@ export async function runMediaLibraryJourney({browser,folder}){
 
 /** Native library flow, called by every components-code journey invocation. */
 export async function mediaLibraryJourney({page,context,origin,state,call,folder}){
- const screens=[],errors=[]
+ const errors=[]
  const recordError=error=>errors.push(error.message)
  page.on('pageerror',recordError)
  const asset=(tab,id)=>tab.locator(`[data-library-item][data-id="${id}"]`)
@@ -44,14 +44,14 @@ export async function mediaLibraryJourney({page,context,origin,state,call,folder
   return result
  }
  const rows=expected=>page.waitForFunction(expected=>[...document.querySelectorAll('[data-library-item]')].filter(node=>node.getClientRects().length).length===expected,expected)
- const capture=async(name,width)=>{
-  await page.setViewportSize({width,height:1000});await page.evaluate(()=>scrollTo(0,0))
-  await page.screenshot({path:resolve(folder,`${name}-${width}.png`),fullPage:true});screens.push(`${name}-${width}`)
-  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,name+' overflow at '+width)
+ const capture=async(name,width,tab=page)=>{
+  await tab.setViewportSize({width,height:1000});await tab.evaluate(()=>scrollTo(0,0))
+  await tab.screenshot({path:resolve(folder,`${name}-${width}.png`),fullPage:true})
+  assert.equal(await tab.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,name+' overflow at '+width)
  }
- const accessible=async width=>{
-  await page.evaluate(await readFile('node_modules/axe-core/axe.min.js','utf8'))
-  const result=await page.evaluate(()=>window.axe.run({runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21a','wcag21aa']}}))
+ const accessible=async(width,tab=page)=>{
+  await tab.evaluate(await readFile('node_modules/axe-core/axe.min.js','utf8'))
+  const result=await tab.evaluate(()=>window.axe.run({runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21a','wcag21aa']}}))
   assert.deepEqual(result.violations.filter(item=>['serious','critical'].includes(item.impact)).map(item=>({id:item.id,nodes:item.nodes.map(node=>({target:node.target,summary:node.failureSummary}))})),[],'Accessible native media library at '+width)
  }
  const initial={name:'Riverbend Bakery',description:'Celebration cakes and care guides from our neighbourhood bakery.',pages:[{id:'home',slug:'home',title:'Our celebration cakes',body:'A cake for every community table.'},{id:'about',slug:'about',title:'Special occasions',body:'Plan a celebration with our bakery.'},{id:'services',slug:'services',title:'Visit our bakery',body:'Come in for a slice and a conversation.'}]}
@@ -181,6 +181,7 @@ export async function mediaLibraryJourney({page,context,origin,state,call,folder
     const conflict=await mutate(second,'update',async()=>{await second.getByLabel('Media name',{exact:true}).fill('Lemon cake selected in the second tab.jpg');await second.getByRole('button',{name:'Save details',exact:true}).click()},409)
     assert.equal(conflict.latest.id,latest.id);await second.locator('[data-library-conflict]').waitFor({state:'visible'})
     assert.equal(await second.getByLabel('Media name',{exact:true}).inputValue(),'Lemon cake selected in the second tab.jpg','Conflict retains the unsaved local fields')
+    for(const width of [1440,390]){await second.setViewportSize({width,height:1000});await accessible(width,second);await capture('media-library-conflict',width,second)}
     await mutate(second,'update',()=>second.getByRole('button',{name:'Retry my changes',exact:true}).click())
     assert.equal((await state()).draft.site.media.find(item=>item.id===image.id).name,'Lemon cake selected in the second tab.jpg')
     assert.equal((await state()).draft.site.media.find(item=>item.id===image.id).caption,'A newer draft caption from the first tab','Retry preserves the other tab\'s untouched metadata')
