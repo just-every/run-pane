@@ -1360,7 +1360,7 @@
       "executable": false
     },
     "scripts/media-library-journey.mjs": {
-      "sha256": "b79b2665d4ab5d09957d78aee07cc7a2a2f16e10947efe922e7df243e38fc4c8",
+      "sha256": "4fd486fde910b96515d21f50249fb3072aa9f6d60b863df80c2fd5f007d256f8",
       "executable": false
     },
     "scripts/navigation-journey.mjs": {

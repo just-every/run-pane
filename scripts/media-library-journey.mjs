@@ -40,7 +40,7 @@ export async function mediaLibraryJourney({page,context,origin,state,call,folder
   const result=await page.evaluate(()=>window.axe.run({runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21a','wcag21aa']}}))
   assert.deepEqual(result.violations.filter(item=>['serious','critical'].includes(item.impact)).map(item=>({id:item.id,nodes:item.nodes.map(node=>({target:node.target,summary:node.failureSummary}))})),[],'Accessible native media library at '+width)
  }
- const initial={name:'Riverbend Bakery',description:'Celebration cakes and care guides from our neighbourhood bakery.',pages:[{id:'library-home',slug:'home',title:'Our celebration cakes',body:'A cake for every community table.'},{id:'library-occasions',slug:'occasions',title:'Special occasions',body:'Plan a celebration with our bakery.'},{id:'library-visit',slug:'visit-us',title:'Visit our bakery',body:'Come in for a slice and a conversation.'}]}
+ const initial={name:'Riverbend Bakery',description:'Celebration cakes and care guides from our neighbourhood bakery.',pages:[{id:'home',slug:'home',title:'Our celebration cakes',body:'A cake for every community table.'},{id:'about',slug:'about',title:'Special occasions',body:'Plan a celebration with our bakery.'},{id:'services',slug:'services',title:'Visit our bakery',body:'Come in for a slice and a conversation.'}]}
  try{
   await call('/api/pane/prepare',{site:initial})
   for(const width of [1440,390]){
@@ -150,6 +150,11 @@ export async function mediaLibraryJourney({page,context,origin,state,call,folder
    await selected(page,unusedImage.id);await page.getByRole('button',{name:'Delete file',exact:true}).click()
    await mutate(page,'delete',()=>page.getByRole('button',{name:'Delete permanently',exact:true}).click());await rows(52)
    await mutate(page,'restore',()=>page.getByRole('button',{name:'Undo',exact:true}).click());await rows(53)
+   await selected(page,image.id)
+   const previousCaption=await page.getByLabel('Caption',{exact:true}).inputValue(),captions=Array.from({length:5},(_,index)=>`Library caption revision ${index+1}`)
+   for(const caption of captions){await page.getByLabel('Caption',{exact:true}).fill(caption);await mutate(page,'update',()=>page.getByRole('button',{name:'Save details',exact:true}).click())}
+   for(let index=4;index>=0;index--){await mutate(page,'restore',()=>page.getByRole('button',{name:'Undo',exact:true}).click());assert.equal(await page.getByLabel('Caption',{exact:true}).inputValue(),index?captions[index-1]:previousCaption,'Five successive native edits can be undone independently')}
+   for(const caption of captions){await mutate(page,'restore',()=>page.getByRole('button',{name:'Redo',exact:true}).click());assert.equal(await page.getByLabel('Caption',{exact:true}).inputValue(),caption,'Five successive native edits can be redone independently')}
    assert.deepEqual((await state()).draft.site.media.find(item=>item.id===unusedImage.id),unusedImage,'Undo restores all original bytes and metadata')
    await mutate(page,'restore',()=>page.getByRole('button',{name:'Redo',exact:true}).click());await rows(52)
    await mutate(page,'restore',()=>page.getByRole('button',{name:'Undo',exact:true}).click());await rows(53)
@@ -175,6 +180,9 @@ export async function mediaLibraryJourney({page,context,origin,state,call,folder
     await page.keyboard.press('Tab');assert.equal(await page.getByLabel('Media type',{exact:true}).evaluate(node=>node===document.activeElement),true,'Search leads to the type filter by keyboard')
     const control=asset(page,image.id);await control.focus();await page.keyboard.press('Enter')
     assert.equal(await page.getByLabel('Media name',{exact:true}).inputValue(),'Lemon cake selected in the second tab.jpg')
+    const account=page.locator('[data-tip="Account and team"]');await account.hover();await page.getByRole('tooltip',{name:'Account and team'}).waitFor();await page.mouse.move(0,0);await account.focus();await page.getByRole('tooltip',{name:'Account and team'}).waitFor();await page.keyboard.press('Escape')
+    assert.equal(await page.locator('a,button,summary').evaluateAll(nodes=>nodes.filter(node=>node.getClientRects().length&&!node.textContent.trim()&&node.querySelector('svg')&&!node.dataset.tip).length),0,'Library icon controls retain tooltips')
+    assert.equal(await page.locator('[data-media-library] :is(label,button,input,textarea,select,p,a,span)').evaluateAll(nodes=>nodes.filter(node=>node.getClientRects().length&&parseFloat(getComputedStyle(node).fontSize)<13).length),0,'Library controls and text remain at least thirteen pixels')
     await accessible(width);await capture('media-library-end-state',width)
     await search.fill('');await rows(53)
    }
@@ -190,6 +198,9 @@ export async function mediaLibraryJourney({page,context,origin,state,call,folder
    await page.goto(origin+'/app/sites');await Promise.all([page.waitForURL(url=>url.pathname==='/app'&&url.searchParams.has('notice')),page.getByRole('button',{name:'Approve & publish',exact:true}).first().click()])
    assert.equal((await visitor.request.get(origin+'/site/files/'+pdf.id)).status(),404,'A PDF used only on a protected page stays private after fresh approval')
   }finally{await visitor.close()}
+  // Restore the shared native fixture's plain page identities before its next flow.
+  const baseline=JSON.parse(await readFile('fixtures/static-site.json','utf8'))
+  await call('/api/pane/prepare',{site:baseline,base:(await state()).draft.id})
   assert.deepEqual(errors,[])
   console.log('Native media library passed: 50 real images and 3 PDFs; search, filters, metadata, three-page reuse, exact draft and live deletion dependencies, alt approval, immutable custody, undo, conflicts, revoked and protected PDF delivery, keyboard and axe at 1440 and 390.')
  }finally{page.off('pageerror',recordError)}
