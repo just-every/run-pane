@@ -1,7 +1,8 @@
 import { retireD1ImportCustody, upgradeD1ImportErasureIndex } from '../modules/import-kit/src/d1/index.ts'
 import type { D1Sql } from '../modules/import-kit/src/d1/types.ts'
 import { wireDatabase } from '@runeditrun/rer/internal/modules/d1-transport/index.mjs'
-import { erasedImportPerson } from './import-history-targets'
+import { erasedImportPerson,historyTargets } from './import-history-targets'
+import { revisionTargets } from './import-targets'
 import { moveInContext } from './import-authority'
 
 /** Keep the native statement's SQL available to the shared atomic custody batch. */
@@ -20,6 +21,7 @@ export function privacySql(db:D1Database):D1Database {
 
 export async function eraseImportedCustody(db:D1Database,email:string,id:string,actorId:string,statements:D1Sql[],checkpoint:D1Sql[]) {
  const context=await moveInContext(db,{id:actorId,role:'owner'})
+ context.storage.targets=historyTargets(revisionTargets(),{erasure:true})
  // Current schema creates indexed jobs. This also upgrades an older installation
  // before any native deletion, using Base's bounded metadata migration.
  while(!(await upgradeD1ImportErasureIndex(context)).complete){}

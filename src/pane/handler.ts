@@ -389,9 +389,11 @@ export async function paneResponse(request:Request,original:Bindings):Promise<Re
    const wire=privacySql(env.DB)
    const files=(await env.DB.prepare('SELECT id FROM pane_files WHERE message_id=?').bind(id).all<{id:string}>()).results
    const chunks=(await env.DB.prepare('SELECT id FROM pane_file_chunks WHERE file_id IN (SELECT id FROM pane_files WHERE message_id=?)').bind(id).all<{id:string}>()).results
+   const replies=(await env.DB.prepare('SELECT id FROM pane_inquiry_replies WHERE message_id=?').bind(id).all<{id:string}>()).results
    const fileFences=[]
    for(const file of files)fileFences.push(...await erasureStatements(wire,'pane_files',{id:file.id}))
    for(const chunk of chunks)fileFences.push(...await erasureStatements(wire,'pane_file_chunks',{id:chunk.id}))
+   for(const reply of replies)fileFences.push(...await erasureStatements(wire,'pane_inquiry_replies',{id:reply.id}))
    const erasure=[
     ...fileFences,
     ...await erasureStatements(wire,'pane_messages',{id}),

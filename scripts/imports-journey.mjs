@@ -190,5 +190,47 @@ try{
   await page.goto(origin+'/app/inquiries');assert.equal(await page.locator('.message').count(),before.messages.length)
   await capture('history-undone',width)
  }
- console.log('Import journey passed at 1440/390: 200 dated Squarespace enquiries, two original forms and every field, no import delivery, all rows browsable, duplicate apply, reconciliation and undo; preflight, typed exceptions, fingerprinted unpublished apply, stored fidelity recheck, retained report/undo and hover/keyboard tooltips. Exact-candidate WXR inventory: 100 posts, 50 comments; two native pages applied. Offline provider captures and CSV exception fields reconciled separately; explicit DNS-verified Wix/Webflow/Framer/Durable captures, retained proof, preserved semantic page DOM, inert third-party content, readonly structured editor and tooltips pass at both widths.')
+ await fixture.signIn(page)
+ for(const width of [1440,390]){
+  await page.setViewportSize({width,height:1000})
+  const people=['message','person'].map((door,index)=>({door,name:`synthetic-pane-${width+index}`,email:[`synthetic-pane-${width+index}`,'example.test'].join('@')}))
+  const source='Submitted On,Form,Name,Email,Message\n'+people.map(person=>`2023-01-01T00:00:00Z,Consultation,${person.name},${person.email},Private historical answer`).join('\n')
+  const plan=await post('import/dry-run',{source}),job=await post('import/apply',{source,fingerprint:plan.fingerprint})
+  assert.equal(job.state,'completed')
+  for(const person of people){
+   await page.goto(origin+'/app/inquiries')
+   const card=page.locator('.message').filter({has:page.getByRole('heading',{name:person.name,exact:true})})
+   await card.getByText('Reply to enquiry',{exact:true}).click()
+   await card.getByLabel('Reply subject',{exact:true}).fill('Private history reply')
+   await card.getByLabel('Reply text',{exact:true}).fill('Private reply for '+person.name)
+   await Promise.all([page.waitForURL(url=>url.pathname==='/app/inquiries'&&url.searchParams.has('notice')),card.getByRole('button',{name:'Send reply',exact:true}).click()])
+   assert.match(await card.innerText(),/Private history reply/);assert.match(await card.innerText(),/suppressed/)
+   const conflict=await context.request.post(origin+'/api/pane/import/undo',{headers:{Origin:origin},data:{job:job.id}})
+   assert.equal(conflict.status(),400,'Undo refuses to discard a retained reply')
+   await card.scrollIntoViewIfNeeded();await tooltip(width,'history-reply-'+person.door)
+   await card.scrollIntoViewIfNeeded();await page.screenshot({path:resolve(folder,`history-reply-${person.door}-${width}.png`)})
+   if(person.door==='message'){
+    await card.getByText('Erase personal data',{exact:true}).click()
+    await Promise.all([page.waitForURL(url=>url.pathname==='/app/inquiries'&&url.searchParams.has('notice')),card.getByRole('button',{name:'Permanently erase message',exact:true}).click()])
+   }else{
+    await page.getByLabel('Person email',{exact:true}).fill(person.email)
+    await Promise.all([page.waitForURL('**/app/privacy/find'),page.getByRole('button',{name:'Find person data',exact:true}).click()])
+    const panel=page.getByRole('region',{name:'Person privacy request',exact:true})
+    assert.match(await panel.innerText(),/1 enquiries.*1 replies/)
+    await panel.getByText('Erase all matched person data',{exact:true}).click()
+    await panel.getByRole('checkbox',{name:/I confirm permanent erasure/}).check()
+    await panel.scrollIntoViewIfNeeded();await capture('history-person-erasure-confirm',width)
+    await Promise.all([page.waitForURL(url=>url.pathname==='/app/inquiries'&&url.searchParams.has('notice')),panel.getByRole('button',{name:'Permanently erase person data',exact:true}).click()])
+   }
+   const found=await post('privacy/export',{email:person.email})
+   assert.equal(found.messages.length,0);assert.equal(found.replies.length,0)
+   assert.equal(await page.getByRole('heading',{name:person.name,exact:true}).count(),0)
+   await capture('history-erased-'+person.door,width)
+   const retained=await context.request.post(origin+'/api/pane/import/dry-run',{headers:{Origin:origin},data:{job:job.id}})
+   assert.equal(retained.status(),400,'Erasure retires the retained personal source')
+   const replay=await context.request.post(origin+'/api/pane/import/dry-run',{headers:{Origin:origin},data:{source:source.replace('Private historical answer','Changed historical answer')}})
+   assert.equal(replay.status(),400,'Changed captures cannot resurrect an erased person')
+  }
+ }
+ console.log('Import journey passed at both widths: 200 dated Squarespace enquiries, original forms and fields, duplicate apply, reconciliation and undo; replies followed by message and person erasure remove private history and retire source custody, changed replay is fenced and strict undo refuses native replies. Existing page and crawl import checks and tooltips pass.')
 }finally{await context.close();await browser.close();await fixture.stop();await rm(scratch,{recursive:true,force:true})}

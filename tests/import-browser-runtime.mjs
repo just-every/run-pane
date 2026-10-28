@@ -5,6 +5,7 @@ import {createServer} from 'node:http'
 import {readFile} from 'node:fs/promises'
 import {resolve,extname,sep} from 'node:path'
 import {runtime,settings} from './runtime.mjs'
+import {createOperatorAuth} from '../src/modules/operator-auth/index.mjs'
 import {crawlEdge} from './import-crawl-edge.mjs'
 export const edge=crawlEdge()
 let f
@@ -28,4 +29,13 @@ await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0
 export const origin='http://127.0.0.1:'+server.address().port
 f=await runtime({bindings:{AUTH_ORIGIN:origin},outboundService:edge.fetch})
 export async function bootstrap(context){const response=await context.request.post(origin+'/auth/bootstrap',{headers:{Origin:origin},data:{token:settings.SETUP_TOKEN,displayName:'synthetic-pane-1'},maxRedirects:0});assert.equal(response.status(),303);return response.headers()['set-cookie'].split(';')[0]}
+export async function signIn(page){
+ let message
+ const auth=createOperatorAuth({db:f.db,config:{...settings,origin,local:true},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{message=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+ await auth.requestMagicLink(new Request(origin+'/auth/magic-link',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin}}),{email:settings.OWNER_EMAIL,returnTo:'/app'})
+ assert.ok(message)
+ await page.goto(message.text.match(/http:\/\/[^\s]+/)[0])
+ await page.getByRole('button',{name:/Confirm/}).click()
+ await page.waitForURL(url=>url.pathname==='/app')
+}
 export async function stop(){await new Promise(resolve=>server.close(resolve));await f.mf.dispose()}

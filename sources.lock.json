@@ -1352,7 +1352,7 @@
       "executable": false
     },
     "scripts/imports-journey.mjs": {
-      "sha256": "03e589af9b8e8e648fd03b65c88c0dfb5bea91e7fdca477cba31d4e214b85b29",
+      "sha256": "bb01de9bbabdfd8b26e9a99db0786b1dd42ff3940a0eacdcbe07285267d4f630",
       "executable": false
     },
     "scripts/install.mjs": {
@@ -3476,7 +3476,7 @@
       "executable": false
     },
     "src/pane/handler.ts": {
-      "sha256": "5f8c56a872b074722e32f00d196b25a573df134b8be9f57f8644c1eb105d401e",
+      "sha256": "61e646d36083c6ff809b2dbeb5f317228353e125fe9a0947b8c2cfadc83959fc",
       "executable": false
     },
     "src/pane/image-response.ts": {
@@ -3516,7 +3516,7 @@
       "executable": false
     },
     "src/pane/import-history-targets.ts": {
-      "sha256": "3583c649425410f7094d9111f62012c8ec72989bbebf475def2e170780e53995",
+      "sha256": "cb3ba194112ea79336abf5b93a26af629e16ffc9f240cf3e32f9e7ad437135a6",
       "executable": false
     },
     "src/pane/import-html.ts": {
@@ -3524,7 +3524,7 @@
       "executable": false
     },
     "src/pane/import-privacy.ts": {
-      "sha256": "4384a88828151f27bd38fc2e88f99c84ebe1537a6f04d54a3f878aca9c7343c8",
+      "sha256": "d58cde8a762cf93638ac6f7bf0ceae7167c1969f3d5859cc46e3b227205c8151",
       "executable": false
     },
     "src/pane/import-report.ts": {
@@ -4084,7 +4084,7 @@
       "executable": false
     },
     "tests/import-browser-runtime.mjs": {
-      "sha256": "dce6c42db6759756d5aab1a145389735cc70cbf4e4f6c7eca899e06009fd093e",
+      "sha256": "7ae78f71345195864bdfbdabf1a11823f51e705eba3db4ea8f7bb965a95fded3",
       "executable": false
     },
     "tests/import-crawl-edge.mjs": {
@@ -4096,7 +4096,7 @@
       "executable": false
     },
     "tests/pane-imports.test.mjs": {
-      "sha256": "b9a563ac35e719c7aa4a8e2118e86d0c974f6e8211c0dbb180c951e4ca8803ed",
+      "sha256": "a6075e778e57cef03ef66cf1068e357cf11d420396a14f04d7a21a00393b95f7",
       "executable": false
     },
     "tests/pane.test.mjs": {
