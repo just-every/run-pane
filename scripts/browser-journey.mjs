@@ -4,13 +4,14 @@ import { readFile, mkdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { chromium } from '@playwright/test'
 const lobbyOnly=process.argv.includes('--lobby-only')
+const previewOnly=process.argv.includes('--preview-only')
 const fixtureRuntime=process.env.PANE_BROWSER_FIXTURE?await import('../tests/browser-runtime.mjs'):null
 const log=fixtureRuntime?'':await readFile(process.env.PANE_LAUNCH_LOG,'utf8'),entry=fixtureRuntime?fixtureRuntime.origin+'/setup':log.match(/RER_OPEN\s+(https?:\/\/\S+)/)?.[1]
 if(!entry)throw Error('Launch log has no private RER_OPEN link; rer dev must finish first.')
 const origin=new URL(entry).origin,folder=resolve(process.env.PANE_SCREENSHOTS??'test-results/browser')
 await mkdir(folder,{recursive:true})
 const fixture=JSON.parse(await readFile('fixtures/static-site.json','utf8'))
-const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
+const browser=await chromium.launch({headless:true,...(process.env.PANE_CHROMIUM_PATH?{executablePath:process.env.PANE_CHROMIUM_PATH}:{}),args:['--no-sandbox','--use-mock-keychain','--password-store=basic']})
 const context=await browser.newContext(),page=await context.newPage()
 async function capture(name) {
  for(const width of [1440,390]){
@@ -65,6 +66,89 @@ const theme = async () => page.evaluate(() => {
  const root = getComputedStyle(document.documentElement)
  return ['--pn-font', '--pn-tint', '--pn-action'].map(name => root.getPropertyValue(name).trim())
 })
+async function privatePreviewJourney(){
+ const call=async(path,data)=>{const response=await context.request.post(origin+path,{headers:{Origin:origin},data});assert.equal(response.status(),200,await response.text());return response.json()}
+ const state=async()=>(await context.request.get(origin+'/api/pane')).json()
+ const stableHtml=html=>html.replace(/name="idempotency" value="[^"]*"/g,'name="idempotency"')
+ const previous=await state(),source=structuredClone(fixture)
+ source.forms=[{id:'synthetic-pane-preview',name:'Preview project request',submit:'Send project request',confirmation:'Request received.',fields:[
+  {key:'name',type:'text',label:'Project name',help:'',placeholder:'',required:true},
+  {key:'email',type:'email',label:'Reply address',help:'',placeholder:'',required:true},
+  {key:'message',type:'text',label:'Project details',help:'',placeholder:'',required:true},
+ ]}]
+ source.pages.find(page=>page.slug==='about').formId=source.forms[0].id
+ for(const item of source.pages.filter(item=>['about','contact'].includes(item.slug)))item.acknowledgment={subject:'Preview enquiry received',text:'We will review your request.',responseTime:'Two business days'}
+ const selected=await call('/api/pane/prepare',{site:source});await call('/api/pane/publish',{revision:selected.id})
+ const baseline=await state(),liveBefore=await Promise.all(['contact','about'].map(async slug=>stableHtml(await(await context.request.get(origin+'/site/'+slug)).text())))
+ const roles={}
+ try{
+  for(const role of ['admin','member']){
+   const target=await browser.newContext(),tab=await target.newPage();roles[role]={context:target,page:tab}
+   const link=await fixtureRuntime.invitePerson(context,{email:['synthetic-pane-preview-'+role,'example.test'].join('@'),displayName:'Preview '+role,nativeRole:role,roles:[]})
+   await tab.goto(link);await tab.getByRole('button',{name:/Confirm/}).click();await tab.waitForURL(url=>url.pathname==='/app')
+  }
+  roles.visitor={context:await browser.newContext()};roles.visitor.page=await roles.visitor.context.newPage()
+  const admin=roles.admin.page
+  const axe=await readFile('node_modules/axe-core/axe.min.js','utf8')
+  const mailBefore=await fixtureRuntime.mailAttemptCount(),outboundBefore=fixtureRuntime.outboundRequests.length
+  const afterInvitations=await state()
+  // Assertions run at one width; the same selected screens are captured at both widths.
+  for(const slug of ['contact','about']){
+   const path='/preview/'+selected.id+'/'+slug
+   for(const role of ['visitor','member']){
+    const refused=await roles[role].context.request.get(origin+path,{maxRedirects:0})
+    assert.equal(refused.status(),role==='visitor'?303:403)
+    assert.ok(!(await refused.text()).includes(selected.site.pages.find(item=>item.slug===slug).body),'Private content is absent from refusals')
+   }
+   await admin.setViewportSize({width:1440,height:1000});await admin.goto(origin+path)
+   assert.equal(await admin.locator('.preview-banner').count(),1)
+   assert.equal(await admin.getByRole('heading',{name:selected.site.pages.find(item=>item.slug===slug).title,exact:true}).count(),1)
+   assert.ok((await admin.locator('.public-content').innerText()).includes(selected.site.pages.find(item=>item.slug===slug).body))
+   assert.equal(await admin.locator('[data-typed-form]').count(),slug==='about'?1:0)
+   const form=admin.locator('.contact-form'),button=form.getByRole('button',{name:slug==='contact'?'Send message':'Send project request',exact:true})
+   assert.equal(await form.locator('fieldset').evaluate(node=>node.disabled),true)
+   assert.ok(await form.locator('input:not([type="hidden"]),textarea,select,button').evaluateAll(nodes=>nodes.every(node=>node.matches(':disabled'))),'Every visible input and sending control is disabled')
+   const posts=[];const observe=request=>{if(request.method()==='POST')posts.push(new URL(request.url()).pathname)};admin.on('request',observe)
+   await button.scrollIntoViewIfNeeded();const box=await button.boundingBox();await admin.mouse.click(box.x+box.width/2,box.y+box.height/2)
+   assert.equal(admin.url(),origin+path,'A pointer attempt stays on the selected preview')
+   await admin.getByRole('heading',{level:1}).click();await button.evaluate(node=>node.focus())
+   assert.equal(await button.evaluate(node=>node===document.activeElement),false,'The disabled submit control cannot gain keyboard focus')
+   await admin.keyboard.press('Space');await admin.keyboard.press('Enter')
+   const lastNav=admin.locator('.public-header a').last();await lastNav.focus();await admin.keyboard.press('Tab')
+   assert.equal(await form.evaluate(node=>node.contains(document.activeElement)),false,'Tab skips every disabled form control')
+   await admin.waitForTimeout(200);admin.off('request',observe)
+   assert.deepEqual(posts,[],'Pointer and keyboard attempts emit no submission')
+   assert.equal(admin.url(),origin+path)
+   await admin.evaluate(axe);assert.deepEqual((await admin.evaluate(()=>axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}}))).violations.map(item=>item.id),[],'Private preview accessibility')
+   assert.ok(await admin.locator('main label,main p,main button,.preview-banner').evaluateAll(nodes=>nodes.filter(node=>node.checkVisibility()).every(node=>parseFloat(getComputedStyle(node).fontSize)>=13)),'Preview text is readable')
+   assert.deepEqual(await admin.locator('button,a[href],summary').evaluateAll(nodes=>nodes.filter(node=>node.checkVisibility()&&!node.textContent.trim()&&!node.dataset.tip).map(node=>node.outerHTML)),[],'Preview icon-only controls have tooltips')
+   for(const width of [1440,390]){
+    await admin.setViewportSize({width,height:1000});assert.equal(await admin.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,'Private preview overflow at '+width)
+    await admin.screenshot({path:resolve(folder,'private-preview-'+slug+'-'+width+'.png'),fullPage:true})
+   }
+  }
+  assert.deepEqual(await state(),afterInvitations,'Preview controls change no enquiries, notification state, approvals or live records')
+  assert.equal(await fixtureRuntime.mailAttemptCount(),mailBefore,'No mail attempt is retained')
+  assert.equal(fixtureRuntime.outboundRequests.length,outboundBefore,'Preview sends no verification or notification request')
+  const changed=structuredClone(selected.site);changed.pages.find(item=>item.slug==='contact').body='Newer contact draft only.';changed.forms[0].name='Newer project request only.'
+  const newer=await call('/api/pane/prepare',{site:changed,base:selected.id});assert.notEqual(newer.id,selected.id)
+  await admin.setViewportSize({width:1440,height:1000});await admin.goto(origin+'/preview/'+selected.id+'/contact');assert.ok((await admin.locator('.public-content').innerText()).includes(selected.site.pages.find(item=>item.slug==='contact').body))
+  await admin.locator('.public-header a[href="./about"]').first().click()
+  assert.equal(new URL(admin.url()).pathname,'/preview/'+selected.id+'/about','Native preview navigation retains the selected revision')
+  assert.equal(await admin.getByRole('heading',{name:'Preview project request',exact:true}).count(),1)
+  assert.doesNotMatch(await admin.locator('body').innerText(),/Newer contact draft only|Newer project request only/)
+  await admin.goto(origin+'/preview/'+newer.id+'/about');assert.equal(await admin.getByRole('heading',{name:'Newer project request only.',exact:true}).count(),1,'The later draft has its own preview')
+  const current=await state();assert.deepEqual(current.revisions.find(item=>item.id===selected.id),selected,'The selected snapshot and hash stay immutable');assert.deepEqual(current.live,baseline.live)
+  assert.deepEqual(await Promise.all(['contact','about'].map(async slug=>stableHtml(await(await context.request.get(origin+'/site/'+slug)).text()))),liveBefore,'Draft changes and preview attempts do not change the live pages')
+  console.log('PROBE PUBLISH-002 access: selected ordinary and typed preview routes -> signed-out 303, member 403, admin content and draft banner.')
+  console.log('PROBE PUBLISH-002 sending: admin visible submit and keyboard attempts -> zero POST requests, enquiries, mail attempts and outbound requests; live pages unchanged.')
+  console.log('PROBE PUBLISH-002 revision: later draft and native preview navigation -> old contents and selected snapshot hash retained; new draft has separate contents.')
+ }finally{
+  for(const role of Object.values(roles))await role.context.close()
+  if(previous.draft){const restored=await call('/api/pane/prepare',{site:previous.draft.site});if(previous.live)await call('/api/pane/publish',{revision:restored.id})}
+ }
+ console.log('Private selected preview journey passed: native admin, member and signed-out sessions, ordinary and typed disabled forms, pointer and keyboard refusal, no side effects, immutable selected source, accessibility and screens at 1440 and 390.')
+}
 try {
  await page.goto(origin+'/');await page.locator('.door').waitFor();await page.evaluate(()=>document.fonts.ready)
  const sharedTheme=await theme();assert.ok(sharedTheme.every(Boolean),'LOBBY-001: Lobby loads shared theme tokens')
@@ -77,7 +161,7 @@ try {
  }
  assert.deepEqual(await theme(),sharedTheme,'LOBBY-001: workspace shares Lobby theme');assert.equal(await page.locator('a[href="#main"]').count(),1);assert.equal(await page.locator('#main').count(),1);await capture('empty-workspace')
  console.log('Shared Lobby and workspace theme passed: installed Lobby, sign-in, setup, workspace anchors, self-hosted Figtree, fuchsia, no overflow and icon tooltips at 1440 and 390.')
- if (!lobbyOnly) {
+ if (!lobbyOnly && !previewOnly) {
  await page.goto(origin+'/site');await capture('not-published');await page.goto(origin+'/app')
  await page.getByLabel('Site name',{exact:true}).fill(fixture.name)
  await page.getByLabel('Description',{exact:true}).fill(fixture.description)
@@ -113,4 +197,5 @@ try {
  await siteStylesJourney({page,context,origin,folder})
  console.log('Browser journey passed: sign-in, setup, five-page prepare/preview/publish, contact, visits, change, rollback, reviewed move-in/undo, erasure at 1440 and 390.')
  }
-} catch(error) {await capture('journey-failure');throw error} finally {await browser.close();if(lobbyOnly)await fixtureRuntime?.stop()}
+ if(!lobbyOnly&&fixtureRuntime)await privatePreviewJourney()
+} catch(error) {await capture('journey-failure');throw error} finally {await browser.close();if(lobbyOnly||previewOnly)await fixtureRuntime?.stop()}
