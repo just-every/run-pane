@@ -8,10 +8,10 @@ The primary journey: Move the existing business site in, inspect its content and
 
 | Tier | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
-| Core | 42 | 46 | 44 | 132 |
+| Core | 43 | 45 | 44 | 132 |
 | Agent surface | 0 | 0 | 4 | 4 |
 | Later | 0 | 0 | 0 | 0 |
-| Full target | 42 | 46 | 48 | 136 |
+| Full target | 43 | 45 | 48 | 136 |
 
 Judged from the code and tests at commit `3b35726211c3a5ac20eeba8b0f8b82b37d2995d4` (27 October 2026). Field proof register: 12 rows; 0 passed, 0 failed, 12 not run.
 
@@ -110,15 +110,15 @@ Core · published · **done** · Cites BASE-INPUT-002, BASE-OPS-003, BASE-DATA-0
 
 #### VISIT-001 — Cookie-free aggregate visit counts
 
-Core · published · **partial** · Cites BASE-PUBLIC-001 · Rules D-4
+Core · published · **done** · Cites BASE-PUBLIC-001 · Rules D-4
 
 **Requirement.** Live page views store only a day and path count. No cookie, identifier or address is stored, previews are not counted, and a browser sending Do Not Track or Global Privacy Control is not counted.
 
 **Acceptance.**
 1. Post a visit with `DNT: 1` and one without; the page's count rises by exactly one and no visitor record exists.
 
-**Evidence.** `src/pane/public.ts`; `tests/pane.test.mjs`
-**Gap.** Missing journey: nonempty public counters with preview and GPC exclusions and a storage inspection proving no visitor identity/address record. The cited contact/visit route journey shows DNT exclusion and one aggregate increment.
+**Evidence.** `scripts/traffic-journey.mjs` — “aggregatePrivacyJourney”: nonempty exact public increments, private preview and repeated DNT and GPC exclusion, all application tables and public browser storage inspected with distinct client-address, agent and URL sentinels at 1440 and 390; `tests/pane.test.mjs` — “traffic groups real public visit events without retaining raw referrers or unapproved identifiers and excludes privacy opt-outs”
+**Gap.** None.
 
 ### Move-in, backup and erasure
 
