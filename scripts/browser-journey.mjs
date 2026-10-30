@@ -122,6 +122,7 @@ async function privatePreviewJourney(){
    await admin.evaluate(axe);assert.deepEqual((await admin.evaluate(()=>axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}}))).violations.map(item=>item.id),[],'Private preview accessibility')
    assert.ok(await admin.locator('main label,main p,main button,.preview-banner').evaluateAll(nodes=>nodes.filter(node=>node.checkVisibility()).every(node=>parseFloat(getComputedStyle(node).fontSize)>=13)),'Preview text is readable')
    assert.deepEqual(await admin.locator('button,a[href],summary').evaluateAll(nodes=>nodes.filter(node=>node.checkVisibility()&&!node.textContent.trim()&&!node.dataset.tip).map(node=>node.outerHTML)),[],'Preview icon-only controls have tooltips')
+   await admin.getByRole('heading',{level:1}).click()
    for(const width of [1440,390]){
     await admin.setViewportSize({width,height:1000});assert.equal(await admin.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,'Private preview overflow at '+width)
     await admin.screenshot({path:resolve(folder,'private-preview-'+slug+'-'+width+'.png'),fullPage:true})
