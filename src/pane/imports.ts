@@ -34,10 +34,16 @@ export async function applyMoveIn(db: D1Database, actor: ImportActor, source: st
 
 export async function undoMoveIn(db: D1Database, actor: ImportActor, job: string) {
   const context = await moveInContext(db, actor)
+  await readD1ImportJob(job, context)
   const published = await db.prepare(`SELECT 1 FROM ik_provenance p JOIN pane_state s ON s.live=p.target_id
     WHERE p.job_id=? AND p.destination=? AND p.target_kind='site-revision' AND p.reversed=0`)
     .bind(job, context.destination).first()
   if (published) throw new Error('This imported revision is published. Publish another revision before undoing this import.')
+  const newer = await db.prepare(`SELECT 1 FROM ik_provenance p
+    WHERE p.job_id=? AND p.destination=? AND p.target_kind='site-revision' AND p.reversed=0
+    AND p.target_id<>(SELECT id FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1)`)
+    .bind(job, context.destination).first()
+  if (newer) throw new Error('A newer draft was saved after this import. Keep those edits; this import cannot be undone.')
   return undoD1Import(job, context)
 }
 

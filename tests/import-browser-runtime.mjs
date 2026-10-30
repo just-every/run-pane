@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import {createServer} from 'node:http'
 import {readFile} from 'node:fs/promises'
 import {resolve,extname,sep} from 'node:path'
-import {runtime,settings} from './runtime.mjs'
+import {runtime,settings,moveInSnapshot} from './runtime.mjs'
 import {crawlEdge} from './import-crawl-edge.mjs'
 export const edge=crawlEdge()
 let f
@@ -29,3 +29,5 @@ export const origin='http://127.0.0.1:'+server.address().port
 f=await runtime({bindings:{AUTH_ORIGIN:origin},outboundService:edge.fetch})
 export async function bootstrap(context){const response=await context.request.post(origin+'/auth/bootstrap',{headers:{Origin:origin},data:{token:settings.SETUP_TOKEN,displayName:'synthetic-pane-1'},maxRedirects:0});assert.equal(response.status(),303);return response.headers()['set-cookie'].split(';')[0]}
 export async function stop(){await new Promise(resolve=>server.close(resolve));await f.mf.dispose()}
+
+export const custody=()=>moveInSnapshot(f.db)
