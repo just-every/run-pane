@@ -184,7 +184,7 @@
       "executable": false
     },
     "docs/BACKUP-RESTORE.md": {
-      "sha256": "fd3f532006b9f509b6812f5ecffc98c6e8ddabcb2ddb580dcb681610b9bce306",
+      "sha256": "da46ae9cdfe306b10619c4bb7017547f4585ec2c5c1cc7a3bfea359bda75a7d8",
       "executable": false
     },
     "docs/CLAIMS.md": {
@@ -1149,6 +1149,10 @@
     },
     "scripts/analytics-journey.mjs": {
       "sha256": "2c24b1228e4403f4ae0f07e4df645988606cff8e22ffe8dbeb6de3af11e1134c",
+      "executable": false
+    },
+    "scripts/archive-transport-journey.mjs": {
+      "sha256": "f0385b48e8e4297f9c3cd3c3e1e7ef3e395e08a51b6a0ff771bd8b6a2d802dcc",
       "executable": false
     },
     "scripts/browser-journey.mjs": {
@@ -4128,7 +4132,7 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "49261dfaf2b03a921fec4b2bb4c3d38f52f89a992440e47ee0c51cbf908607a5",
+      "sha256": "a57d430a94c534d7e672411880415d39097eb0b90fb5cb20e01eedf56f450964",
       "executable": false
     },
     "tests/post-fixture.mjs": {
@@ -4144,7 +4148,7 @@
       "executable": false
     },
     "tests/runtime.mjs": {
-      "sha256": "01cb2fed586ac092c420f52f976ff498c76843499b23473a45e3646793fce4bf",
+      "sha256": "dbb7da9a745bab7a26bc5fa71c9b55969ccdb9ae25c1a1471ff9b75a5b0a1404",
       "executable": false
     },
     "tests/search.test.mjs": {
