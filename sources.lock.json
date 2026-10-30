@@ -4152,7 +4152,7 @@
       "executable": false
     },
     "tests/site.test.mjs": {
-      "sha256": "9df48c9fbfb00d2878b6e29d4ba156f52f77a9838060bb228e70c3b2efaac3ae",
+      "sha256": "c1c408a937b69259322fc94abced7c87dc3b9ed9e35a48861089a9a689263456",
       "executable": false
     },
     "tsconfig.json": {
