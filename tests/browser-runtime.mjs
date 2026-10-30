@@ -10,6 +10,8 @@ let f, ownerCookie
 const aiLive=process.env.PANE_AI_LIVE==='1',aiFixture=process.env.PANE_AI_FIXTURE==='1'
 if(aiLive&&!process.env.AI_API_KEY)throw Error('AI_API_KEY is required for the live AI journey.')
 export const aiRequests=[],aiOutbounds=[]
+export const outboundRequests=[]
+export async function mailAttemptCount(){return (await f.db.prepare('SELECT COUNT(*) AS total FROM rer_mail_development_outbox').first()).total}
 let aiObserver,aiBoundaryError
 export function observeAiEdge(observer){aiObserver=observer;aiBoundaryError=undefined}
 export function assertAiBoundary(){if(aiBoundaryError)throw aiBoundaryError}
@@ -63,7 +65,7 @@ const server=createServer(async(req,res)=>{
 })
 await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve)})
 export const origin = 'http://127.0.0.1:' + server.address().port
-f = await runtime({...(process.env.PANE_BROWSER_NOW?{now:()=>Date.parse(process.env.PANE_BROWSER_NOW)}:{}),bindings: {AUTH_ORIGIN: origin,...(aiLive||aiFixture?{AI_ENABLED:'true',AI_API_KEY:aiLive?process.env.AI_API_KEY:'synthetic-pane-4',AI_MODEL:'gpt-4.1-mini'}:{})},...(aiLive||aiFixture?{observeOutbound:request=>{const url=new URL(request.url);aiOutbounds.push({origin:url.origin,path:url.pathname,method:request.method})},outboundService:aiEdge}:{}),isolatedLive:process.env.PANE_LIVE_FIXTURE==='1'})
+f = await runtime({...(process.env.PANE_BROWSER_NOW?{now:()=>Date.parse(process.env.PANE_BROWSER_NOW)}:{}),bindings: {AUTH_ORIGIN: origin,...(aiLive||aiFixture?{AI_ENABLED:'true',AI_API_KEY:aiLive?process.env.AI_API_KEY:'synthetic-pane-4',AI_MODEL:'gpt-4.1-mini'}:{})},observeOutbound:request=>{const url=new URL(request.url),record={origin:url.origin,path:url.pathname,method:request.method};outboundRequests.push(record);if(aiLive||aiFixture)aiOutbounds.push(record)},...(aiLive||aiFixture?{outboundService:aiEdge}:{}),isolatedLive:process.env.PANE_LIVE_FIXTURE==='1'})
 export async function protect(context){
  await context.route('https://challenges.cloudflare.com/turnstile/v0/api.js**',route=>route.fulfill({contentType:'application/javascript',body:`window.turnstile={render(slot,options){if(!/^[a-f0-9]{64}$/.test(options.cData))return options['error-callback']();options.callback('synthetic-pane-3:'+options.cData)}}`}))
 }

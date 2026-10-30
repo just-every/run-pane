@@ -52,6 +52,85 @@ test('PRESENT-001: five pages preview with a draft banner and publish without pr
  for(const page of fixture.pages){const p=await f.request(page.slug==='home'?'/site':'/site/'+page.slug);assert.equal(p.status,200);const html=await p.text();assert.ok(html.includes(page.title));assert.ok(html.includes(`<title>${fixture.name}</title>`));assert.doesNotMatch(html,/\bPane\b|\/brand\/|rel="(?:icon|apple-touch-icon|manifest)"|preview-banner/)}
  const d=await data();assert.equal(d.live.id,first.id);assert.equal(d.approvals[0].revision,first.id);assert.equal(d.approvals[0].actor,Object.keys(d.people).find(id=>d.people[id]==='Riverbend owner'),'Publication records the exact approving native owner')
 })
+test('private selected previews refuse visitors and members and keep ordinary and typed contact sending inert',async()=>{
+ const origin='https://pane.example.test',outbound=[]
+ const app=await runtime({bindings:{AUTH_ORIGIN:origin,AUTH_LOCAL:'false',MAIL_PROVIDER:'sendgrid',MAIL_API_KEY:'synthetic-pane-preview',MAIL_FROM:['synthetic-pane-preview','example.test'].join('@')},observeOutbound:request=>outbound.push(new URL(request.url).hostname),outboundService:async request=>{assert.equal(new URL(request.url).hostname,'api.sendgrid.com');return new Response(null,{status:202})}})
+ const request=(path,options)=>app.request(origin+path,options)
+ const post=(path,body,cookie='')=>request(path,{method:'POST',headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify(body)})
+ const state=async cookie=>(await request('/api/pane',{headers:{Cookie:cookie}})).json()
+ const stableHtml=html=>html.replace(/name="idempotency" value="[^"]*"/g,'name="idempotency"')
+ try{
+  const ownerCookie=(await post('/auth/bootstrap',{token:settings.SETUP_TOKEN,displayName:'Synthetic preview owner'})).headers.get('set-cookie').split(';')[0]
+  let invitation
+  const auth=createOperatorAuth({db:app.db,config:{...settings,origin,local:false},clientIp:()=> '127.0.0.1',mailSender:{send:async value=>{invitation=value;return {status:'accepted',provider:'test-network-edge',providerMessageId:null}}}})
+  const cookies={}
+  for(const role of ['admin','member']){
+   await auth.invite(new Request(origin+'/auth/invite',{method:'POST',headers:{Host:new URL(origin).host,Origin:origin,Cookie:ownerCookie}}),{email:['synthetic-pane-preview-'+role,'example.test'].join('@'),displayName:'Synthetic preview '+role,role})
+   const token=new URL(invitation.text.match(/https?:\/\/[^\s]+/)[0]).searchParams.get('token')
+   cookies[role]=(await post('/auth/confirm',{token})).headers.get('set-cookie').split(';')[0]
+  }
+  const source=structuredClone(fixture)
+  source.forms=[{id:'synthetic-pane-preview',name:'Preview project request',submit:'Send project request',confirmation:'Request received.',fields:[
+   {key:'name',type:'text',label:'Project name',help:'',placeholder:'',required:true},
+   {key:'email',type:'email',label:'Reply address',help:'',placeholder:'',required:true},
+   {key:'message',type:'text',label:'Project details',help:'',placeholder:'',required:true},
+  ]}]
+  source.pages.find(page=>page.slug==='about').formId=source.forms[0].id
+  for(const page of source.pages.filter(page=>['about','contact'].includes(page.slug)))page.acknowledgment={subject:'Preview enquiry received',text:'We will review your request.',responseTime:'Two business days'}
+  const prepared=await post('/api/pane/prepare',{site:source},ownerCookie);assert.equal(prepared.status,200,await prepared.clone().text());const selected=await prepared.json()
+  assert.ok(selected.id)
+  assert.equal(selected.hash,createHash('sha256').update(JSON.stringify(selected.site)).digest('hex'))
+  assert.equal((await post('/api/pane/publish',{revision:selected.id},ownerCookie)).status,200)
+  const livePages=await Promise.all(['about','contact'].map(async slug=>{
+   const html=await(await request('/site/'+slug)).text();assert.match(html,/<fieldset>/);return stableHtml(html)
+  }))
+  const baseline=await state(ownerCookie),mailBefore=await app.db.prepare('SELECT COUNT(*) AS total FROM rer_mail_development_outbox').first(),requestsBefore=outbound.length
+  for(const slug of ['about','contact']){
+   const path='/preview/'+selected.id+'/'+slug
+   const signedOut=await request(path),memberPage=await request(path,{headers:{Cookie:cookies.member}})
+   assert.equal(signedOut.status,303);assert.equal(memberPage.status,403)
+   for(const response of [signedOut,memberPage])assert.ok(!(await response.text()).includes(source.pages.find(page=>page.slug===slug).body),'Refusal contains no draft content')
+   for(const cookie of [ownerCookie,cookies.admin]){
+    const response=await request(path,{headers:{Cookie:cookie}}),html=await response.text()
+    assert.equal(response.status,200);assert.match(response.headers.get('cache-control'),/private|no-store/);assert.match(response.headers.get('x-robots-tag'),/noindex/)
+    assert.ok(html.includes(source.pages.find(page=>page.slug===slug).body));assert.match(html,/class="preview-banner"/)
+    assert.match(html,/<fieldset disabled>[\s\S]*<button type="submit">/)
+    assert.equal(html.includes('data-typed-form'),slug==='about')
+    assert.doesNotMatch(html,/data-turnstile-key|pane-turnstile\.js|pane-forms\.js|pane-tracker\.js/)
+   }
+   // A direct submission to the private preview door is inert too.
+   const response=await request(path,{method:'POST',headers:{Cookie:cookies.admin,Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({idempotency:crypto.randomUUID(),name:'Synthetic preview request',email:['synthetic-pane-preview','example.test'].join('@'),message:'Must remain unsent','cf-turnstile-response':'synthetic-pane-3:'+createHash('sha256').update(slug).digest('hex')})})
+   assert.equal(response.status,200)
+  }
+  assert.deepEqual(await state(ownerCookie),baseline,'Preview reads and attempted sends change no enquiries, approvals, visits or live state')
+  assert.equal(outbound.length,requestsBefore,'No preview verification or notification request occurs')
+  assert.deepEqual(await app.db.prepare('SELECT COUNT(*) AS total FROM rer_mail_development_outbox').first(),mailBefore)
+  const changed=structuredClone(selected.site);changed.pages.find(page=>page.slug==='contact').body='Newer contact draft only.';changed.forms[0].name='Newer project request only.'
+  const newer=await(await post('/api/pane/prepare',{site:changed,base:selected.id},ownerCookie)).json();assert.ok(newer.id);assert.notEqual(newer.id,selected.id)
+  for(const slug of ['about','contact']){
+   const html=await(await request('/preview/'+selected.id+'/'+slug,{headers:{Cookie:cookies.admin}})).text()
+   assert.ok(html.includes(selected.site.pages.find(page=>page.slug===slug).body));assert.doesNotMatch(html,/Newer contact draft only|Newer project request only/)
+  }
+  const current=await state(ownerCookie);assert.deepEqual(current.revisions.find(row=>row.id===selected.id),selected);assert.deepEqual(current.live,baseline.live)
+  assert.deepEqual(await Promise.all(['about','contact'].map(async slug=>stableHtml(await(await request('/site/'+slug)).text()))),livePages)
+  // Positive control: the separately approved live forms still accept real native submissions.
+  for(const slug of ['contact','about']){
+   const response=await request('/site/'+slug,{method:'POST',headers:{Origin:origin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({idempotency:crypto.randomUUID(),name:'Synthetic live request',email:['synthetic-pane-preview','example.test'].join('@'),message:'A separately submitted live enquiry','cf-turnstile-response':'synthetic-pane-3:'+createHash('sha256').update(slug).digest('hex')})})
+   assert.equal(response.status,303,await response.text())
+  }
+  assert.equal((await state(ownerCookie)).messages.length,2)
+  assert.equal(outbound.length,requestsBefore+4,'Only live submissions request verification and notifications')
+  assert.equal(outbound.filter(host=>host==='api.sendgrid.com').length,2,'The live positive control exercises notification delivery')
+  assert.ok((await state(ownerCookie)).messages.every(row=>row.acknowledgment_status==='accepted'),'Both live notification outcomes are retained')
+  const operators=await(await request('/auth/operators',{headers:{Cookie:ownerCookie}})).json(),admin=operators.find(row=>row.role==='admin')
+  assert.equal((await post('/api/pane/team/revoke',{operatorId:admin.id,confirm:'revoke-access'},ownerCookie)).status,200)
+  for(const slug of ['contact','about']){
+   const refused=await request('/preview/'+selected.id+'/'+slug,{headers:{Cookie:cookies.admin}})
+   assert.equal(refused.status,303);assert.ok(!(await refused.text()).includes(selected.site.pages.find(row=>row.slug===slug).body),'A revoked session cannot reopen the private source')
+  }
+  assert.deepEqual((await state(ownerCookie)).live,baseline.live)
+ }finally{await app.mf.dispose()}
+})
 test('ACCESS-002: mutations require the canonical origin; accepted contact is durable and visits respect privacy',async()=>{
  const before=await data(),foreign='https://elsewhere.invalid'
  for(const originHeader of [{},{Origin:foreign},{Origin:'null'}]){

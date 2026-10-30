@@ -1152,7 +1152,7 @@
       "executable": false
     },
     "scripts/browser-journey.mjs": {
-      "sha256": "8305a8080670cbec1965e50097470d0be2b63a1ae5fd6bf047fefabd5d58a7b8",
+      "sha256": "82f37aca11961a250b4947ea49539b16dded140ac059034432a7d1b7702e7b76",
       "executable": false
     },
     "scripts/browser-proof.mjs": {
@@ -4084,7 +4084,7 @@
       "executable": false
     },
     "tests/browser-runtime.mjs": {
-      "sha256": "9d35e523d217814f2261161553409b85872f5bbc84cf15cde0c5ed542a2b0718",
+      "sha256": "c581d19ea65309526d2edc34689b7af80f422b0bbcb3eb48eaae7c6bde69d19e",
       "executable": false
     },
     "tests/collection-fixture.mjs": {
@@ -4128,7 +4128,7 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "49261dfaf2b03a921fec4b2bb4c3d38f52f89a992440e47ee0c51cbf908607a5",
+      "sha256": "a44d1233635b3f2fe5a8733b2050214324fab121d129050e5dd905a9a5d74e47",
       "executable": false
     },
     "tests/post-fixture.mjs": {
