@@ -1573,13 +1573,13 @@ Inherits BASE-AGENT-001 to BASE-AGENT-013. The company's policy decides every ca
 
 ## Status
 
-Judged from the code and tests at commit `3b35726211c3a5ac20eeba8b0f8b82b37d2995d4` (27 October 2026).
+Judged from the code and tests at commit `0e6608a466f009f2b5897465355dd0ae22c79bf1` (30 October 2026).
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
-| Published | 11 | 5 | 0 | 16 |
+| Published | 12 | 4 | 0 | 16 |
 | Target and push further | 32 | 40 | 48 | 120 |
-| All | 43 | 45 | 48 | 136 |
+| All | 44 | 44 | 48 | 136 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -1596,7 +1596,7 @@ Judged from the code and tests at commit `3b35726211c3a5ac20eeba8b0f8b82b37d2995
 | `ERASE-001` | Message erasure fenced against old backups | published | done | `tests/pane.test.mjs` — “owner erasure removes personal data and prevents submission replay”; `tests/pane.test.mjs` — “archive transport restores data into empty D1 and rejects an erased older backup” |  |
 | `HEALTH-001` | Deployment health and unknown paths | published | done | `tests/search.test.mjs` — “health identifies the local deployment and unknown installed paths return 404” |  |
 | `DEPLOY-001` | Install on the owner's Cloudflare account | published | partial | `scripts/deployment-journey.mjs` — “deployment identity, migrations and removal”: owner-account identity checked against the deployment receipt; applied migration names and SHA-256 values read from hosted D1; local and hosted “/health” deployment identity compared with that receipt; guarded removal and missing local record asserted. Runner: “rer deploy --environment test-pane --non-interactive”, then “node scripts/deployment-journey.mjs test-pane” (RunEditRun live sandbox receipt 2026-10-21, source dfc3ce80c9d4806c8c0e13363d786dee4e12cbb9, 16 migrations). `tests/search.test.mjs` — “health identifies the local deployment and unknown installed paths return 404”, loaded by “pnpm test” through “pnpm verify” in Verify's product journey job. `scripts/health-browser-journey.mjs` — “Health and unknown installed path browser journey”, run with “node scripts/health-browser-journey.mjs” at 1440 and 390. Provider acceptance is the live sandbox receipt, never the local fixture | Missing journey: provider-compatible deployment, migration and removal on this candidate. The cited deployment journey requires a live account receipt and is not part of candidate Verify; a dated earlier sandbox run is not exact-candidate proof. |
-| `RUNSITE-001` | Public run site and documentation | published | partial | `tests/site.test.mjs`; `docs/site.json` | Missing journey: built homepage/run/docs navigation with an explicit check that installation sign-in links are absent. The cited site journey opens all linked guides and unknown-path refusal but never inspects that absence. |
+| `RUNSITE-001` | Public run site and documentation | published | done | `tests/site.test.mjs` — "the run site opens the run instructions and every linked documentation page without installation sign-in links": built homepage, run instructions, documentation index and every linked guide through the real site-preview HTTP router; resolved relative and absolute navigation destinations checked for installation sign-in links; unknown paths return 404. Invoked by the package test script through Verify's product journey job. |  |
 | `LOBBY-001` | Shared Lobby, workspace and theme | published | done | `scripts/browser-journey.mjs` — “Shared Lobby and workspace theme” |  |
 | `PRESENT-001` | Labeled previews and unbranded live pages | published | done | `tests/pane.test.mjs` — “PRESENT-001: five pages preview with a draft banner and publish without product branding”; `scripts/browser-journey.mjs` — “five-page prepare/preview/publish” |  |
 | `PAGE-001` | Unlimited pages, folders and clean URLs | target | done | `scripts/pages-journey.mjs` — “Forty-page editor journey”; `tests/pane.test.mjs` — “page organization keeps stable identities, complete revisions, safe edits and chosen public home and not-found content”; `tests/search.test.mjs` — “published URL changes offer explicit redirects and each revision owns its exact status and target map” |  |
