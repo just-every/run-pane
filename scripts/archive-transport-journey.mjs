@@ -11,8 +11,15 @@ import {runtime,origin,settings} from '../tests/runtime.mjs'
 import {createOperatorAuth} from '../src/modules/operator-auth/index.mjs'
 
 const execute=promisify(execFile),checkout=resolve('.'),rer=resolve('node_modules/@runeditrun/rer/global/rer.mjs')
+// The parent's verification lock belongs to its checkout. Each independent
+// installation must acquire its own native local-operation lock.
+function installationEnvironment(){
+ const environment={...process.env,WRANGLER_SEND_METRICS:'false'}
+ delete environment.RER_LOCAL_OPERATION
+ return environment
+}
 async function command(root,args){
- try{return await execute(process.execPath,[rer,...args],{cwd:root,timeout:120000,maxBuffer:2000000,env:{...process.env,WRANGLER_SEND_METRICS:'false'}})}
+ try{return await execute(process.execPath,[rer,...args],{cwd:root,timeout:120000,maxBuffer:2000000,env:installationEnvironment()})}
  catch(error){error.message='Archive journey command failed: rer '+args[0]+' (exit '+error.code+')\n'+error.stdout+'\n'+error.stderr;throw error}
 }
 async function installation(root){
@@ -90,7 +97,7 @@ export async function archiveTransportJourney({browser=false,folder}={}){
  let app
  try{
   for(const root of [source,empty,occupied])await installation(root)
-  await execute('pnpm',['exec','wrangler','d1','migrations','apply','foundation','--local','--persist-to','.wrangler/state','--config','wrangler.jsonc'],{cwd:source,timeout:120000,maxBuffer:2000000,env:{...process.env,WRANGLER_SEND_METRICS:'false'}})
+  await execute('pnpm',['exec','wrangler','d1','migrations','apply','foundation','--local','--persist-to','.wrangler/state','--config','wrangler.jsonc'],{cwd:source,timeout:120000,maxBuffer:2000000,env:installationEnvironment()})
   app=await runtime({installation:source})
   const owner=await bootstrap(app),site=JSON.parse(await readFile('fixtures/static-site.json','utf8'))
   site.name='synthetic-pane-live'
@@ -130,7 +137,7 @@ export async function archiveTransportJourney({browser=false,folder}={}){
   if(browser)await screens(app,restored,folder??resolve('./test-results/archive'))
   await app.mf.dispose();app=undefined
   // A different installation with its own records must survive an attempted overwrite.
-  await execute('pnpm',['exec','wrangler','d1','migrations','apply','foundation','--local','--persist-to','.wrangler/state','--config','wrangler.jsonc'],{cwd:occupied,timeout:120000,maxBuffer:2000000,env:{...process.env,WRANGLER_SEND_METRICS:'false'}})
+  await execute('pnpm',['exec','wrangler','d1','migrations','apply','foundation','--local','--persist-to','.wrangler/state','--config','wrangler.jsonc'],{cwd:occupied,timeout:120000,maxBuffer:2000000,env:installationEnvironment()})
   app=await runtime({installation:occupied});const existing=await bootstrap(app)
   const saved=await existing.call('/api/pane/prepare',{site:{...site,name:'synthetic-pane-occupied'}});await existing.call('/api/pane/publish',{revision:saved.id})
   const records=await tables(app.db,productTable)
