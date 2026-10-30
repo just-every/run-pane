@@ -32,3 +32,9 @@ export async function runtime({bindings={},outboundService,observeOutbound,cf,tu
   return mf.dispatchFetch('http://localhost/__test_dispatch',{method:'POST',redirect:'manual',headers:{'Content-Type':'application/json'},body:JSON.stringify({now:typeof now==='function'?now():now,cf,stream,bodyBase64,url:target.href,init:{...options,headers:{Host:target.host,'CF-Connecting-IP':'127.0.0.1',...options.headers},...(options.body?{body:String(options.body)}:{})}})})
  }}
 }
+
+// Inspect retained state after exercising ordinary import, editor and publication doors.
+export async function moveInSnapshot(db) {
+ const tables=(await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND (name LIKE 'ik_%' OR name IN ('pane_revisions','pane_state','pane_approvals','pane_import_targets')) ORDER BY name").all()).results
+ return Object.fromEntries(await Promise.all(tables.map(async({name})=>[name,(await db.prepare('SELECT * FROM "'+name+'"').all()).results.sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)))])))
+}

@@ -6,7 +6,7 @@ import {execFile} from 'node:child_process'
 import {promisify} from 'node:util'
 import {chromium} from '@playwright/test'
 const fixture=await import('../tests/import-browser-runtime.mjs')
-const browser=await chromium.launch({headless:true,args:['--use-mock-keychain','--password-store=basic']})
+const browser=await chromium.launch({headless:true,...(process.env.PANE_CHROMIUM?{executablePath:process.env.PANE_CHROMIUM}:{}),args:['--no-sandbox','--use-mock-keychain','--password-store=basic']})
 const context=await browser.newContext(),page=await context.newPage(),origin=fixture.origin
 const folder=resolve(process.env.PANE_SCREENSHOTS??'test-results/imports')
 await mkdir(folder,{recursive:true});page.setDefaultTimeout(20000)
@@ -129,5 +129,59 @@ try{
   }
   await post('import/undo',{job:applied.id})
  }
+ // Static-site strict undo: native review, separate owner publication and normal autosave.
+ // Assertions run at desktop width; the same changed screens are captured on phone.
+ const sourceRequests=fixture.edge.requests.length,dnsRequests=fixture.edge.dnsRequests.length
+ const browserRequests=[]
+ page.on('request',request=>{if(/^https?:/.test(request.url())&&new URL(request.url()).origin!==origin)browserRequests.push(request.url())})
+ for(const width of [1440,390])for(const mode of ['published','edited']){
+  await page.setViewportSize({width,height:1000});await page.goto(origin+'/app/moves')
+  const source=JSON.stringify({...starter,name:`synthetic-pane-${width}-${mode}`}),before=await data()
+  await page.getByLabel('Source JSON',{exact:true}).fill(source)
+  await Promise.all([page.waitForURL('**/app/import/dry-run'),page.getByRole('button',{name:'Check import'}).click()])
+  if(width===1440)assert.deepEqual((await data()).revisions,before.revisions,'Static preflight is read only')
+  await capture('strict-undo-review-'+mode,width)
+  await Promise.all([page.waitForURL(url=>url.pathname==='/app/moves'),page.getByRole('button',{name:'Approve import'}).click()])
+  const applied=await data(),imported=applied.draft,job=applied.imports.find(row=>!before.imports.some(old=>old.id===row.id))
+  if(width===1440){assert.ok(job);assert.deepEqual(applied.live,before.live);assert.notEqual(imported.id,before.draft.id)}
+  await page.goto(origin+'/app?page=home')
+  if(mode==='published'){
+   await Promise.all([page.waitForURL(url=>url.pathname==='/app'&&url.searchParams.has('notice')),page.getByRole('button',{name:'Approve & publish',exact:true}).click()])
+   if(width===1440){assert.equal((await data()).live.id,imported.id);assert.match(await (await context.request.get(origin+'/site')).text(),new RegExp(imported.site.name))}
+  }else{
+   const saved=page.waitForResponse(response=>new URL(response.url()).pathname==='/app/autosave'&&response.request().method()==='POST')
+   await page.getByLabel('Text',{exact:true}).fill('synthetic-pane-1 ordinary browser edit')
+   const response=await saved
+   assert.equal(response.status(),200,await response.text())
+   await page.getByText('Draft saved. Not published.',{exact:true}).waitFor()
+   await capture('strict-undo-saved-edit',width)
+   if(width===1440){assert.notEqual((await data()).draft.id,imported.id);assert.deepEqual((await data()).live,before.live)}
+  }
+  const state=await data(),custody=await fixture.custody()
+  await page.goto(origin+'/app/moves')
+  await tooltip(width,'strict-undo-'+mode+'-moves')
+  const form=page.locator('form[action="/app/import/undo"]').filter({has:page.locator(`input[name="job"][value="${job.id}"]`)})
+  const refused=page.waitForResponse(response=>new URL(response.url()).pathname==='/app/import/undo'&&response.request().method()==='POST')
+  await form.getByRole('button',{name:'Undo import',exact:true}).click()
+  const response=await refused
+  assert.equal(response.status(),400,'Native undo refuses '+mode)
+  if(width===1440){
+   assert.match((await response.json()).error,mode==='published'?/published/:/newer draft/)
+   const after=await data()
+   for(const field of ['draft','live','revisions','approvals','imports'])assert.deepEqual(after[field],state[field],mode+' refusal preserves '+field)
+   assert.deepEqual(after.revisions.find(row=>row.id===imported.id),imported,'Immutable imported content and hash remain exact')
+   assert.deepEqual(await fixture.custody(),custody,'Refusal preserves original bytes and every journal')
+  }
+  await page.waitForURL('**/app/import/undo');await capture('strict-undo-'+mode+'-refused',width)
+  await page.goto(origin+'/app/moves')
+  const reportForm=page.locator('form[action="/app/import/dry-run"]').filter({has:page.locator(`input[name="job"][value="${job.id}"]`)})
+  await Promise.all([page.waitForURL('**/app/import/dry-run'),reportForm.getByRole('button',{name:'View report'}).click()])
+  if(width===1440)assert.match(await page.locator('#migration-report').locator('..').textContent(),/stored draft matches the reviewed snapshot/)
+  await capture('strict-undo-'+mode+'-retained-report',width)
+ }
+ assert.equal(fixture.edge.requests.length,sourceRequests,'Static apply, edit, publish and undo make no source requests')
+ assert.equal(fixture.edge.dnsRequests.length,dnsRequests,'Offline static imports grant no DNS authority')
+ assert.deepEqual(browserRequests,[],'Static import proof makes no browser source requests')
+ console.log('Strict static undo journey passed: published and normally edited imports refuse undo without changing content, identities, hashes, live selection, originals or journals; native Moves, owner publication and autosave shown at 1440 and 390 with no source requests.')
  console.log('Import journey passed at 1440/390: preflight, typed exceptions, fingerprinted unpublished apply, stored fidelity recheck, retained report/undo and hover/keyboard tooltips. Exact-candidate WXR inventory: 100 posts, 50 comments; two native pages applied. Offline provider captures and CSV exception fields reconciled separately; explicit DNS-verified Wix/Webflow/Framer/Durable captures, retained proof, preserved semantic page DOM, inert third-party content, readonly structured editor and tooltips pass at both widths.')
 }finally{await context.close();await browser.close();await fixture.stop();await rm(scratch,{recursive:true,force:true})}

@@ -59,9 +59,11 @@ export function revisionTargets(): D1TargetAdapter {
     },
     remove(destination, kind, id) {
       scope(destination, kind)
-      // FK protection and the kit's postcondition also fence a concurrent publish.
+      // The strict kit postcondition rolls back the whole batch if publication or
+      // an ordinary immutable save changes eligibility after Pane's preflight.
       return [sql(`DELETE FROM pane_revisions WHERE id=?
-        AND NOT EXISTS(SELECT 1 FROM pane_state WHERE live=?)`, id, id)]
+        AND NOT EXISTS(SELECT 1 FROM pane_state WHERE live=?)
+        AND id=(SELECT id FROM pane_revisions ORDER BY created_at DESC,id DESC LIMIT 1)`, id, id)]
     },
     async list(db, destination) {
       scope(destination, targetKind)
