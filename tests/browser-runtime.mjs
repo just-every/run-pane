@@ -114,3 +114,15 @@ export async function seedAiPrivateData(sentinels){
  await f.db.prepare("INSERT INTO oa_operators(id,email,display_name,role,status,version,created_at) VALUES(?,?,?,'member','active',1,?)").bind('synthetic-pane-account','private@example.test',sentinels.account,now).run()
  await f.db.prepare('INSERT INTO rer_dependency_keys(interface,private_key) VALUES(?,?)').bind('synthetic-pane-private',sentinels.secret).run()
 }
+
+// Read the isolated application's tables after browser actions, without adding a
+// product endpoint or collecting storage from an installed owner's browser.
+export async function inspectApplicationStorage(){
+ const tables=(await f.db.prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all()).results
+ const snapshot={}
+ for(const {name} of tables.filter(({name})=>!name.startsWith('_cf_')&&!name.startsWith('sqlite_'))){
+  const rows=(await f.db.prepare('SELECT * FROM "'+name.replaceAll('"','""')+'"').all()).results
+  snapshot[name]=rows.sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)))
+ }
+ return snapshot
+}

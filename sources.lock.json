@@ -160,7 +160,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "db71ea91e769a6c912a979bd4ba89b64629b961b26fd228f184783db7b25d4bf",
+      "sha256": "7d85448697a64330eb43f9e5e9be00e109ec65b9e833769393c90b61d089c508",
       "executable": false
     },
     "deploy-demo.json": {
@@ -1472,7 +1472,7 @@
       "executable": false
     },
     "scripts/traffic-journey.mjs": {
-      "sha256": "8f6da112a774ea11dfd08d984e2c2045b38a457300c24ff5013edf85f1e3abcb",
+      "sha256": "87705c7df14caf951d5f70f563b6778f72fd05ca9b5aedd616e8dea9b9b43438",
       "executable": false
     },
     "SEED-COMMAND-CONTRACT.md": {
@@ -4084,7 +4084,7 @@
       "executable": false
     },
     "tests/browser-runtime.mjs": {
-      "sha256": "2e3fab52a914ecb1748cac4f9cc05d7db49746ebc22182acfefa747dd8b88b8b",
+      "sha256": "9d35e523d217814f2261161553409b85872f5bbc84cf15cde0c5ed542a2b0718",
       "executable": false
     },
     "tests/collection-fixture.mjs": {

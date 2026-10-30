@@ -2,11 +2,12 @@ import assert from 'node:assert/strict'
 import { readFile, mkdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { chromium } from '@playwright/test'
+process.env.PANE_BROWSER_NOW ??= '2030-06-20T12:00:00.000Z'
 const fixture = await import('../tests/browser-runtime.mjs')
 const ownsFixture = !process.env.PANE_BROWSER_FIXTURE
 const folder = resolve(process.env.PANE_SCREENSHOTS ?? 'test-results/traffic')
 await mkdir(folder, {recursive: true})
-const browser = await chromium.launch({headless: true, args: ['--use-mock-keychain', '--password-store=basic']})
+const browser = await chromium.launch({headless: true, ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? {executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH} : {}), args: ['--no-sandbox', '--use-mock-keychain', '--password-store=basic']})
 const context = await browser.newContext(), page = await context.newPage(), origin = fixture.origin
 const site = JSON.parse(await readFile('fixtures/static-site.json', 'utf8'))
 const campaigns = ['spring-open-house', 'summer-workshop']
@@ -17,6 +18,87 @@ async function capture(name) {
  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 2), false, name + ' overflow')
 }
 const data = async () => (await context.request.get(origin + '/api/pane')).json()
+const identitySentinels = ['198.51.100.71', '203.0.113.72', 'synthetic-pane-visit-agent', 'synthetic-pane-private-query', 'synthetic-pane-referrer-path', 'synthetic-pane-referrer-subdomain']
+async function emptyBrowserStorage(tab) {
+ assert.deepEqual(await tab.context().cookies(), [], 'Public navigation sets no cookie')
+ assert.deepEqual(await tab.evaluate(async () => ({
+  cookie: document.cookie,
+  local: Object.entries(localStorage), session: Object.entries(sessionStorage),
+  databases: (await indexedDB.databases()).map(database => database.name),
+  caches: await caches.keys(), workers: (await navigator.serviceWorker.getRegistrations()).map(worker => worker.scope),
+ })), {cookie: '', local: [], session: [], databases: [], caches: [], workers: []}, 'Public visits retain no browser identity or address')
+}
+function onlyAggregateWrites(before, after) {
+ assert.deepEqual(Object.keys(after), Object.keys(before), 'Visits create no visitor table')
+ for (const table of Object.keys(before)) if (!['pane_visits', 'pane_rate_limits'].includes(table)) {
+  assert.deepEqual(after[table], before[table], 'Visits leave ' + table + ' unchanged')
+ }
+ const rateChanges = after.pane_rate_limits.filter(row => !before.pane_rate_limits.some(old => JSON.stringify(old) === JSON.stringify(row)))
+ assert.equal(rateChanges.length, 1, 'One shared rate bucket changes')
+ assert.match(rateChanges[0].bucket, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:visits$/, 'The rate bucket contains no visitor identifier')
+ const prior = before.pane_rate_limits.find(row => row.bucket === rateChanges[0].bucket)
+ assert.deepEqual(rateChanges[0], {bucket: rateChanges[0].bucket, count: (prior?.count ?? 0) + 1}, 'Rate storage contains only the shared aggregate')
+ const retained = JSON.stringify(after)
+ for (const sentinel of identitySentinels) assert.ok(!retained.includes(sentinel), 'Application storage discards ' + sentinel)
+}
+async function aggregatePrivacyJourney(tab, width, campaign) {
+ // Start from the real earlier navigations, so an empty report cannot pass.
+ const before = await data(), count = before.visits.find(row => row.path === 'home').count
+ assert.ok(count > 0, 'The public counter is already nonempty')
+ const storage = await fixture.inspectApplicationStorage()
+ // A different client address must merge into the existing coarse aggregate.
+ await tab.setExtraHTTPHeaders({'CF-Connecting-IP': '203.0.113.72'})
+ const response = tab.waitForResponse(response => new URL(response.url()).pathname === '/site/visit')
+ await tab.goto(origin + '/site?utm_campaign=' + campaign.toUpperCase() + '&private=synthetic-pane-private-query', {referer: 'https://synthetic-pane-referrer-subdomain.yelp.com/synthetic-pane-referrer-path?private=synthetic-pane-private-query'})
+ const counted = await response
+ assert.equal(counted.status(), 204)
+ assert.equal(counted.headers()['set-cookie'], undefined)
+ assert.deepEqual(counted.request().postDataJSON(), {path: 'home', referrerHost: 'synthetic-pane-referrer-subdomain.yelp.com', campaign, campaignTagged: true, utm_source: '', utm_medium: ''})
+ const afterStorage = await fixture.inspectApplicationStorage()
+ onlyAggregateWrites(storage, afterStorage)
+ const sameAggregate = row => row.path === 'home' && row.referrer === 'yelp.com' && row.campaign === campaign && row.device === (width === 390 ? 'phone' : 'desktop')
+ assert.equal(storage.pane_visits.filter(sameAggregate).length, 1, 'Earlier navigation seeded the coarse aggregate')
+ const expected = storage.pane_visits.map(row => sameAggregate(row) ? {...row, count: row.count + 1} : row).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)))
+ assert.deepEqual(afterStorage.pane_visits, expected, 'Another address merges into the existing count without a visitor record or per-visitor dimension')
+ const after = await data()
+ assert.deepEqual(after.visits, before.visits.map(row => row.path === 'home' ? {...row, count: count + 1} : row), 'A published navigation adds exactly one to its page, preserving other counts')
+ assert.equal(after.traffic.referrer.find(row => row.label === 'yelp.com').count, before.traffic.referrer.find(row => row.label === 'yelp.com').count + 1, 'Approved coarse attribution survives normalization')
+ await emptyBrowserStorage(tab)
+ await tab.screenshot({path: resolve(folder, 'aggregate-public-' + width + '.png'), fullPage: true})
+ console.log('PROBE VISIT-001 public-' + width + ': published home navigation from count ' + count + ' -> ' + (count + 1) + '; only aggregate and shared rate writes; no identity sentinels or browser storage')
+ // The native authenticated preview renders the page but must never send a visit.
+ let previewEvents = 0
+ const observe = request => { if (new URL(request.url()).pathname.startsWith('/site/visit')) previewEvents++ }
+ page.on('request', observe)
+ const previewBefore = await fixture.inspectApplicationStorage()
+ const preview = await page.goto(origin + '/preview/' + after.live.id + '/home', {waitUntil: 'networkidle'})
+ assert.equal(preview.status(), 200)
+ assert.equal(await page.locator('.preview-banner').isVisible(), true)
+ assert.equal(previewEvents, 0, 'Private preview sends no visit or goal request')
+ assert.deepEqual(await fixture.inspectApplicationStorage(), previewBefore, 'Private preview causes no application storage writes')
+ await page.screenshot({path: resolve(folder, 'aggregate-preview-' + width + '.png'), fullPage: true})
+ page.off('request', observe)
+ console.log('PROBE VISIT-001 preview-' + width + ': native private preview -> draft banner, zero visit requests and zero application writes')
+ for (const [name, headers] of [['DNT', {DNT: '1'}], ['GPC', {'Sec-GPC': '1'}]]) {
+  const privateVisitor = await browser.newContext({viewport: {width, height: 1000}, userAgent: 'Mozilla/5.0 (Macintosh) synthetic-pane-visit-agent', extraHTTPHeaders: {'CF-Connecting-IP': '198.51.100.71', ...headers}})
+  visitors.push(privateVisitor)
+  await privateVisitor.addInitScript(kind => Object.defineProperty(navigator, kind === 'DNT' ? 'doNotTrack' : 'globalPrivacyControl', {value: kind === 'DNT' ? '1' : true}), name)
+  const quiet = await privateVisitor.newPage()
+  let requests = 0
+  quiet.on('request', request => {if (new URL(request.url()).pathname.startsWith('/site/visit')) requests++})
+  const quietBefore = await fixture.inspectApplicationStorage()
+  for (let repeat = 0; repeat < 2; repeat++) await quiet.goto(origin + '/site?private=synthetic-pane-private-query', {waitUntil: 'networkidle'})
+  assert.equal(requests, 0, name + ' browser sends no visit request on repeated public navigation')
+  // The route must also honor the header when a caller bypasses the tracker.
+  const refused = await privateVisitor.request.post(origin + '/site/visit', {headers: {Origin: origin}, data: {path: 'home', visitor: 'synthetic-pane-visit-agent', address: '198.51.100.71'}})
+  assert.equal(refused.status(), 204)
+  assert.equal(refused.headers()['set-cookie'], undefined)
+  assert.deepEqual(await fixture.inspectApplicationStorage(), quietBefore, name + ' writes no application row, including rate limits')
+  await emptyBrowserStorage(quiet)
+  assert.deepEqual((await data()).visits, after.visits, name + ' leaves the nonempty counters unchanged')
+  console.log('PROBE VISIT-001 ' + name + '-' + width + ': two published navigations and direct visit POST -> zero requests from tracker, zero application writes, unchanged nonempty counters and empty browser storage')
+ }
+}
 try {
  if (ownsFixture) {
   await fixture.bootstrap(context)
@@ -43,7 +125,7 @@ try {
   await capture('traffic-settings-' + width)
   await page.goto(origin + '/app')
   await Promise.all([page.waitForURL(url => url.pathname === '/app' && url.searchParams.has('notice')), page.getByRole('button', {name: 'Approve & publish'}).click()])
-  const visitor = await browser.newContext({viewport: {width, height: 1000}, userAgent: width === 390 ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Mobile' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0)'})
+  const visitor = await browser.newContext({viewport: {width, height: 1000}, extraHTTPHeaders: {'CF-Connecting-IP': '198.51.100.71'}, userAgent: (width === 390 ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Mobile' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0)') + ' synthetic-pane-visit-agent'})
  await fixture.protect(visitor)
   visitors.push(visitor)
   const tab = await visitor.newPage(), campaign = width === 390 ? campaigns[1] : campaigns[0]
@@ -65,6 +147,7 @@ try {
    assert.ok(traffic.source.some(row => row.label === example.channel && row.count >= 1))
    if (example.domain) assert.ok(traffic.referrer.some(row => row.label === example.domain && row.count >= 1))
   }
+  await aggregatePrivacyJourney(tab, width, campaign)
   // The browser's public request door also refuses IP-literal attribution.
   assert.equal((await visitor.request.post(origin + '/site/visit', {headers: {Origin: origin}, data: {path: 'home', referrerHost: 'https://192.168.1.1/private'}})).status(), 204)
   assert.deepEqual(await visitor.cookies(), [], 'Tagged visits leave the visitor browser without any cookie')
@@ -124,5 +207,5 @@ try {
   const gpcGoals = (await data()).goals
   assert.deepEqual(gpcGoals.map(goal => goal.conversions), dashboard.goals.map(goal => goal.conversions), 'GPC visitors add no goal conversion')
  }
- console.log('Traffic browser journey passed: case-insensitive published labels, registrable Yelp/ChatGPT referrers and channels, safe UTM source/medium and unapproved counts, all dashboard dimensions, quote-form and phone-click goals with funnel and campaign counts, an empty cookie jar, and zero GPC visit or goal events at 1440 and 390.')
+ console.log('Traffic browser journey passed: case-insensitive published labels, registrable Yelp and ChatGPT referrers and channels, safe UTM source and medium and unapproved counts, all dashboard dimensions, quote-form and phone-click goals with funnel and campaign counts, nonempty exact visit increments, private-preview and repeated DNT and GPC zero-write exclusions, complete application and public browser storage inspection, an empty cookie jar, and zero GPC visit or goal events at 1440 and 390.')
 } finally { await browser.close(); if (ownsFixture) await fixture.stop() }

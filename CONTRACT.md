@@ -1577,9 +1577,9 @@ Judged from the code and tests at commit `3b35726211c3a5ac20eeba8b0f8b82b37d2995
 
 | Clauses | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
-| Published | 10 | 6 | 0 | 16 |
+| Published | 11 | 5 | 0 | 16 |
 | Target and push further | 32 | 40 | 48 | 120 |
-| All | 42 | 46 | 48 | 136 |
+| All | 43 | 45 | 48 | 136 |
 
 | Clause | Title | Kind | Status | Evidence | Gap |
 | --- | --- | --- | --- | --- | --- |
@@ -1590,7 +1590,7 @@ Judged from the code and tests at commit `3b35726211c3a5ac20eeba8b0f8b82b37d2995
 | `PUBLISH-003` | Owner-approved atomic publication | published | done | `tests/pane.test.mjs` — “PRESENT-001: five pages preview with a draft banner and publish without product branding”; `tests/pane.test.mjs` — “native owner sign-in and role sessions protect direct handlers” |  |
 | `PUBLISH-004` | One-action rollback | published | done | `tests/pane.test.mjs` — “later change and rollback restore the exact immutable site with recorded decisions” |  |
 | `INBOX-001` | Durable, escaped and idempotent contact submissions | published | done | `tests/pane.test.mjs` — “ACCESS-002: mutations require the canonical origin; accepted contact is durable and visits respect privacy”; `tests/pane.test.mjs` — “owner erasure removes personal data and prevents submission replay” |  |
-| `VISIT-001` | Cookie-free aggregate visit counts | published | partial | `src/pane/public.ts`; `tests/pane.test.mjs` | Missing journey: nonempty public counters with preview and GPC exclusions and a storage inspection proving no visitor identity/address record. The cited contact/visit route journey shows DNT exclusion and one aggregate increment. |
+| `VISIT-001` | Cookie-free aggregate visit counts | published | done | `scripts/traffic-journey.mjs` — “aggregatePrivacyJourney”: nonempty exact public increments, private preview and repeated DNT and GPC exclusion, all application tables and public browser storage inspected with distinct client-address, agent and URL sentinels at 1440 and 390; `tests/pane.test.mjs` — “traffic groups real public visit events without retaining raw referrers or unapproved identifiers and excludes privacy opt-outs” |  |
 | `MOVEIN-001` | Reviewed static-site move-in with guarded undo | published | partial | `src/pane/imports.ts`; `tests/pane.test.mjs`; `docs/MOVE-IN.md` | Missing journey: undo after publication and after an intervening draft edit, each refused with unchanged state. The cited move-in journey checks fingerprints, inert apply, member refusal and successful unpublished undo. |
 | `BACKUP-001` | Export and restore into an empty installation | published | partial | `scripts/pane-policy.mjs`; `tests/pane.test.mjs`; `docs/BACKUP-RESTORE.md` | Missing journey: archive round trip opened through the documented archive door with complete immutable history reconciliation and occupied-destination refusal. The cited restore journey reads live site and import-job count using the portability helper. |
 | `ERASE-001` | Message erasure fenced against old backups | published | done | `tests/pane.test.mjs` — “owner erasure removes personal data and prevents submission replay”; `tests/pane.test.mjs` — “archive transport restores data into empty D1 and rejects an erased older backup” |  |
