@@ -66,7 +66,7 @@ Core · published · **partial** · Cites BASE-ACCESS-002, BASE-ROLE-001
 **Acceptance.**
 1. Open the selected revision signed out, as a member and as an admin: the first two gain no draft access and the admin sees its pages and banner with contact sending disabled.
 
-**Evidence.** `src/pane/handler.ts`; `src/pane/public-view.ts`; `tests/pane.test.mjs`
+**Evidence.** `tests/pane.test.mjs` — “private selected previews refuse visitors and members and keep ordinary and typed contact sending inert” (native owner and admin access, signed-out and member refusal, both contact forms, inert POST, zero enquiry and notification effects, immutable selected snapshot and hash, unchanged live pages, revoked-session refusal and positive live submissions); `scripts/browser-journey.mjs` — “privatePreviewJourney” (native role sessions, selected ordinary and typed pages, draft banner, pointer and keyboard refusal, zero sends, later-draft isolation, native revision-bound navigation, axe, tooltips and no overflow; assertions at 1440 and screens at 1440 and 390).
 **Gap.** Missing journey: a private preview opened as admin with contact sending disabled. The cited native preview journey checks banner and role refusals but does not try or inspect disabled sending.
 
 #### PUBLISH-003 — Owner-approved atomic publication
