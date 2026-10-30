@@ -153,7 +153,7 @@ test('owner erasure removes personal data and prevents submission replay',async(
  assert.equal((await data()).messages.length,0)
  laterArchive=await exportData(f.db)
 })
-test('archive transport restores complete immutable history, refuses occupied data and rejects an erased older backup',async()=>{
+test('archive transport restores data into empty D1 and rejects an erased older backup',async()=>{
  await (await import('../scripts/archive-transport-journey.mjs')).archiveTransportJourney()
  const destination=await runtime()
  try {

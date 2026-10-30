@@ -160,7 +160,7 @@
       "executable": false
     },
     "CONTRACT.md": {
-      "sha256": "db71ea91e769a6c912a979bd4ba89b64629b961b26fd228f184783db7b25d4bf",
+      "sha256": "7b65dcab5ae2d2880f38f75a0d8ac74360ef40964eae4578988482e59b196da2",
       "executable": false
     },
     "deploy-demo.json": {
@@ -1152,7 +1152,7 @@
       "executable": false
     },
     "scripts/archive-transport-journey.mjs": {
-      "sha256": "f0385b48e8e4297f9c3cd3c3e1e7ef3e395e08a51b6a0ff771bd8b6a2d802dcc",
+      "sha256": "e4c46224e78deb912f8793df8ef650bc5c9545f01641ed55060dbeb2ddce8d35",
       "executable": false
     },
     "scripts/browser-journey.mjs": {
@@ -4132,7 +4132,7 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "a57d430a94c534d7e672411880415d39097eb0b90fb5cb20e01eedf56f450964",
+      "sha256": "6e7d4a69c0e8d35d00cd1a53904305287df6ca56285b1fd2762714010dcdcdc1",
       "executable": false
     },
     "tests/post-fixture.mjs": {
