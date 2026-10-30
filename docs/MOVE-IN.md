@@ -72,7 +72,10 @@ them. A different owner or admin cannot take over that operator's job.
 
 Undo refuses a revision that is currently published. Publish another revision
 first, then undo. The native foreign key and guarded DELETE also protect against
-a publish racing the undo. A change to the imported site's stored JSON, content
+a publish racing the undo. A newer ordinary draft also makes the import
+ineligible, even though the imported revision itself remains immutable. Both
+refusals leave retained originals and journals unchanged. The guarded deletion
+rechecks the newest draft inside Base's strict reversal transaction. A change to the imported site's stored JSON, content
 hash, actor, timestamp or kit revision evidence blocks reversal with a conflict;
 it never deletes the edited revision. The Base reversal may retain `undoing`
 intent after a native conflict; once the conflict is deliberately resolved,

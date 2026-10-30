@@ -2,7 +2,7 @@ import {createHash,createHmac} from 'node:crypto'
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
-import { runtime, origin, settings } from './runtime.mjs'
+import { runtime, origin, settings, moveInSnapshot } from './runtime.mjs'
 import { createOperatorAuth } from '../src/modules/operator-auth/index.mjs'
 import { createPortability, readArchive } from '@runeditrun/rer/modules/portability'
 import { productPolicy } from '../scripts/pane-policy.mjs'
@@ -137,13 +137,49 @@ test('PAGE-006: autosave persists an immutable draft, rejects stale and simultan
 })
 test('move-in dry run requires reviewed fingerprint, applies inert draft and journals undo',async()=>{
  const source=JSON.stringify({...fixture,name:'Riverbend imported'})
+ const before=await data(),custody=await moveInSnapshot(f.db)
  const plan=await json('/api/pane/import/dry-run',{source},admin);assert.equal(plan.status,200,await plan.clone().text());const p=await plan.json()
+ assert.deepEqual(await moveInSnapshot(f.db),custody,'Dry run creates no native revision or import journal')
  assert.equal((await json('/api/pane/import/apply',{source,fingerprint:'wrong'},admin)).status,400)
+ assert.deepEqual(await moveInSnapshot(f.db),custody,'Wrong fingerprint leaves content and custody unchanged')
  const applied=await json('/api/pane/import/apply',{source,fingerprint:p.fingerprint},admin);assert.equal(applied.status,200,await applied.clone().text());importJob=await applied.json();assert.equal(importJob.state,'completed')
- assert.equal((await data()).live.id,first.id)
+ const imported=await data(),retained=await moveInSnapshot(f.db)
+ assert.equal(imported.live.id,first.id);assert.equal(imported.draft.id,importJob.report.revision)
+ const replay=await json('/api/pane/import/apply',{source,fingerprint:p.fingerprint},admin);assert.equal(replay.status,200);assert.equal((await replay.json()).id,importJob.id)
+ assert.deepEqual((await data()).revisions,imported.revisions,'Reviewed replay creates no second revision')
  assert.equal((await json('/api/pane/import/undo',{job:importJob.id},member)).status,403)
+ assert.deepEqual(await moveInSnapshot(f.db),retained,'Member refusal leaves the retained originals and journal unchanged')
  const undone=await json('/api/pane/import/undo',{job:importJob.id},admin);assert.equal(undone.status,200,await undone.clone().text());assert.equal((await undone.json()).state,'undone')
+ assert.equal((await data()).draft.id,before.draft.id)
  assert.ok((await data()).imports.some(j=>j.id===importJob.id&&j.state==='undone'))
+ const reversed=await moveInSnapshot(f.db)
+ assert.deepEqual(reversed.ik_originals,retained.ik_originals,'Successful undo retains the exact source bytes')
+ assert.ok(reversed.ik_batches.some(batch=>batch.job_id===importJob.id&&batch.action==='undo'),'Successful undo keeps its reversal journal')
+ for(const mode of ['published','edited']){
+  const source=JSON.stringify({...fixture,name:'synthetic-pane-'+mode})
+  const plan=await (await json('/api/pane/import/dry-run',{source},admin)).json()
+  const response=await json('/api/pane/import/apply',{source,fingerprint:plan.fingerprint},admin);assert.equal(response.status,200,await response.clone().text())
+  const job=await response.json(),imported=(await data()).draft
+  if(mode==='published')assert.equal((await json('/api/pane/publish',{revision:imported.id})).status,200)
+  else {
+   const save=await f.request('/app/autosave',{method:'POST',headers:{Origin:origin,Cookie:admin,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({base:imported.id,slug:'home','page.home.body':'synthetic-pane-1 ordinary saved edit'})})
+   assert.equal(save.status,200,await save.clone().text());assert.notEqual((await save.json()).id,imported.id)
+  }
+  const state=await data(),snapshot=await moveInSnapshot(f.db)
+  assert.deepEqual(state.revisions.find(row=>row.id===imported.id),imported,'Publication and ordinary editing preserve the imported source revision and hash')
+  const refused=await json('/api/pane/import/undo',{job:job.id},admin)
+  assert.equal(refused.status,400,'Undo must refuse an import that is '+mode)
+  assert.match((await refused.json()).error,mode==='published'?/published/:/newer draft/)
+  const after=await data()
+  for(const field of ['draft','live','revisions','approvals','imports'])assert.deepEqual(after[field],state[field],mode+' refusal preserves '+field)
+  assert.deepEqual(await moveInSnapshot(f.db),snapshot,mode+' refusal preserves exact content, originals and every import journal')
+  const report=await json('/api/pane/import/dry-run',{job:job.id},admin);assert.equal(report.status,200);assert.equal((await report.json()).report.phase,'applied')
+  if(mode==='published'){
+   assert.equal((await json('/api/pane/rollback',{revision:first.id})).status,200)
+   assert.equal((await json('/api/pane/import/undo',{job:job.id},admin)).status,200,'An unchanged import becomes eligible after another revision is published')
+  }
+ }
+
 })
 test('owner erasure removes personal data and prevents submission replay',async()=>{
  assert.equal((await json('/api/pane/messages/erase',{id:contactId},admin)).status,403)
