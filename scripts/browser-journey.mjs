@@ -4,7 +4,6 @@ import { readFile, mkdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { chromium } from '@playwright/test'
 const lobbyOnly=process.argv.includes('--lobby-only')
-const previewOnly=process.argv.includes('--preview-only')
 const fixtureRuntime=process.env.PANE_BROWSER_FIXTURE?await import('../tests/browser-runtime.mjs'):null
 const log=fixtureRuntime?'':await readFile(process.env.PANE_LAUNCH_LOG,'utf8'),entry=fixtureRuntime?fixtureRuntime.origin+'/setup':log.match(/RER_OPEN\s+(https?:\/\/\S+)/)?.[1]
 if(!entry)throw Error('Launch log has no private RER_OPEN link; rer dev must finish first.')
@@ -162,7 +161,7 @@ try {
  }
  assert.deepEqual(await theme(),sharedTheme,'LOBBY-001: workspace shares Lobby theme');assert.equal(await page.locator('a[href="#main"]').count(),1);assert.equal(await page.locator('#main').count(),1);await capture('empty-workspace')
  console.log('Shared Lobby and workspace theme passed: installed Lobby, sign-in, setup, workspace anchors, self-hosted Figtree, fuchsia, no overflow and icon tooltips at 1440 and 390.')
- if (!lobbyOnly && !previewOnly) {
+ if (!lobbyOnly) {
  await page.goto(origin+'/site');await capture('not-published');await page.goto(origin+'/app')
  await page.getByLabel('Site name',{exact:true}).fill(fixture.name)
  await page.getByLabel('Description',{exact:true}).fill(fixture.description)
@@ -199,4 +198,4 @@ try {
  console.log('Browser journey passed: sign-in, setup, five-page prepare/preview/publish, contact, visits, change, rollback, reviewed move-in/undo, erasure at 1440 and 390.')
  }
  if(!lobbyOnly&&fixtureRuntime)await privatePreviewJourney()
-} catch(error) {await capture('journey-failure');throw error} finally {await browser.close();if(lobbyOnly||previewOnly)await fixtureRuntime?.stop()}
+} catch(error) {await capture('journey-failure');throw error} finally {await browser.close();if(lobbyOnly)await fixtureRuntime?.stop()}

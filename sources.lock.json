@@ -1152,7 +1152,7 @@
       "executable": false
     },
     "scripts/browser-journey.mjs": {
-      "sha256": "9960906a045eef4412288069627e820b8ca5db18f4b5b3e8e0f97e010863f82a",
+      "sha256": "de63aee5efbb544878a2edfb53aa764fd042323948d9dad850bf19fb939d992c",
       "executable": false
     },
     "scripts/browser-proof.mjs": {
