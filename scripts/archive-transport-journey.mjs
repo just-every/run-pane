@@ -49,13 +49,16 @@ async function signIn(app){
  door.setCookie(response.headers.get('set-cookie').split(';')[0]);return door
 }
 async function screens(app,door,folder){
- const {createServer}=await import('node:http'),{extname}=await import('node:path'),{chromium}=await import('@playwright/test')
+ const {createServer}=await import('node:http'),{extname,sep}=await import('node:path'),{chromium}=await import('@playwright/test')
  const server=createServer(async(req,res)=>{
   try{
    const path=new URL(req.url,origin).pathname
-   if(path.startsWith('/pane-')||path.startsWith('/assets/')){
-    const file=resolve('dist/client','.'+path),bytes=await readFile(file)
-    res.writeHead(200,{'content-type':{'.css':'text/css','.js':'text/javascript','.mjs':'text/javascript','.woff2':'font/woff2'}[extname(file)]??'application/octet-stream'});res.end(bytes);return
+   const assets=resolve('./dist/client'),file=resolve(assets,'.'+decodeURIComponent(path))
+   if(['GET','HEAD'].includes(req.method)&&file.startsWith(assets+sep)){
+    try{
+     const bytes=await readFile(file)
+     res.writeHead(200,{'content-type':{'.css':'text/css','.js':'text/javascript','.mjs':'text/javascript','.svg':'image/svg+xml','.png':'image/png','.woff2':'font/woff2'}[extname(file)]??'application/octet-stream'});res.end(req.method==='HEAD'?undefined:bytes);return
+    }catch(error){if(!['ENOENT','EISDIR'].includes(error.code))throw error}
    }
    const chunks=[];for await(const chunk of req)chunks.push(chunk)
    const {host,...headers}=req.headers
@@ -74,6 +77,8 @@ async function screens(app,door,folder){
   for(const width of [1440,390])for(const [path,name,text] of [['/app','restored-editor','synthetic-pane-draft'],['/app/moves','restored-journals','Moves'],['/site','restored-live','synthetic-pane-live']]){
    await page.setViewportSize({width,height:1000});await page.goto(address+path)
    assert.ok((await page.content()).includes(text),name)
+   assert.ok(await page.locator('link[rel=stylesheet]').evaluateAll(links=>links.length>0&&links.every(link=>link.sheet)),'Every restored screen loads its stylesheets')
+   await page.evaluate(()=>document.fonts.ready)
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,name+' overflow')
    await page.screenshot({path:join(folder,name+'-'+width+'.png'),fullPage:true})
   }
@@ -122,7 +127,7 @@ export async function archiveTransportJourney({browser=false,folder}={}){
   assert.equal((await app.request('/app',{headers:{Cookie:restored.cookie}})).status,200)
   assert.match(await (await app.request('/site')).text(),/synthetic-pane-live/)
   assert.deepEqual(await tables(app.db,historyTable),before,'Reopening never mutates source history')
-  if(browser)await screens(app,restored,folder??resolve('test-results/archive'))
+  if(browser)await screens(app,restored,folder??resolve('./test-results/archive'))
   await app.mf.dispose();app=undefined
   // A different installation with its own records must survive an attempted overwrite.
   await execute('pnpm',['exec','wrangler','d1','migrations','apply','foundation','--local','--persist-to','.wrangler/state','--config','wrangler.jsonc'],{cwd:occupied,timeout:120000,maxBuffer:2000000,env:{...process.env,WRANGLER_SEND_METRICS:'false'}})

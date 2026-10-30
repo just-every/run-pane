@@ -1152,7 +1152,7 @@
       "executable": false
     },
     "scripts/archive-transport-journey.mjs": {
-      "sha256": "f0385b48e8e4297f9c3cd3c3e1e7ef3e395e08a51b6a0ff771bd8b6a2d802dcc",
+      "sha256": "e4c46224e78deb912f8793df8ef650bc5c9545f01641ed55060dbeb2ddce8d35",
       "executable": false
     },
     "scripts/browser-journey.mjs": {
@@ -4132,7 +4132,7 @@
       "executable": false
     },
     "tests/pane.test.mjs": {
-      "sha256": "a57d430a94c534d7e672411880415d39097eb0b90fb5cb20e01eedf56f450964",
+      "sha256": "6e7d4a69c0e8d35d00cd1a53904305287df6ca56285b1fd2762714010dcdcdc1",
       "executable": false
     },
     "tests/post-fixture.mjs": {
