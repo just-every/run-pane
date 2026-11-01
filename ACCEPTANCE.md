@@ -8,12 +8,12 @@ The primary journey: Move the existing business site in, inspect its content and
 
 | Tier | Done | Partial | Missing | Total |
 | --- | ---: | ---: | ---: | ---: |
-| Core | 43 | 45 | 44 | 132 |
+| Core | 47 | 43 | 42 | 132 |
 | Agent surface | 0 | 0 | 4 | 4 |
 | Later | 0 | 0 | 0 | 0 |
-| Full target | 43 | 45 | 48 | 136 |
+| Full target | 47 | 43 | 46 | 136 |
 
-Judged from the code and tests at commit `3b35726211c3a5ac20eeba8b0f8b82b37d2995d4` (27 October 2026). Field proof register: 12 rows; 0 passed, 0 failed, 12 not run.
+Judged from the code and tests at commit `16501ad7d10c5af6f04799aa44c700249a41e9b4` (1 November 2026). Field proof register: 12 rows; 0 passed, 0 failed, 12 not run.
 
 ## Core
 
@@ -59,7 +59,7 @@ Core · published · **done**
 
 #### PUBLISH-002 — Private draft preview
 
-Core · published · **partial** · Cites BASE-ACCESS-002, BASE-ROLE-001
+Core · published · **done** · Cites BASE-ACCESS-002, BASE-ROLE-001
 
 **Requirement.** An owner or admin previews a selected revision privately with a draft banner and contact sending disabled.
 
@@ -67,7 +67,7 @@ Core · published · **partial** · Cites BASE-ACCESS-002, BASE-ROLE-001
 1. Open the selected revision signed out, as a member and as an admin: the first two gain no draft access and the admin sees its pages and banner with contact sending disabled.
 
 **Evidence.** `tests/pane.test.mjs` — “private selected previews refuse visitors and members and keep ordinary and typed contact sending inert” (native owner and admin access, signed-out and member refusal, both contact forms, inert POST, zero enquiry and notification effects, immutable selected snapshot and hash, unchanged live pages, revoked-session refusal and positive live submissions); `scripts/browser-journey.mjs` — “privatePreviewJourney” (native role sessions, selected ordinary and typed pages, draft banner, pointer and keyboard refusal, zero sends, later-draft isolation, native revision-bound navigation, axe, tooltips and no overflow; assertions at 1440 and screens at 1440 and 390).
-**Gap.** Missing journey: a private preview opened as admin with contact sending disabled. The cited native preview journey checks banner and role refusals but does not try or inspect disabled sending.
+**Gap.** None.
 
 #### PUBLISH-003 — Owner-approved atomic publication
 
@@ -124,27 +124,27 @@ Core · published · **done** · Cites BASE-PUBLIC-001 · Rules D-4
 
 #### MOVEIN-001 — Reviewed static-site move-in with guarded undo
 
-Core · published · **partial** · Cites BASE-INPUT-001, BASE-ROLE-001 · Rules D-1, D-2
+Core · published · **done** · Cites BASE-INPUT-001, BASE-ROLE-001 · Rules D-1, D-2
 
 **Requirement.** An owner or admin dry-runs the documented static-site JSON through Base's import kit, approves the plan's fingerprint and imports an unpublished draft. Undo reverses an unchanged, unpublished import and keeps its journal; undoing a published import is refused.
 
 **Acceptance.**
 1. Dry-run the fixture, apply with a wrong fingerprint (refused), apply with the reviewed one, confirm the live site is unchanged, undo as a member (refused) and as an admin (undone, journal kept).
 
-**Evidence.** `src/pane/imports.ts`; `tests/pane.test.mjs`; `docs/MOVE-IN.md`
-**Gap.** Missing journey: undo after publication and after an intervening draft edit, each refused with unchanged state. The cited move-in journey checks fingerprints, inert apply, member refusal and successful unpublished undo.
+**Evidence.** `src/pane/imports.ts`; `tests/pane.test.mjs` — “move-in dry run requires reviewed fingerprint, applies inert draft and journals undo”; `docs/MOVE-IN.md`
+**Gap.** None.
 
 #### BACKUP-001 — Export and restore into an empty installation
 
-Core · published · **partial** · Cites BASE-DATA-001, BASE-BACKUP-001
+Core · published · **done** · Cites BASE-DATA-001, BASE-BACKUP-001
 
 **Requirement.** Pane's installation archive carries the live site revision, immutable history and import journals.
 
 **Acceptance.**
 1. Export a populated Pane installation, restore into an empty installation through the archive transport, and reconcile the live revision, history and import journals; an occupied destination is refused without changing it.
 
-**Evidence.** `scripts/pane-policy.mjs`; `tests/pane.test.mjs`; `docs/BACKUP-RESTORE.md`
-**Gap.** Missing journey: archive round trip opened through the documented archive door with complete immutable history reconciliation and occupied-destination refusal. The cited restore journey reads live site and import-job count using the portability helper.
+**Evidence.** `scripts/pane-policy.mjs`; `scripts/archive-transport-journey.mjs` — “archiveTransportJourney”, run by `tests/pane.test.mjs` — “archive transport restores data into empty D1 and rejects an erased older backup”; `docs/BACKUP-RESTORE.md`
+**Gap.** None.
 
 #### ERASE-001 — Message erasure fenced against old backups
 
@@ -186,7 +186,7 @@ Core · published · **partial** · Cites BASE-INSTALL-001, BASE-OPS-002 · Regi
 
 #### RUNSITE-001 — Public run site and documentation
 
-Core · published · **partial** · Cites BASE-DOCS-001, BASE-PUBLIC-001
+Core · published · **done** · Cites BASE-DOCS-001, BASE-PUBLIC-001
 
 **Requirement.** Pane's run site presents its picked homepage and run instructions without installation sign-in links.
 
@@ -194,7 +194,7 @@ Core · published · **partial** · Cites BASE-DOCS-001, BASE-PUBLIC-001
 1. Build the public run site and open the homepage, run instructions and every linked guide through its HTTP router; an unknown page is missing and no installation sign-in link is offered.
 
 **Evidence.** `tests/site.test.mjs` — "the run site opens the run instructions and every linked documentation page without installation sign-in links": built homepage, run instructions, documentation index and every linked guide through the real site-preview HTTP router; resolved relative and absolute navigation destinations checked for installation sign-in links; unknown paths return 404. Invoked by the package test script through Verify's product journey job.
-**Gap.** Missing journey: built homepage/run/docs navigation with an explicit check that installation sign-in links are absent. The cited site journey opens all linked guides and unknown-path refusal but never inspects that absence.
+**Gap.** None.
 
 #### LOBBY-001 — Shared Lobby, workspace and theme
 
@@ -900,27 +900,27 @@ Core · target · **partial**
 
 #### SEO-005 — Structured data for local businesses
 
-Core · target · **missing**
+Core · target · **partial**
 
 **Requirement.** Pane emits JSON-LD from the site's business facts and collections: LocalBusiness (name, address, phone, opening hours, service area, price range, social profiles as `sameAs`), Service, Article, FAQPage, BreadcrumbList and Event, validated before publication.
 
 **Acceptance.**
 1. Publish a site with hours, services, FAQs and posts, and pass Google's Rich Results Test and the Schema.org validator on each page type.
 
-**Evidence.** None.
-**Gap.** No structured data.
+**Evidence.** `src/pane/brand.ts`; `tests/pane.test.mjs` — “brand uploads stay draft until approval and publish served icons, social images and profile structured data”
+**Gap.** LocalBusiness JSON-LD (name, description, url, logo, social profiles as `sameAs`) ships on live pages; address, phone, opening hours, service area, price range, Service, Article, FAQPage, BreadcrumbList and Event data, validation before publication and Rich Results Test and Schema.org validator runs are missing.
 
 #### SEO-006 — Social preview cards
 
-Core · target · **missing**
+Core · target · **partial**
 
 **Requirement.** Every page has Open Graph and X card title, description and image, defaulting from the page and brand kit (`STYLE-004`), with a preview in the editor.
 
 **Acceptance.**
 1. Share a page URL into the Facebook Sharing Debugger and an X card validator and see the chosen title, description and image.
 
-**Evidence.** None.
-**Gap.** No social metadata.
+**Evidence.** `src/pane/brand.ts`; `tests/pane.test.mjs` — “brand uploads stay draft until approval and publish served icons, social images and profile structured data”
+**Gap.** Open Graph and X card title, description and brand social image ship on live pages with a brand-kit card preview; a per-page preview in the editor, per-page image choice and Facebook Sharing Debugger and X card validator runs are missing.
 
 #### SEO-007 — Google Search Console and Bing Webmaster Tools
 
