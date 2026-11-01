@@ -21,7 +21,7 @@ A claim is done when every clause behind it is done, missing when every one is m
 | 13 | Past submissions are imported without resending; subscribers move with suppression. | `IMPORT-007` missing | missing |
 | 14 | Shop products hand off to Stall; existing Acuity scheduling is kept. | `IMPORT-002` missing; `LINK-001` missing; `LINK-002` missing | missing |
 | 15 | Every old URL is tested on preview and every unsupported item is listed before apply. | `IMPORT-005` done; `IMPORT-006` missing | partial |
-| 16 | Apply as a private draft and test lead routes before checked cutover. | `MOVEIN-001` partial; `IMPORT-006` missing; `AGENT-003` missing | partial |
+| 16 | Apply as a private draft and test lead routes before checked cutover. | `MOVEIN-001` done; `IMPORT-006` missing; `AGENT-003` missing | partial |
 | 17 | Google Workspace DNS remains unchanged; Squarespace aliases and catch-all are recreated and proven. | `DOMAIN-003` missing; `DOMAIN-005` missing | missing |
 | 18 | Apex and www launch with HTTPS; bookings count by source. | `DOMAIN-001` missing; `DOMAIN-002` missing; `LINK-001` missing; `STATS-002` done | partial |
 | 19 | Stored inquiry, notification, HubSpot and booking route reach a person despite a bounced notice. | `FORM-003` partial; `FORM-005` missing; `FORM-006` done; `AGENT-003` missing | partial |
