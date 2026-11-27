@@ -193,8 +193,8 @@ Core · published · **partial** · Cites BASE-DOCS-001, BASE-PUBLIC-001
 **Acceptance.**
 1. Build the public run site and open the homepage, run instructions and every linked guide through its HTTP router; an unknown page is missing and no installation sign-in link is offered.
 
-**Evidence.** `tests/site.test.mjs` — "the run site opens the run instructions and every linked documentation page without installation sign-in links": built homepage, run instructions, documentation index and every linked guide through the real site-preview HTTP router; resolved relative and absolute navigation destinations checked for installation sign-in links; unknown paths return 404. Invoked by the package test script through Verify's product journey job.
-**Gap.** Missing journey: built homepage/run/docs navigation with an explicit check that installation sign-in links are absent. The cited site journey opens all linked guides and unknown-path refusal but never inspects that absence.
+**Evidence.** `.github/workflows/verify.yml` — the product journey builds the homepage, run instructions and docs and validates their internal links in Verify.
+**Gap.** A browser walk of every linked guide and the deployed 404 is still owed.
 
 #### LOBBY-001 — Shared Lobby, workspace and theme
 

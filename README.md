@@ -132,11 +132,11 @@ rer signin
 
 The dry run validates and builds without provider calls. For real deployment,
 follow the credential/setup prompts and [RUN-LOCALLY.md](RUN-LOCALLY.md); provide
-the account, Worker/D1 permissions, owner mailbox, session/setup secrets and a
-verified mail sender. Replace the explicit `auth@example.invalid` deployment
-mail setting with your verified sender before deploying. Commit reviewed source
+the account, Worker/D1 permissions, owner mailbox and session/setup secrets.
+To deploy without outbound email, set `MAIL_PROVIDER=none`. Otherwise configure
+your mail provider and verified sender through setup. Commit reviewed source
 before a real deploy. `rer signin` supplies the hosted owner's one-time sign-in
-link if mail is not ready. The deployed Worker's `/site` is the business website.
+link when mail is off. The deployed Worker's `/site` is the business website.
 Business-site custom domains are outside the current release. The separate public
 run site includes the landing page, `/run` and these docs. It is published at
 [https://run-pane.com](https://run-pane.com), and its run page is

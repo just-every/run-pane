@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.0 — 2026-11-27
+
+First release of Pane, with a hosted demo and setup for a Business with or without a mail provider.
+
+- Draft, preview and publish a small business website, and manage its contact inbox.
+- Deploy with a configured mail provider or set `MAIL_PROVIDER=none` and use `rer signin` for the owner.
+- The hosted demo deploys from the published release tag.
+
+This is the first tagged release. Apply all migrations on new installations and preserve any migration bytes already applied.
+
 ## 2026-10-28 — Adobe font status carried from main
 
 Source: main `ddd123a340b811ad2fef47993c1cc2eedffe6bc0`, STYLE-002.

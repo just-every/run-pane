@@ -348,3 +348,10 @@ uses a Turnstile network-edge fake, disconnects the real content/intake tables,
 exercises the native scheduled handler, and removes the resources through the
 deployment kit's ownership checks. Its test HTTP adapter is never part of the
 production Worker entry. Store screenshots and receipts outside the checkout.
+
+## Deploy with outbound mail off
+
+Run `MAIL_PROVIDER=none rer deploy --dry-run` to validate a deployment without
+a sender address or mail API key. After deployment, run `rer signin` with the
+deployment's Cloudflare credentials to issue a one-time owner sign-in link.
+Email sign-in and outbound messages require a configured mail provider.
